@@ -11,11 +11,9 @@ const appFiles = [
   'material.min.css',
   'material-icons.css',
   'fonts/material-icons.woff2',
-  // TODO: List the real file names. Currently random strings are
-  // appended to the file names by the bundler, so this is not
-  // possible.
-  'assets/bundle.css',
-  'assets/bundle.js',
+  'assets/index.css',
+  'assets/index.js',
+  'assets/vendor.js',
 ]
 self.addEventListener('install', (e) => {
   console.log('[Service Worker] Install')
