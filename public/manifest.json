@@ -1,0 +1,30 @@
+{
+  "short_name": "My Wallet",
+  "name": "Swaptacular Wallet",
+  "description": "Allows you to connect to a creditors agent and make and request payments in Swaptacular digital currencies.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/icons/favicon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icons/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }    
+  ]
+}
