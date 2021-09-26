@@ -3,6 +3,7 @@
 /coverage/
 /dist/
 /.vscode/
+/.log/
 .DS_Store
 
 # Emacs files
