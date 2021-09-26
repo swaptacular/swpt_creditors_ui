@@ -21,33 +21,34 @@ export class CanNotObtainToken extends Error {
 
 
 export class Oauth2TokenSource implements AuthTokenSource {
-  private helper = new OAuth2AuthCodePKCE({
-    fetchTimeout: 2 * appConfig.serverApiTimeout,
-    authorizationUrl: appConfig.oauth2.authorizationUrl,
-    tokenUrl: appConfig.oauth2.tokenUrl,
-    clientId: appConfig.oauth2.clientId,
-    redirectUrl: appConfig.oauth2.redirectUrl,
-    useLocalStorage: appConfig.oauth2.useLocalStorage,
-    extraAuthorizationParams: {},
-    scopes: ['access'],
-    async onAccessTokenExpiry(refreshAccessToken) {
-      // This function is called when the access token has expired,
-      // and a refresh token can be used. If the result of
-      // `refreshAccessToken()` is returned, an attempt will be made
-      // to obtain a new access token.
-      //
-      // TODO: This functionality is not tested and may not work.
-      return refreshAccessToken()
-    },
-    onInvalidGrant(_redirectToAuthServer) {
-      // This function is called when an access token can not be
-      // obtained due to invalid grant. If `_redirectToAuthServer` is
-      // called it will redirect to the authentication server's login
-      // page. In our case, we just do nothing.
-    }
-  })
+  private helper: OAuth2AuthCodePKCE
 
-  constructor() {
+  constructor(disablePin: boolean = false) {
+    this.helper = new OAuth2AuthCodePKCE({
+      fetchTimeout: 2 * appConfig.serverApiTimeout,
+      authorizationUrl: appConfig.oauth2.authorizationUrl,
+      tokenUrl: appConfig.oauth2.tokenUrl,
+      clientId: appConfig.oauth2.clientId,
+      redirectUrl: appConfig.oauth2.redirectUrl,
+      extraAuthorizationParams: {},
+      scopes: disablePin ? ['access', 'disable_pin'] : ['access'],
+      async onAccessTokenExpiry(refreshAccessToken) {
+        // This function is called when the access token has expired,
+        // and a refresh token can be used. If the result of
+        // `refreshAccessToken()` is returned, an attempt will be made
+        // to obtain a new access token.
+        //
+        // TODO: This functionality is not tested and may not work.
+        return refreshAccessToken()
+      },
+      onInvalidGrant(_redirectToAuthServer) {
+        // This function is called when an access token can not be
+        // obtained due to invalid grant. If `_redirectToAuthServer` is
+        // called it will redirect to the authentication server's login
+        // page. In our case, we just do nothing.
+      }
+    })
+
     let isReturningFromAuthServer
     try {
       isReturningFromAuthServer = this.helper.isReturningFromAuthServer()

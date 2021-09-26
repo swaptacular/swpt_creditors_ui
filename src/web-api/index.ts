@@ -9,6 +9,7 @@ import {
   Oauth2TokenSource,
 } from './oauth2-token-source'
 
+export { Oauth2TokenSource }
 
 export type {
   LoginAttemptHandler,

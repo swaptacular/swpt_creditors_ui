@@ -7,7 +7,6 @@ declare var appConfig: {
     tokenUrl: string,
     clientId: string,
     redirectUrl: string,
-    useLocalStorage: boolean,
   },
   TransferDeletionDelaySeconds: number,
 }

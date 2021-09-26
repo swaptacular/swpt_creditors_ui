@@ -14,7 +14,6 @@ export type Configuration = {
   redirectUrl: string;
   scopes: string[];
   tokenUrl: string;
-  useLocalStorage: boolean;
   extraAuthorizationParams?: ObjStringDict;
   extraRefreshParams?: ObjStringDict;
 }
@@ -92,7 +91,7 @@ function createErrorInstance(rawError: string): OAuth2Error {
   return new (ERROR_STRING_TO_ERROR_CLASS_MAP[rawError] || UnknownError)();
 }
 
-const LOCALSTORAGE_ID = `debtors.oauth2`;
+const LOCALSTORAGE_ID = `creditors.oauth2`;
 const LOCALSTORAGE_STATE = `${LOCALSTORAGE_ID}-state`;
 
 /**
@@ -141,12 +140,10 @@ async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { 
  */
 export class OAuth2AuthCodePKCE {
   private config: Configuration;
-  private storage: Storage;
   private accessContextPromise?: Promise<AccessContext>;
 
   constructor(config: Configuration) {
     this.config = config;
-    this.storage = config.useLocalStorage ? localStorage : sessionStorage
     this.recoverState();
   }
 
@@ -442,7 +439,11 @@ export class OAuth2AuthCodePKCE {
   }
 
   private recoverState(): State {
-    const s = this.storage.getItem(LOCALSTORAGE_STATE) || '{}';
+    const s = (
+      sessionStorage.getItem(LOCALSTORAGE_STATE) ||
+      localStorage.getItem(LOCALSTORAGE_STATE) ||
+      '{}'
+    );
     try {
       const state = JSON.parse(s);
       if (typeof state !== 'object') {
@@ -456,7 +457,15 @@ export class OAuth2AuthCodePKCE {
   }
 
   private setState(state: State) {
-    this.storage.setItem(LOCALSTORAGE_STATE, JSON.stringify(state));
+    const s = JSON.stringify(state)
+    if (state.scopes && state.scopes.indexOf('disable_pin') !== -1) {
+      // When the "disable_pin" scope is granted, it is too dangerous to
+      // keep the access token in localStorage.
+      sessionStorage.setItem(LOCALSTORAGE_STATE, s);
+    } else {
+      sessionStorage.removeItem(LOCALSTORAGE_STATE)
+      localStorage.setItem(LOCALSTORAGE_STATE, s);
+    }
   }
 
   /**
