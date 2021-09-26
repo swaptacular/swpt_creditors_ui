@@ -461,6 +461,7 @@ export class OAuth2AuthCodePKCE {
     if (state.scopes && state.scopes.indexOf('disable_pin') !== -1) {
       // When the "disable_pin" scope is granted, it is too dangerous to
       // keep the access token in localStorage.
+      localStorage.removeItem(LOCALSTORAGE_STATE)
       sessionStorage.setItem(LOCALSTORAGE_STATE, s);
     } else {
       sessionStorage.removeItem(LOCALSTORAGE_STATE)
