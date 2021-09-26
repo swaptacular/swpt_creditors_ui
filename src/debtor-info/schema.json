@@ -1,0 +1,140 @@
+{
+  "definitions": {
+    "Link": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "iri",
+          "maxLength": 10000,
+          "description": "The IRI (Internationalized Resource Identifier) of the referenced resource. Must be an absolute IRI."
+        }
+      },
+      "required": [ "uri" ],
+      "additionalProperties": false
+    },
+    "ShortLink": {
+      "type": "object",
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "iri",
+          "maxLength": 200,
+          "description": "The IRI (Internationalized Resource Identifier) of the referenced resource. Must be an absolute IRI."
+        }
+      },
+      "required": [ "uri" ],
+      "additionalProperties": false
+    },
+    "DebtorIdentity": {
+      "type": "object",
+      "properties": {
+        "type":  { "type": "string", "pattern": "^DebtorIdentity(-v[1-9][0-9]{0,5})?$" },
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 100,
+          "description": "The information contained in this field must be enough to uniquely and reliably identify the debtor (and the currency). Note that a network request should not be needed to identify the debtor. For example, if the issuer happens to be a bank, the URI would reveal the type of the issuer (a bank), the ID of the bank, and the currency code (USD for example). Note that some debtors may be used only to represent a physical value measurement unit (like ounces of gold). Those dummy debtors do not represent a person or an organization, do not owe anything to anyone, and are used solely as identifiers of value measurement units."
+        }
+      },
+      "required": [ "type", "uri" ],
+      "additionalProperties": true
+    },
+    "Peg": {
+      "type": "object",
+      "properties": {
+        "type":  { "type": "string", "pattern": "^Peg(-v[1-9][0-9]{0,5})?$" },
+        "exchangeRate": {
+          "type": "number",
+          "format": "double",
+          "minimum": 0.0,
+          "description": "The exchange rate between the pegged currency and the peg currency. For example, `2.0` would mean that pegged currency's tokens are twice as valuable as peg currency's tokens."
+        },
+        "debtorIdentity": {
+          "$ref": "#/definitions/DebtorIdentity",
+          "description": "Uniquely identifies the peg currency."
+        },
+        "latestDebtorInfo": {
+          "$ref": "#/definitions/ShortLink",
+          "description": "A link to the newest revision of the peg currency's debtor info document (a `CoinInfo` document, for example)."
+        }
+      },
+      "required": [ "type", "exchangeRate", "debtorIdentity", "latestDebtorInfo" ],
+      "additionalProperties": true
+    }
+  },  
+  "type": "object",
+  "properties": {
+    "type":  { "type": "string", "pattern": "^CoinInfo(-v[1-9][0-9]{0,5})?$" },
+    "revision": {
+      "type": "integer",
+      "format": "int32",
+      "minimum": 0,
+      "maximum": 2147483647,
+      "description": "The revision number. Later revisions must have bigger revision numbers."
+    },
+    "willNotChangeUntil": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 100,
+      "description": "Optional promise that, until the specified moment (in ISO 8601 format), there will be no new revisions of this document."
+    },
+    "latestDebtorInfo": {
+      "$ref": "#/definitions/ShortLink",
+      "description": "A link to the newest revision of this currency's debtor info document. (Most probably, a link to the newest revision of this document.)"
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "A short description of the currency."
+    },
+    "debtorIdentity": {
+      "$ref": "#/definitions/DebtorIdentity",
+      "description": "Uniquely identifies the debtor (and the currency). Note that in Swaptacular's terminology, the word \"debtor\" means a Swaptacular currency with its respective issuer. Therefore, if single issuer (a person or organization) issues multiple currencies, he/she will represent multiple different \"debtors\"."
+    },
+    "debtorName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization."
+    },
+    "debtorHomepage": {
+      "$ref": "#/definitions/Link",
+      "description": "Optional link to the debtor's homepage."
+    },
+    "amountDivisor": {
+      "type": "number",
+      "format": "double",
+      "exclusiveMinimum": 0.0,
+      "description": "Before displaying the amount, it should be divided by this number. This value should be used for display purposes only. Notably, the value of this field must be ignored when the exchange rate between pegged currencies is calculated."
+},
+    "decimalPlaces": {
+      "type": "integer",
+      "format": "int32",
+      "minimum": -20,
+      "maximum": 20,
+      "description": "The number of digits to show after the decimal point, when displaying the amount. A negative number signifies the number of insignificant digits at the end of the integer number."
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "description": "The value measurement unit. It should be shown right after the displayed amount, \"500.00 USD\" for example."
+    },
+    "peg":  {
+      "$ref": "#/definitions/Peg",
+      "description": "Optional currency peg. A currency peg is a currency management strategy in which the issuer sets a specific fixed exchange rate between the tokens of his currency (the pegged currency) and the tokens of some other currency (the peg currency)."
+    }
+  },
+  "required": [
+    "type",
+    "revision",
+    "latestDebtorInfo",
+    "debtorIdentity",
+    "debtorName",
+    "amountDivisor",
+    "decimalPlaces",
+    "unit"
+  ],
+  "additionalProperties": true
+}
