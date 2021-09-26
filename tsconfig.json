@@ -1,5 +1,9 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
+  "exclude": [
+    "src/debtor-info/validate-schema.js",
+    "src/web-api/json-bigint/stringify.js"
+  ],
   "compilerOptions": {
     "target": "es2020",
     "strict": true,
