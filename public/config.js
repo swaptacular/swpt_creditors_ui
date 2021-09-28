@@ -1,5 +1,5 @@
 window.appConfig = {
-  serverApiEntrypoint: 'https://demo.swaptacular.org/creditors/.creditor',
+  serverApiEntrypoint: 'https://demo.swaptacular.org/creditors/.wallet',
   serverApiTimeout: 8000,
   oauth2: {
     authorizationUrl: 'https://demo.swaptacular.org/creditors-hydra/oauth2/auth',
