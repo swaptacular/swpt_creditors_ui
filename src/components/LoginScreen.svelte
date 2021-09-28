@@ -1,21 +1,75 @@
 <script lang="ts">
-  import Button, { Group, GroupItem, Label, Icon } from '@smui/button'
-  import Menu from '@smui/menu'
-  import List, { Item, Text } from '@smui/list'
-  import Paper, { Title, Content } from '@smui/paper'
+  import { login, authorizePinReset } from "../operations";
+  import Button, { Group, GroupItem, Label, Icon } from "@smui/button";
+  import Menu from "@smui/menu";
+  import List, { Item, Text } from "@smui/list";
+  import Paper, { Title, Content } from "@smui/paper";
 
-  export const snackbarBottom: string = '84px'
+  export const snackbarBottom: string = "84px";
 
-  function login(disablePin: boolean): void {
-    console.log(disablePin)
+  function action(disablePin: boolean): void {
+    if (disablePin) {
+      authorizePinReset()
+    } else {
+      login()
+    }
   }
 
-  let menu: any
-  let resetPin = false
+  let menu: any;
+  let resetPin = false;
 </script>
 
+<div class="paper-container">
+  <div class="paper-height-limiter">
+    <Paper style="margin: 36px 18px; max-width: 600px" elevation={8}>
+      <Title>Welcome to Swaptacular!</Title>
+      <Content>
+        Swaptacular tries to make issuing and holding digital currencies
+        possible for everyone. Currency holders are also called "creditors".
+        This app connects you to a Swaptacular Creditors Agent, which will
+        create and manage your digital wallet for you.
+      </Content>
+    </Paper>
+  </div>
+</div>
+
+<div class="logo-container">
+  <img src="favicon.svg" alt="Logo" />
+</div>
+
+<div class="floating">
+  <div class="button-container">
+    <Group variant="raised">
+      <Button on:click={() => action(resetPin)} variant="raised">
+        <Label>{resetPin ? "Reset PIN" : "Login"}</Label>
+      </Button>
+      <div use:GroupItem>
+        <Button
+          on:click={() => menu.setOpen(true)}
+          variant="raised"
+          style="padding: 0; min-width: 36px;"
+        >
+          <Icon class="material-icons" style="margin: 0;">arrow_drop_down</Icon>
+        </Button>
+        <Menu bind:this={menu} anchorCorner="TOP_LEFT">
+          <List>
+            <Item on:SMUI:action={() => (resetPin = false)}>
+              <Text>Login</Text>
+            </Item>
+            <Item on:SMUI:action={() => (resetPin = true)}>
+              <Text>Reset&nbsp;PIN</Text>
+            </Item>
+          </List>
+        </Menu>
+      </div>
+    </Group>
+  </div>
+</div>
+
 <style>
-  .floating, .logo-container, .paper-container {
+  .floating,
+  .logo-container,
+  .paper-container {
     display: flex;
     position: fixed;
     left: 0;
@@ -44,51 +98,3 @@
     margin: 16px 16px;
   }
 </style>
-
-<div class="paper-container">
-  <div class="paper-height-limiter">
-    <Paper style="margin: 36px 18px; max-width: 600px" elevation={8}>
-      <Title>Welcome to Swaptacular!</Title>
-      <Content>
-        Swaptacular tries to make issuing and holding digital
-        currencies possible for everyone. Currency holders are also
-        called "creditors". This app connects you to a Swaptacular
-        Creditors Agent, which will create and manage your digital
-        wallet for you.
-      </Content>
-    </Paper>
-  </div>
-</div>
-
-<div class="logo-container">
-  <img src="favicon.svg" alt="Logo">
-</div>
-
-<div class="floating">
-  <div class="button-container">
-    <Group variant="raised">
-      <Button on:click={() => login(resetPin)} variant="raised">
-        <Label>{resetPin ? "Reset PIN" : "Login"}</Label>
-      </Button>
-      <div use:GroupItem>
-        <Button
-          on:click={() => menu.setOpen(true)}
-          variant="raised"
-          style="padding: 0; min-width: 36px;"
-          >
-          <Icon class="material-icons" style="margin: 0;">arrow_drop_down</Icon>
-        </Button>
-        <Menu bind:this={menu} anchorCorner="TOP_LEFT">
-          <List>
-            <Item on:SMUI:action={() => resetPin = false}>
-              <Text>Login</Text>
-            </Item>
-            <Item on:SMUI:action={() => resetPin = true}>
-              <Text>Reset&nbsp;PIN</Text>
-            </Item>
-          </List>
-        </Menu>
-      </div>
-    </Group>
-  </div>
-</div>

@@ -1,5 +1,23 @@
 import { ServerSession, Oauth2TokenSource, HttpResponse, HttpError, ServerSessionError } from '../web-api'
+import { server as defaultServer } from './server'
 import type { Wallet, PinInfo } from '../web-api-schemas'
+
+/* If the user is logged in -- does nothing. Otherwise, redirects to
+ * the login page, and never resolves. */
+export async function login(server = defaultServer): Promise<void> {
+  await server.login(async (login) => await login())
+}
+
+/* If the user is logged in -- does nothing. Otherwise, redirects to
+ * the login page that request PIN reset authorization, and never
+ * resolves. */
+export async function authorizePinReset(): Promise<void> {
+  const server = new ServerSession({
+    tokenSource: new Oauth2TokenSource(true),
+    onLoginAttempt: async (login) => await login()
+  })
+  await server.login()
+}
 
 class PinResetContext {
   constructor(public server: ServerSession, public pinInfoUri: string) { }
@@ -16,7 +34,7 @@ class PinResetContext {
           newPin,
         }
         try {
-          await this.server.patch(this.pinInfoUri, requestBody, { attemptLogin: true })
+          await this.server.patch(this.pinInfoUri, requestBody, { attemptLogin: false })
         } catch (e: unknown) {
           if (e instanceof HttpError && e.status === 409 && attemptsLeft--) continue
           else throw e
@@ -35,7 +53,7 @@ class PinResetContext {
   }
 
   private async fetchPinInfo(): Promise<PinInfo> {
-    const response = await this.server.get(this.pinInfoUri, { attemptLogin: true }) as HttpResponse<PinInfo>
+    const response = await this.server.get(this.pinInfoUri, { attemptLogin: false }) as HttpResponse<PinInfo>
     return response.data
   }
 }

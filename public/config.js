@@ -5,7 +5,7 @@ window.appConfig = {
     authorizationUrl: 'https://demo.swaptacular.org/creditors-hydra/oauth2/auth',
     tokenUrl: 'https://demo.swaptacular.org/creditors-hydra/oauth2/token',
     clientId: 'localhost',
-    redirectUrl: 'http://localhost:3000/',
+    redirectUrl: 'http://localhost:5000/',
   },
   TransferDeletionDelaySeconds: 15 * 86400,
 }

@@ -2,11 +2,13 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios'
 import { parse, stringify } from './json-bigint'
 import {
-  LoginAttemptHandler,
-  AuthTokenSource,
-  GetTokenOptions,
   CanNotObtainToken,
   Oauth2TokenSource,
+} from './oauth2-token-source'
+import type {
+  GetTokenOptions,
+  LoginAttemptHandler,
+  AuthTokenSource,
 } from './oauth2-token-source'
 
 export { Oauth2TokenSource }
@@ -26,7 +28,7 @@ type UserData = {
   tokenHash: string,
 }
 
-const LOCALSTORAGE_KEY = 'debtors.web-api-user'
+const LOCALSTORAGE_KEY = 'creditors.web-api-user'
 
 
 function buffer2hex(buffer: ArrayBuffer, options = { toUpperCase: true }) {
