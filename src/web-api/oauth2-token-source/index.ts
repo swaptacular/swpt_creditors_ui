@@ -32,6 +32,7 @@ export class Oauth2TokenSource implements AuthTokenSource {
       redirectUrl: appConfig.oauth2.redirectUrl,
       extraAuthorizationParams: {},
       scopes: disablePin ? ['access', 'disable_pin'] : ['access'],
+      safeScopes: ['access', 'access.readonly'],
       async onAccessTokenExpiry(refreshAccessToken) {
         // This function is called when the access token has expired,
         // and a refresh token can be used. If the result of

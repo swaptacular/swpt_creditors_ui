@@ -13,6 +13,7 @@ export type Configuration = {
   onInvalidGrant: (refreshAuthCodeOrRefreshToken: () => Promise<never>) => void;
   redirectUrl: string;
   scopes: string[];
+  safeScopes: string[];
   tokenUrl: string;
   extraAuthorizationParams?: ObjStringDict;
   extraRefreshParams?: ObjStringDict;
@@ -458,14 +459,18 @@ export class OAuth2AuthCodePKCE {
 
   private setState(state: State) {
     const s = JSON.stringify(state)
-    if (state.scopes && state.scopes.indexOf('disable_pin') !== -1) {
-      // When the "disable_pin" scope is granted, it is too dangerous to
-      // keep the access token in localStorage.
-      localStorage.removeItem(LOCALSTORAGE_STATE)
-      sessionStorage.setItem(LOCALSTORAGE_STATE, s);
-    } else {
+    const safeScopes = this.config.safeScopes
+    const isSafeToUseLocalStorage = (
+      !state.codeVerifier &&
+      state.scopes &&
+      state.scopes.every(scope => safeScopes.indexOf(scope) !== -1)
+    )
+    if (isSafeToUseLocalStorage) {
       sessionStorage.removeItem(LOCALSTORAGE_STATE)
-      localStorage.setItem(LOCALSTORAGE_STATE, s);
+      localStorage.setItem(LOCALSTORAGE_STATE, s)
+    } else {
+      localStorage.removeItem(LOCALSTORAGE_STATE)
+      sessionStorage.setItem(LOCALSTORAGE_STATE, s)
     }
   }
 
