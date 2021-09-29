@@ -8,15 +8,19 @@ import {
   HttpResponse,
   HttpError,
 } from './server'
+import type {
+  PinInfo,
+  Wallet,
+} from './server'
 import {
   db,
 } from './db'
 import type {
+  UserData,
   WalletRecordWithId,
   ActionRecordWithId,
   ListQueryOptions,
 } from './db'
-import type { PinInfo } from '../web-api-schemas'
 
 export {
   AuthenticationError,
@@ -51,10 +55,11 @@ export async function authorizePinReset(): Promise<void> {
 
 /* Tries to update the local database, reading the latest data from
  * the server. Any network failures will be swallowed. */
-export async function update(_server: ServerSession, _getTransfers = true): Promise<void> {
+export async function update(server: ServerSession, _getTransfers = true): Promise<void> {
   try {
-    // const data = await getUserData(server, getTransfers)
-    // const userId = await db.storeUserData(data)
+    // TODO: This is a dummy implementation. Must be implemented properly.
+    const data = await getUserData(server)
+    await db.storeUserData(data)
     // await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
@@ -149,6 +154,19 @@ export class UserContext {
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {
     const response = await this.server.get(pinInfoUri, { attemptLogin: false }) as HttpResponse<PinInfo>
     return response.data
+  }
+}
+
+async function getUserData(server: ServerSession): Promise<UserData> {
+  // TODO: This is a dummy implementation. Must be implemented properly.
+
+  const collectedAfter = new Date()
+
+  const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
+  const wallet = { ...walletResponse.data }
+  return {
+    collectedAfter,
+    wallet,
   }
 }
 

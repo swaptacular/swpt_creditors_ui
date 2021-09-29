@@ -33,8 +33,6 @@ export type ListQueryOptions = {
 export type UserData = {
   collectedAfter: Date,
   wallet: Wallet,
-  transferUris: string[],
-  transfers?: Transfer[],
 }
 
 export type WalletRecord =
@@ -513,9 +511,11 @@ class CreditorsDb extends Dexie {
   }
 
   async storeUserData(data: UserData): Promise<number> {
-    const { collectedAfter, wallet, transferUris, transfers } = data
+    // TODO: This is a dummy implementation. Must be implemented properly.
 
-    const storeDebtorAndConfigRecords = async (): Promise<number> => {
+    const { wallet } = data
+
+    const storeWalletRecord = async (): Promise<number> => {
       let userId = await this.getUserId(wallet.uri)
       if (userId === undefined) {
         userId = await this.wallets.add(wallet)
@@ -523,55 +523,8 @@ class CreditorsDb extends Dexie {
       return userId
     }
 
-    const deleteIrrelevantActionsAndTasks = async (userId: number): Promise<void> => {
-      const uris = new Set(transferUris)
-      const actionsToDelete = await this.actions
-        .where({ userId })
-        .filter(action => action.actionType === 'AbortTransfer' && !uris.has(action.transferUri))
-        .toArray() as ActionRecordWithId[]
-      for (const { actionId } of actionsToDelete) {
-        await this.actions.delete(actionId)
-      }
-      const tasksToDelete = await this.tasks
-        .where({ userId })
-        .filter(task => task.taskType === 'DeleteTransfer' && !uris.has(task.transferUri))
-        .toArray() as TaskRecordWithId[]
-      for (const { taskId } of tasksToDelete) {
-        await this.tasks.delete(taskId)
-      }
-    }
-
-    const resolveOldNotConfirmedCreateTransferRequests = async (userId: number): Promise<void> => {
-      const currentTime = Date.now()
-      const cutoffTime = collectedAfter.getTime() - MAX_PROCESSING_DELAY_MILLISECONDS
-      await this.actions
-        .where('[userId+createdAt]')
-        .between([userId, Dexie.minKey], [userId, Dexie.maxKey])
-        .filter(action => (
-          action.actionType === 'CreateTransfer' &&
-          getCreateTransferActionStatus(action, currentTime) === 'Not confirmed' &&
-          action.execution!.unresolvedRequestAt!.getTime() < cutoffTime
-        ))
-        .modify((action: { execution: ExecutionState }) => {
-          delete action.execution.unresolvedRequestAt
-        })
-    }
-
-    const storeTransferRecords = async (userId: number): Promise<void> => {
-      if (transfers) {
-        for (const transfer of transfers) {
-          if (!await this.isConcludedTransfer(transfer.uri)) {
-            await this.storeTransfer(userId, transfer)
-          }
-        }
-        resolveOldNotConfirmedCreateTransferRequests(userId)
-      }
-    }
-
     return await this.transaction('rw', this.allTables, async () => {
-      const userId = await storeDebtorAndConfigRecords()
-      await deleteIrrelevantActionsAndTasks(userId)
-      await storeTransferRecords(userId)
+      const userId = await storeWalletRecord()
       return userId
     })
   }
