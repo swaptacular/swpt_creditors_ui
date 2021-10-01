@@ -56,11 +56,16 @@ export async function authorizePinReset(): Promise<void> {
 
 /* Tries to update the local database, reading the latest data from
  * the server. Any network failures will be swallowed. */
-export async function update(server: ServerSession, _getTransfers = true): Promise<void> {
+export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
-    // TODO: This is a dummy implementation. Must be implemented properly.
-    const data = await getUserData(server)
-    await db.storeUserData(data)
+    const walletRecord = await db.getWalletRecord(userId)
+    if (!walletRecord.loadedTransfers) {
+      // TODO: load transfers
+    }
+    if (!walletRecord.loadedAccounts) {
+      // TODO: load accounts
+    }
+    // TODO: fetch log stream
     // await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
@@ -220,7 +225,7 @@ export async function obtainUserContext(
   }
   return new UserContext(
     server,
-    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server)),
+    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId)),
     await db.getWalletRecord(userId),
   )
 }
