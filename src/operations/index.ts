@@ -9,6 +9,7 @@ import {
   HttpError,
 } from './server'
 import type {
+  Creditor,
   PinInfo,
   Wallet,
 } from './server'
@@ -81,6 +82,18 @@ export async function update(server: ServerSession, _getTransfers = true): Promi
       console.error(error)
     }
   }
+}
+
+/* Returns the user ID corresponding to the given `entrypoint`. If the
+ * user does not exist, tries to create a new user in the local
+ * database, reading the user's data from the server. */
+export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
+  let userId = await db.getUserId(entrypoint)
+  if (userId === undefined) {
+    const userData = await getUserData(server)
+    userId = await db.storeUserData(userData)
+  }
+  return userId
 }
 
 export class UserContext {
@@ -158,15 +171,20 @@ export class UserContext {
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
-  // TODO: This is a dummy implementation. Must be implemented properly.
-
   const collectedAfter = new Date()
-
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
   const wallet = { ...walletResponse.data }
+  const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
+  const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
+  const creditor = { ...creditorResponse.data }
+  const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
+  const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
+  const pinInfo = { ...pinInfoResponse.data }
   return {
     collectedAfter,
     wallet,
+    creditor,
+    pinInfo,
   }
 }
 
@@ -181,14 +199,24 @@ export async function obtainUserContext(
   if (entrypoint === undefined) {
     return undefined
   }
-  let alreadyTriedToUpdate = false
   let userId
-  while ((userId = await db.getUserId(entrypoint)) === undefined) {
-    if (alreadyTriedToUpdate) {
-      await logout(server)
+  try {
+    userId = await getOrCreateUserId(server, entrypoint)
+  } catch (e: unknown) {
+    console.error(e)
+    switch (true) {
+      case e instanceof AuthenticationError:
+      case e instanceof HttpError:
+        alert('There seems to be a problem on the server. Please, try again later.')
+        break
+      case e instanceof ServerSessionError:
+        alert('A network problem has occured. Please, check your Internet connection.')
+        break
+      default:
+        alert('An unexpected problem has occured.')
     }
-    await update(server, false)
-    alreadyTriedToUpdate = true
+    await server.logout()
+    throw e
   }
   return new UserContext(
     server,

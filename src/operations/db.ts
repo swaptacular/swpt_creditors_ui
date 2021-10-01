@@ -3,6 +3,14 @@ import { Dexie } from 'dexie'
 import type { Collection } from 'dexie'
 import type {
   Wallet,
+  Creditor,
+  PinInfo,
+  AccountConfig,
+  AccountLedger,
+  AccountInfo,
+  AccountKnowledge,
+  AccountExchange,
+  AccountDisplay,
   Transfer,
   TransferCreationRequest,
   Error as WebApiError,
@@ -33,15 +41,76 @@ export type ListQueryOptions = {
 export type UserData = {
   collectedAfter: Date,
   wallet: Wallet,
+  creditor: Creditor,
+  pinInfo: PinInfo,
 }
 
 export type WalletRecord =
   & Partial<UserReference>
-  & Omit<Wallet, 'requirePin'>
+  & Omit<Wallet, 'requirePin' | 'log'>
+  & {
+    logStream: ResourceReference,
+    loadedTransfers: boolean,
+    loadedAccounts: boolean,
+  }
 
 export type WalletRecordWithId =
   & WalletRecord
   & UserReference
+
+export type ObjectRecord =
+  | PinInfoRecord
+  | CreditorRecord
+  | AccountConfigRecord
+  | AccountDisplayRecord
+  | AccountExchangeRecord
+  | AccountKnowledgeRecord
+  | AccountInfoRecord
+  | AccountLedgerRecord
+
+type BaseObjectRecord =
+  & UserReference
+  & { type: string }
+
+export type PinInfoRecord =
+  & PinInfo
+  & BaseObjectRecord
+  & { type: 'PinInfo' }
+
+export type CreditorRecord =
+  & Creditor
+  & BaseObjectRecord
+  & { type: 'Creditor' }
+
+export type AccountConfigRecord =
+  & AccountConfig
+  & BaseObjectRecord
+  & { type: 'AccountConfig' }
+
+export type AccountDisplayRecord =
+  & AccountDisplay
+  & BaseObjectRecord
+  & { type: 'AccountDisplay' }
+
+export type AccountExchangeRecord =
+  & AccountExchange
+  & BaseObjectRecord
+  & { type: 'AccounExchange' }
+
+export type AccountKnowledgeRecord =
+  & AccountKnowledge
+  & BaseObjectRecord
+  & { type: 'AccountKnowledge' }
+
+export type AccountInfoRecord =
+  & AccountInfo
+  & BaseObjectRecord
+  & { type: 'AccountInfo' }
+
+export type AccountLedgerRecord =
+  & AccountLedger
+  & BaseObjectRecord
+  & { type: 'AccountLedger' }
 
 export type TransferRecord =
   & UserReference
@@ -186,6 +255,7 @@ export function getCreateTransferActionStatus(
 
 class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>
+  objects: Dexie.Table<ObjectRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
   documents: Dexie.Table<DocumentRecord, string>
   actions: Dexie.Table<ActionRecord, number>
@@ -196,6 +266,7 @@ class CreditorsDb extends Dexie {
 
     this.version(1).stores({
       wallets: '++userId,&uri',
+      objects: 'uri,userId',
 
       // Here '[userId+time],&uri' would probably be a bit more
       // efficient, because the records would be ordered physically in
@@ -210,6 +281,7 @@ class CreditorsDb extends Dexie {
     })
 
     this.wallets = this.table('wallets')
+    this.objects = this.table('objects')
     this.transfers = this.table('transfers')
     this.documents = this.table('documents')
     this.actions = this.table('actions')
@@ -511,20 +583,21 @@ class CreditorsDb extends Dexie {
   }
 
   async storeUserData(data: UserData): Promise<number> {
-    // TODO: This is a dummy implementation. Must be implemented properly.
-
-    const { wallet } = data
-
-    const storeWalletRecord = async (): Promise<number> => {
-      let userId = await this.getUserId(wallet.uri)
-      if (userId === undefined) {
-        userId = await this.wallets.add(wallet)
-      }
-      return userId
-    }
+    const { wallet, creditor, pinInfo } = data
 
     return await this.transaction('rw', this.allTables, async () => {
-      const userId = await storeWalletRecord()
+      let userId = await this.getUserId(wallet.uri)
+      if (userId === undefined) {
+        const { requirePin, log, ...walletRecord } = {
+          ...wallet,
+          logStream: { uri: wallet.log.forthcoming },
+          loadedTransfers: false,
+          loadedAccounts: false,
+        }
+        userId = await this.wallets.add(walletRecord)
+        await this.objects.add({...creditor, userId, type: 'Creditor'})
+        await this.objects.add({...pinInfo, userId, type: 'PinInfo'})
+      }
       return userId
     })
   }
@@ -539,7 +612,7 @@ class CreditorsDb extends Dexie {
   }
 
   private get allTables() {
-    return [this.wallets, this.transfers, this.documents, this.actions, this.tasks]
+    return [this.wallets, this.objects, this.transfers, this.documents, this.actions, this.tasks]
   }
 
 }
