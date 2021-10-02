@@ -58,6 +58,10 @@
       }
       event.preventDefault()
     })
+
+    // Note that we call `createAppState` after all update-event
+    // listeners have been registered. Thus, update problems occurring
+    // during the creation of the app state will be properly reported.
     createAppState().then(
       appState => resolveAppStatePromise(appState),
       error => rejectAppStatePromise(error),
