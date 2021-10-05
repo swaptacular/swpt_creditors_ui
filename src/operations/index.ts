@@ -200,27 +200,27 @@ export async function obtainUserContext(
   server = defaultServer,
   updateScheduler?: UpdateScheduler,
 ): Promise<UserContext | undefined> {
-  const entrypoint = await server.entrypointPromise
-  if (entrypoint === undefined) {
-    return undefined
-  }
   let userId
   try {
+    const entrypoint = await server.entrypointPromise
+    if (entrypoint === undefined) {
+      return undefined
+    }
     userId = await getOrCreateUserId(server, entrypoint)
   } catch (e: unknown) {
-    console.error(e)
     switch (true) {
       case e instanceof AuthenticationError:
       case e instanceof HttpError:
-        alert('There seems to be a problem on the server. Please, try again later.')
+        console.error(e)
+        alert('There seems to be a problem on the server. Please try again later.')
+        await server.logout()
         break
       case e instanceof ServerSessionError:
-        alert('A network problem has occured. Please, check your Internet connection.')
+        console.error(e)
+        alert('A network problem has occured. Please check your Internet connection.')
+        await server.logout()
         break
-      default:
-        alert('An unexpected problem has occured.')
     }
-    await server.logout()
     throw e
   }
   return new UserContext(
