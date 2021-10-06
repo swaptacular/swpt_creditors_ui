@@ -12,3 +12,4 @@ ENV NGINX_ENVSUBST_TEMPLATE_DIR=/usr/share/nginx/html
 ENV NGINX_ENVSUBST_OUTPUT_DIR=/usr/share/nginx/html
 
 COPY --from=build-image /usr/src/app/dist /usr/share/nginx/html
+COPY nginx-add-headers.conf /etc/nginx/conf.d/nginx-add-headers.conf
