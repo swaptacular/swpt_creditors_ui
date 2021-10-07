@@ -5,6 +5,7 @@ import type {
   Wallet,
   Creditor,
   PinInfo,
+  Account,
   AccountConfig,
   AccountLedger,
   AccountInfo,
@@ -85,6 +86,18 @@ export type CreditorRecord =
   & Creditor
   & BaseObjectRecord
   & { type: 'Creditor' }
+
+export type AccountRecord =
+  & UserReference
+  & Omit<Account, 'knowledge' | 'info' | 'exchange' | 'config' | 'ledger' | 'display'>
+  & {
+    knowledge: ObjectReference,
+    info: ObjectReference,
+    exchange: ObjectReference,
+    config: ObjectReference,
+    ledger: ObjectReference,
+    display: ObjectReference,
+  }
 
 export type AccountConfigRecord =
   & AccountConfig
@@ -275,6 +288,7 @@ export function getCreateTransferActionStatus(
 
 class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>
+  accounts: Dexie.Table<AccountRecord, string>
   objects: Dexie.Table<ObjectRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
   ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
@@ -287,16 +301,17 @@ class CreditorsDb extends Dexie {
 
     this.version(1).stores({
       wallets: '++userId,&uri',
+      accounts: 'uri,userId',
       objects: 'uri,userId,account.uri',
 
-      // Here '[userId+time],&uri' / '[ledger.uri+entryId],userId'
+      // Here '[userId+time],&uri' / '[account.uri+entryId],userId'
       // would probably be a bit more efficient, because the records
       // would be ordered physically in the same way as they are
       // normally queried. The problem is that it seems
       // "fake-indexeddb", which we use for testing, does not support
       // compound primary keys.
       transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,&[ledger.uri+entryId],userId,account.uri',
+      ledgerEntries: '++id,&[account.uri+entryId],userId',
 
       documents: 'uri',
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
@@ -304,6 +319,7 @@ class CreditorsDb extends Dexie {
     })
 
     this.wallets = this.table('wallets')
+    this.accounts = this.table('accounts')
     this.objects = this.table('objects')
     this.transfers = this.table('transfers')
     this.ledgerEntries = this.table('ledgerEntries')
@@ -633,6 +649,7 @@ class CreditorsDb extends Dexie {
   private get allTables() {
     return [
       this.wallets,
+      this.accounts,
       this.objects,
       this.transfers,
       this.ledgerEntries,
