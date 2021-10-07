@@ -293,7 +293,7 @@ class CreditorsDb extends Dexie {
       // "fake-indexeddb", which we use for testing, does not support
       // compound primary keys.
       transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,[ledger.uri+entryId],userId',
+      ledgerEntries: '++id,&[ledger.uri+entryId],userId',
 
       documents: 'uri,userId',
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
