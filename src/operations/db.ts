@@ -144,7 +144,6 @@ export type LedgerEntryRecordWithId =
   & { id: number }
 
 export type DocumentRecord =
-  & UserReference
   & ResourceReference
   & DocumentWithHash
 
@@ -299,7 +298,7 @@ class CreditorsDb extends Dexie {
       transfers: 'uri,&[userId+time]',
       ledgerEntries: '++id,&[ledger.uri+entryId],userId,account.uri',
 
-      documents: 'uri,userId',
+      documents: 'uri',
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
       tasks: '++taskId,[userId+scheduledFor]',
     })
@@ -328,7 +327,9 @@ class CreditorsDb extends Dexie {
   async uninstallUser(userId: number): Promise<void> {
     await this.transaction('rw', this.allTables, async () => {
       for (const table of this.allTables) {
-        await table.where({ userId }).delete()
+        if (table !== this.documents) {
+          await table.where({ userId }).delete()
+        }
       }
     })
   }
@@ -346,14 +347,7 @@ class CreditorsDb extends Dexie {
   }
 
   async putDocumentRecord(documentRecord: DocumentRecord): Promise<void> {
-    await this.transaction('rw', [this.wallets, this.documents], async () => {
-      if (!await this.isInstalledUser(documentRecord.userId)) {
-        throw new UserDoesNotExist()
-      }
-      const existingDocumentRecord = await this.documents.get(documentRecord.uri)
-      assert(!existingDocumentRecord || existingDocumentRecord.userId === documentRecord.userId, 'wrong userId')
-      await this.documents.put(documentRecord)
-    })
+    await this.documents.put(documentRecord)
   }
 
   async getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
