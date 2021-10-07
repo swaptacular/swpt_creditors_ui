@@ -16,6 +16,7 @@ import type {
   LedgerEntry,
   CommittedTransfer,
   Error as WebApiError,
+  ObjectReference,
 } from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
@@ -133,7 +134,10 @@ export type TransferRecord =
 export type LedgerEntryRecord =
   & UserReference
   & LedgerEntry
-  & { id?: number }  // an autoincremented ID
+  & {
+    id?: number,  // an autoincremented ID
+    account: ObjectReference,
+  }
 
 export type LedgerEntryRecordWithId =
   & LedgerEntryRecord
@@ -284,7 +288,7 @@ class CreditorsDb extends Dexie {
 
     this.version(1).stores({
       wallets: '++userId,&uri',
-      objects: 'uri,userId',
+      objects: 'uri,userId,account.uri',
 
       // Here '[userId+time],&uri' / '[ledger.uri+entryId],userId'
       // would probably be a bit more efficient, because the records
@@ -293,7 +297,7 @@ class CreditorsDb extends Dexie {
       // "fake-indexeddb", which we use for testing, does not support
       // compound primary keys.
       transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,&[ledger.uri+entryId],userId',
+      ledgerEntries: '++id,&[ledger.uri+entryId],userId,account.uri',
 
       documents: 'uri,userId',
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
