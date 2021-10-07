@@ -13,6 +13,8 @@ import type {
   AccountDisplay,
   Transfer,
   TransferCreationRequest,
+  LedgerEntry,
+  CommittedTransfer,
   Error as WebApiError,
 } from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
@@ -67,6 +69,7 @@ export type ObjectRecord =
   | AccountKnowledgeRecord
   | AccountInfoRecord
   | AccountLedgerRecord
+  | CommittedTransferRecord
 
 type BaseObjectRecord =
   & UserReference
@@ -112,6 +115,11 @@ export type AccountLedgerRecord =
   & BaseObjectRecord
   & { type: 'AccountLedger' }
 
+export type CommittedTransferRecord =
+  & CommittedTransfer
+  & BaseObjectRecord
+  & { type: 'CommittedTransfer' }
+
 export type TransferRecord =
   & UserReference
   & Transfer
@@ -121,6 +129,15 @@ export type TransferRecord =
     aborted: boolean,
     originatesHere: boolean,
   }
+
+export type LedgerEntryRecord =
+  & UserReference
+  & LedgerEntry
+  & { id?: number }  // an autoincremented ID
+
+export type LedgerEntryRecordWithId =
+  & LedgerEntryRecord
+  & { id: number }
 
 export type DocumentRecord =
   & UserReference
@@ -257,6 +274,7 @@ class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>
   objects: Dexie.Table<ObjectRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
+  ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
   documents: Dexie.Table<DocumentRecord, string>
   actions: Dexie.Table<ActionRecord, number>
   tasks: Dexie.Table<TaskRecord, number>
@@ -268,12 +286,14 @@ class CreditorsDb extends Dexie {
       wallets: '++userId,&uri',
       objects: 'uri,userId',
 
-      // Here '[userId+time],&uri' would probably be a bit more
-      // efficient, because the records would be ordered physically in
-      // the same way as they are normally queried. The problem is
-      // that it seems "fake-indexeddb", which we use for testing,
-      // does not support compound primary keys.
+      // Here '[userId+time],&uri' / '[ledger.uri+entryId],userId'
+      // would probably be a bit more efficient, because the records
+      // would be ordered physically in the same way as they are
+      // normally queried. The problem is that it seems
+      // "fake-indexeddb", which we use for testing, does not support
+      // compound primary keys.
       transfers: 'uri,&[userId+time]',
+      ledgerEntries: '++id,[ledger.uri+entryId],userId',
 
       documents: 'uri,userId',
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
@@ -283,6 +303,7 @@ class CreditorsDb extends Dexie {
     this.wallets = this.table('wallets')
     this.objects = this.table('objects')
     this.transfers = this.table('transfers')
+    this.ledgerEntries = this.table('ledgerEntries')
     this.documents = this.table('documents')
     this.actions = this.table('actions')
     this.tasks = this.table('tasks')
@@ -612,7 +633,15 @@ class CreditorsDb extends Dexie {
   }
 
   private get allTables() {
-    return [this.wallets, this.objects, this.transfers, this.documents, this.actions, this.tasks]
+    return [
+      this.wallets,
+      this.objects,
+      this.transfers,
+      this.ledgerEntries,
+      this.documents,
+      this.actions,
+      this.tasks,
+    ]
   }
 
 }
