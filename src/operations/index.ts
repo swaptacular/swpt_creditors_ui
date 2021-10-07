@@ -32,6 +32,11 @@ export type {
   ActionRecordWithId,
 }
 
+export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
+export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
+export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -178,13 +183,16 @@ export class UserContext {
 async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
-  const wallet = { ...walletResponse.data }
+  assert(WALLET_TYPE.test(walletResponse.data.type))
+  const wallet = { ...walletResponse.data, type: 'Wallet-v0' as const}
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
-  const creditor = { ...creditorResponse.data }
+  assert(CREDITOR_TYPE.test(creditorResponse.data.type ?? 'Creditor'))
+  const creditor = { ...creditorResponse.data, type: 'Creditor-v0' as const }
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
-  const pinInfo = { ...pinInfoResponse.data }
+  assert(PIN_INFO_TYPE.test(pinInfoResponse.data.type ?? 'PinInfo'))
+  const pinInfo = { ...pinInfoResponse.data, type: 'PinInfo-v0' as const }
   return {
     collectedAfter,
     wallet,

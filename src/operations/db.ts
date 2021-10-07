@@ -44,15 +44,16 @@ export type ListQueryOptions = {
 
 export type UserData = {
   collectedAfter: Date,
-  wallet: Wallet,
-  creditor: Creditor,
-  pinInfo: PinInfo,
+  wallet: Wallet & { type: 'Wallet-v0' },
+  creditor: Creditor & { type: 'Creditor-v0' },
+  pinInfo: PinInfo & { type: 'PinInfo-v0' },
 }
 
 export type WalletRecord =
   & Partial<UserReference>
   & Omit<Wallet, 'requirePin' | 'log'>
   & {
+    type: 'Wallet-v0',
     logStream: ResourceReference,
     loadedTransfers: boolean,
     loadedAccounts: boolean,
@@ -80,17 +81,18 @@ type BaseObjectRecord =
 export type PinInfoRecord =
   & PinInfo
   & BaseObjectRecord
-  & { type: 'PinInfo' }
+  & { type: 'PinInfo-v0' }
 
 export type CreditorRecord =
   & Creditor
   & BaseObjectRecord
-  & { type: 'Creditor' }
+  & { type: 'Creditor-v0' }
 
 export type AccountRecord =
   & UserReference
   & Omit<Account, 'knowledge' | 'info' | 'exchange' | 'config' | 'ledger' | 'display'>
   & {
+    type: 'Account-v0',
     knowledge: ObjectReference,
     info: ObjectReference,
     exchange: ObjectReference,
@@ -102,42 +104,43 @@ export type AccountRecord =
 export type AccountConfigRecord =
   & AccountConfig
   & BaseObjectRecord
-  & { type: 'AccountConfig' }
+  & { type: 'AccountConfig-v0' }
 
 export type AccountDisplayRecord =
   & AccountDisplay
   & BaseObjectRecord
-  & { type: 'AccountDisplay' }
+  & { type: 'AccountDisplay-v0' }
 
 export type AccountExchangeRecord =
   & AccountExchange
   & BaseObjectRecord
-  & { type: 'AccounExchange' }
+  & { type: 'AccounExchange-v0' }
 
 export type AccountKnowledgeRecord =
   & AccountKnowledge
   & BaseObjectRecord
-  & { type: 'AccountKnowledge' }
+  & { type: 'AccountKnowledge-v0' }
 
 export type AccountInfoRecord =
   & AccountInfo
   & BaseObjectRecord
-  & { type: 'AccountInfo' }
+  & { type: 'AccountInfo-v0' }
 
 export type AccountLedgerRecord =
   & AccountLedger
   & BaseObjectRecord
-  & { type: 'AccountLedger' }
+  & { type: 'AccountLedger-v0' }
 
 export type CommittedTransferRecord =
   & CommittedTransfer
   & BaseObjectRecord
-  & { type: 'CommittedTransfer' }
+  & { type: 'CommittedTransfer-v0' }
 
 export type TransferRecord =
   & UserReference
   & Transfer
   & {
+    type: 'Transfer-v0',
     time: number,
     paymentInfo: PaymentInfo,
     aborted: boolean,
@@ -486,7 +489,10 @@ class CreditorsDb extends Dexie {
    * that a corresponding transfer record does exist.  Will throw
    * `RecordDoesNotExist` if the passed action record does not exist,
    * or has been changed. */
-  async createTransferRecord(action: CreateTransferActionWithId, transfer: Transfer): Promise<TransferRecord> {
+  async createTransferRecord(
+    action: CreateTransferActionWithId,
+    transfer: Transfer & { type: 'Transfer-v0' },
+  ): Promise<TransferRecord> {
     return await this.transaction('rw', this.allTables, async () => {
       const { actionId, userId } = action
 
@@ -508,7 +514,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  async storeTransfer(userId: number, transfer: Transfer): Promise<TransferRecord> {
+  async storeTransfer(userId: number, transfer: Transfer & { type: 'Transfer-v0' }): Promise<TransferRecord> {
     const { uri: transferUri, transferUuid, initiatedAt, result } = transfer
 
     const getAbortTransferActionQuery = () => this.actions
@@ -630,8 +636,8 @@ class CreditorsDb extends Dexie {
           loadedAccounts: false,
         }
         userId = await this.wallets.add(walletRecord)
-        await this.objects.add({...creditor, userId, type: 'Creditor'})
-        await this.objects.add({...pinInfo, userId, type: 'PinInfo'})
+        await this.objects.add({ ...creditor, userId })
+        await this.objects.add({ ...pinInfo, userId })
       }
       return userId
     })
