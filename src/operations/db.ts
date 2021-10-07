@@ -151,8 +151,9 @@ export type LedgerEntryRecord =
   & UserReference
   & LedgerEntry
   & {
-    id?: number,  // an autoincremented ID
+    type: 'LedgerEntry-v0',
     account: ObjectReference,
+    id?: number,  // an autoincremented ID
   }
 
 export type LedgerEntryRecordWithId =
