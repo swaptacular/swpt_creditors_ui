@@ -63,31 +63,6 @@ export type WalletRecordWithId =
   & WalletRecord
   & UserReference
 
-export type ObjectRecord =
-  | PinInfoRecord
-  | CreditorRecord
-  | AccountConfigRecord
-  | AccountDisplayRecord
-  | AccountExchangeRecord
-  | AccountKnowledgeRecord
-  | AccountInfoRecord
-  | AccountLedgerRecord
-  | CommittedTransferRecord
-
-type BaseObjectRecord =
-  & UserReference
-  & { type: string }
-
-export type PinInfoRecord =
-  & PinInfo
-  & BaseObjectRecord
-  & { type: 'PinInfo-v0' }
-
-export type CreditorRecord =
-  & Creditor
-  & BaseObjectRecord
-  & { type: 'Creditor-v0' }
-
 export type AccountRecord =
   & UserReference
   & Omit<Account, 'knowledge' | 'info' | 'exchange' | 'config' | 'ledger' | 'display'>
@@ -100,6 +75,33 @@ export type AccountRecord =
     ledger: ObjectReference,
     display: ObjectReference,
   }
+
+type BaseObjectRecord =
+  & ResourceReference
+  & UserReference
+  & { type: string }
+
+export type WalletObjectRecord =
+  | PinInfoRecord
+  | CreditorRecord
+
+export type PinInfoRecord =
+  & PinInfo
+  & BaseObjectRecord
+  & { type: 'PinInfo-v0' }
+
+export type CreditorRecord =
+  & Creditor
+  & BaseObjectRecord
+  & { type: 'Creditor-v0' }
+
+export type AccountObjectRecord =
+  | AccountConfigRecord
+  | AccountDisplayRecord
+  | AccountExchangeRecord
+  | AccountKnowledgeRecord
+  | AccountInfoRecord
+  | AccountLedgerRecord
 
 export type AccountConfigRecord =
   & AccountConfig
@@ -292,8 +294,10 @@ export function getCreateTransferActionStatus(
 
 class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>
+  walletObjects: Dexie.Table<WalletObjectRecord, string>
   accounts: Dexie.Table<AccountRecord, string>
-  objects: Dexie.Table<ObjectRecord, string>
+  accountObjects: Dexie.Table<AccountObjectRecord, string>
+  committedTransfers: Dexie.Table<CommittedTransferRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
   ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
   documents: Dexie.Table<DocumentRecord, string>
@@ -305,8 +309,15 @@ class CreditorsDb extends Dexie {
 
     this.version(1).stores({
       wallets: '++userId,&uri',
+      walletObjects: 'uri,userId',
       accounts: 'uri,userId',
-      objects: 'uri,userId,account.uri',
+      accountObjects: 'uri,userId,account.uri',
+
+      // Committed transfers are objects that belong to a specific
+      // account, but we will have lots of them, and in order to keep
+      // the `accountObjects` table lean, committed transfers are
+      // separated in their own table.
+      committedTransfers: 'uri,userId,account.uri',
 
       // Here '[userId+time],&uri' / '[account.uri+entryId],userId'
       // would probably be a bit more efficient, because the records
@@ -317,14 +328,18 @@ class CreditorsDb extends Dexie {
       transfers: 'uri,&[userId+time]',
       ledgerEntries: '++id,&[account.uri+entryId],userId',
 
+      // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
+
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
       tasks: '++taskId,[userId+scheduledFor]',
     })
 
     this.wallets = this.table('wallets')
+    this.walletObjects = this.table('walletObjects')
     this.accounts = this.table('accounts')
-    this.objects = this.table('objects')
+    this.accountObjects = this.table('accountObjects')
+    this.committedTransfers = this.table('committedTransfers')
     this.transfers = this.table('transfers')
     this.ledgerEntries = this.table('ledgerEntries')
     this.documents = this.table('documents')
@@ -637,8 +652,8 @@ class CreditorsDb extends Dexie {
           loadedAccounts: false,
         }
         userId = await this.wallets.add(walletRecord)
-        await this.objects.add({ ...creditor, userId })
-        await this.objects.add({ ...pinInfo, userId })
+        await this.walletObjects.add({ ...creditor, userId })
+        await this.walletObjects.add({ ...pinInfo, userId })
       }
       return userId
     })
@@ -656,8 +671,10 @@ class CreditorsDb extends Dexie {
   private get allTables() {
     return [
       this.wallets,
+      this.walletObjects,
       this.accounts,
-      this.objects,
+      this.accountObjects,
+      this.committedTransfers,
       this.transfers,
       this.ledgerEntries,
       this.documents,
