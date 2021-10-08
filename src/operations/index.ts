@@ -12,12 +12,22 @@ import type {
   Creditor,
   PinInfo,
   Wallet,
+  Account,
+  PaginatedList,
+  ObjectReference,
 } from './server'
 import {
   db,
+  WALLET_TYPE,
+  CREDITOR_TYPE,
+  PIN_INFO_TYPE,
+  ACCOUNT_TYPE,
+  ACCOUNTS_LIST_TYPE,
+  OBJECT_REFERENCE_TYPE,
 } from './db'
 import type {
   UserData,
+  TypeMatcher,
   WalletRecordWithId,
   ActionRecordWithId,
   ListQueryOptions,
@@ -31,11 +41,6 @@ export {
 export type {
   ActionRecordWithId,
 }
-
-export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
-export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
-export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
 
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
@@ -66,9 +71,6 @@ export async function update(server: ServerSession, userId: number): Promise<voi
     const walletRecord = await db.getWalletRecord(userId)
     if (!walletRecord.loadedTransfers) {
       // TODO: load transfers
-    }
-    if (!walletRecord.loadedAccounts) {
-      // TODO: load accounts
     }
     // TODO: fetch log stream
     // await executeReadyTasks(server, userId)
@@ -142,7 +144,7 @@ export class UserContext {
       else throw e
     }
   }
-  
+
   async resetPin(newPin: string): Promise<void> {
     const pinInfoUri = this.walletRecord.pinInfo.uri
     try {
@@ -184,21 +186,76 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
   assert(WALLET_TYPE.test(walletResponse.data.type))
-  const wallet = { ...walletResponse.data, type: 'Wallet-v0' as const}
+  const wallet = { ...walletResponse.data, type: 'Wallet-v0' as const }
+
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
   assert(CREDITOR_TYPE.test(creditorResponse.data.type ?? 'Creditor'))
   const creditor = { ...creditorResponse.data, type: 'Creditor-v0' as const }
+
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
   assert(PIN_INFO_TYPE.test(pinInfoResponse.data.type ?? 'PinInfo'))
   const pinInfo = { ...pinInfoResponse.data, type: 'PinInfo-v0' as const }
+
+  const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
+  const accountUris: string[] = []
+  for await (const { item, pageUrl } of paginatedListIterator<ObjectReference>(
+    server,
+    accountsListUri,
+    ACCOUNTS_LIST_TYPE,
+    OBJECT_REFERENCE_TYPE
+  )) {
+    accountUris.push(new URL(item.uri, pageUrl).href)
+  }
+  const accountResponsePromises = accountUris.map(uri => server.get(uri)) as Promise<HttpResponse<Account>>[]
+  const accountResponses = await Promise.all(accountResponsePromises)
+  assert(accountResponses.every(response => ACCOUNT_TYPE.test(response.data.type)))
+  const accounts = accountResponses.map(response => ({ ...response.data, type: 'Account-v0' as const}))
+
   return {
     collectedAfter,
+    accounts,
     wallet,
     creditor,
     pinInfo,
   }
+}
+
+async function* paginatedListIterator<T>(
+  server: ServerSession,
+  listUri: string,
+  listTypeMatcher: TypeMatcher,
+  itemsTypeMatcher: TypeMatcher,
+): AsyncIterable<PageItem<T>> {
+  const listResponse = await server.get(listUri) as HttpResponse<PaginatedList>
+  const data = listResponse.data
+  assert(listTypeMatcher.test(data.type))
+  assert(itemsTypeMatcher.test(data.itemsType))
+  const first = listResponse.buildUri(data.first)
+  yield* pageIterator<T>(server, first)
+}
+
+type Page<ItemsType> = {
+  items: ItemsType[],
+  next?: string,
+}
+
+type PageItem<ItemsType> = {
+  item: ItemsType,
+  pageUrl: string,
+}
+
+async function* pageIterator<T>(server: ServerSession, next: string): AsyncIterable<PageItem<T>> {
+  do {
+    const pageResponse = await server.get(next) as HttpResponse<Page<T>>
+    const pageUrl = pageResponse.url
+    const data = pageResponse.data
+    for (const item of data.items) {
+      yield { item, pageUrl }
+    }
+    next = data.next !== undefined ? pageResponse.buildUri(data.next) : ''
+  } while (next)
 }
 
 /* If the user is logged in, returns an user context

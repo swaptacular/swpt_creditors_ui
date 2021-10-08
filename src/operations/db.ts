@@ -23,6 +23,24 @@ import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
 import type { ResourceReference, DocumentWithHash } from '../debtor-info'
 
+export type TypeMatcher = {
+  test(t: string): boolean,
+}
+
+export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
+export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
+export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+export const OBJECT_REFERENCE_TYPE = /^ObjectReference(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_KNOWLEDGE_TYPE = /^AccountKnowledge(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
+
 type UserReference = {
   userId: number,
 }
@@ -44,6 +62,7 @@ export type ListQueryOptions = {
 
 export type UserData = {
   collectedAfter: Date,
+  accounts: Array<Account & { type: 'Account-v0' }>,
   wallet: Wallet & { type: 'Wallet-v0' },
   creditor: Creditor & { type: 'Creditor-v0' },
   pinInfo: PinInfo & { type: 'PinInfo-v0' },
@@ -56,7 +75,6 @@ export type WalletRecord =
     type: 'Wallet-v0',
     logStream: ResourceReference,
     loadedTransfers: boolean,
-    loadedAccounts: boolean,
   }
 
 export type WalletRecordWithId =
@@ -116,7 +134,7 @@ export type AccountDisplayRecord =
 export type AccountExchangeRecord =
   & AccountExchange
   & BaseObjectRecord
-  & { type: 'AccounExchange-v0' }
+  & { type: 'AccountExchange-v0' }
 
 export type AccountKnowledgeRecord =
   & AccountKnowledge
@@ -640,7 +658,7 @@ class CreditorsDb extends Dexie {
   }
 
   async storeUserData(data: UserData): Promise<number> {
-    const { wallet, creditor, pinInfo } = data
+    const { accounts, wallet, creditor, pinInfo } = data
 
     return await this.transaction('rw', this.allTables, async () => {
       let userId = await this.getUserId(wallet.uri)
@@ -649,11 +667,37 @@ class CreditorsDb extends Dexie {
           ...wallet,
           logStream: { uri: wallet.log.forthcoming },
           loadedTransfers: false,
-          loadedAccounts: false,
         }
         userId = await this.wallets.add(walletRecord)
         await this.walletObjects.add({ ...creditor, userId })
         await this.walletObjects.add({ ...pinInfo, userId })
+        for (const account of accounts) {
+          const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
+          await this.accounts.add({
+            ...sanitizedAccount,
+            userId,
+            info: { uri: info.uri },
+            display: { uri: display.uri },
+            knowledge: { uri: knowledge.uri },
+            exchange: { uri: exchange.uri },
+            ledger: { uri: ledger.uri },
+            config: { uri: config.uri },
+          })
+          assert(ACCOUNT_INFO_TYPE.test(info.type))
+          assert(ACCOUNT_DISPLAY_TYPE.test(display.type ?? 'AccountDisplay'))
+          assert(ACCOUNT_KNOWLEDGE_TYPE.test(knowledge.type ?? 'AccountKnowledge'))
+          assert(ACCOUNT_EXCHANGE_TYPE.test(exchange.type ?? 'AccountExchange'))
+          assert(ACCOUNT_LEDGER_TYPE.test(ledger.type))
+          assert(ACCOUNT_CONFIG_TYPE.test(config.type ?? 'AccountConfig'))
+          await this.accountObjects.bulkAdd([
+            { ...info, userId, type: 'AccountInfo-v0' as const },
+            { ...display, userId, type: 'AccountDisplay-v0' as const },
+            { ...knowledge, userId, type: 'AccountKnowledge-v0' as const },
+            { ...exchange, userId, type: 'AccountExchange-v0' as const },
+            { ...ledger, userId, type: 'AccountLedger-v0' as const },
+            { ...config, userId, type: 'AccountConfig-v0' as const },
+          ])
+        }
       }
       return userId
     })
