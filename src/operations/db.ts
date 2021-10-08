@@ -659,47 +659,79 @@ class CreditorsDb extends Dexie {
 
   async storeUserData(data: UserData): Promise<number> {
     const { accounts, wallet, creditor, pinInfo } = data
+    const { requirePin, log, ...walletRecord } = {
+      ...wallet,
+      logStream: { uri: wallet.log.forthcoming },
+      loadedTransfers: false,
+    }
 
     return await this.transaction('rw', this.allTables, async () => {
       let userId = await this.getUserId(wallet.uri)
-      if (userId === undefined) {
-        const { requirePin, log, ...walletRecord } = {
-          ...wallet,
-          logStream: { uri: wallet.log.forthcoming },
-          loadedTransfers: false,
+      userId = await this.wallets.put({ ...walletRecord, userId })
+      await this.walletObjects.put({ ...creditor, userId })
+      await this.walletObjects.put({ ...pinInfo, userId })
+      const oldAccountRecordsArray = await this.accounts.where({ userId }).toArray()
+      const oldAccountRecordsMap = new Map(oldAccountRecordsArray.map(x => [x.uri, x]))
+
+      for (const account of accounts) {
+        const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
+        const existingAccountRecord = oldAccountRecordsMap.get(account.uri)
+        assert(!existingAccountRecord || existingAccountRecord.userId === userId)
+        if (
+          existingAccountRecord
+          && new Date(existingAccountRecord.createdAt).getTime() !== new Date(account.createdAt).getTime()
+        ) {
+          // If the account has been deleted and re-created, the
+          // ledger entries for this account (and their corresponding
+          // committed transfers) will be invalid, and must be deleted
+          // from the local database.
+          await this.ledgerEntries.where({ 'account.uri': account.uri }).delete()
+          await this.committedTransfers.where({ 'account.uri': account.uri }).delete()
         }
-        userId = await this.wallets.add(walletRecord)
-        await this.walletObjects.add({ ...creditor, userId })
-        await this.walletObjects.add({ ...pinInfo, userId })
-        for (const account of accounts) {
-          const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
-          await this.accounts.add({
-            ...sanitizedAccount,
-            userId,
-            info: { uri: info.uri },
-            display: { uri: display.uri },
-            knowledge: { uri: knowledge.uri },
-            exchange: { uri: exchange.uri },
-            ledger: { uri: ledger.uri },
-            config: { uri: config.uri },
-          })
-          assert(ACCOUNT_INFO_TYPE.test(info.type))
-          assert(ACCOUNT_DISPLAY_TYPE.test(display.type ?? 'AccountDisplay'))
-          assert(ACCOUNT_KNOWLEDGE_TYPE.test(knowledge.type ?? 'AccountKnowledge'))
-          assert(ACCOUNT_EXCHANGE_TYPE.test(exchange.type ?? 'AccountExchange'))
-          assert(ACCOUNT_LEDGER_TYPE.test(ledger.type))
-          assert(ACCOUNT_CONFIG_TYPE.test(config.type ?? 'AccountConfig'))
-          await this.accountObjects.bulkAdd([
-            { ...info, userId, type: 'AccountInfo-v0' as const },
-            { ...display, userId, type: 'AccountDisplay-v0' as const },
-            { ...knowledge, userId, type: 'AccountKnowledge-v0' as const },
-            { ...exchange, userId, type: 'AccountExchange-v0' as const },
-            { ...ledger, userId, type: 'AccountLedger-v0' as const },
-            { ...config, userId, type: 'AccountConfig-v0' as const },
-          ])
-        }
+        await this.accounts.put({
+          ...sanitizedAccount,
+          userId,
+          info: { uri: info.uri },
+          display: { uri: display.uri },
+          knowledge: { uri: knowledge.uri },
+          exchange: { uri: exchange.uri },
+          ledger: { uri: ledger.uri },
+          config: { uri: config.uri },
+        })
+        assert(ACCOUNT_INFO_TYPE.test(info.type))
+        assert(ACCOUNT_DISPLAY_TYPE.test(display.type ?? 'AccountDisplay'))
+        assert(ACCOUNT_KNOWLEDGE_TYPE.test(knowledge.type ?? 'AccountKnowledge'))
+        assert(ACCOUNT_EXCHANGE_TYPE.test(exchange.type ?? 'AccountExchange'))
+        assert(ACCOUNT_LEDGER_TYPE.test(ledger.type))
+        assert(ACCOUNT_CONFIG_TYPE.test(config.type ?? 'AccountConfig'))
+        await this.accountObjects.where({ 'account.uri': account.uri }).delete()
+        await this.accountObjects.bulkPut([
+          { ...info, userId, type: 'AccountInfo-v0' as const },
+          { ...display, userId, type: 'AccountDisplay-v0' as const },
+          { ...knowledge, userId, type: 'AccountKnowledge-v0' as const },
+          { ...exchange, userId, type: 'AccountExchange-v0' as const },
+          { ...ledger, userId, type: 'AccountLedger-v0' as const },
+          { ...config, userId, type: 'AccountConfig-v0' as const },
+        ])
+        oldAccountRecordsMap.delete(account.uri)
+      }
+
+      // Delete all old accounts, which are missing from the received
+      // `accounts` array.
+      for (const accountUri of oldAccountRecordsMap.keys()) {
+        await this.deleteAccount(accountUri)
       }
       return userId
+    })
+  }
+
+  async deleteAccount(accountUri: string): Promise<void> {
+    const tables = [this.accounts, this.accountObjects, this.ledgerEntries, this.committedTransfers]
+    await this.transaction('rw', tables, async () => {
+      await this.accounts.delete(accountUri)
+      await this.accountObjects.where({ 'account.uri': accountUri }).delete()
+      await this.ledgerEntries.where({ 'account.uri': accountUri }).delete()
+      await this.committedTransfers.where({ 'account.uri': accountUri }).delete()
     })
   }
 
