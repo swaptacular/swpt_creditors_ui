@@ -40,6 +40,7 @@ export const ACCOUNT_KNOWLEDGE_TYPE = /^AccountKnowledge(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
+export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
 
 type UserReference = {
   userId: number,
@@ -68,13 +69,18 @@ export type UserData = {
   pinInfo: PinInfo & { type: 'PinInfo-v0' },
 }
 
+export type LogStream = {
+  syncTime: number,  // milliseconds after 1970-01-01
+  loadedTransfers: boolean,
+  forthcoming: string,
+}
+
 export type WalletRecord =
   & Partial<UserReference>
   & Omit<Wallet, 'requirePin' | 'log'>
   & {
     type: 'Wallet-v0',
-    logStream: ResourceReference,
-    loadedTransfers: boolean,
+    logStream: LogStream,
   }
 
 export type WalletRecordWithId =
@@ -658,11 +664,14 @@ class CreditorsDb extends Dexie {
   }
 
   async storeUserData(data: UserData): Promise<number> {
-    const { accounts, wallet, creditor, pinInfo } = data
+    const { accounts, wallet, creditor, pinInfo, collectedAfter } = data
     const { requirePin, log, ...walletRecord } = {
       ...wallet,
-      logStream: { uri: wallet.log.forthcoming },
-      loadedTransfers: false,
+      logStream: {
+        syncTime: collectedAfter.getTime(),
+        forthcoming: wallet.log.forthcoming,
+        loadedTransfers: false,
+      },
     }
 
     return await this.transaction('rw', this.allTables, async () => {

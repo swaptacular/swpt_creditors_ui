@@ -13,6 +13,7 @@ import type {
   PinInfo,
   Wallet,
   Account,
+  Transfer,
   PaginatedList,
   ObjectReference,
 } from './server'
@@ -24,6 +25,7 @@ import {
   ACCOUNT_TYPE,
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
+  TRANSFERS_LIST_TYPE,
 } from './db'
 import type {
   UserData,
@@ -69,9 +71,8 @@ export async function authorizePinReset(): Promise<void> {
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
     const walletRecord = await db.getWalletRecord(userId)
-    if (!walletRecord.loadedTransfers) {
-      // TODO: load transfers
-    }
+    await resetUserDataIfNecessary(server, walletRecord)
+    await loadTransfersIfNecessary(server, walletRecord)
     // TODO: fetch log stream
     // await executeReadyTasks(server, userId)
 
@@ -182,6 +183,35 @@ export class UserContext {
   }
 }
 
+async function resetUserDataIfNecessary(server: ServerSession, walletRecord: WalletRecordWithId): Promise<void> {
+  const timeSinceLastSync = Date.now() - walletRecord.logStream.syncTime
+  const logRetention = 86_400_000 * Number(walletRecord.logRetentionDays)
+  const safetyMargin = 3_600_000  // 1 hour
+  if (timeSinceLastSync > logRetention - safetyMargin) {
+    // If too much time has passed since the last successful sync with
+    // the server, some needed log records could have been deleted. In
+    // that case, we have no other choice but to download all the
+    // user's data again from the server.
+    const userData = await getUserData(server)
+    await db.storeUserData(userData)
+  }
+}
+
+async function loadTransfersIfNecessary(server: ServerSession, walletRecord: WalletRecordWithId): Promise<void> {
+  // TODO: this is not finished.
+
+  if (!walletRecord.logStream.loadedTransfers) {
+    const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href
+    const transfers = await getTransfers(server, transfersListUri)
+    for (const transfer of transfers) {
+      if (!await db.isConcludedTransfer(transfer.uri)) {
+        await db.storeTransfer(walletRecord.userId, transfer)
+      }
+    }
+    resolveOldNotConfirmedCreateTransferRequests(walletRecord.userId)
+  }
+}
+
 async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
@@ -220,6 +250,45 @@ async function getUserData(server: ServerSession): Promise<UserData> {
     creditor,
     pinInfo,
   }
+}
+
+async function getTransfers(server: ServerSession, transfersListUri: string): Promise<Array<Transfer & { type: 'Transfer-v0'}>> {
+  // TODO: this is not finished.
+
+  const transferUris: string[] = []
+  for await (const { item, pageUrl } of paginatedListIterator<ObjectReference>(
+    server,
+    transfersListUri,
+    TRANSFERS_LIST_TYPE,
+    OBJECT_REFERENCE_TYPE
+  )) {
+    transferUris.push(new URL(item.uri, pageUrl).href)
+  }
+
+  const unconcludedTransferUris = (
+    await Promise.all(transferUris.map(async uri => await db.isConcludedTransfer(uri) ? undefined : uri))
+  ).filter(uri => uri !== undefined) as string[]
+  const timeout = calcParallelTimeout(unconcludedTransferUris.length)
+  let transfers
+  try {
+    transfers = (
+      await Promise.all(unconcludedTransferUris.map(uri => server.get(uri, { timeout }))) as HttpResponse<Transfer>[]
+    ).map(response => ({ ...response.data, uri: response.url } as Transfer))
+  } catch (e: unknown) {
+    if (e instanceof HttpError && e.status === 404 && attemptsLeft--) {
+      // Normally, this can happen only if a transfer has been
+      // deleted after the transfer list was obtained. In this
+      // case, we should obtain the transfer list again, and
+      // retry.
+    } else throw e
+  }
+
+  return transfers
+}
+
+function calcParallelTimeout(numberOfParallelRequests: number): number {
+  const n = 6  // a rough guess for the maximum number of parallel connections
+  return appConfig.serverApiTimeout * (numberOfParallelRequests + n - 1) / n
 }
 
 async function* paginatedListIterator<T>(
