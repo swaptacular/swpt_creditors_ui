@@ -138,8 +138,12 @@ export class ServerSession {
     }
   }
 
-  async logout(): Promise<never> {
+  async forgetCurrentToken(): Promise<void> {
     await this.tokenSource.logout()
+  }
+
+  async logout(): Promise<never> {
+    await this.forgetCurrentToken()
     ServerSession.saveUserData(undefined)
     return await ServerSession.redirectHome()
   }

@@ -71,7 +71,14 @@ export async function authorizePinReset(): Promise<void> {
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
     const walletRecord = await db.getWalletRecord(userId)
-    await resetUserDataIfNecessary(server, walletRecord)
+    if (hasLostLogEntries(walletRecord)) {
+      // When log entries has been lost, user's data must be loaded
+      // from the server again. If we do this here, it could disturb
+      // the user interaction with the UI. Instead, we give up on the
+      // update, and invite the user to re-authenticate. (The user's
+      // data will be loaded during the authentication.)
+      await server.forgetCurrentToken()
+    }
     await loadTransfersIfNecessary(server, walletRecord)
     // TODO: fetch log stream
     // await executeReadyTasks(server, userId)
@@ -98,11 +105,11 @@ export async function update(server: ServerSession, userId: number): Promise<voi
 }
 
 /* Returns the user ID corresponding to the given `entrypoint`. If the
- * user does not exist, tries to create a new user in the local
- * database, reading the user's data from the server. */
+ * user does not exist or some log entries have been lost, tries to
+ * create/reset the user, reading the user's data from the server. */
 export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
   let userId = await db.getUserId(entrypoint)
-  if (userId === undefined) {
+  if (userId === undefined || hasLostLogEntries(await db.getWalletRecord(userId))) {
     const userData = await getUserData(server)
     userId = await db.storeUserData(userData)
   }
@@ -183,18 +190,11 @@ export class UserContext {
   }
 }
 
-async function resetUserDataIfNecessary(server: ServerSession, walletRecord: WalletRecordWithId): Promise<void> {
+function hasLostLogEntries(walletRecord: WalletRecordWithId): boolean {
   const timeSinceLastSync = Date.now() - walletRecord.logStream.syncTime
   const logRetention = 86_400_000 * Number(walletRecord.logRetentionDays)
   const safetyMargin = 3_600_000  // 1 hour
-  if (timeSinceLastSync > logRetention - safetyMargin) {
-    // If too much time has passed since the last successful sync with
-    // the server, some needed log records could have been deleted. In
-    // that case, we have no other choice but to download all the
-    // user's data again from the server.
-    const userData = await getUserData(server)
-    await db.storeUserData(userData)
-  }
+  return timeSinceLastSync > logRetention - safetyMargin
 }
 
 async function loadTransfersIfNecessary(server: ServerSession, walletRecord: WalletRecordWithId): Promise<void> {
