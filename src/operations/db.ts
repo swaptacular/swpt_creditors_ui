@@ -30,7 +30,6 @@ export type TypeMatcher = {
 export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
 export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
 export const OBJECT_REFERENCE_TYPE = /^ObjectReference(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
@@ -41,6 +40,9 @@ export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
 export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+
+export type TransferV0 = Transfer & { type: 'Transfer-v0' }
 
 type UserReference = {
   userId: number,
@@ -531,7 +533,7 @@ class CreditorsDb extends Dexie {
    * or has been changed. */
   async createTransferRecord(
     action: CreateTransferActionWithId,
-    transfer: Transfer & { type: 'Transfer-v0' },
+    transfer: TransferV0,
   ): Promise<TransferRecord> {
     return await this.transaction('rw', this.allTables, async () => {
       const { actionId, userId } = action
@@ -554,62 +556,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  async storeTransfers(userId: number, transfers: Transfer[]): Promise<number> {
-    // TODO: This is no finished, and possibly not needed.
-
-    const deleteIrrelevantActionsAndTasks = async (userId: number): Promise<void> => {
-      const uris = new Set(transferUris)
-      const actionsToDelete = await this.actions
-        .where({ userId })
-        .filter(action => action.actionType === 'AbortTransfer' && !uris.has(action.transferUri))
-        .toArray() as ActionRecordWithId[]
-      for (const { actionId } of actionsToDelete) {
-        await this.actions.delete(actionId)
-      }
-      const tasksToDelete = await this.tasks
-        .where({ userId })
-        .filter(task => task.taskType === 'DeleteTransfer' && !uris.has(task.transferUri))
-        .toArray() as TaskRecordWithId[]
-      for (const { taskId } of tasksToDelete) {
-        await this.tasks.delete(taskId)
-      }
-    }
-
-    const resolveOldNotConfirmedCreateTransferRequests = async (userId: number): Promise<void> => {
-      const currentTime = Date.now()
-      const cutoffTime = collectedAfter.getTime() - MAX_PROCESSING_DELAY_MILLISECONDS
-      await this.actions
-        .where('[userId+createdAt]')
-        .between([userId, Dexie.minKey], [userId, Dexie.maxKey])
-        .filter(action => (
-          action.actionType === 'CreateTransfer' &&
-          getCreateTransferActionStatus(action, currentTime) === 'Not confirmed' &&
-          action.execution!.unresolvedRequestAt!.getTime() < cutoffTime
-        ))
-        .modify((action: { execution: ExecutionState }) => {
-          delete action.execution.unresolvedRequestAt
-        })
-    }
-
-    const storeTransferRecords = async (userId: number): Promise<void> => {
-      if (transfers) {
-        for (const transfer of transfers) {
-          if (!await this.isConcludedTransfer(transfer.uri)) {
-            await this.storeTransfer(userId, transfer)
-          }
-        }
-        resolveOldNotConfirmedCreateTransferRequests(userId)
-      }
-    }
-
-    return await this.transaction('rw', this.allTables, async () => {
-      await deleteIrrelevantActionsAndTasks(userId)
-      await storeTransferRecords(userId)
-      return userId
-    })
-  }
-
-  async storeTransfer(userId: number, transfer: Transfer & { type: 'Transfer-v0' }): Promise<TransferRecord> {
+  async storeTransfer(userId: number, transfer: TransferV0): Promise<TransferRecord> {
     const { uri: transferUri, transferUuid, initiatedAt, result } = transfer
 
     const getAbortTransferActionQuery = () => this.actions

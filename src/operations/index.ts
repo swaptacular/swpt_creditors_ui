@@ -26,6 +26,7 @@ import {
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
+  TRANSFER_TYPE,
 } from './db'
 import type {
   UserData,
@@ -33,6 +34,7 @@ import type {
   WalletRecordWithId,
   ActionRecordWithId,
   ListQueryOptions,
+  TransferV0,
 } from './db'
 
 export {
@@ -202,13 +204,11 @@ async function loadTransfersIfNecessary(server: ServerSession, walletRecord: Wal
 
   if (!walletRecord.logStream.loadedTransfers) {
     const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href
-    const transfers = await getTransfers(server, transfersListUri)
-    for (const transfer of transfers) {
+    for await (const transfer of iterTransfers(server, transfersListUri)) {
       if (!await db.isConcludedTransfer(transfer.uri)) {
         await db.storeTransfer(walletRecord.userId, transfer)
       }
     }
-    resolveOldNotConfirmedCreateTransferRequests(walletRecord.userId)
   }
 }
 
@@ -230,7 +230,7 @@ async function getUserData(server: ServerSession): Promise<UserData> {
 
   const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
   const accountUris: string[] = []
-  for await (const { item, pageUrl } of paginatedListIterator<ObjectReference>(
+  for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
     server,
     accountsListUri,
     ACCOUNTS_LIST_TYPE,
@@ -241,7 +241,7 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const accountResponsePromises = accountUris.map(uri => server.get(uri)) as Promise<HttpResponse<Account>>[]
   const accountResponses = await Promise.all(accountResponsePromises)
   assert(accountResponses.every(response => ACCOUNT_TYPE.test(response.data.type)))
-  const accounts = accountResponses.map(response => ({ ...response.data, type: 'Account-v0' as const}))
+  const accounts = accountResponses.map(response => ({ ...response.data, type: 'Account-v0' as const }))
 
   return {
     collectedAfter,
@@ -252,38 +252,38 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   }
 }
 
-async function getTransfers(server: ServerSession, transfersListUri: string): Promise<Array<Transfer & { type: 'Transfer-v0'}>> {
-  // TODO: this is not finished.
+async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
+  const fetchTransfers = async (uris: string[]): Promise<TransferV0[]> => {
+    const timeout = calcParallelTimeout(uris.length)
+    const results = await Promise.allSettled(
+      uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
+    )
+    const rejected = results.filter(x => x.status === 'rejected') as PromiseRejectedResult[]
+    const errors = rejected.map(x => x.reason)
+    for (const e of errors) {
+      if (e instanceof HttpError && e.status === 404) { /* ingnore */ }
+      else throw e
+    }
+    const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
+    const responses = fulfilled.map(x => x.value)
+    assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
+    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' as const }))
+  }
 
-  const transferUris: string[] = []
-  for await (const { item, pageUrl } of paginatedListIterator<ObjectReference>(
-    server,
-    transfersListUri,
-    TRANSFERS_LIST_TYPE,
-    OBJECT_REFERENCE_TYPE
+  let transferUris: string[] = []
+  for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
+    server, transfersListUri, TRANSFERS_LIST_TYPE, OBJECT_REFERENCE_TYPE
   )) {
-    transferUris.push(new URL(item.uri, pageUrl).href)
+    const transferUri = new URL(item.uri, pageUrl).href
+    if (!await db.isConcludedTransfer(transferUri)) {
+      transferUris.push(transferUri)
+    }
+    if (transferUris.length >= 10) {
+      yield* await fetchTransfers(transferUris)
+      transferUris = []
+    }
   }
-
-  const unconcludedTransferUris = (
-    await Promise.all(transferUris.map(async uri => await db.isConcludedTransfer(uri) ? undefined : uri))
-  ).filter(uri => uri !== undefined) as string[]
-  const timeout = calcParallelTimeout(unconcludedTransferUris.length)
-  let transfers
-  try {
-    transfers = (
-      await Promise.all(unconcludedTransferUris.map(uri => server.get(uri, { timeout }))) as HttpResponse<Transfer>[]
-    ).map(response => ({ ...response.data, uri: response.url } as Transfer))
-  } catch (e: unknown) {
-    if (e instanceof HttpError && e.status === 404 && attemptsLeft--) {
-      // Normally, this can happen only if a transfer has been
-      // deleted after the transfer list was obtained. In this
-      // case, we should obtain the transfer list again, and
-      // retry.
-    } else throw e
-  }
-
-  return transfers
+  yield* await fetchTransfers(transferUris)
 }
 
 function calcParallelTimeout(numberOfParallelRequests: number): number {
@@ -291,7 +291,7 @@ function calcParallelTimeout(numberOfParallelRequests: number): number {
   return appConfig.serverApiTimeout * (numberOfParallelRequests + n - 1) / n
 }
 
-async function* paginatedListIterator<T>(
+async function* iterPaginatedList<T>(
   server: ServerSession,
   listUri: string,
   listTypeMatcher: TypeMatcher,
@@ -302,7 +302,7 @@ async function* paginatedListIterator<T>(
   assert(listTypeMatcher.test(data.type))
   assert(itemsTypeMatcher.test(data.itemsType))
   const first = listResponse.buildUri(data.first)
-  yield* pageIterator<T>(server, first)
+  yield* iterPage<T>(server, first)
 }
 
 type Page<ItemsType> = {
@@ -315,7 +315,7 @@ type PageItem<ItemsType> = {
   pageUrl: string,
 }
 
-async function* pageIterator<T>(server: ServerSession, next: string): AsyncIterable<PageItem<T>> {
+async function* iterPage<T>(server: ServerSession, next: string): AsyncIterable<PageItem<T>> {
   do {
     const pageResponse = await server.get(next) as HttpResponse<Page<T>>
     const pageUrl = pageResponse.url
