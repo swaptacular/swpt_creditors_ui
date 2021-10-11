@@ -208,6 +208,10 @@ export type Wallet = {
    * number. */
   logRetentionDays: bigint;
 
+  /** The ID of the latest entry in the creditor's log stream. If
+   * there are no entries yet, the value will be 0. */
+  logLatestEntryId: bigint;
+
   /** A URI to which the recipient account's `AccountIdentity` can be
    * POST-ed, trying to find the identify of the account's debtor. If
    * the debtor has been identified successfully, the response will

@@ -110,6 +110,9 @@ export async function update(server: ServerSession, userId: number): Promise<voi
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
 export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
+  // TODO: This is not a good way to detect lost log entries. The
+  // right way is to use `logLatestEntryId`.
+
   let userId = await db.getUserId(entrypoint)
   if (userId === undefined || hasLostLogEntries(await db.getWalletRecord(userId))) {
     const userData = await getUserData(server)
@@ -275,6 +278,9 @@ async function* iterTransfers(server: ServerSession, transfersListUri: string): 
     server, transfersListUri, TRANSFERS_LIST_TYPE, OBJECT_REFERENCE_TYPE
   )) {
     const transferUri = new URL(item.uri, pageUrl).href
+
+    // TODO: What if the transfer is unsuccessful, and an
+    // AbortTransferAction should be created for it?
     if (!await db.isConcludedTransfer(transferUri)) {
       transferUris.push(transferUri)
     }

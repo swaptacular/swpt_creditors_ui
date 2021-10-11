@@ -74,12 +74,13 @@ export type UserData = {
 export type LogStream = {
   syncTime: number,  // milliseconds after 1970-01-01
   loadedTransfers: boolean,
+  latestEntryId: bigint,
   forthcoming: string,
 }
 
 export type WalletRecord =
   & Partial<UserReference>
-  & Omit<Wallet, 'requirePin' | 'log'>
+  & Omit<Wallet, 'requirePin' | 'log' | 'logLatestEntryId'>
   & {
     type: 'Wallet-v0',
     logStream: LogStream,
@@ -675,6 +676,7 @@ class CreditorsDb extends Dexie {
       ...wallet,
       logStream: {
         syncTime: collectedAfter.getTime(),
+        latestEntryId: wallet.logLatestEntryId,
         forthcoming: wallet.log.forthcoming,
         loadedTransfers: false,
       },
