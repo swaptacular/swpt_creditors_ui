@@ -404,6 +404,18 @@ class CreditorsDb extends Dexie {
     return walletRecord as WalletRecordWithId
   }
 
+  async updateWalletRecord(walletRecord: WalletRecordWithId): Promise<void> {
+    const updated = await this.wallets
+      .where({ userId: walletRecord.userId })
+      .modify(function(this: any) {
+        this.value = walletRecord
+      })
+    if (updated === 0) {
+      throw new UserDoesNotExist()
+    }
+    assert(updated === 1)
+  }
+
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
     return await this.documents.get(uri)
   }

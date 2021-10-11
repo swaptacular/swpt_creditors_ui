@@ -72,7 +72,9 @@ export async function authorizePinReset(): Promise<void> {
  * the server. Any network failures will be swallowed. */
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
-    const walletRecord = await db.getWalletRecord(userId)
+    const walletRecord = await ensureLoadedTransfers(server, userId)
+    assert(walletRecord.logStream.loadedTransfers)
+
     if (hasLostLogEntries(walletRecord)) {
       // When log entries has been lost, user's data must be loaded
       // from the server again. If we do this here, it could disturb
@@ -81,7 +83,6 @@ export async function update(server: ServerSession, userId: number): Promise<voi
       // data will be loaded during the authentication.)
       await server.forgetCurrentToken()
     }
-    await loadTransfersIfNecessary(server, walletRecord)
     // TODO: fetch log stream
     // await executeReadyTasks(server, userId)
 
@@ -202,17 +203,60 @@ function hasLostLogEntries(walletRecord: WalletRecordWithId): boolean {
   return timeSinceLastSync > logRetention - safetyMargin
 }
 
-async function loadTransfersIfNecessary(server: ServerSession, walletRecord: WalletRecordWithId): Promise<void> {
-  // TODO: this is not finished.
+async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<WalletRecordWithId> {
+  const walletRecord = await db.getWalletRecord(userId)
+  const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href
 
-  if (!walletRecord.logStream.loadedTransfers) {
-    const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href
-    for await (const transfer of iterTransfers(server, transfersListUri)) {
-      if (!await db.isConcludedTransfer(transfer.uri)) {
-        await db.storeTransfer(walletRecord.userId, transfer)
+  async function fetchTransfers(uris: string[]): Promise<TransferV0[]> {
+    const timeout = calcParallelTimeout(uris.length)
+    const results = await Promise.allSettled(
+      uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
+    )
+    const rejected = results.filter(x => x.status === 'rejected') as PromiseRejectedResult[]
+    const errors = rejected.map(x => x.reason)
+    for (const e of errors) {
+      if (e instanceof HttpError && e.status === 404) { /* ingnore */ }
+      else throw e
+    }
+    const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
+    const responses = fulfilled.map(x => x.value)
+    assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
+    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' as const }))
+  }
+
+  async function* iterTransfers(): AsyncIterable<TransferV0> {
+    let urisToFetch: string[] = []
+    for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
+      server, transfersListUri, TRANSFERS_LIST_TYPE, OBJECT_REFERENCE_TYPE
+    )) {
+      const transferUri = new URL(item.uri, pageUrl).href
+      const transferRecord = await db.getTransferRecord(transferUri)
+      const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
+      if (!isConcludedTransfer) {
+        urisToFetch.push(transferUri)
+      } else if (!transferRecord.aborted && transferRecord.result?.committedAmount === 0n) {
+        // At this point we know that the transfer is registered in
+        // the local database as unsuccessful, but has not been
+        // aborted yet. This means we should ensure that an abort
+        // transfer action will be created for the transfer.
+        yield transferRecord
+      }
+      if (urisToFetch.length >= 10) {
+        yield* await fetchTransfers(urisToFetch)
+        urisToFetch = []
       }
     }
+    yield* await fetchTransfers(urisToFetch)
   }
+
+  if (!walletRecord.logStream.loadedTransfers) {
+    for await (const transfer of iterTransfers()) {
+      await db.storeTransfer(userId, transfer)
+    }
+    walletRecord.logStream.loadedTransfers = true
+    await db.updateWalletRecord(walletRecord)
+  }
+  return walletRecord
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -253,43 +297,6 @@ async function getUserData(server: ServerSession): Promise<UserData> {
     creditor,
     pinInfo,
   }
-}
-
-async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
-  const fetchTransfers = async (uris: string[]): Promise<TransferV0[]> => {
-    const timeout = calcParallelTimeout(uris.length)
-    const results = await Promise.allSettled(
-      uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
-    )
-    const rejected = results.filter(x => x.status === 'rejected') as PromiseRejectedResult[]
-    const errors = rejected.map(x => x.reason)
-    for (const e of errors) {
-      if (e instanceof HttpError && e.status === 404) { /* ingnore */ }
-      else throw e
-    }
-    const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
-    const responses = fulfilled.map(x => x.value)
-    assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
-    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' as const }))
-  }
-
-  let transferUris: string[] = []
-  for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
-    server, transfersListUri, TRANSFERS_LIST_TYPE, OBJECT_REFERENCE_TYPE
-  )) {
-    const transferUri = new URL(item.uri, pageUrl).href
-
-    // TODO: What if the transfer is unsuccessful, and an
-    // AbortTransferAction should be created for it?
-    if (!await db.isConcludedTransfer(transferUri)) {
-      transferUris.push(transferUri)
-    }
-    if (transferUris.length >= 10) {
-      yield* await fetchTransfers(transferUris)
-      transferUris = []
-    }
-  }
-  yield* await fetchTransfers(transferUris)
 }
 
 function calcParallelTimeout(numberOfParallelRequests: number): number {
