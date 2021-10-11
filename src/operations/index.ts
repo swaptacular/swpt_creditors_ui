@@ -111,9 +111,6 @@ export async function update(server: ServerSession, userId: number): Promise<voi
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
 export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
-  // TODO: This is not a good way to detect lost log entries. The
-  // right way is to use `logLatestEntryId`.
-
   let userId = await db.getUserId(entrypoint)
   if (userId === undefined || hasLostLogEntries(await db.getWalletRecord(userId))) {
     const userData = await getUserData(server)
@@ -197,6 +194,9 @@ export class UserContext {
 }
 
 function hasLostLogEntries(walletRecord: WalletRecordWithId): boolean {
+  // TODO: This is not a good way to detect lost log entries. The
+  // right way is to use `logLatestEntryId`.
+
   const timeSinceLastSync = Date.now() - walletRecord.logStream.syncTime
   const logRetention = 86_400_000 * Number(walletRecord.logRetentionDays)
   const safetyMargin = 3_600_000  // 1 hour
