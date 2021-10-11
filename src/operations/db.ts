@@ -72,10 +72,11 @@ export type UserData = {
 }
 
 export type LogStream = {
-  syncTime: number,  // milliseconds after 1970-01-01
-  loadedTransfers: boolean,
   latestEntryId: bigint,
   forthcoming: string,
+  loadedTransfers: boolean,
+  syncedAt?: Date,
+  isBroken: boolean,
 }
 
 export type WalletRecord =
@@ -683,14 +684,14 @@ class CreditorsDb extends Dexie {
     // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
     // consider deleting some of user's tasks.
 
-    const { accounts, wallet, creditor, pinInfo, collectedAfter } = data
+    const { accounts, wallet, creditor, pinInfo } = data
     const { requirePin, log, ...walletRecord } = {
       ...wallet,
       logStream: {
-        syncTime: collectedAfter.getTime(),
         latestEntryId: wallet.logLatestEntryId,
         forthcoming: wallet.log.forthcoming,
         loadedTransfers: false,
+        isBroken: false,
       },
     }
 

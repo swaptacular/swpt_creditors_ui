@@ -30,12 +30,12 @@ import type {
   TransferV0,
 } from './db'
 
-export type Page<ItemsType> = {
+type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,
 }
 
-export type PageItem<ItemsType> = {
+type PageItem<ItemsType> = {
   item: ItemsType,
   pageUrl: string,
 }
@@ -45,23 +45,16 @@ export type PageItem<ItemsType> = {
  * create/reset the user, reading the user's data from the server. */
 export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
   let userId = await db.getUserId(entrypoint)
-  if (userId === undefined || hasLostLogEntries(await db.getWalletRecord(userId))) {
+  if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
     const userData = await getUserData(server)
     userId = await db.storeUserData(userData)
   }
   return userId
 }
 
-export function hasLostLogEntries(walletRecord: WalletRecordWithId): boolean {
-  // TODO: This is not a good way to detect lost log entries. The
-  // right way is to use `logLatestEntryId`.
-
-  const timeSinceLastSync = Date.now() - walletRecord.logStream.syncTime
-  const logRetention = 86_400_000 * Number(walletRecord.logRetentionDays)
-  const safetyMargin = 3_600_000  // 1 hour
-  return timeSinceLastSync > logRetention - safetyMargin
-}
-
+/* Ensures that the initial loading of transfers from the server to
+ * the local database has finished successfully. This must be done in
+ * before the synchronization via the log stream can start. */
 export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<WalletRecordWithId> {
   const walletRecord = await db.getWalletRecord(userId)
   const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href

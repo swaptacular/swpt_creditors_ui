@@ -21,7 +21,6 @@ import type {
 } from './db'
 import {
   getOrCreateUserId,
-  hasLostLogEntries,
   ensureLoadedTransfers,
 } from './utils'
 
@@ -63,12 +62,12 @@ export async function update(server: ServerSession, userId: number): Promise<voi
     const walletRecord = await ensureLoadedTransfers(server, userId)
     assert(walletRecord.logStream.loadedTransfers)
 
-    if (hasLostLogEntries(walletRecord)) {
+    if (walletRecord.logStream.isBroken) {
       // When log entries has been lost, user's data must be loaded
       // from the server again. If we do this here, it could disturb
       // the user interaction with the UI. Instead, we give up on the
       // update, and invite the user to re-authenticate. (The user's
-      // data will be loaded during the authentication.)
+      // data will be loaded after the authentication.)
       await server.forgetCurrentToken()
     }
     // TODO: fetch log stream
