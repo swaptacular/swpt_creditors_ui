@@ -64,12 +64,11 @@ type PageItem<ItemsType> = {
   pageUrl: string,
 }
 
-type ObjectUpdate = {
-  objectUri: string,
+type ObjectUpdateData = {
   objectType: string,
   updateId?: bigint | 'deleted',
   data?: { [key: string]: unknown },
-  recreated: boolean,  // Indicates that the object has been deleted and re-created.
+  recreated: boolean,  // Indicates that the object has been deleted and created again.
 }
 
 export class BrokenLogStream extends Error {
@@ -273,37 +272,20 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
 async function collectObjectUpdates(
   latestEntryId: bigint,
   logEntries: LogEntryV0[],
-): Promise<{ latestEntryId: bigint, updates: ObjectUpdate[] }> {
-  const updatesMap: Map<string, ObjectUpdate> = new Map()
-  for (const { entryId, object, objectType, objectUpdateId, deleted, data } of logEntries) {
+): Promise<{ latestEntryId: bigint, updates: Map<string, ObjectUpdateData> }> {
+  const updates: Map<string, ObjectUpdateData> = new Map()
+  for (const { entryId, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId != ++latestEntryId) {
       throw new BrokenLogStream()
     }
-    let update: ObjectUpdate = {
-      objectUri: object.uri,
+    const existingUpdate = updates.get(uri)
+    const recreated = existingUpdate?.updateId === 'deleted' && !deleted
+    updates.set(uri, {
       objectType,
-      updateId: objectUpdateId,
-      recreated: false,
+      updateId: deleted ? 'deleted' : objectUpdateId,
+      recreated: existingUpdate?.recreated || recreated,
       data,
-    }
-    const existingUpdate = updatesMap.get(object.uri)
-    if (existingUpdate) {
-      assert(existingUpdate.objectType === objectType)
-      if (deleted) {
-        assert(objectUpdateId === undefined)
-        assert(data === undefined)
-        update.updateId = 'deleted'
-      } else if (existingUpdate.updateId === 'deleted') {
-        assert(objectUpdateId === undefined || objectUpdateId === 1n)
-        update.recreated = true
-      } else {
-        assert(objectUpdateId !== undefined)
-        assert(existingUpdate.updateId !== undefined)
-        assert(objectUpdateId === existingUpdate.updateId + 1n)
-        update.recreated = existingUpdate.recreated
-      }
-    }
-    updatesMap.set(object.uri, update)
+    })
   }
-  return { latestEntryId, updates: [...updatesMap.values()] }
+  return { latestEntryId, updates }
 }
