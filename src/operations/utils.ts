@@ -72,8 +72,8 @@ type ObjectUpdate = {
   recreated: boolean,  // Indicates that the object has been deleted and re-created.
 }
 
-export class BrokenLogEntry extends Error {
-  name = 'BrokenLogEntry'
+export class BrokenLogStream extends Error {
+  name = 'BrokenLogStream'
 }
 
 /* Returns the user ID corresponding to the given `entrypoint`. If the
@@ -277,7 +277,7 @@ async function collectObjectUpdates(
   const updatesMap: Map<string, ObjectUpdate> = new Map()
   for (const { entryId, object, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId != ++latestEntryId) {
-      throw new BrokenLogEntry()
+      throw new BrokenLogStream()
     }
     let update: ObjectUpdate = {
       objectUri: object.uri,
