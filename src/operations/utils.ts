@@ -274,37 +274,36 @@ async function collectObjectUpdates(
   latestEntryId: bigint,
   logEntries: LogEntryV0[],
 ): Promise<{ latestEntryId: bigint, updates: ObjectUpdate[] }> {
-  const updates: Map<string, ObjectUpdate> = new Map()
-  for (const entry of logEntries) {
-    if (entry.entryId != ++latestEntryId) {
+  const updatesMap: Map<string, ObjectUpdate> = new Map()
+  for (const { entryId, object, objectType, objectUpdateId, deleted, data } of logEntries) {
+    if (entryId != ++latestEntryId) {
       throw new BrokenLogEntry()
     }
-    const objectUri = entry.object.uri
     let update: ObjectUpdate = {
-      objectUri,
-      objectType: entry.objectType,
-      updateId: entry.objectUpdateId,
-      data: entry.data,
+      objectUri: object.uri,
+      objectType,
+      updateId: objectUpdateId,
       recreated: false,
+      data,
     }
-    const existingUpdate = updates.get(objectUri)
+    const existingUpdate = updatesMap.get(object.uri)
     if (existingUpdate) {
-      assert(existingUpdate.objectType === entry.objectType)
-      if (entry.deleted) {
-        assert(entry.objectUpdateId === undefined)
-        assert(entry.data === undefined)
+      assert(existingUpdate.objectType === objectType)
+      if (deleted) {
+        assert(objectUpdateId === undefined)
+        assert(data === undefined)
         update.updateId = 'deleted'
       } else if (existingUpdate.updateId === 'deleted') {
-        assert(entry.objectUpdateId === undefined || entry.objectUpdateId === 1n)
+        assert(objectUpdateId === undefined || objectUpdateId === 1n)
         update.recreated = true
       } else {
-        assert(entry.objectUpdateId !== undefined)
+        assert(objectUpdateId !== undefined)
         assert(existingUpdate.updateId !== undefined)
-        assert(entry.objectUpdateId === existingUpdate.updateId + 1n)
+        assert(objectUpdateId === existingUpdate.updateId + 1n)
         update.recreated = existingUpdate.recreated
       }
     }
-    updates.set(objectUri, update)
+    updatesMap.set(object.uri, update)
   }
-  return { latestEntryId, updates: [...updates.values()] }
+  return { latestEntryId, updates: [...updatesMap.values()] }
 }
