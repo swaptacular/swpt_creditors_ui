@@ -251,7 +251,7 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
     ...page,
     items: page.items.map(item => ({
       ...item,
-      object: { uri: new URL(item.object.uri, pageResponse.url).href },
+      object: { uri: pageResponse.buildUri(item.object.uri) },
       type: 'LogEntry-v0',
     })),
     type: 'LogEntriesPage-v0',
