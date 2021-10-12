@@ -154,12 +154,12 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   assert(LOG_ENTRY_TYPE.test(walletResponse.data.log.itemsType))
   const wallet: WalletV0 = {
     ...walletResponse.data,
+    type: 'Wallet-v0',
     log: {
       ...walletResponse.data.log,
-      itemsType: 'LogEntry-v0',
       type: 'PaginatedStream-v0',
+      itemsType: 'LogEntry-v0',
     },
-    type: 'Wallet-v0',
   }
 
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
@@ -203,12 +203,12 @@ async function getUserData(server: ServerSession): Promise<UserData> {
     info: { ...r.data.info, type: 'AccountInfo-v0' },
     ledger: {
       ...r.data.ledger,
+      type: 'AccountLedger-v0',
       entries: {
         ...r.data.ledger.entries,
-        itemsType: 'LedgerEntry-v0',
         type: 'PaginatedList-v0',
+        itemsType: 'LedgerEntry-v0',
       },
-      type: 'AccountLedger-v0',
     },
   }))
 
@@ -260,12 +260,12 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
   assert(page.items.every(item => LOG_ENTRY_TYPE.test(item.type)))
   return {
     ...page,
+    type: 'LogEntriesPage-v0',
     items: page.items.map(item => ({
       ...item,
-      object: { uri: pageResponse.buildUri(item.object.uri) },
       type: 'LogEntry-v0',
+      object: { uri: pageResponse.buildUri(item.object.uri) },
     })),
-    type: 'LogEntriesPage-v0',
   }
 }
 
