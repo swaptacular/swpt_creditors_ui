@@ -64,6 +64,18 @@ type PageItem<ItemsType> = {
   pageUrl: string,
 }
 
+type ObjectUpdate = {
+  objectUri: string,
+  objectType: string,
+  updateId?: bigint | 'deleted',
+  data?: { [key: string]: unknown },
+  recreated: boolean,  // Indicates that the object has been deleted and re-created.
+}
+
+export class BrokenLogEntry extends Error {
+  name = 'BrokenLogEntry'
+}
+
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
@@ -256,4 +268,43 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
     })),
     type: 'LogEntriesPage-v0',
   }
+}
+
+async function collectObjectUpdates(
+  latestEntryId: bigint,
+  logEntries: LogEntryV0[],
+): Promise<{ latestEntryId: bigint, updates: ObjectUpdate[] }> {
+  const updates: Map<string, ObjectUpdate> = new Map()
+  for (const entry of logEntries) {
+    if (entry.entryId != ++latestEntryId) {
+      throw new BrokenLogEntry()
+    }
+    const objectUri = entry.object.uri
+    let update: ObjectUpdate = {
+      objectUri,
+      objectType: entry.objectType,
+      updateId: entry.objectUpdateId,
+      data: entry.data,
+      recreated: false,
+    }
+    const existingUpdate = updates.get(objectUri)
+    if (existingUpdate) {
+      assert(existingUpdate.objectType === entry.objectType)
+      if (entry.deleted) {
+        assert(entry.objectUpdateId === undefined)
+        assert(entry.data === undefined)
+        update.updateId = 'deleted'
+      } else if (existingUpdate.updateId === 'deleted') {
+        assert(entry.objectUpdateId === undefined || entry.objectUpdateId === 1n)
+        update.recreated = true
+      } else {
+        assert(entry.objectUpdateId !== undefined)
+        assert(existingUpdate.updateId !== undefined)
+        assert(entry.objectUpdateId === existingUpdate.updateId + 1n)
+        update.recreated = existingUpdate.recreated
+      }
+    }
+    updates.set(objectUri, update)
+  }
+  return { latestEntryId, updates: [...updates.values()] }
 }
