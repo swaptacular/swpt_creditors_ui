@@ -64,11 +64,20 @@ type PageItem<ItemsType> = {
   pageUrl: string,
 }
 
-type ObjectUpdateData = {
+type ObjectUpdateInfo = {
   objectType: string,
   updateId?: bigint | 'deleted',
   data?: { [key: string]: unknown },
   recreated: boolean,  // Indicates that the object has been deleted and created again.
+}
+
+class ObjectUpdater {
+  constructor(public ObjectUri: string, public updateInfo: ObjectUpdateInfo) { }
+
+  async isAlreadyUpToDate(): Promise<boolean> {
+    // TODO: Query the local database.
+    return false
+  }
 }
 
 export class BrokenLogStream extends Error {
@@ -272,8 +281,8 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
 async function collectObjectUpdates(
   latestEntryId: bigint,
   logEntries: LogEntryV0[],
-): Promise<{ latestEntryId: bigint, updates: Map<string, ObjectUpdateData> }> {
-  const updates: Map<string, ObjectUpdateData> = new Map()
+): Promise<{ latestEntryId: bigint, updates: Map<string, ObjectUpdateInfo> }> {
+  const updates: Map<string, ObjectUpdateInfo> = new Map()
   for (const { entryId, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId != ++latestEntryId) {
       throw new BrokenLogStream()
@@ -288,4 +297,15 @@ async function collectObjectUpdates(
     })
   }
   return { latestEntryId, updates }
+}
+
+async function createObjectUpdaters(updates: Map<string, ObjectUpdateInfo>): Promise<ObjectUpdater[]> {
+  let updaters: ObjectUpdater[] = []
+  for (const [objectUri, updateInfo] of updates) {
+    const updater = new ObjectUpdater(objectUri, updateInfo)
+    if (!await updater.isAlreadyUpToDate()) {
+      updaters.push(updater)
+    }
+  }
+  return updaters
 }
