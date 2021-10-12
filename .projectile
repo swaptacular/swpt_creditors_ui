@@ -1,4 +1,7 @@
 -/node_modules
 -/public/build
+-/public/*.min.js
+-/public/*.min.js.map
 -/.vscode
 -/coverage
+-/dist

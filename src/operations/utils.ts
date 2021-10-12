@@ -11,6 +11,7 @@ import type {
   Transfer,
   PaginatedList,
   ObjectReference,
+  LogEntriesPage,
 } from './server'
 import {
   db,
@@ -22,17 +23,40 @@ import {
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
   TRANSFER_TYPE,
+  LOG_ENTRY_TYPE,
+  LOG_ENTRIES_PAGE_TYPE,
+  PAGINATED_STREAM_TYPE,
+  ACCOUNT_INFO_TYPE,
+  ACCOUNT_DISPLAY_TYPE,
+  ACCOUNT_KNOWLEDGE_TYPE,
+  ACCOUNT_EXCHANGE_TYPE,
+  ACCOUNT_LEDGER_TYPE,
+  ACCOUNT_CONFIG_TYPE,
+  LEDGER_ENTRY_TYPE,
+  LEDGER_ENTRIES_LIST_TYPE,
 } from './db'
 import type {
   UserData,
   TypeMatcher,
   WalletRecordWithId,
   TransferV0,
+  LogEntryV0,
+  AccountV0,
+  WalletV0,
+  CreditorV0,
+  PinInfoV0,
 } from './db'
 
 type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,
+}
+
+type LogEntriesPageV0 = {
+  type: 'LogEntriesPage-v0',
+  items: LogEntryV0[],
+  next?: string,
+  forthcoming?: string
 }
 
 type PageItem<ItemsType> = {
@@ -73,7 +97,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
     const responses = fulfilled.map(x => x.value)
     assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
-    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' as const }))
+    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' }))
   }
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
@@ -115,32 +139,67 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
   assert(WALLET_TYPE.test(walletResponse.data.type))
-  const wallet = { ...walletResponse.data, type: 'Wallet-v0' as const }
+  assert(PAGINATED_STREAM_TYPE.test(walletResponse.data.log.type))
+  assert(LOG_ENTRY_TYPE.test(walletResponse.data.log.itemsType))
+  const wallet: WalletV0 = {
+    ...walletResponse.data,
+    log: {
+      ...walletResponse.data.log,
+      itemsType: 'LogEntry-v0',
+      type: 'PaginatedStream-v0',
+    },
+    type: 'Wallet-v0',
+  }
 
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
   assert(CREDITOR_TYPE.test(creditorResponse.data.type ?? 'Creditor'))
-  const creditor = { ...creditorResponse.data, type: 'Creditor-v0' as const }
+  const creditor: CreditorV0 = { ...creditorResponse.data, type: 'Creditor-v0' }
 
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
   assert(PIN_INFO_TYPE.test(pinInfoResponse.data.type ?? 'PinInfo'))
-  const pinInfo = { ...pinInfoResponse.data, type: 'PinInfo-v0' as const }
+  const pinInfo: PinInfoV0 = { ...pinInfoResponse.data, type: 'PinInfo-v0' }
 
   const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
   const accountUris: string[] = []
   for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
-    server,
-    accountsListUri,
-    ACCOUNTS_LIST_TYPE,
-    OBJECT_REFERENCE_TYPE
+    server, accountsListUri, ACCOUNTS_LIST_TYPE, OBJECT_REFERENCE_TYPE
   )) {
     accountUris.push(new URL(item.uri, pageUrl).href)
   }
-  const accountResponsePromises = accountUris.map(uri => server.get(uri)) as Promise<HttpResponse<Account>>[]
+  const timeout = calcParallelTimeout(accountUris.length)
+  const accountResponsePromises = accountUris.map(
+    uri => server.get(uri, { timeout })
+  ) as Promise<HttpResponse<Account>>[]
   const accountResponses = await Promise.all(accountResponsePromises)
-  assert(accountResponses.every(response => ACCOUNT_TYPE.test(response.data.type)))
-  const accounts = accountResponses.map(response => ({ ...response.data, type: 'Account-v0' as const }))
+  assert(accountResponses.every(r => ACCOUNT_TYPE.test(r.data.type)))
+  assert(accountResponses.every(r => ACCOUNT_CONFIG_TYPE.test(r.data.config.type ?? 'AccountConfig')))
+  assert(accountResponses.every(r => ACCOUNT_EXCHANGE_TYPE.test(r.data.exchange.type ?? 'AccountExchange')))
+  assert(accountResponses.every(r => ACCOUNT_KNOWLEDGE_TYPE.test(r.data.knowledge.type ?? 'AccountKnowledge')))
+  assert(accountResponses.every(r => ACCOUNT_DISPLAY_TYPE.test(r.data.display.type ?? 'AccountDisplay')))
+  assert(accountResponses.every(r => ACCOUNT_INFO_TYPE.test(r.data.info.type)))
+  assert(accountResponses.every(r => ACCOUNT_LEDGER_TYPE.test(r.data.ledger.type)))
+  assert(accountResponses.every(r => LEDGER_ENTRIES_LIST_TYPE.test(r.data.ledger.entries.type)))
+  assert(accountResponses.every(r => LEDGER_ENTRY_TYPE.test(r.data.ledger.entries.itemsType)))
+  const accounts: AccountV0[] = accountResponses.map(r => ({
+    ...r.data,
+    type: 'Account-v0',
+    config: { ...r.data.config, type: 'AccountConfig-v0' },
+    exchange: { ...r.data.exchange, type: 'AccountExchange-v0' },
+    knowledge: { ...r.data.knowledge, type: 'AccountKnowledge-v0' },
+    display: { ...r.data.display, type: 'AccountDisplay-v0' },
+    info: { ...r.data.info, type: 'AccountInfo-v0' },
+    ledger: {
+      ...r.data.ledger,
+      entries: {
+        ...r.data.ledger.entries,
+        itemsType: 'LedgerEntry-v0',
+        type: 'PaginatedList-v0',
+      },
+      type: 'AccountLedger-v0',
+    },
+  }))
 
   return {
     collectedAfter,
@@ -180,4 +239,21 @@ async function* iterPage<T>(server: ServerSession, next: string): AsyncIterable<
     }
     next = data.next !== undefined ? pageResponse.buildUri(data.next) : ''
   } while (next)
+}
+
+async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEntriesPageV0> {
+  const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
+  const page = pageResponse.data
+  assert(LOG_ENTRIES_PAGE_TYPE.test(page.type))
+  assert(page.next !== undefined || page.forthcoming !== undefined)
+  assert(page.items.every(item => LOG_ENTRY_TYPE.test(item.type)))
+  return {
+    ...page,
+    items: page.items.map(item => ({
+      ...item,
+      object: { uri: new URL(item.object.uri, pageResponse.url).href },
+      type: 'LogEntry-v0',
+    })),
+    type: 'LogEntriesPage-v0',
+  }
 }

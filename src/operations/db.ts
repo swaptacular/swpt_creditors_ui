@@ -15,9 +15,12 @@ import type {
   Transfer,
   TransferCreationRequest,
   LedgerEntry,
+  LogEntry,
   CommittedTransfer,
   Error as WebApiError,
   ObjectReference,
+  PaginatedList,
+  PaginatedStream,
 } from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
@@ -30,7 +33,7 @@ export type TypeMatcher = {
 export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
 export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
-export const OBJECT_REFERENCE_TYPE = /^ObjectReference(-v[1-9][0-9]{0,5})?$/
+export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
 export const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
@@ -41,8 +44,48 @@ export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
 export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
+export const LOG_ENTRIES_PAGE_TYPE = /^LogEntriesPage(-v[1-9][0-9]{0,5})?$/
+export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
+export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
+export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 
 export type TransferV0 = Transfer & { type: 'Transfer-v0' }
+export type LogEntryV0 = LogEntry & { type: 'LogEntry-v0' }
+export type PinInfoV0 = PinInfo & { type: 'PinInfo-v0' }
+export type CreditorV0 = Creditor & { type: 'Creditor-v0' }
+export type LedgerEntryV0 = LedgerEntry & { type: 'LedgerEntry-v0' }
+export type CommittedTransferV0 = CommittedTransfer & { type: 'CommittedTransfer-v0' }
+export type AccountInfoV0 = AccountInfo & { type: 'AccountInfo-v0' }
+export type AccountKnowledgeV0 = AccountKnowledge & { type: 'AccountKnowledge-v0' }
+export type AccountExchangeV0 = AccountExchange & { type: 'AccountExchange-v0' }
+export type AccountDisplayV0 = AccountDisplay & { type: 'AccountDisplay-v0' }
+export type AccountConfigV0 = AccountConfig & { type: 'AccountConfig-v0' }
+export type PaginatedListV0<ItemsType> = PaginatedList & {
+  type: 'PaginatedList-v0',
+  itemsType: ItemsType,
+}
+export type PaginatedStreamV0<ItemsType> = PaginatedStream & {
+  type: 'PaginatedStream-v0',
+  itemsType: ItemsType,
+}
+export type AccountLedgerV0 = AccountLedger & {
+  type: 'AccountLedger-v0',
+  entries: PaginatedListV0<'LedgerEntry-v0'>,
+}
+export type AccountV0 = Account & {
+  type: 'Account-v0',
+  ledger: AccountLedgerV0,
+  info: AccountInfoV0,
+  knowledge: AccountKnowledgeV0,
+  exchange: AccountExchangeV0,
+  display: AccountDisplayV0,
+  config: AccountConfigV0,
+}
+export type WalletV0 = Wallet & {
+  type: 'Wallet-v0',
+  log: PaginatedStreamV0<'LogEntry-v0'>,
+}
 
 type UserReference = {
   userId: number,
@@ -65,10 +108,10 @@ export type ListQueryOptions = {
 
 export type UserData = {
   collectedAfter: Date,
-  accounts: Array<Account & { type: 'Account-v0' }>,
-  wallet: Wallet & { type: 'Wallet-v0' },
-  creditor: Creditor & { type: 'Creditor-v0' },
-  pinInfo: PinInfo & { type: 'PinInfo-v0' },
+  accounts: AccountV0[],
+  wallet: WalletV0,
+  creditor: CreditorV0,
+  pinInfo: PinInfoV0,
 }
 
 export type LogStream = {
@@ -81,9 +124,8 @@ export type LogStream = {
 
 export type WalletRecord =
   & Partial<UserReference>
-  & Omit<Wallet, 'requirePin' | 'log' | 'logLatestEntryId'>
+  & Omit<WalletV0, 'requirePin' | 'log' | 'logLatestEntryId'>
   & {
-    type: 'Wallet-v0',
     logStream: LogStream,
   }
 
@@ -93,9 +135,8 @@ export type WalletRecordWithId =
 
 export type AccountRecord =
   & UserReference
-  & Omit<Account, 'knowledge' | 'info' | 'exchange' | 'config' | 'ledger' | 'display'>
+  & Omit<AccountV0, 'knowledge' | 'info' | 'exchange' | 'config' | 'ledger' | 'display'>
   & {
-    type: 'Account-v0',
     knowledge: ObjectReference,
     info: ObjectReference,
     exchange: ObjectReference,
@@ -114,14 +155,12 @@ export type WalletObjectRecord =
   | CreditorRecord
 
 export type PinInfoRecord =
-  & PinInfo
+  & PinInfoV0
   & BaseObjectRecord
-  & { type: 'PinInfo-v0' }
 
 export type CreditorRecord =
-  & Creditor
+  & CreditorV0
   & BaseObjectRecord
-  & { type: 'Creditor-v0' }
 
 export type AccountObjectRecord =
   | AccountConfigRecord
@@ -132,45 +171,37 @@ export type AccountObjectRecord =
   | AccountLedgerRecord
 
 export type AccountConfigRecord =
-  & AccountConfig
+  & AccountConfigV0
   & BaseObjectRecord
-  & { type: 'AccountConfig-v0' }
 
 export type AccountDisplayRecord =
-  & AccountDisplay
+  & AccountDisplayV0
   & BaseObjectRecord
-  & { type: 'AccountDisplay-v0' }
 
 export type AccountExchangeRecord =
-  & AccountExchange
+  & AccountExchangeV0
   & BaseObjectRecord
-  & { type: 'AccountExchange-v0' }
 
 export type AccountKnowledgeRecord =
-  & AccountKnowledge
+  & AccountKnowledgeV0
   & BaseObjectRecord
-  & { type: 'AccountKnowledge-v0' }
 
 export type AccountInfoRecord =
-  & AccountInfo
+  & AccountInfoV0
   & BaseObjectRecord
-  & { type: 'AccountInfo-v0' }
 
 export type AccountLedgerRecord =
-  & AccountLedger
+  & AccountLedgerV0
   & BaseObjectRecord
-  & { type: 'AccountLedger-v0' }
 
 export type CommittedTransferRecord =
-  & CommittedTransfer
+  & CommittedTransferV0
   & BaseObjectRecord
-  & { type: 'CommittedTransfer-v0' }
 
 export type TransferRecord =
   & UserReference
-  & Transfer
+  & TransferV0
   & {
-    type: 'Transfer-v0',
     time: number,
     paymentInfo: PaymentInfo,
     aborted: boolean,
@@ -179,9 +210,8 @@ export type TransferRecord =
 
 export type LedgerEntryRecord =
   & UserReference
-  & LedgerEntry
+  & LedgerEntryV0
   & {
-    type: 'LedgerEntry-v0',
     account: ObjectReference,
     id?: number,  // an autoincremented ID
   }
@@ -736,12 +766,12 @@ class CreditorsDb extends Dexie {
         assert(ACCOUNT_CONFIG_TYPE.test(config.type ?? 'AccountConfig'))
         await this.accountObjects.where({ 'account.uri': account.uri }).delete()
         await this.accountObjects.bulkPut([
-          { ...info, userId, type: 'AccountInfo-v0' as const },
-          { ...display, userId, type: 'AccountDisplay-v0' as const },
-          { ...knowledge, userId, type: 'AccountKnowledge-v0' as const },
-          { ...exchange, userId, type: 'AccountExchange-v0' as const },
-          { ...ledger, userId, type: 'AccountLedger-v0' as const },
-          { ...config, userId, type: 'AccountConfig-v0' as const },
+          { ...info, userId, type: 'AccountInfo-v0' },
+          { ...display, userId, type: 'AccountDisplay-v0' },
+          { ...knowledge, userId, type: 'AccountKnowledge-v0' },
+          { ...exchange, userId, type: 'AccountExchange-v0' },
+          { ...ledger, userId, type: 'AccountLedger-v0' },
+          { ...config, userId, type: 'AccountConfig-v0' },
         ])
         oldAccountRecordsMap.delete(account.uri)
       }
