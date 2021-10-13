@@ -758,20 +758,14 @@ class CreditorsDb extends Dexie {
           ledger: { uri: ledger.uri },
           config: { uri: config.uri },
         })
-        assert(ACCOUNT_INFO_TYPE.test(info.type))
-        assert(ACCOUNT_DISPLAY_TYPE.test(display.type ?? 'AccountDisplay'))
-        assert(ACCOUNT_KNOWLEDGE_TYPE.test(knowledge.type ?? 'AccountKnowledge'))
-        assert(ACCOUNT_EXCHANGE_TYPE.test(exchange.type ?? 'AccountExchange'))
-        assert(ACCOUNT_LEDGER_TYPE.test(ledger.type))
-        assert(ACCOUNT_CONFIG_TYPE.test(config.type ?? 'AccountConfig'))
         await this.accountObjects.where({ 'account.uri': account.uri }).delete()
         await this.accountObjects.bulkPut([
-          { ...info, userId, type: 'AccountInfo-v0' },
-          { ...display, userId, type: 'AccountDisplay-v0' },
-          { ...knowledge, userId, type: 'AccountKnowledge-v0' },
-          { ...exchange, userId, type: 'AccountExchange-v0' },
-          { ...ledger, userId, type: 'AccountLedger-v0' },
-          { ...config, userId, type: 'AccountConfig-v0' },
+          { ...info, userId },
+          { ...display, userId },
+          { ...knowledge, userId },
+          { ...exchange, userId },
+          { ...ledger, userId },
+          { ...config, userId },
         ])
         oldAccountRecordsMap.delete(account.uri)
       }
