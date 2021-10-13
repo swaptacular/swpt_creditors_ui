@@ -50,31 +50,31 @@ export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 
-export type TransferV0 = Transfer & { type: 'Transfer-v0' }
-export type LogEntryV0 = LogEntry & { type: 'LogEntry-v0' }
-export type PinInfoV0 = PinInfo & { type: 'PinInfo-v0' }
-export type CreditorV0 = Creditor & { type: 'Creditor-v0' }
-export type LedgerEntryV0 = LedgerEntry & { type: 'LedgerEntry-v0' }
-export type CommittedTransferV0 = CommittedTransfer & { type: 'CommittedTransfer-v0' }
-export type AccountInfoV0 = AccountInfo & { type: 'AccountInfo-v0' }
-export type AccountKnowledgeV0 = AccountKnowledge & { type: 'AccountKnowledge-v0' }
-export type AccountExchangeV0 = AccountExchange & { type: 'AccountExchange-v0' }
-export type AccountDisplayV0 = AccountDisplay & { type: 'AccountDisplay-v0' }
-export type AccountConfigV0 = AccountConfig & { type: 'AccountConfig-v0' }
+export type TransferV0 = Transfer & { type: 'Transfer' }
+export type LogEntryV0 = LogEntry & { type: 'LogEntry' }
+export type PinInfoV0 = PinInfo & { type: 'PinInfo' }
+export type CreditorV0 = Creditor & { type: 'Creditor' }
+export type LedgerEntryV0 = LedgerEntry & { type: 'LedgerEntry' }
+export type CommittedTransferV0 = CommittedTransfer & { type: 'CommittedTransfer' }
+export type AccountInfoV0 = AccountInfo & { type: 'AccountInfo' }
+export type AccountKnowledgeV0 = AccountKnowledge & { type: 'AccountKnowledge' }
+export type AccountExchangeV0 = AccountExchange & { type: 'AccountExchange' }
+export type AccountDisplayV0 = AccountDisplay & { type: 'AccountDisplay' }
+export type AccountConfigV0 = AccountConfig & { type: 'AccountConfig' }
 export type PaginatedListV0<ItemsType> = PaginatedList & {
-  type: 'PaginatedList-v0',
+  type: 'PaginatedList',
   itemsType: ItemsType,
 }
 export type PaginatedStreamV0<ItemsType> = PaginatedStream & {
-  type: 'PaginatedStream-v0',
+  type: 'PaginatedStream',
   itemsType: ItemsType,
 }
 export type AccountLedgerV0 = AccountLedger & {
-  type: 'AccountLedger-v0',
-  entries: PaginatedListV0<'LedgerEntry-v0'>,
+  type: 'AccountLedger',
+  entries: PaginatedListV0<'LedgerEntry'>,
 }
 export type AccountV0 = Account & {
-  type: 'Account-v0',
+  type: 'Account',
   ledger: AccountLedgerV0,
   info: AccountInfoV0,
   knowledge: AccountKnowledgeV0,
@@ -83,8 +83,8 @@ export type AccountV0 = Account & {
   config: AccountConfigV0,
 }
 export type WalletV0 = Wallet & {
-  type: 'Wallet-v0',
-  log: PaginatedStreamV0<'LogEntry-v0'>,
+  type: 'Wallet',
+  log: PaginatedStreamV0<'LogEntry'>,
 }
 
 type UserReference = {

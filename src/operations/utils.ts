@@ -53,7 +53,7 @@ type Page<ItemsType> = {
 }
 
 type LogEntriesPageV0 = {
-  type: 'LogEntriesPage-v0',
+  type: 'LogEntriesPage',
   items: LogEntryV0[],
   next?: string,
   forthcoming?: string
@@ -117,7 +117,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
     const responses = fulfilled.map(x => x.value)
     assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
-    return responses.map(response => ({ ...response.data, type: 'Transfer-v0' }))
+    return responses.map(response => ({ ...response.data, type: 'Transfer' }))
   }
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
@@ -163,23 +163,23 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   assert(LOG_ENTRY_TYPE.test(walletResponse.data.log.itemsType))
   const wallet: WalletV0 = {
     ...walletResponse.data,
-    type: 'Wallet-v0',
+    type: 'Wallet',
     log: {
       ...walletResponse.data.log,
-      type: 'PaginatedStream-v0',
-      itemsType: 'LogEntry-v0',
+      type: 'PaginatedStream',
+      itemsType: 'LogEntry',
     },
   }
 
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
   assert(CREDITOR_TYPE.test(creditorResponse.data.type ?? 'Creditor'))
-  const creditor: CreditorV0 = { ...creditorResponse.data, type: 'Creditor-v0' }
+  const creditor: CreditorV0 = { ...creditorResponse.data, type: 'Creditor' }
 
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
   assert(PIN_INFO_TYPE.test(pinInfoResponse.data.type ?? 'PinInfo'))
-  const pinInfo: PinInfoV0 = { ...pinInfoResponse.data, type: 'PinInfo-v0' }
+  const pinInfo: PinInfoV0 = { ...pinInfoResponse.data, type: 'PinInfo' }
 
   const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
   const accountUris: string[] = []
@@ -204,19 +204,19 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   assert(accountResponses.every(r => LEDGER_ENTRY_TYPE.test(r.data.ledger.entries.itemsType)))
   const accounts: AccountV0[] = accountResponses.map(r => ({
     ...r.data,
-    type: 'Account-v0',
-    config: { ...r.data.config, type: 'AccountConfig-v0' },
-    exchange: { ...r.data.exchange, type: 'AccountExchange-v0' },
-    knowledge: { ...r.data.knowledge, type: 'AccountKnowledge-v0' },
-    display: { ...r.data.display, type: 'AccountDisplay-v0' },
-    info: { ...r.data.info, type: 'AccountInfo-v0' },
+    type: 'Account',
+    config: { ...r.data.config, type: 'AccountConfig' },
+    exchange: { ...r.data.exchange, type: 'AccountExchange' },
+    knowledge: { ...r.data.knowledge, type: 'AccountKnowledge' },
+    display: { ...r.data.display, type: 'AccountDisplay' },
+    info: { ...r.data.info, type: 'AccountInfo' },
     ledger: {
       ...r.data.ledger,
-      type: 'AccountLedger-v0',
+      type: 'AccountLedger',
       entries: {
         ...r.data.ledger.entries,
-        type: 'PaginatedList-v0',
-        itemsType: 'LedgerEntry-v0',
+        type: 'PaginatedList',
+        itemsType: 'LedgerEntry',
       },
     },
   }))
@@ -269,10 +269,10 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
   assert(page.items.every(item => LOG_ENTRY_TYPE.test(item.type)))
   return {
     ...page,
-    type: 'LogEntriesPage-v0',
+    type: 'LogEntriesPage',
     items: page.items.map(item => ({
       ...item,
-      type: 'LogEntry-v0',
+      type: 'LogEntry',
       object: { uri: pageResponse.buildUri(item.object.uri) },
     })),
   }
