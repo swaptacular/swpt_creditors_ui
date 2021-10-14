@@ -35,6 +35,7 @@ import {
   LEDGER_ENTRY_TYPE,
   LEDGER_ENTRIES_LIST_TYPE,
   TRANSFER_RESULT_TYPE,
+  TRANSFER_ERROR_TYPE,
   TRANSFER_OPTIONS_TYPE,
 } from './db'
 import type {
@@ -120,6 +121,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
     assert(responses.every(response => TRANSFER_OPTIONS_TYPE.test(response.data.options.type ?? 'TransferOptions')))
     assert(responses.every(response => TRANSFER_RESULT_TYPE.test(response.data.result?.type ?? 'TransferResult')))
+    assert(responses.every(response => TRANSFER_ERROR_TYPE.test(response.data.result?.error?.type ?? 'TransferError')))
     return responses.map(response => ({
       ...response.data,
       type: 'Transfer',
@@ -127,7 +129,14 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
         ...response.data.options,
         type: 'TransferOptions',
       },
-      result: response.data.result ? { ...response.data.result, type: 'TransferResult' } : undefined,
+      result: response.data.result ? {
+        ...response.data.result,
+        type: 'TransferResult',
+        error: response.data.result.error ? {
+          ...response.data.result.error,
+          type: 'TransferError',
+        } : undefined,
+      } : undefined,
     }))
   }
 

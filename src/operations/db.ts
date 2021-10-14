@@ -23,6 +23,7 @@ import type {
   PaginatedStream,
   TransferOptions,
   TransferResult,
+  TransferError,
 } from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
@@ -52,6 +53,7 @@ export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_ERROR_TYPE = /^TransferError(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
 
 export type LogEntryV0 = LogEntry & { type: 'LogEntry' }
@@ -65,7 +67,11 @@ export type AccountExchangeV0 = AccountExchange & { type: 'AccountExchange' }
 export type AccountDisplayV0 = AccountDisplay & { type: 'AccountDisplay' }
 export type AccountConfigV0 = AccountConfig & { type: 'AccountConfig' }
 export type TransferOptionsV0 = TransferOptions & { type: 'TransferOptions' }
-export type TransferResultV0 = TransferResult & { type: 'TransferResult' }
+export type TransferErrorV0 = TransferError & { type: 'TransferError' }
+export type TransferResultV0 = TransferResult & {
+  type: 'TransferResult',
+  error?: TransferErrorV0,
+}
 export type TransferV0 = Transfer & {
   type: 'Transfer',
   options: TransferOptionsV0,
