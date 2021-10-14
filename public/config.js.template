@@ -1,13 +1,13 @@
 window.appConfig = {
-  serverApiEntrypoint: 'https://demo.swaptacular.org/creditors/.wallet',
-  serverApiTimeout: 8000,
+  serverApiEntrypoint: '${SERVER_API_ENTRYPOINT}',
+  serverApiTimeout: ${SERVER_API_TIMEOUT},
   oauth2: {
-    authorizationUrl: 'https://demo.swaptacular.org/creditors-hydra/oauth2/auth',
-    tokenUrl: 'https://demo.swaptacular.org/creditors-hydra/oauth2/token',
-    clientId: 'localhost',
-    redirectUrl: 'http://localhost:3000/',
+    authorizationUrl: '${AUTHORIZATION_URL}',
+    tokenUrl: '${TOKEN_URL}',
+    clientId: '${CLIENT_ID}',
+    redirectUrl: '${REDIRECT_URL}',
   },
-  TransferDeletionDelaySeconds: 15 * 86400,
+  TransferDeletionDelaySeconds: ${TRANSFER_DELETION_DELAY_SECONDS},
 }
 
 window.assert = function assert(condition, msg) {
