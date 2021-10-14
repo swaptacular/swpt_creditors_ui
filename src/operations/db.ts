@@ -21,6 +21,8 @@ import type {
   ObjectReference,
   PaginatedList,
   PaginatedStream,
+  TransferOptions,
+  TransferResult,
 } from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
@@ -49,8 +51,9 @@ export const LOG_ENTRIES_PAGE_TYPE = /^LogEntriesPage(-v[1-9][0-9]{0,5})?$/
 export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
 
-export type TransferV0 = Transfer & { type: 'Transfer' }
 export type LogEntryV0 = LogEntry & { type: 'LogEntry' }
 export type PinInfoV0 = PinInfo & { type: 'PinInfo' }
 export type CreditorV0 = Creditor & { type: 'Creditor' }
@@ -61,6 +64,13 @@ export type AccountKnowledgeV0 = AccountKnowledge & { type: 'AccountKnowledge' }
 export type AccountExchangeV0 = AccountExchange & { type: 'AccountExchange' }
 export type AccountDisplayV0 = AccountDisplay & { type: 'AccountDisplay' }
 export type AccountConfigV0 = AccountConfig & { type: 'AccountConfig' }
+export type TransferOptionsV0 = TransferOptions & { type: 'TransferOptions' }
+export type TransferResultV0 = TransferResult & { type: 'TransferResult' }
+export type TransferV0 = Transfer & {
+  type: 'Transfer',
+  options: TransferOptionsV0,
+  result?: TransferResultV0,
+}
 export type PaginatedListV0<ItemsType> = PaginatedList & {
   type: 'PaginatedList',
   itemsType: ItemsType,
@@ -735,19 +745,6 @@ class CreditorsDb extends Dexie {
 
       for (const account of accounts) {
         const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
-        const existingAccountRecord = oldAccountRecordsMap.get(account.uri)
-        assert(!existingAccountRecord || existingAccountRecord.userId === userId)
-        if (
-          existingAccountRecord
-          && new Date(existingAccountRecord.createdAt).getTime() !== new Date(account.createdAt).getTime()
-        ) {
-          // If the account has been deleted and re-created, the
-          // ledger entries for this account (and their corresponding
-          // committed transfers) will be invalid, and must be deleted
-          // from the local database.
-          await this.ledgerEntries.where({ 'account.uri': account.uri }).delete()
-          await this.committedTransfers.where({ 'account.uri': account.uri }).delete()
-        }
         await this.accounts.put({
           ...sanitizedAccount,
           userId,

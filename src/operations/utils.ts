@@ -34,6 +34,8 @@ import {
   ACCOUNT_CONFIG_TYPE,
   LEDGER_ENTRY_TYPE,
   LEDGER_ENTRIES_LIST_TYPE,
+  TRANSFER_RESULT_TYPE,
+  TRANSFER_OPTIONS_TYPE,
 } from './db'
 import type {
   UserData,
@@ -68,7 +70,6 @@ type ObjectUpdateInfo = {
   objectType: string,
   updateId?: bigint | 'deleted',
   data?: { [key: string]: unknown },
-  recreated: boolean,  // Indicates that the object has been deleted and created again.
 }
 
 class ObjectUpdater {
@@ -117,7 +118,17 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
     const responses = fulfilled.map(x => x.value)
     assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
-    return responses.map(response => ({ ...response.data, type: 'Transfer' }))
+    assert(responses.every(response => TRANSFER_OPTIONS_TYPE.test(response.data.options.type ?? 'TransferOptions')))
+    assert(responses.every(response => TRANSFER_RESULT_TYPE.test(response.data.result?.type ?? 'TransferResult')))
+    return responses.map(response => ({
+      ...response.data,
+      type: 'Transfer',
+      options: {
+        ...response.data.options,
+        type: 'TransferOptions',
+      },
+      result: response.data.result ? { ...response.data.result, type: 'TransferResult' } : undefined,
+    }))
   }
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
@@ -287,12 +298,9 @@ async function collectObjectUpdates(
     if (entryId != ++latestEntryId) {
       throw new BrokenLogStream()
     }
-    const existingUpdate = updates.get(uri)
-    const recreated = existingUpdate?.updateId === 'deleted' && !deleted
     updates.set(uri, {
       objectType,
       updateId: deleted ? 'deleted' : objectUpdateId,
-      recreated: existingUpdate?.recreated || recreated,
       data,
     })
   }
