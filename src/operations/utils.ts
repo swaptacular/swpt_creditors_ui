@@ -67,19 +67,22 @@ type PageItem<ItemsType> = {
   pageUrl: string,
 }
 
+type ObjectUpdater = () => Promise<void>
+
 type ObjectUpdateInfo = {
+  objectUri: string,
   objectType: string,
-  updateId?: bigint | 'deleted',
-  data?: { [key: string]: unknown },
+  logInfo?: {
+    addedAt: Date,
+    deleted: boolean,
+    objectUpdateId?: bigint,
+    data?: { [key: string]: unknown },
+  }
 }
 
-class ObjectUpdater {
-  constructor(public ObjectUri: string, public updateInfo: ObjectUpdateInfo) { }
-
-  async isAlreadyUpToDate(): Promise<boolean> {
-    // TODO: Query the local database.
-    return false
-  }
+type PreparedUpdate = {
+  updater: ObjectUpdater,
+  relatedUpdates: ObjectUpdateInfo[],
 }
 
 export class BrokenLogStream extends Error {
@@ -173,6 +176,53 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     await db.updateWalletRecord(walletRecord)
   }
   return walletRecord
+}
+
+/* Connects to the server, processes one page of log entries and
+ * updates the wallet. Throws `BrokenLogStream` if the log stream is
+ * broken. */
+export async function processLogPage(server: ServerSession, userId: number): Promise<void> {
+  const walletRecord = await db.getWalletRecord(userId)
+  if (walletRecord.logStream.isBroken) {
+    throw new BrokenLogStream()
+  }
+  const previousEntryId = walletRecord.logStream.latestEntryId
+
+  try {
+    const pageUrl = walletRecord.logStream.forthcoming
+    const page = await getLogEntriesPage(server, pageUrl);
+    const { updates, latestEntryId } = await collectObjectUpdates(page.items, previousEntryId)
+    const updaters = await generateObjectUpdaters(updates)
+    const isLastPage = page.next === undefined
+    const next = isLastPage ? page.forthcoming : page.next
+    assert(next !== undefined)
+
+    db.executeTransaction(async () => {
+      const walletRecord = await db.getWalletRecord(userId)
+      if (walletRecord.logStream.latestEntryId === previousEntryId) {
+        for (const performObjectUpdate of updaters) {
+          await performObjectUpdate()
+        }
+        if (isLastPage) {
+          walletRecord.logStream.syncedAt = new Date()
+        }
+        walletRecord.logStream.forthcoming = next
+        walletRecord.logStream.latestEntryId = latestEntryId
+        await db.updateWalletRecord(walletRecord)
+      }
+    })
+  } catch (e: unknown) {
+    if (e instanceof BrokenLogStream) {
+      db.executeTransaction(async () => {
+        const walletRecord = await db.getWalletRecord(userId)
+        if (walletRecord.logStream.latestEntryId === previousEntryId) {
+          walletRecord.logStream.isBroken = true
+          await db.updateWalletRecord(walletRecord)
+        }
+      })
+    }
+    throw e
+  }
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -281,7 +331,7 @@ async function* iterPage<T>(server: ServerSession, next: string): AsyncIterable<
   } while (next)
 }
 
-async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEntriesPageV0> {
+async function getLogEntriesPage(server: ServerSession, pageUrl: string): Promise<LogEntriesPageV0> {
   const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
   const page = pageResponse.data
   assert(LOG_ENTRIES_PAGE_TYPE.test(page.type))
@@ -299,30 +349,48 @@ async function getLogPage(server: ServerSession, pageUrl: string): Promise<LogEn
 }
 
 async function collectObjectUpdates(
-  latestEntryId: bigint,
   logEntries: LogEntryV0[],
-): Promise<{ latestEntryId: bigint, updates: Map<string, ObjectUpdateInfo> }> {
+  latestEntryId: bigint,
+): Promise<{ latestEntryId: bigint, updates: ObjectUpdateInfo[] }> {
   const updates: Map<string, ObjectUpdateInfo> = new Map()
-  for (const { entryId, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
+  for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId != ++latestEntryId) {
       throw new BrokenLogStream()
     }
     updates.set(uri, {
+      objectUri: uri,
       objectType,
-      updateId: deleted ? 'deleted' : objectUpdateId,
-      data,
+      logInfo: {
+        addedAt: new Date(addedAt),
+        deleted,
+        objectUpdateId,
+        data,
+      },
     })
   }
-  return { latestEntryId, updates }
+  return {
+    latestEntryId,
+    updates: [...updates.values()],
+  }
 }
 
-async function createObjectUpdaters(updates: Map<string, ObjectUpdateInfo>): Promise<ObjectUpdater[]> {
+async function generateObjectUpdaters(updates: ObjectUpdateInfo[]): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
-  for (const [objectUri, updateInfo] of updates) {
-    const updater = new ObjectUpdater(objectUri, updateInfo)
-    if (!await updater.isAlreadyUpToDate()) {
-      updaters.push(updater)
-    }
+  let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
+  for (const { updater, relatedUpdates } of await Promise.all(updates.map(x => prepareObjectUpdate(x)))) {
+    updaters.push(updater)
+    conbinedRelatedUpdates.push(...relatedUpdates)
+  }
+  if (conbinedRelatedUpdates.length > 0) {
+    updaters = updaters.concat(await generateObjectUpdaters(conbinedRelatedUpdates))
   }
   return updaters
+}
+
+async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo): Promise<PreparedUpdate> {
+  // TODO: Add proper implementation.
+  return {
+    updater: async () => { },
+    relatedUpdates: [],
+  }
 }

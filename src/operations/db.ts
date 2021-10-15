@@ -797,6 +797,12 @@ class CreditorsDb extends Dexie {
     return transferRecord !== undefined && (transferRecord.result !== undefined || transferRecord.aborted === true)
   }
 
+  async executeTransaction<Result>(func: () => Promise<Result>): Promise<Result> {
+    return await this.transaction('rw', this.allTables, async () => {
+      return await func()
+    })
+  }
+
   private async isInstalledUser(userId: number): Promise<boolean> {
     return await this.wallets.where({ userId }).count() === 1
   }
