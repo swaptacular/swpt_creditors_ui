@@ -179,8 +179,8 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 }
 
 /* Connects to the server, processes one page of log entries and
- * updates the wallet. Throws `BrokenLogStream` if the log stream is
- * broken. */
+ * updates the wallet record. Throws `BrokenLogStream` if the log
+ * stream is broken. */
 export async function processLogPage(server: ServerSession, userId: number): Promise<void> {
   const walletRecord = await db.getWalletRecord(userId)
   if (walletRecord.logStream.isBroken) {
@@ -354,7 +354,7 @@ async function collectObjectUpdates(
 ): Promise<{ latestEntryId: bigint, updates: ObjectUpdateInfo[] }> {
   const updates: Map<string, ObjectUpdateInfo> = new Map()
   for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
-    if (entryId != ++latestEntryId) {
+    if (entryId !== ++latestEntryId) {
       throw new BrokenLogStream()
     }
     updates.set(uri, {
@@ -377,7 +377,8 @@ async function collectObjectUpdates(
 async function generateObjectUpdaters(updates: ObjectUpdateInfo[]): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
-  for (const { updater, relatedUpdates } of await Promise.all(updates.map(x => prepareObjectUpdate(x)))) {
+  const timeout = calcParallelTimeout(updates.length)
+  for (const { updater, relatedUpdates } of await Promise.all(updates.map(x => prepareObjectUpdate(x, timeout)))) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
@@ -387,7 +388,7 @@ async function generateObjectUpdaters(updates: ObjectUpdateInfo[]): Promise<Obje
   return updaters
 }
 
-async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo): Promise<PreparedUpdate> {
+async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo, timeout: number): Promise<PreparedUpdate> {
   // TODO: Add proper implementation.
   return {
     updater: async () => { },
