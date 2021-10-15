@@ -389,7 +389,20 @@ async function generateObjectUpdaters(updates: ObjectUpdateInfo[]): Promise<Obje
 }
 
 async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo, timeout: number): Promise<PreparedUpdate> {
-  // TODO: Add proper implementation.
+  // TODO: Add a proper implementation. It should:
+  //
+  // 1. Check if the object exist in the local database and if it has
+  //    a big enough update ID. If yes -- we are done.
+  //
+  // 2. Request the object from the server or patch it up from the
+  //    log's `data`. Ensure the object's type is compatible, throw an
+  //    error if not. If necessary, make more that one request
+  //    (multiple ledger entry pages, for example).
+  //
+  // 4. Make a list of objects (URI and type), that are related to the
+  //    updated object, and may need to be requested as well. (For
+  //    example, committed transfers referred by ledger entries.)
+
   return {
     updater: async () => { },
     relatedUpdates: [],
