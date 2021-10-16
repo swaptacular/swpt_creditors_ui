@@ -295,7 +295,7 @@ async function generateObjectUpdaters(server: ServerSession, userId: number, upd
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
-  const promises = Promise.all(updates.map(x => prepareObjectUpdate(x, server, timeout)))
+  const promises = Promise.all(updates.map(x => prepareObjectUpdate(userId, x, server, timeout)))
   for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
@@ -348,6 +348,7 @@ function tryToUpdateExistingRecord(
 }
 
 async function prepareObjectUpdate(
+  userId: number,
   updateInfo: ObjectUpdateInfo,
   server: ServerSession,
   timeout: number,
@@ -387,24 +388,32 @@ async function prepareObjectUpdate(
     }
   }
 
-  async function getUpdatedRecord(): Promise<ObjectRecord> {
-    if (existingRecord && logInfo) {
-      const updatedRecord = tryToUpdateExistingRecord(existingRecord, logInfo)
-      if (updatedRecord) {
-        return updatedRecord
+  if (existingRecord && logInfo) {
+    const updatedRecord = tryToUpdateExistingRecord(existingRecord, logInfo)
+    if (updatedRecord) {
+      return {
+        updater: () => db.putObjectRecord(updatedRecord, objectUpdateId),
+        relatedUpdates: [],
       }
     }
-    const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
-    const parsedObject = parseLogObject(response)
-    // TODO: this is wrong!
-    return {
-      ...parsedObject,
-    } as any
   }
 
-  const updatedRecord = await getUpdatedRecord()
-  return {
-    updater: () => db.putObjectRecord(updatedRecord, objectUpdateId),
-    relatedUpdates: [],
+  const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
+  const parsedObject = parseLogObject(response)
+  switch (parsedObject.type) {
+    case 'Transfer':
+      return {
+        updater: async () => { db.storeTransfer(userId, parsedObject) },
+        relatedUpdates: [],
+      }
+    default:
+      const updatedRecord = {
+        ...parsedObject,
+        userId,
+      }
+      return {
+        updater: () => db.putObjectRecord(updatedRecord, objectUpdateId),
+        relatedUpdates: [],
+      }
   }
 }
