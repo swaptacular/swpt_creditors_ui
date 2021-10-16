@@ -35,7 +35,7 @@ import {
   parseAccount,
   parseWallet,
   parseTransfer,
-  parseObject,
+  parseLogObject,
   parseLogEntriesPage,
 } from './objectParsers'
 type Page<ItemsType> = {
@@ -395,7 +395,7 @@ async function prepareObjectUpdate(
       }
     }
     const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
-    const parsedObject = parseObject(response)
+    const parsedObject = parseLogObject(response)
     // TODO: this is wrong!
     return {
       ...parsedObject,
