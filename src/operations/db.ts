@@ -792,25 +792,24 @@ class CreditorsDb extends Dexie {
       const oldAccountRecordsMap = new Map(oldAccountRecordsArray.map(x => [x.uri, x]))
 
       for (const account of accounts) {
-        const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
-        await this.accounts.put({
-          ...sanitizedAccount,
-          userId,
-          info: { uri: info.uri },
-          display: { uri: display.uri },
-          knowledge: { uri: knowledge.uri },
-          exchange: { uri: exchange.uri },
-          ledger: { uri: ledger.uri },
-          config: { uri: config.uri },
-        })
+        const {
+          accountRecord,
+          accountInfoRecord,
+          accountDisplayRecord,
+          accountKnowledgeRecord,
+          accountExchangeRecord,
+          accountLedgerRecord,
+          accountConfigRecord,
+        } = splitIntoRecords(userId, account)
+        await this.accounts.put(accountRecord)
         await this.accountObjects.where({ 'account.uri': account.uri }).delete()
         await this.accountObjects.bulkPut([
-          { ...info, userId },
-          { ...display, userId },
-          { ...knowledge, userId },
-          { ...exchange, userId },
-          { ...ledger, userId },
-          { ...config, userId },
+          accountInfoRecord,
+          accountDisplayRecord,
+          accountKnowledgeRecord,
+          accountExchangeRecord,
+          accountLedgerRecord,
+          accountConfigRecord,
         ])
         oldAccountRecordsMap.delete(account.uri)
       }
@@ -887,6 +886,36 @@ class CreditorsDb extends Dexie {
     ]
   }
 
+}
+
+export function splitIntoRecords(userId: number, account: AccountV0): {
+  accountRecord: AccountRecord,
+  accountDisplayRecord: AccountDisplayRecord,
+  accountConfigRecord: AccountConfigRecord,
+  accountKnowledgeRecord: AccountKnowledgeRecord,
+  accountExchangeRecord: AccountExchangeRecord,
+  accountLedgerRecord: AccountLedgerRecord,
+  accountInfoRecord: AccountInfoRecord,
+} {
+  const { info, display, knowledge, exchange, ledger, config, ...sanitizedAccount } = account
+  return {
+    accountRecord: {
+      ...sanitizedAccount,
+      info: { uri: info.uri },
+      display: { uri: display.uri },
+      knowledge: { uri: knowledge.uri },
+      exchange: { uri: exchange.uri },
+      ledger: { uri: ledger.uri },
+      config: { uri: config.uri },
+      userId,
+    },
+    accountInfoRecord: { ...info, userId },
+    accountDisplayRecord: { ...display, userId },
+    accountKnowledgeRecord: { ...knowledge, userId },
+    accountExchangeRecord: { ...exchange, userId },
+    accountLedgerRecord: { ...ledger, userId },
+    accountConfigRecord: { ...config, userId },
+  }
 }
 
 function getIsoTimeOrNow(isoTime?: string): number {

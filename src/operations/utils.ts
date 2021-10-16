@@ -15,6 +15,7 @@ import type {
 } from './server'
 import {
   db,
+  splitIntoRecords,
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
@@ -371,6 +372,10 @@ async function prepareObjectUpdate(
   // `ObjectUpdater` functions. They man have changed during the time
   // between the preparation and the execution.
 
+  let result: PreparedUpdate = {
+    updater: async () => undefined,
+    relatedUpdates: [],
+  }
   const { logInfo, objectUri } = updateInfo
   const objectUpdateId = logInfo?.objectUpdateId
   let existingRecord: ObjectRecord | undefined
@@ -380,10 +385,7 @@ async function prepareObjectUpdate(
     if (existingRecord) {
       assert(existingRecord.latestUpdateId !== undefined)
       if (existingRecord.latestUpdateId >= objectUpdateId) {
-        return {
-          updater: async () => undefined,
-          relatedUpdates: [],
-        }
+        return result
       }
     }
   }
@@ -399,21 +401,18 @@ async function prepareObjectUpdate(
   }
 
   const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
-  const parsedObject = parseLogObject(response)
-  switch (parsedObject.type) {
+  const obj = parseLogObject(response)
+  switch (obj.type) {
     case 'Transfer':
-      return {
-        updater: async () => { db.storeTransfer(userId, parsedObject) },
-        relatedUpdates: [],
-      }
+      result.updater = async () => { db.storeTransfer(userId, obj) }
+      break
+    case 'Account':
+      const { accountRecord } = splitIntoRecords(userId, obj)
+      result.updater = () => db.putObjectRecord(accountRecord, objectUpdateId)
+      break
     default:
-      const updatedRecord = {
-        ...parsedObject,
-        userId,
-      }
-      return {
-        updater: () => db.putObjectRecord(updatedRecord, objectUpdateId),
-        relatedUpdates: [],
-      }
+      const objectRecord = { ...obj, userId }
+      result.updater = () => db.putObjectRecord(objectRecord, objectUpdateId)
   }
+  return result
 }
