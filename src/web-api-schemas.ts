@@ -1372,4 +1372,7 @@ export type CommittedTransfer = {
 
   /** The sender's `AccountIdentity` information. */
   sender: AccountIdentity;
+
+  latestUpdateAt?: never;
+  latestUpdateId?: never;
 }

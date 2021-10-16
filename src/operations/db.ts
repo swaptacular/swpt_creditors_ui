@@ -141,11 +141,17 @@ export type LogStream = {
 }
 
 export type ObjectRecord =
-  & ObjectReference
-  & {
-    type: string,
-    latestUpdateId?: bigint,
-  }
+  | AccountRecord
+  | AccountConfigRecord
+  | AccountDisplayRecord
+  | AccountKnowledgeRecord
+  | AccountExchangeRecord
+  | AccountInfoRecord
+  | AccountLedgerRecord
+  | TransferRecord
+  | CommittedTransferRecord
+  | CreditorRecord
+  | PinInfoRecord
 
 export type WalletRecord =
   & Partial<UserReference>
@@ -833,7 +839,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  private getObjectTable(objectType: string): Dexie.Table {
+  private getObjectTable(objectType: string): Dexie.Table<ObjectRecord, string> {
     switch (true) {
       case ACCOUNT_TYPE.test(objectType):
         return this.accounts
