@@ -15,28 +15,9 @@ import type {
 } from './server'
 import {
   db,
-  WALLET_TYPE,
-  CREDITOR_TYPE,
-  PIN_INFO_TYPE,
-  ACCOUNT_TYPE,
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
-  TRANSFER_TYPE,
-  LOG_ENTRY_TYPE,
-  LOG_ENTRIES_PAGE_TYPE,
-  PAGINATED_STREAM_TYPE,
-  ACCOUNT_INFO_TYPE,
-  ACCOUNT_DISPLAY_TYPE,
-  ACCOUNT_KNOWLEDGE_TYPE,
-  ACCOUNT_EXCHANGE_TYPE,
-  ACCOUNT_LEDGER_TYPE,
-  ACCOUNT_CONFIG_TYPE,
-  LEDGER_ENTRY_TYPE,
-  LEDGER_ENTRIES_LIST_TYPE,
-  TRANSFER_RESULT_TYPE,
-  TRANSFER_ERROR_TYPE,
-  TRANSFER_OPTIONS_TYPE,
 } from './db'
 import type {
   UserData,
@@ -44,25 +25,22 @@ import type {
   WalletRecordWithId,
   TransferV0,
   LogEntryV0,
-  AccountV0,
-  WalletV0,
-  CreditorV0,
-  PinInfoV0,
   ObjectRecord,
   AccountLedgerRecord,
   TransferRecord,
 } from './db'
-
+import {
+  parseCreditor,
+  parsePinInfo,
+  parseAccount,
+  parseWallet,
+  parseTransfer,
+  parseObject,
+  parseLogEntriesPage,
+} from './objectParsers'
 type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,
-}
-
-type LogEntriesPageV0 = {
-  type: 'LogEntriesPage',
-  items: LogEntryV0[],
-  next?: string,
-  forthcoming?: string
 }
 
 type PageItem<ItemsType> = {
@@ -124,33 +102,12 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     }
     const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
     const responses = fulfilled.map(x => x.value)
-    assert(responses.every(response => TRANSFER_TYPE.test(response.data.type)))
-    assert(responses.every(response => TRANSFER_OPTIONS_TYPE.test(response.data.options.type ?? 'TransferOptions')))
-    assert(responses.every(response => TRANSFER_RESULT_TYPE.test(response.data.result?.type ?? 'TransferResult')))
-    assert(responses.every(response => TRANSFER_ERROR_TYPE.test(response.data.result?.error?.type ?? 'TransferError')))
-    return responses.map(response => ({
-      ...response.data,
-      type: 'Transfer',
-      options: {
-        ...response.data.options,
-        type: 'TransferOptions',
-      },
-      result: response.data.result ? {
-        ...response.data.result,
-        type: 'TransferResult',
-        error: response.data.result.error ? {
-          ...response.data.result.error,
-          type: 'TransferError',
-        } : undefined,
-      } : undefined,
-    }))
+    return responses.map(response => parseTransfer(response))
   }
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
     let urisToFetch: string[] = []
-    for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
-      server, transfersListUri, TRANSFERS_LIST_TYPE, OBJECT_REFERENCE_TYPE
-    )) {
+    for await (const { item, pageUrl } of iterTransfersList(server, transfersListUri)) {
       const transferUri = new URL(item.uri, pageUrl).href
       const transferRecord = await db.getTransferRecord(transferUri)
       const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
@@ -193,7 +150,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
 
   try {
     const pageUrl = walletRecord.logStream.forthcoming
-    const page = await getLogEntriesPage(server, pageUrl);
+    const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
+    const page = parseLogEntriesPage(pageResponse)
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const updaters = await generateObjectUpdaters(server, userId, updates)
     const isLastPage = page.next === undefined
@@ -230,69 +188,28 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
 
 async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
+
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
-  assert(WALLET_TYPE.test(walletResponse.data.type))
-  assert(PAGINATED_STREAM_TYPE.test(walletResponse.data.log.type))
-  assert(LOG_ENTRY_TYPE.test(walletResponse.data.log.itemsType))
-  const wallet: WalletV0 = {
-    ...walletResponse.data,
-    type: 'Wallet',
-    log: {
-      ...walletResponse.data.log,
-      type: 'PaginatedStream',
-      itemsType: 'LogEntry',
-    },
-  }
+  const wallet = parseWallet(walletResponse)
 
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
-  assert(CREDITOR_TYPE.test(creditorResponse.data.type ?? 'Creditor'))
-  const creditor: CreditorV0 = { ...creditorResponse.data, type: 'Creditor' }
+  const creditor = parseCreditor(creditorResponse)
 
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
-  assert(PIN_INFO_TYPE.test(pinInfoResponse.data.type ?? 'PinInfo'))
-  const pinInfo: PinInfoV0 = { ...pinInfoResponse.data, type: 'PinInfo' }
+  const pinInfo = parsePinInfo(pinInfoResponse)
 
   const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
-  const accountUris: string[] = []
-  for await (const { item, pageUrl } of iterPaginatedList<ObjectReference>(
-    server, accountsListUri, ACCOUNTS_LIST_TYPE, OBJECT_REFERENCE_TYPE
-  )) {
-    accountUris.push(new URL(item.uri, pageUrl).href)
+  const accountUris = []
+  for await (const { item, pageUrl } of iterAccountsList(server, accountsListUri)) {
+    const accountUri = new URL(item.uri, pageUrl).href
+    accountUris.push(accountUri)
   }
   const timeout = calcParallelTimeout(accountUris.length)
-  const accountResponsePromises = accountUris.map(
-    uri => server.get(uri, { timeout })
-  ) as Promise<HttpResponse<Account>>[]
-  const accountResponses = await Promise.all(accountResponsePromises)
-  assert(accountResponses.every(r => ACCOUNT_TYPE.test(r.data.type)))
-  assert(accountResponses.every(r => ACCOUNT_CONFIG_TYPE.test(r.data.config.type ?? 'AccountConfig')))
-  assert(accountResponses.every(r => ACCOUNT_EXCHANGE_TYPE.test(r.data.exchange.type ?? 'AccountExchange')))
-  assert(accountResponses.every(r => ACCOUNT_KNOWLEDGE_TYPE.test(r.data.knowledge.type ?? 'AccountKnowledge')))
-  assert(accountResponses.every(r => ACCOUNT_DISPLAY_TYPE.test(r.data.display.type ?? 'AccountDisplay')))
-  assert(accountResponses.every(r => ACCOUNT_INFO_TYPE.test(r.data.info.type)))
-  assert(accountResponses.every(r => ACCOUNT_LEDGER_TYPE.test(r.data.ledger.type)))
-  assert(accountResponses.every(r => LEDGER_ENTRIES_LIST_TYPE.test(r.data.ledger.entries.type)))
-  assert(accountResponses.every(r => LEDGER_ENTRY_TYPE.test(r.data.ledger.entries.itemsType)))
-  const accounts: AccountV0[] = accountResponses.map(r => ({
-    ...r.data,
-    type: 'Account',
-    config: { ...r.data.config, type: 'AccountConfig' },
-    exchange: { ...r.data.exchange, type: 'AccountExchange' },
-    knowledge: { ...r.data.knowledge, type: 'AccountKnowledge' },
-    display: { ...r.data.display, type: 'AccountDisplay' },
-    info: { ...r.data.info, type: 'AccountInfo' },
-    ledger: {
-      ...r.data.ledger,
-      type: 'AccountLedger',
-      entries: {
-        ...r.data.ledger.entries,
-        type: 'PaginatedList',
-        itemsType: 'LedgerEntry',
-      },
-    },
-  }))
+  const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]
+  const accountResponses = await Promise.all(promises)
+  const accounts = accountResponses.map(response => parseAccount(response))
 
   return {
     collectedAfter,
@@ -322,6 +239,20 @@ async function* iterPaginatedList<T>(
   yield* iterPage<T>(server, first)
 }
 
+const iterAccountsList = (server: ServerSession, accountsListUri: string) => iterPaginatedList<ObjectReference>(
+  server,
+  accountsListUri,
+  ACCOUNTS_LIST_TYPE,
+  OBJECT_REFERENCE_TYPE,
+)
+
+const iterTransfersList = (server: ServerSession, transfersListUri: string) => iterPaginatedList<ObjectReference>(
+  server,
+  transfersListUri,
+  TRANSFERS_LIST_TYPE,
+  OBJECT_REFERENCE_TYPE,
+)
+
 async function* iterPage<T>(server: ServerSession, next: string): AsyncIterable<PageItem<T>> {
   do {
     const pageResponse = await server.get(next) as HttpResponse<Page<T>>
@@ -332,23 +263,6 @@ async function* iterPage<T>(server: ServerSession, next: string): AsyncIterable<
     }
     next = data.next !== undefined ? pageResponse.buildUri(data.next) : ''
   } while (next)
-}
-
-async function getLogEntriesPage(server: ServerSession, pageUrl: string): Promise<LogEntriesPageV0> {
-  const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
-  const page = pageResponse.data
-  assert(LOG_ENTRIES_PAGE_TYPE.test(page.type))
-  assert(page.next !== undefined || page.forthcoming !== undefined)
-  assert(page.items.every(item => LOG_ENTRY_TYPE.test(item.type)))
-  return {
-    ...page,
-    type: 'LogEntriesPage',
-    items: page.items.map(item => ({
-      ...item,
-      type: 'LogEntry',
-      object: { uri: pageResponse.buildUri(item.object.uri) },
-    })),
-  }
 }
 
 function collectObjectUpdates(
@@ -480,9 +394,12 @@ async function prepareObjectUpdate(
         return updatedRecord
       }
     }
-    const response = await server.get(objectUri, { timeout }) as HttpResponse<any>
-    // TODO: verify response.data.type
-    return response.data
+    const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
+    const parsedObject = parseObject(response)
+    // TODO: this is wrong!
+    return {
+      ...parsedObject,
+    } as any
   }
 
   const updatedRecord = await getUpdatedRecord()

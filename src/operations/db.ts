@@ -59,6 +59,12 @@ export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
 export const COMMITTED_TRANSFER_TYPE = /^CommittedTransfer(-v[1-9][0-9]{0,5})?$/
 
 export type LogEntryV0 = LogEntry & { type: 'LogEntry' }
+export type LogEntriesPageV0 = {
+  type: 'LogEntriesPage',
+  items: LogEntryV0[],
+  next?: string,
+  forthcoming?: string
+}
 export type PinInfoV0 = PinInfo & { type: 'PinInfo' }
 export type CreditorV0 = Creditor & { type: 'Creditor' }
 export type LedgerEntryV0 = LedgerEntry & { type: 'LedgerEntry' }
