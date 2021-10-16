@@ -48,6 +48,8 @@ import type {
   WalletV0,
   CreditorV0,
   PinInfoV0,
+  AccountLedgerV0,
+  ObjectRecord,
 } from './db'
 
 type Page<ItemsType> = {
@@ -73,7 +75,7 @@ type ObjectUpdateInfo = {
   objectUri: string,
   objectType: string,
   logInfo?: {
-    addedAt: Date,
+    addedAt: string,
     deleted: boolean,
     objectUpdateId?: bigint,
     data?: { [key: string]: unknown },
@@ -191,8 +193,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
   try {
     const pageUrl = walletRecord.logStream.forthcoming
     const page = await getLogEntriesPage(server, pageUrl);
-    const { updates, latestEntryId } = await collectObjectUpdates(page.items, previousEntryId)
-    const updaters = await generateObjectUpdaters(updates)
+    const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
+    const updaters = await generateObjectUpdaters(server, updates)
     const isLastPage = page.next === undefined
     const next = isLastPage ? page.forthcoming : page.next
     assert(next !== undefined)
@@ -348,10 +350,10 @@ async function getLogEntriesPage(server: ServerSession, pageUrl: string): Promis
   }
 }
 
-async function collectObjectUpdates(
+function collectObjectUpdates(
   logEntries: LogEntryV0[],
   latestEntryId: bigint,
-): Promise<{ latestEntryId: bigint, updates: ObjectUpdateInfo[] }> {
+): { latestEntryId: bigint, updates: ObjectUpdateInfo[] } {
   const updates: Map<string, ObjectUpdateInfo> = new Map()
   for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId !== ++latestEntryId) {
@@ -361,7 +363,7 @@ async function collectObjectUpdates(
       objectUri: uri,
       objectType,
       logInfo: {
-        addedAt: new Date(addedAt),
+        addedAt,
         deleted,
         objectUpdateId,
         data,
@@ -374,21 +376,67 @@ async function collectObjectUpdates(
   }
 }
 
-async function generateObjectUpdaters(updates: ObjectUpdateInfo[]): Promise<ObjectUpdater[]> {
+async function generateObjectUpdaters(server: ServerSession, updates: ObjectUpdateInfo[]): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
-  for (const { updater, relatedUpdates } of await Promise.all(updates.map(x => prepareObjectUpdate(x, timeout)))) {
+  const promises = Promise.all(updates.map(x => prepareObjectUpdate(x, server, timeout)))
+  for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
   if (conbinedRelatedUpdates.length > 0) {
-    updaters = updaters.concat(await generateObjectUpdaters(conbinedRelatedUpdates))
+    updaters = updaters.concat(await generateObjectUpdaters(server, conbinedRelatedUpdates))
   }
   return updaters
 }
 
-async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo, timeout: number): Promise<PreparedUpdate> {
+function tryToUpdateExistingObject(
+  existingObject: ObjectRecord,
+  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>
+): ObjectRecord | undefined {
+  const { objectUpdateId, data, addedAt } = logInfo
+  if (objectUpdateId !== undefined && data !== undefined) {
+    switch (existingObject.type) {
+      case 'AccountLedger':
+        return {
+          ...existingObject as AccountLedgerV0,
+          principal: BigInt(data.principal as bigint),
+          nextEntryId: BigInt(data.nextEntryId as bigint),
+          latestUpdateId: objectUpdateId,
+          latestUpdateAt: addedAt
+        } as AccountLedgerV0
+      case 'Transfer':
+        let updatedObject: TransferV0 = {
+          ...existingObject as TransferV0,
+          latestUpdateId: objectUpdateId,
+          latestUpdateAt: addedAt,
+        } as TransferV0
+        if (data.finalizedAt !== undefined) {
+          const hasError = data.errorCode === undefined
+          updatedObject.result = {
+            type: 'TransferResult',
+            finalizedAt: String(data.finalizedAt),
+            committedAmount: hasError ? 0n : updatedObject.amount
+          }
+          if (hasError) {
+            updatedObject.result.error = {
+              type: 'TransferError',
+              errorCode: String(data.errorCode),
+            }
+          }
+        }
+        return updatedObject
+    }
+  }
+  return undefined
+}
+
+async function prepareObjectUpdate(
+  updateInfo: ObjectUpdateInfo,
+  server: ServerSession,
+  timeout: number,
+): Promise<PreparedUpdate> {
   // TODO: Add a proper implementation. It should:
   //
   // 1. Check if the object exist in the local database and if it has
@@ -407,8 +455,38 @@ async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo, timeout: number
   // `ObjectUpdater` functions. They man have changed during the time
   // between the preparation and the execution.
 
+  const { logInfo, objectUri } = updateInfo
+  const objectUpdateId = logInfo?.objectUpdateId
+  let existingRecord: ObjectRecord | undefined
+
+  if (objectUpdateId) {
+    existingRecord = await db.getObjectRecord(updateInfo)
+    if (existingRecord) {
+      assert(existingRecord.latestUpdateId !== undefined)
+      if (existingRecord.latestUpdateId >= objectUpdateId) {
+        return {
+          updater: async () => undefined,
+          relatedUpdates: [],
+        }
+      }
+    }
+  }
+
+  const getUpdatedObject = async () => {
+    if (existingRecord && logInfo) {
+      const updatedObject = tryToUpdateExistingObject(existingRecord, logInfo)
+      if (updatedObject) {
+        return updatedObject
+      }
+    }
+    const response = await server.get(objectUri, { timeout }) as HttpResponse<ObjectRecord>
+    // TODO: verify response.data.type
+    return response.data
+  }
+
+  const updatedObject = await getUpdatedObject()
   return {
-    updater: async () => { },
+    updater: () => db.putObjectRecord(updatedObject, objectUpdateId),
     relatedUpdates: [],
   }
 }

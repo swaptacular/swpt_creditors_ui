@@ -33,6 +33,7 @@ export type TypeMatcher = {
   test(t: string): boolean,
 }
 
+export const MAX_INT64 = (1n << 63n) - 1n
 export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
 export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
@@ -55,6 +56,7 @@ export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_ERROR_TYPE = /^TransferError(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
+export const COMMITTED_TRANSFER_TYPE = /^CommittedTransfer(-v[1-9][0-9]{0,5})?$/
 
 export type LogEntryV0 = LogEntry & { type: 'LogEntry' }
 export type PinInfoV0 = PinInfo & { type: 'PinInfo' }
@@ -137,6 +139,13 @@ export type LogStream = {
   syncedAt?: Date,
   isBroken: boolean,
 }
+
+export type ObjectRecord =
+  & ObjectReference
+  & {
+    type: string,
+    latestUpdateId?: bigint,
+  }
 
 export type WalletRecord =
   & Partial<UserReference>
@@ -461,6 +470,27 @@ class CreditorsDb extends Dexie {
       throw new UserDoesNotExist()
     }
     assert(updated === 1)
+  }
+
+  async getObjectRecord(
+    { objectUri, objectType }: { objectUri: string, objectType: string }
+  ): Promise<ObjectRecord | undefined> {
+    const table = this.getObjectTable(objectType)
+    return await table.get(objectUri)
+  }
+
+  async putObjectRecord(objectRecord: ObjectRecord, objectUpdateId?: bigint): Promise<void> {
+    const table = this.getObjectTable(objectRecord.type)
+    if (objectUpdateId) {
+      const existingRecord = await table.get(objectRecord.uri) as ObjectRecord | undefined
+      if (existingRecord) {
+        assert(existingRecord.latestUpdateId !== undefined)
+        if (existingRecord.latestUpdateId >= objectUpdateId) {
+          return
+        }
+      }
+    }
+    await table.put(objectRecord)
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
@@ -801,6 +831,29 @@ class CreditorsDb extends Dexie {
     return await this.transaction('rw', this.allTables, async () => {
       return await func()
     })
+  }
+
+  private getObjectTable(objectType: string): Dexie.Table {
+    switch (true) {
+      case ACCOUNT_TYPE.test(objectType):
+        return this.accounts
+      case ACCOUNT_DISPLAY_TYPE.test(objectType):
+      case ACCOUNT_KNOWLEDGE_TYPE.test(objectType):
+      case ACCOUNT_EXCHANGE_TYPE.test(objectType):
+      case ACCOUNT_LEDGER_TYPE.test(objectType):
+      case ACCOUNT_CONFIG_TYPE.test(objectType):
+      case ACCOUNT_INFO_TYPE.test(objectType):
+        return this.accountObjects
+      case CREDITOR_TYPE.test(objectType):
+      case PIN_INFO_TYPE.test(objectType):
+        return this.walletObjects
+      case COMMITTED_TRANSFER_TYPE.test(objectType):
+        return this.committedTransfers
+      case TRANSFER_TYPE.test(objectType):
+        return this.transfers
+      default:
+        throw new Error('unknown object type')
+    }
   }
 
   private async isInstalledUser(userId: number): Promise<boolean> {
