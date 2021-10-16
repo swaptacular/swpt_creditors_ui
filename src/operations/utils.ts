@@ -402,6 +402,10 @@ async function prepareObjectUpdate(updateInfo: ObjectUpdateInfo, timeout: number
   // 4. Make a list of objects (URI and type), that are related to the
   //    updated object, and may need to be requested as well. (For
   //    example, committed transfers referred by ledger entries.)
+  //
+  // Important: Do not forget to check `latestUpdateId` in
+  // `ObjectUpdater` functions. They man have changed during the time
+  // between the preparation and the execution.
 
   return {
     updater: async () => { },
