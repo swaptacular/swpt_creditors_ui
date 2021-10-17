@@ -146,7 +146,18 @@ export type LogStream = {
   isBroken: boolean,
 }
 
-export type ObjectRecord =
+export type ObjectUpdateInfo = {
+  objectUri: string,
+  objectType: string,
+  logInfo?: {
+    addedAt: string,
+    deleted: boolean,
+    objectUpdateId?: bigint,
+    data?: { [key: string]: unknown },
+  }
+}
+
+export type LogObjectRecord =
   | AccountRecord
   | AccountConfigRecord
   | AccountDisplayRecord
@@ -484,17 +495,20 @@ class CreditorsDb extends Dexie {
     assert(updated === 1)
   }
 
-  async getObjectRecord(
+  async getLogObjectRecord(
     { objectUri, objectType }: { objectUri: string, objectType: string }
-  ): Promise<ObjectRecord | undefined> {
-    const table = this.getObjectTable(objectType)
+  ): Promise<LogObjectRecord | undefined> {
+    const table = this.getLogObjectTable(objectType)
     return await table.get(objectUri)
   }
 
-  async putObjectRecord(objectRecord: ObjectRecord, objectUpdateId?: bigint): Promise<void> {
-    const table = this.getObjectTable(objectRecord.type)
+  async updateLogObjectRecord(updateInfo: ObjectUpdateInfo, objectRecord: LogObjectRecord | null): Promise<void> {
+    const { objectUri, objectType,  logInfo } = updateInfo
+    const deleted = logInfo?.deleted
+    const objectUpdateId = logInfo?.objectUpdateId
+    const table = this.getLogObjectTable(objectType)
     if (objectUpdateId) {
-      const existingRecord = await table.get(objectRecord.uri) as ObjectRecord | undefined
+      const existingRecord = await table.get(objectUri) as LogObjectRecord | undefined
       if (existingRecord) {
         assert(existingRecord.latestUpdateId !== undefined)
         if (existingRecord.latestUpdateId >= objectUpdateId) {
@@ -502,7 +516,13 @@ class CreditorsDb extends Dexie {
         }
       }
     }
-    await table.put(objectRecord)
+    if (deleted) {
+      assert(!objectRecord)
+      await table.delete(objectUri)
+    } else {
+      assert(objectRecord)
+      await table.put(objectRecord)
+    }
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
@@ -848,7 +868,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  private getObjectTable(objectType: string): Dexie.Table<ObjectRecord, string> {
+  private getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
     switch (true) {
       case ACCOUNT_TYPE.test(objectType):
         return this.accounts

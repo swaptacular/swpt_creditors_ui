@@ -26,9 +26,10 @@ import type {
   WalletRecordWithId,
   TransferV0,
   LogEntryV0,
-  ObjectRecord,
+  LogObjectRecord,
   AccountLedgerRecord,
   TransferRecord,
+  ObjectUpdateInfo,
 } from './db'
 import {
   parseCreditor,
@@ -50,17 +51,6 @@ type PageItem<ItemsType> = {
 }
 
 type ObjectUpdater = () => Promise<void>
-
-type ObjectUpdateInfo = {
-  objectUri: string,
-  objectType: string,
-  logInfo?: {
-    addedAt: string,
-    deleted: boolean,
-    objectUpdateId?: bigint,
-    data?: { [key: string]: unknown },
-  }
-}
 
 type PreparedUpdate = {
   updater: ObjectUpdater,
@@ -307,45 +297,48 @@ async function generateObjectUpdaters(server: ServerSession, userId: number, upd
   return updaters
 }
 
-function tryToUpdateExistingRecord(
-  existingRecord: ObjectRecord,
-  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>
-): ObjectRecord | undefined {
+function tryToPatchExistingRecord(
+  existingRecord: LogObjectRecord,
+  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>,
+): LogObjectRecord | undefined {
+  let patchedObject: AccountLedgerRecord | TransferRecord | undefined
   const { objectUpdateId, data, addedAt } = logInfo
+
   if (objectUpdateId !== undefined && data !== undefined) {
     switch (existingRecord.type) {
       case 'AccountLedger':
-        return {
+        patchedObject = {
           ...existingRecord as AccountLedgerRecord,
           principal: BigInt(data.principal as bigint),
           nextEntryId: BigInt(data.nextEntryId as bigint),
           latestUpdateId: objectUpdateId,
           latestUpdateAt: addedAt,
         } as AccountLedgerRecord
+        break
       case 'Transfer':
-        let updatedObject: TransferRecord = {
+        patchedObject = {
           ...existingRecord as TransferRecord,
           latestUpdateId: objectUpdateId,
           latestUpdateAt: addedAt,
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
           const hasError = data.errorCode === undefined
-          updatedObject.result = {
+          patchedObject.result = {
             type: 'TransferResult',
             finalizedAt: String(data.finalizedAt),
-            committedAmount: hasError ? 0n : updatedObject.amount
+            committedAmount: hasError ? 0n : patchedObject.amount
           }
           if (hasError) {
-            updatedObject.result.error = {
+            patchedObject.result.error = {
               type: 'TransferError',
               errorCode: String(data.errorCode),
             }
           }
         }
-        return updatedObject
+        break
     }
   }
-  return undefined
+  return patchedObject
 }
 
 async function prepareObjectUpdate(
@@ -372,47 +365,67 @@ async function prepareObjectUpdate(
   // `ObjectUpdater` functions. They man have changed during the time
   // between the preparation and the execution.
 
-  let result: PreparedUpdate = {
-    updater: async () => undefined,
-    relatedUpdates: [],
-  }
-  const { logInfo, objectUri } = updateInfo
-  const objectUpdateId = logInfo?.objectUpdateId
-  let existingRecord: ObjectRecord | undefined
+  const { objectUri, logInfo } = updateInfo
 
-  if (objectUpdateId) {
-    existingRecord = await db.getObjectRecord(updateInfo)
-    if (existingRecord) {
-      assert(existingRecord.latestUpdateId !== undefined)
-      if (existingRecord.latestUpdateId >= objectUpdateId) {
-        return result
+  if (logInfo) {
+    const { deleted, objectUpdateId } = logInfo
+    if (deleted) {
+      // Delete the object.
+      return {
+        updater: () => db.updateLogObjectRecord(updateInfo, null),
+        relatedUpdates: [],
       }
     }
-  }
-
-  if (existingRecord && logInfo) {
-    const updatedRecord = tryToUpdateExistingRecord(existingRecord, logInfo)
-    if (updatedRecord) {
-      return {
-        updater: () => db.putObjectRecord(updatedRecord, objectUpdateId),
-        relatedUpdates: [],
+    if (objectUpdateId) {
+      const existingRecord = await db.getLogObjectRecord(updateInfo)
+      if (existingRecord) {
+        assert(existingRecord.latestUpdateId !== undefined)
+        if (existingRecord.latestUpdateId >= objectUpdateId) {
+          // Do nothing -- the object's record is already up-to-date.
+          return {
+            updater: async () => undefined,
+            relatedUpdates: [],
+          }
+        }
+        const patchedRecord = tryToPatchExistingRecord(existingRecord, logInfo)
+        if (patchedRecord) {
+          // Update the object's record without making a network
+          // request -- the data that the log entry provides is enough
+          // to successfully patch the existing record.
+          return {
+            updater: () => db.updateLogObjectRecord(updateInfo, patchedRecord),
+            relatedUpdates: [],
+          }
+        }
       }
     }
   }
 
   const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
-  const obj = parseLogObject(response)
-  switch (obj.type) {
+  const logObject = parseLogObject(response)
+  switch (logObject.type) {
     case 'Transfer':
-      result.updater = async () => { db.storeTransfer(userId, obj) }
-      break
+      return {
+        updater: async () => { db.storeTransfer(userId, logObject) },
+        relatedUpdates: [],
+      }
     case 'Account':
-      const { accountRecord } = splitIntoRecords(userId, obj)
-      result.updater = () => db.putObjectRecord(accountRecord, objectUpdateId)
-      break
+      const { accountRecord } = splitIntoRecords(userId, logObject)
+      return {
+        updater: () => db.updateLogObjectRecord(updateInfo, accountRecord),
+        relatedUpdates: [],
+      }
+    case 'AccountLedger':
+      const accountLedgerRecord: AccountLedgerRecord = { ...logObject, userId }
+      return {
+        updater: () => db.updateLogObjectRecord(updateInfo, accountLedgerRecord),
+        relatedUpdates: [],  // TODO: Fetch the ledger entries.
+      }
     default:
-      const objectRecord = { ...obj, userId }
-      result.updater = () => db.putObjectRecord(objectRecord, objectUpdateId)
+      const logObjectRecord: LogObjectRecord = { ...logObject, userId }
+      return {
+        updater: () => db.updateLogObjectRecord(updateInfo, logObjectRecord),
+        relatedUpdates: [],
+      }
   }
-  return result
 }
