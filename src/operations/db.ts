@@ -508,11 +508,11 @@ class CreditorsDb extends Dexie {
     const objectUpdateId = logInfo?.objectUpdateId
     const table = this.getLogObjectTable(objectType)
     if (objectUpdateId) {
-      const existingRecord = await table.get(objectUri) as LogObjectRecord | undefined
+      const existingRecord = await table.get(objectUri)
       if (existingRecord) {
         assert(existingRecord.latestUpdateId !== undefined)
         if (existingRecord.latestUpdateId >= objectUpdateId) {
-          return
+          return  // The record already exists and is up-to-date.
         }
       }
     }
