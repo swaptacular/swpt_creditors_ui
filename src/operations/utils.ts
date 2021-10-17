@@ -347,24 +347,6 @@ async function prepareObjectUpdate(
   server: ServerSession,
   timeout: number,
 ): Promise<PreparedUpdate> {
-  // TODO: Add a proper implementation. It should:
-  //
-  // 1. Check if the object exist in the local database and if it has
-  //    a big enough update ID. If yes -- we are done.
-  //
-  // 2. Request the object from the server or patch it up from the
-  //    log's `data`. Ensure the object's type is compatible, throw an
-  //    error if not. If necessary, make more that one request
-  //    (multiple ledger entry pages, for example).
-  //
-  // 4. Make a list of objects (URI and type), that are related to the
-  //    updated object, and may need to be requested as well. (For
-  //    example, committed transfers referred by ledger entries.)
-  //
-  // Important: Do not forget to check `latestUpdateId` in
-  // `ObjectUpdater` functions. They man have changed during the time
-  // between the preparation and the execution.
-
   const { objectUri, logInfo } = updateInfo
 
   if (logInfo) {
@@ -417,9 +399,11 @@ async function prepareObjectUpdate(
       }
     case 'AccountLedger':
       const accountLedgerRecord: AccountLedgerRecord = { ...logObject, userId }
+      // TODO: Fetch the ledger entries and pass the corresponding
+      //       transfer URIs as `relatedUpdates` here.
       return {
         updater: () => db.updateLogObjectRecord(updateInfo, accountLedgerRecord),
-        relatedUpdates: [],  // TODO: Fetch the ledger entries.
+        relatedUpdates: [],
       }
     default:
       const logObjectRecord: LogObjectRecord = { ...logObject, userId }
