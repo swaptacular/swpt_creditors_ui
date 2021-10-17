@@ -503,26 +503,29 @@ class CreditorsDb extends Dexie {
   }
 
   async updateLogObjectRecord(updateInfo: ObjectUpdateInfo, objectRecord: LogObjectRecord | null): Promise<void> {
-    const { objectUri, objectType,  logInfo } = updateInfo
+    const { objectUri, objectType, logInfo } = updateInfo
     const deleted = logInfo?.deleted
     const objectUpdateId = logInfo?.objectUpdateId
     const table = this.getLogObjectTable(objectType)
-    if (objectUpdateId) {
-      const existingRecord = await table.get(objectUri)
-      if (existingRecord) {
-        assert(existingRecord.latestUpdateId !== undefined)
-        if (existingRecord.latestUpdateId >= objectUpdateId) {
-          return  // The record already exists and is up-to-date.
+
+    await this.transaction('rw', [table], async () => {
+      if (objectUpdateId) {
+        const existingRecord = await table.get(objectUri)
+        if (existingRecord) {
+          assert(existingRecord.latestUpdateId !== undefined)
+          if (existingRecord.latestUpdateId >= objectUpdateId) {
+            return  // The record already exists and is up-to-date.
+          }
         }
       }
-    }
-    if (deleted) {
-      assert(!objectRecord)
-      await table.delete(objectUri)
-    } else {
-      assert(objectRecord)
-      await table.put(objectRecord)
-    }
+      if (deleted) {
+        assert(!objectRecord)
+        await table.delete(objectUri)
+      } else {
+        assert(objectRecord)
+        await table.put(objectRecord)
+      }
+    })
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
