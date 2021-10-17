@@ -695,8 +695,12 @@ class CreditorsDb extends Dexie {
       const existingTransferRecord = await this.transfers.get(transferUri)
       if (existingTransferRecord) {
         assert(existingTransferRecord.userId === userId, 'wrong userId')
-        const { time, paymentInfo, originatesHere, aborted } = existingTransferRecord
-        transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, aborted }
+        if (existingTransferRecord.latestUpdateId >= transfer.latestUpdateId) {
+          transferRecord = existingTransferRecord
+        } else {
+          const { time, paymentInfo, originatesHere, aborted } = existingTransferRecord
+          transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, aborted }
+        }
       } else {
         const time = getIsoTimeOrNow(initiatedAt)
         const paymentInfo = parseTransferNote(transfer)
@@ -726,7 +730,7 @@ class CreditorsDb extends Dexie {
       })
     }
 
-    const putAbortTransferAction = async (transfer: TransferRecord): Promise<void> => {
+    const putAbortTransferAction = async (t: TransferRecord): Promise<void> => {
       let abortTransferAction: AbortTransferAction | undefined
       const existingAbortTransferAction = await getAbortTransferActionQuery().first()
       if (!existingAbortTransferAction) {
@@ -735,10 +739,10 @@ class CreditorsDb extends Dexie {
           actionType: 'AbortTransfer',
           createdAt: new Date(),
           transferUri,
-          transfer,
+          transfer: t,
         }
-      } else if (!existingAbortTransferAction.transfer.result && transfer.result) {
-        existingAbortTransferAction.transfer.result = transfer.result
+      } else if (!existingAbortTransferAction.transfer.result && t.result) {
+        existingAbortTransferAction.transfer.result = t.result
         abortTransferAction = existingAbortTransferAction
       }
       if (abortTransferAction) {
@@ -751,7 +755,7 @@ class CreditorsDb extends Dexie {
         throw new UserDoesNotExist()
       }
       const transferRecord = await putTransferRecord()
-      switch (getTransferState(transfer)) {
+      switch (getTransferState(transferRecord)) {
         case 'successful':
           await scheduleTransferDeletion()
           await deleteAbortTransferAction()
