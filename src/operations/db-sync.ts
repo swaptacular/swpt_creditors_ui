@@ -37,12 +37,12 @@ import {
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
-} from './canonicalObjects'
+} from './canonical-objects'
 import type {
   TypeMatcher,
   TransferV0,
   LogEntryV0,
-} from './canonicalObjects'
+} from './canonical-objects'
 
 type Page<ItemsType> = {
   items: ItemsType[],

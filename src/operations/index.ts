@@ -22,7 +22,7 @@ import type {
 import {
   getOrCreateUserId,
   ensureLoadedTransfers,
-} from './utils'
+} from './db-sync'
 
 export {
   AuthenticationError,

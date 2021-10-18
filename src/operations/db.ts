@@ -21,8 +21,8 @@ import type {
   TransferCreationRequestV0,
   WebApiError,
   ObjectReference,
-} from './canonicalObjects'
-import { getCanonicalType } from './canonicalObjects'
+} from './canonical-objects'
+import { getCanonicalType } from './canonical-objects'
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
