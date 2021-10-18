@@ -39,10 +39,6 @@ import {
   TRANSFER_TYPE,
 } from './canonicalObjects'
 
-export type TypeMatcher = {
-  test(t: string): boolean,
-}
-
 export const MAX_INT64 = (1n << 63n) - 1n
 
 type UserReference = {

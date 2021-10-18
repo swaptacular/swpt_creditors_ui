@@ -20,7 +20,6 @@ import {
 } from './db'
 import type {
   UserData,
-  TypeMatcher,
   WalletRecordWithId,
   LogObjectRecord,
   AccountLedgerRecord,
@@ -40,6 +39,7 @@ import {
   TRANSFERS_LIST_TYPE,
 } from './canonicalObjects'
 import type {
+  TypeMatcher,
   TransferV0,
   LogEntryV0,
 } from './canonicalObjects'
