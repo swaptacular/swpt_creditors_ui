@@ -24,7 +24,7 @@ import type {
   AccountExchangeV0,
   AccountDisplayV0,
   AccountConfigV0,
-} from './objectParsers'
+} from './canonicalObjects'
 import {
   ACCOUNT_TYPE,
   ACCOUNT_DISPLAY_TYPE,
@@ -37,7 +37,7 @@ import {
   PIN_INFO_TYPE,
   COMMITTED_TRANSFER_TYPE,
   TRANSFER_TYPE,
-} from './objectParsers'
+} from './canonicalObjects'
 
 export type TypeMatcher = {
   test(t: string): boolean,

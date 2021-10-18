@@ -28,21 +28,21 @@ import type {
   ObjectUpdateInfo,
 } from './db'
 import {
-  parseCreditor,
-  parsePinInfo,
-  parseAccount,
-  parseWallet,
-  parseTransfer,
-  parseLogObject,
-  parseLogEntriesPage,
+  makeCreditor,
+  makePinInfo,
+  makeAccount,
+  makeWallet,
+  makeTransfer,
+  makeLogObject,
+  makeLogEntriesPage,
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
-} from './objectParsers'
+} from './canonicalObjects'
 import type {
   TransferV0,
   LogEntryV0,
-} from './objectParsers'
+} from './canonicalObjects'
 type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,
@@ -96,7 +96,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     }
     const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
     const responses = fulfilled.map(x => x.value)
-    return responses.map(response => parseTransfer(response))
+    return responses.map(response => makeTransfer(response))
   }
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
@@ -145,7 +145,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
   try {
     const pageUrl = walletRecord.logStream.forthcoming
     const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
-    const page = parseLogEntriesPage(pageResponse)
+    const page = makeLogEntriesPage(pageResponse)
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const updaters = await generateObjectUpdaters(server, userId, updates)
     const isLastPage = page.next === undefined
@@ -184,15 +184,15 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const collectedAfter = new Date()
 
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
-  const wallet = parseWallet(walletResponse)
+  const wallet = makeWallet(walletResponse)
 
   const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
   const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
-  const creditor = parseCreditor(creditorResponse)
+  const creditor = makeCreditor(creditorResponse)
 
   const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
-  const pinInfo = parsePinInfo(pinInfoResponse)
+  const pinInfo = makePinInfo(pinInfoResponse)
 
   const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
   const accountUris = []
@@ -203,7 +203,7 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const timeout = calcParallelTimeout(accountUris.length)
   const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]
   const accountResponses = await Promise.all(promises)
-  const accounts = accountResponses.map(response => parseAccount(response))
+  const accounts = accountResponses.map(response => makeAccount(response))
 
   return {
     collectedAfter,
@@ -390,7 +390,7 @@ async function prepareObjectUpdate(
   // TODO: What happens if this returns 404?
   const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
 
-  const logObject = parseLogObject(response)
+  const logObject = makeLogObject(response)
   switch (logObject.type) {
     case 'Transfer':
       return {
