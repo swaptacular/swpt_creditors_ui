@@ -43,6 +43,7 @@ import type {
   TransferV0,
   LogEntryV0,
 } from './canonicalObjects'
+
 type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,

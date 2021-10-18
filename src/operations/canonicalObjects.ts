@@ -9,8 +9,8 @@
  * 2) Rewrites relative URIs as absolute URIs.
  */
 
+import type { HttpResponse } from '../web-api'
 import type {
-  HttpResponse,
   Creditor,
   PinInfo,
   Account,
@@ -32,7 +32,13 @@ import type {
   TransferResult,
   LedgerEntry,
   CurrencyPeg,
-} from './server'
+  TransferCreationRequest,
+} from '../web-api-schemas'
+
+export type {
+  Error as WebApiError,
+  ObjectReference,
+} from '../web-api-schemas'
 
 export type TypeMatcher = {
   test(t: string): boolean,
@@ -150,6 +156,10 @@ export type AccountConfigV0 = AccountConfig & {
 }
 export type CurrencyPegV0 = CurrencyPeg & {
   type: 'CurrencyPeg',
+}
+export type TransferCreationRequestV0 = TransferCreationRequest & {
+  type: 'TransferCreationRequest',
+  options?: TransferOptionsV0,
 }
 
 /* 
@@ -370,31 +380,59 @@ export function makeLogEntriesPage(response: HttpResponse<LogEntriesPage>): LogE
 
 export function makeLogObject(response: HttpResponse<any>): LogObject {
   const data = response.data
-  const objectType = String(data.type)
-  switch (true) {
-    case (ACCOUNT_TYPE.test(objectType)):
+  switch (getCanonicalType(String(data.type))) {
+    case 'Account':
       return makeAccount(response)
-    case (ACCOUNT_DISPLAY_TYPE.test(objectType)):
+    case 'AccountDisplay':
       return makeAccountDisplay(response.data, response.url)
-    case (ACCOUNT_CONFIG_TYPE.test(objectType)):
+    case 'AccountConfig':
       return makeAccountConfig(response.data, response.url)
-    case (ACCOUNT_KNOWLEDGE_TYPE.test(objectType)):
+    case 'AccountKnowledge':
       return makeAccountKnowledge(response.data, response.url)
-    case (ACCOUNT_EXCHANGE_TYPE.test(objectType)):
+    case 'AccountExchange':
       return makeAccountExchange(response.data, response.url)
-    case (ACCOUNT_LEDGER_TYPE.test(objectType)):
+    case 'AccountLedger':
       return makeAccountLedger(response.data, response.url)
-    case (ACCOUNT_INFO_TYPE.test(objectType)):
+    case 'AccountInfo':
       return makeAccountInfo(response.data, response.url)
-    case (CREDITOR_TYPE.test(objectType)):
+    case 'Creditor':
       return makeCreditor(response)
-    case (PIN_INFO_TYPE.test(objectType)):
+    case 'PinInfo':
       return makePinInfo(response)
-    case (TRANSFER_TYPE.test(objectType)):
+    case 'Transfer':
       return makeTransfer(response)
-    case (COMMITTED_TRANSFER_TYPE.test(objectType)):
+    case 'CommittedTransfer':
       return makeCommittedTransfer(response)
     default:
-      throw new Error('unknown object type')
+      throw new WrongObjectType()
+  }
+}
+
+export function getCanonicalType(objectType: string) {
+  switch (true) {
+    case ACCOUNT_TYPE.test(objectType):
+      return 'Account'
+    case ACCOUNT_DISPLAY_TYPE.test(objectType):
+      return 'AccountDisplay'
+    case ACCOUNT_KNOWLEDGE_TYPE.test(objectType):
+      return 'AccountKnowledge'
+    case ACCOUNT_EXCHANGE_TYPE.test(objectType):
+      return 'AccountExchange'
+    case ACCOUNT_LEDGER_TYPE.test(objectType):
+      return 'AccountLedger'
+    case ACCOUNT_CONFIG_TYPE.test(objectType):
+      return 'AccountConfig'
+    case ACCOUNT_INFO_TYPE.test(objectType):
+      return 'AccountInfo'
+    case CREDITOR_TYPE.test(objectType):
+      return 'Creditor'
+    case PIN_INFO_TYPE.test(objectType):
+      return 'PinInfo'
+    case COMMITTED_TRANSFER_TYPE.test(objectType):
+      return 'CommittedTransfer'
+    case TRANSFER_TYPE.test(objectType):
+      return 'Transfer'
+    default:
+      throw new WrongObjectType()
   }
 }

@@ -1,12 +1,6 @@
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import type { Collection } from 'dexie'
-import type {
-  Transfer,
-  TransferCreationRequest,
-  Error as WebApiError,
-  ObjectReference,
-} from '../web-api-schemas'
 import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
 import type { ResourceReference, DocumentWithHash } from '../debtor-info'
@@ -24,20 +18,11 @@ import type {
   AccountExchangeV0,
   AccountDisplayV0,
   AccountConfigV0,
+  TransferCreationRequestV0,
+  WebApiError,
+  ObjectReference,
 } from './canonicalObjects'
-import {
-  ACCOUNT_TYPE,
-  ACCOUNT_DISPLAY_TYPE,
-  ACCOUNT_KNOWLEDGE_TYPE,
-  ACCOUNT_EXCHANGE_TYPE,
-  ACCOUNT_LEDGER_TYPE,
-  ACCOUNT_CONFIG_TYPE,
-  ACCOUNT_INFO_TYPE,
-  CREDITOR_TYPE,
-  PIN_INFO_TYPE,
-  COMMITTED_TRANSFER_TYPE,
-  TRANSFER_TYPE,
-} from './canonicalObjects'
+import { getCanonicalType } from './canonicalObjects'
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
@@ -220,7 +205,7 @@ export type CreateTransferAction =
   & ActionData
   & {
     actionType: 'CreateTransfer',
-    creationRequest: TransferCreationRequest,
+    creationRequest: TransferCreationRequestV0,
     paymentInfo: PaymentInfo,
     requestedAmount: bigint,
     requestedDeadline?: Date,
@@ -296,7 +281,7 @@ function hasTimedOut(startedAt: Date, currentTime: number = Date.now()): boolean
   return currentTime + MAX_PROCESSING_DELAY_MILLISECONDS > deadline
 }
 
-function getTransferState(transfer: Transfer): 'waiting' | 'delayed' | 'successful' | 'unsuccessful' {
+function getTransferState(transfer: TransferV0): 'waiting' | 'delayed' | 'successful' | 'unsuccessful' {
   switch (transfer.result?.committedAmount) {
     case undefined:
       const initiatedAt = new Date(transfer.initiatedAt)
@@ -802,22 +787,22 @@ class CreditorsDb extends Dexie {
   }
 
   private getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
-    switch (true) {
-      case ACCOUNT_TYPE.test(objectType):
+    switch (getCanonicalType(objectType)) {
+      case 'Account':
         return this.accounts
-      case ACCOUNT_DISPLAY_TYPE.test(objectType):
-      case ACCOUNT_KNOWLEDGE_TYPE.test(objectType):
-      case ACCOUNT_EXCHANGE_TYPE.test(objectType):
-      case ACCOUNT_LEDGER_TYPE.test(objectType):
-      case ACCOUNT_CONFIG_TYPE.test(objectType):
-      case ACCOUNT_INFO_TYPE.test(objectType):
+      case 'AccountDisplay':
+      case 'AccountKnowledge':
+      case 'AccountExchange':
+      case 'AccountLedger':
+      case 'AccountConfig':
+      case 'AccountInfo':
         return this.accountObjects
-      case CREDITOR_TYPE.test(objectType):
-      case PIN_INFO_TYPE.test(objectType):
+      case 'Creditor':
+      case 'PinInfo':
         return this.walletObjects
-      case COMMITTED_TRANSFER_TYPE.test(objectType):
+      case 'CommittedTransfer':
         return this.committedTransfers
-      case TRANSFER_TYPE.test(objectType):
+      case 'Transfer':
         return this.transfers
       default:
         throw new Error('unknown object type')
