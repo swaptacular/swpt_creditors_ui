@@ -12,45 +12,120 @@ import type {
   Transfer,
   CommittedTransfer,
   Wallet,
+  LogEntry,
   LogEntriesPage,
+  PaginatedStream,
+  PaginatedList,
+  TransferError,
+  TransferOptions,
+  TransferResult,
+  LedgerEntry,
 } from './server'
-import {
-  WALLET_TYPE,
-  CREDITOR_TYPE,
-  PIN_INFO_TYPE,
-  ACCOUNT_TYPE,
-  LOG_ENTRY_TYPE,
-  PAGINATED_STREAM_TYPE,
-  ACCOUNT_INFO_TYPE,
-  ACCOUNT_DISPLAY_TYPE,
-  ACCOUNT_KNOWLEDGE_TYPE,
-  ACCOUNT_EXCHANGE_TYPE,
-  ACCOUNT_LEDGER_TYPE,
-  ACCOUNT_CONFIG_TYPE,
-  LEDGER_ENTRY_TYPE,
-  LEDGER_ENTRIES_LIST_TYPE,
-  COMMITTED_TRANSFER_TYPE,
-  TRANSFER_TYPE,
-  TRANSFER_RESULT_TYPE,
-  TRANSFER_ERROR_TYPE,
-  TRANSFER_OPTIONS_TYPE,
-  LOG_ENTRIES_PAGE_TYPE,
-} from './db'
-import type {
-  TransferV0,
-  AccountV0,
-  WalletV0,
-  CreditorV0,
-  PinInfoV0,
-  AccountDisplayV0,
-  AccountConfigV0,
-  AccountKnowledgeV0,
-  AccountExchangeV0,
-  AccountInfoV0,
-  AccountLedgerV0,
-  CommittedTransferV0,
-  LogEntriesPageV0,
-} from './db'
+
+export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
+export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
+export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
+export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
+export const ACCOUNTS_LIST_TYPE = /^(AccountsList(-v[1-9][0-9]{0,5})?|PaginatedList(-v[1-9][0-9]{0,5})?)$/
+export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_KNOWLEDGE_TYPE = /^AccountKnowledge(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
+export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
+export const TRANSFERS_LIST_TYPE = /^(TransfersList(-v[1-9][0-9]{0,5})?|PaginatedList(-v[1-9][0-9]{0,5})?)$/
+export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
+export const LOG_ENTRIES_PAGE_TYPE = /^LogEntriesPage(-v[1-9][0-9]{0,5})?$/
+export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
+export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
+export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_ERROR_TYPE = /^TransferError(-v[1-9][0-9]{0,5})?$/
+export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
+export const COMMITTED_TRANSFER_TYPE = /^CommittedTransfer(-v[1-9][0-9]{0,5})?$/
+
+export type PaginatedListV0<ItemsType> = PaginatedList & {
+  type: 'PaginatedList',
+  itemsType: ItemsType,
+}
+export type PaginatedStreamV0<ItemsType> = PaginatedStream & {
+  type: 'PaginatedStream',
+  itemsType: ItemsType,
+}
+
+export type WalletV0 = Wallet & {
+  type: 'Wallet',
+  log: PaginatedStreamV0<'LogEntry'>,
+}
+export type LogEntryV0 = LogEntry & {
+  type: 'LogEntry',
+}
+export type LogEntriesPageV0 = {
+  type: 'LogEntriesPage',
+  items: LogEntryV0[],
+  next?: string,
+  forthcoming?: string,
+}
+export type PinInfoV0 = PinInfo & {
+  type: 'PinInfo',
+}
+export type CreditorV0 = Creditor & {
+  type: 'Creditor',
+}
+
+export type TransferV0 = Transfer & {
+  type: 'Transfer',
+  options: TransferOptionsV0,
+  result?: TransferResultV0,
+}
+export type TransferOptionsV0 = TransferOptions & {
+  type: 'TransferOptions',
+}
+export type TransferResultV0 = TransferResult & {
+  type: 'TransferResult',
+  error?: TransferErrorV0,
+}
+export type TransferErrorV0 = TransferError & {
+  type: 'TransferError',
+}
+
+export type LedgerEntryV0 = LedgerEntry & {
+  type: 'LedgerEntry',
+}
+export type CommittedTransferV0 = CommittedTransfer & {
+  type: 'CommittedTransfer',
+}
+
+export type AccountV0 = Account & {
+  type: 'Account',
+  ledger: AccountLedgerV0,
+  info: AccountInfoV0,
+  knowledge: AccountKnowledgeV0,
+  exchange: AccountExchangeV0,
+  display: AccountDisplayV0,
+  config: AccountConfigV0,
+}
+export type AccountLedgerV0 = AccountLedger & {
+  type: 'AccountLedger',
+  entries: PaginatedListV0<'LedgerEntry'>,
+}
+export type AccountInfoV0 = AccountInfo & {
+  type: 'AccountInfo',
+}
+export type AccountKnowledgeV0 = AccountKnowledge & {
+  type: 'AccountKnowledge',
+}
+export type AccountExchangeV0 = AccountExchange & {
+  type: 'AccountExchange',
+}
+export type AccountDisplayV0 = AccountDisplay & {
+  type: 'AccountDisplay',
+}
+export type AccountConfigV0 = AccountConfig & {
+  type: 'AccountConfig',
+}
 
 export type LogObject =
   | AccountV0
