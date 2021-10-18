@@ -1,3 +1,14 @@
+/*
+ * This module implements functions that read parsed JSON objects,
+ * ensure that the application can understand them, and transform them
+ * in their canonical form. The transformation does two things:
+ *
+ * 1) Sets a well known generic object type, independent from the
+ *    version of the actual object, as long as it is compatible.
+ *
+ * 2) Rewrites relative URIs as absolute URIs.
+ */
+
 import type {
   HttpResponse,
   Creditor,
@@ -125,6 +136,7 @@ export type AccountKnowledgeV0 = AccountKnowledge & {
 }
 export type AccountExchangeV0 = AccountExchange & {
   type: 'AccountExchange',
+  peg?: CurrencyPegV0,
 }
 export type AccountDisplayV0 = AccountDisplay & {
   type: 'AccountDisplay',
@@ -210,27 +222,20 @@ export function makeAccountConfig(data: AccountConfig, baseUri: string): Account
   }
 }
 
-export function makeCurrencyPeg(data: CurrencyPeg, baseUri: string): CurrencyPegV0 {
-  assert(CURRENCY_PEG_TYPE.test(data.type ?? 'CurrencyPeg'))
-  return {
-    ...data,
-    type: 'CurrencyPeg',
-    account: { uri: new URL(data.account.uri, baseUri).href },
-  }
-}
-
 export function makeAccountExchange(data: AccountExchange, baseUri: string): AccountExchangeV0 {
   assert(ACCOUNT_EXCHANGE_TYPE.test(data.type ?? 'AccountExchange'))
-  let accountExchange = {
+  assert(CURRENCY_PEG_TYPE.test(data.peg?.type ?? 'CurrencyPeg'))
+  return {
     ...data,
-    type: 'AccountExchange' as const,
+    type: 'AccountExchange',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    peg: data.peg ? {
+      ...data.peg,
+      type: 'CurrencyPeg',
+      account: { uri: new URL(data.peg.account.uri, baseUri).href },
+    } : undefined,
   }
-  if (data.peg) {
-    accountExchange.peg = makeCurrencyPeg(data.peg, baseUri)
-  }
-  return accountExchange
 }
 
 export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): AccountKnowledgeV0 {
