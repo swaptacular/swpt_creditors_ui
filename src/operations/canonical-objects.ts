@@ -179,7 +179,7 @@ export type LogObject =
   | TransferV0
   | CommittedTransferV0
 
-class WrongObjectType extends Error {
+export class WrongObjectType extends Error {
   name = 'WrongObjectType'
 }
 
