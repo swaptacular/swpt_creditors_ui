@@ -19,6 +19,7 @@ import {
   ACCOUNTS_LIST_TYPE,
   OBJECT_REFERENCE_TYPE,
   TRANSFERS_LIST_TYPE,
+  MAX_INT64,
 } from './db'
 import type {
   UserData,
@@ -358,32 +359,35 @@ async function prepareObjectUpdate(
         relatedUpdates: [],
       }
     }
-    if (objectUpdateId) {
-      const existingRecord = await db.getLogObjectRecord(updateInfo)
-      if (existingRecord) {
-        assert(existingRecord.latestUpdateId !== undefined)
-        if (existingRecord.latestUpdateId >= objectUpdateId) {
-          // Do nothing -- the object's record is already up-to-date.
-          return {
-            updater: async () => undefined,
-            relatedUpdates: [],
-          }
+    const existingRecord = await db.getLogObjectRecord(updateInfo)
+    if (existingRecord) {
+      if ((existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
+        // Do nothing -- the object's record is already up-to-date.
+        return {
+          updater: async () => undefined,
+          relatedUpdates: [],
         }
-        const patchedRecord = tryToPatchExistingRecord(existingRecord, logInfo)
-        if (patchedRecord) {
-          // Update the object's record without making a network
-          // request -- the data that the log entry provides is enough
-          // to successfully patch the existing record.
-          return {
-            updater: () => db.updateLogObjectRecord(updateInfo, patchedRecord),
-            relatedUpdates: [],
-          }
+      }
+      const patchedRecord = tryToPatchExistingRecord(existingRecord, logInfo)
+      if (patchedRecord) {
+        // TODO: This is wrong. Both transfers and account ledgers
+        // need special treatment, which the following code does not
+        // provide.
+        //
+        // Update the object's record without making a network request
+        // -- the data that the log entry provides is enough to
+        // successfully patch the existing record.
+        return {
+          updater: () => db.updateLogObjectRecord(updateInfo, patchedRecord),
+          relatedUpdates: [],
         }
       }
     }
   }
 
+  // TODO: What happens if this returns 404?
   const response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
+
   const logObject = parseLogObject(response)
   switch (logObject.type) {
     case 'Transfer':
@@ -392,17 +396,33 @@ async function prepareObjectUpdate(
         relatedUpdates: [],
       }
     case 'Account':
-      const { accountRecord } = splitIntoRecords(userId, logObject)
+      const {
+        accountRecord,
+        accountInfoRecord,
+        accountDisplayRecord,
+        accountKnowledgeRecord,
+        accountExchangeRecord,
+        accountLedgerRecord,
+        accountConfigRecord,
+      } = splitIntoRecords(userId, logObject)
       return {
-        updater: () => db.updateLogObjectRecord(updateInfo, accountRecord),
+        updater: async () => {
+          await db.updateLogObjectRecord(updateInfo, accountRecord)
+          await db.updateLogObjectRecord(updateInfo, accountInfoRecord)
+          await db.updateLogObjectRecord(updateInfo, accountDisplayRecord)
+          await db.updateLogObjectRecord(updateInfo, accountKnowledgeRecord)
+          await db.updateLogObjectRecord(updateInfo, accountExchangeRecord)
+          await db.updateLogObjectRecord(updateInfo, accountLedgerRecord)
+          await db.updateLogObjectRecord(updateInfo, accountConfigRecord)
+        },
         relatedUpdates: [],
       }
     case 'AccountLedger':
-      const accountLedgerRecord: AccountLedgerRecord = { ...logObject, userId }
+      const ledgerRecord: AccountLedgerRecord = { ...logObject, userId }
       // TODO: Fetch the ledger entries and pass the corresponding
       //       transfer URIs as `relatedUpdates` here.
       return {
-        updater: () => db.updateLogObjectRecord(updateInfo, accountLedgerRecord),
+        updater: () => db.updateLogObjectRecord(updateInfo, ledgerRecord),
         relatedUpdates: [],
       }
     default:

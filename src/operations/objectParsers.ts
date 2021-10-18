@@ -1,5 +1,5 @@
-import { HttpResponse } from './server'
 import type {
+  HttpResponse,
   Creditor,
   PinInfo,
   Account,
@@ -68,13 +68,21 @@ export type LogObject =
 export function parseCreditor(response: HttpResponse<Creditor>): CreditorV0 {
   const data = response.data
   assert(CREDITOR_TYPE.test(data.type ?? 'Creditor'))
-  return { ...data, type: 'Creditor' }
+  return {
+    ...data,
+    type: 'Creditor',
+    wallet: { uri: response.buildUri(data.wallet.uri) }
+  }
 }
 
 export function parsePinInfo(response: HttpResponse<PinInfo>): PinInfoV0 {
   const data = response.data
   assert(PIN_INFO_TYPE.test(data.type ?? 'PinInfo'))
-  return { ...data, type: 'PinInfo' }
+  return {
+    ...data,
+    type: 'PinInfo',
+    wallet: { uri: response.buildUri(data.wallet.uri) }
+  }
 }
 
 export function parseAccount(response: HttpResponse<Account>): AccountV0 {
@@ -83,59 +91,66 @@ export function parseAccount(response: HttpResponse<Account>): AccountV0 {
   return {
     ...data,
     type: 'Account',
-    config: parseAccountConfig(data.config),
-    exchange: parseAccountExchange(data.exchange),
-    knowledge: parseAccountKnowledge(data.knowledge),
-    display: parseAccountDisplay(data.display),
-    info: parseAccountInfo(data.info),
-    ledger: parseAccountLedger(data.ledger),
+    config: parseAccountConfig(data.config, response.url),
+    exchange: parseAccountExchange(data.exchange, response.url),
+    knowledge: parseAccountKnowledge(data.knowledge, response.url),
+    display: parseAccountDisplay(data.display, response.url),
+    info: parseAccountInfo(data.info, response.url),
+    ledger: parseAccountLedger(data.ledger, response.url),
   }
 }
 
-export function parseAccountDisplay(data: AccountDisplay): AccountDisplayV0
-export function parseAccountDisplay(response: HttpResponse<AccountDisplay>): AccountDisplayV0
-export function parseAccountDisplay(arg: AccountDisplay | HttpResponse<AccountDisplay>): AccountDisplayV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountDisplay(data: AccountDisplay, baseUri: string): AccountDisplayV0 {
   assert(ACCOUNT_DISPLAY_TYPE.test(data.type ?? 'AccountDisplay'))
-  return { ...data, type: 'AccountDisplay' }
+  return {
+    ...data,
+    type: 'AccountDisplay',
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
+  }
 }
 
-export function parseAccountConfig(data: AccountConfig): AccountConfigV0
-export function parseAccountConfig(response: HttpResponse<AccountConfig>): AccountConfigV0
-export function parseAccountConfig(arg: AccountConfig | HttpResponse<AccountConfig>): AccountConfigV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountConfig(data: AccountConfig, baseUri: string): AccountConfigV0 {
   assert(ACCOUNT_CONFIG_TYPE.test(data.type ?? 'AccountConfig'))
-  return { ...data, type: 'AccountConfig' }
+  return {
+    ...data,
+    type: 'AccountConfig',
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
+  }
 }
 
-export function parseAccountExchange(data: AccountExchange): AccountExchangeV0
-export function parseAccountExchange(response: HttpResponse<AccountExchange>): AccountExchangeV0
-export function parseAccountExchange(arg: AccountExchange | HttpResponse<AccountExchange>): AccountExchangeV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountExchange(data: AccountExchange, baseUri: string): AccountExchangeV0 {
   assert(ACCOUNT_EXCHANGE_TYPE.test(data.type ?? 'AccountExchange'))
-  return { ...data, type: 'AccountExchange' }
+  return {
+    ...data,
+    type: 'AccountExchange',
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
+  }
 }
 
-export function parseAccountKnowledge(data: AccountKnowledge): AccountKnowledgeV0
-export function parseAccountKnowledge(response: HttpResponse<AccountKnowledge>): AccountKnowledgeV0
-export function parseAccountKnowledge(arg: AccountKnowledge | HttpResponse<AccountKnowledge>): AccountKnowledgeV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountKnowledge(data: AccountKnowledge, baseUri: string): AccountKnowledgeV0 {
   assert(ACCOUNT_KNOWLEDGE_TYPE.test(data.type ?? 'AccountKnowledge'))
-  return { ...data, type: 'AccountKnowledge' }
+  return {
+    ...data,
+    type: 'AccountKnowledge',
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
+  }
 }
 
-export function parseAccountInfo(data: AccountInfo): AccountInfoV0
-export function parseAccountInfo(response: HttpResponse<AccountInfo>): AccountInfoV0
-export function parseAccountInfo(arg: AccountInfo | HttpResponse<AccountInfo>): AccountInfoV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountInfo(data: AccountInfo, baseUri: string): AccountInfoV0 {
   assert(ACCOUNT_INFO_TYPE.test(data.type))
-  return { ...data, type: 'AccountInfo' }
+  return {
+    ...data,
+    type: 'AccountInfo',
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
+  }
 }
 
-export function parseAccountLedger(data: AccountLedger): AccountLedgerV0
-export function parseAccountLedger(response: HttpResponse<AccountLedger>): AccountLedgerV0
-export function parseAccountLedger(arg: AccountLedger | HttpResponse<AccountLedger>): AccountLedgerV0 {
-  const data = arg instanceof HttpResponse ? arg.data : arg
+export function parseAccountLedger(data: AccountLedger, baseUri: string): AccountLedgerV0 {
   assert(ACCOUNT_LEDGER_TYPE.test(data.type))
   assert(LEDGER_ENTRIES_LIST_TYPE.test(data.entries.type))
   assert(LEDGER_ENTRY_TYPE.test(data.entries.itemsType))
@@ -147,6 +162,8 @@ export function parseAccountLedger(arg: AccountLedger | HttpResponse<AccountLedg
       type: 'PaginatedList',
       itemsType: 'LedgerEntry',
     },
+    uri: new URL(data.uri, baseUri).href,
+    account: { uri: new URL(data.account.uri, baseUri).href }
   }
 }
 
@@ -177,7 +194,11 @@ export function parseTransfer(response: HttpResponse<Transfer>): TransferV0 {
 export function parseCommittedTransfer(response: HttpResponse<CommittedTransfer>): CommittedTransferV0 {
   const data = response.data
   assert(COMMITTED_TRANSFER_TYPE.test(data.type))
-  return { ...data, type: 'CommittedTransfer' }
+  return {
+    ...data,
+    type: 'CommittedTransfer',
+    account: { uri: response.buildUri(data.account.uri) },
+  }
 }
 
 export function parseWallet(response: HttpResponse<Wallet>): WalletV0 {
@@ -219,17 +240,17 @@ export function parseLogObject(response: HttpResponse<any>): LogObject {
     case (ACCOUNT_TYPE.test(objectType)):
       return parseAccount(response)
     case (ACCOUNT_DISPLAY_TYPE.test(objectType)):
-      return parseAccountDisplay(response)
+      return parseAccountDisplay(response.data, response.url)
     case (ACCOUNT_CONFIG_TYPE.test(objectType)):
-      return parseAccountConfig(response)
+      return parseAccountConfig(response.data, response.url)
     case (ACCOUNT_KNOWLEDGE_TYPE.test(objectType)):
-      return parseAccountKnowledge(response)
+      return parseAccountKnowledge(response.data, response.url)
     case (ACCOUNT_EXCHANGE_TYPE.test(objectType)):
-      return parseAccountExchange(response)
+      return parseAccountExchange(response.data, response.url)
     case (ACCOUNT_LEDGER_TYPE.test(objectType)):
-      return parseAccountLedger(response)
+      return parseAccountLedger(response.data, response.url)
     case (ACCOUNT_INFO_TYPE.test(objectType)):
-      return parseAccountInfo(response)
+      return parseAccountInfo(response.data, response.url)
     case (CREDITOR_TYPE.test(objectType)):
       return parseCreditor(response)
     case (PIN_INFO_TYPE.test(objectType)):
