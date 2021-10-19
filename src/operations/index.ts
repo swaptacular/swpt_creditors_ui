@@ -22,6 +22,8 @@ import type {
 import {
   getOrCreateUserId,
   ensureLoadedTransfers,
+  processLogPage,
+  BrokenLogStream,
 } from './db-sync'
 
 export {
@@ -59,19 +61,21 @@ export async function authorizePinReset(): Promise<void> {
  * the server. Any network failures will be swallowed. */
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
-    const walletRecord = await ensureLoadedTransfers(server, userId)
-    assert(walletRecord.logStream.loadedTransfers)
-
-    if (walletRecord.logStream.isBroken) {
-      // When log entries has been lost, user's data must be loaded
-      // from the server again. If we do this here, it could disturb
-      // the user interaction with the UI. Instead, we give up on the
-      // update, and invite the user to re-authenticate. (The user's
-      // data will be loaded after the authentication.)
-      await server.forgetCurrentToken()
+    await ensureLoadedTransfers(server, userId)
+    try {
+      while (await processLogPage(server, userId));
+    } catch (e: unknown) {
+      if (e instanceof BrokenLogStream) {
+        // When log entries has been lost, user's data must be loaded
+        // from the server again. If we do this here, it could disturb
+        // the user interaction with the UI. Instead, we give up on
+        // the update, and invite the user to re-authenticate. (The
+        // user's data will be loaded after the authentication.)
+        await server.forgetCurrentToken()
+        throw new AuthenticationError()
+      } else throw e
     }
-    // TODO: fetch log stream
-    // await executeReadyTasks(server, userId)
+    // TODO: await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
     let event

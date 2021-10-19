@@ -32,12 +32,12 @@ import {
   makeTransfer,
   makeLogObject,
   makeLogEntriesPage,
-  LogObject,
 } from './canonical-objects'
 import type {
   TransferV0,
   LogEntryV0,
   AccountLedgerV0,
+  LogObject,
 } from './canonical-objects'
 import { iterAccountsList, iterTransfersList, calcParallelTimeout } from './utils'
 
@@ -121,8 +121,8 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 
 /* Connects to the server, processes one page of log entries and
  * updates the wallet record. Throws `BrokenLogStream` if the log
- * stream is broken. Returns `true` when there are no more log pages
- * to process. */
+ * stream is broken. Returns `true` if there are more log pages to
+ * process. */
 export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
   if (walletRecord.logStream.isBroken) {
@@ -134,11 +134,11 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const pageUrl = walletRecord.logStream.forthcoming
     const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
     const page = makeLogEntriesPage(pageResponse)
+    assert(page.next !== undefined || page.forthcoming !== undefined)
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const updaters = await generateObjectUpdaters(updates, server, userId)
     const isLastPage = page.next === undefined
-    const next = isLastPage ? page.forthcoming : page.next
-    assert(next !== undefined)
+    const next = new URL((isLastPage ? page.forthcoming : page.next) as string, pageUrl).href
 
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
@@ -154,7 +154,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         await db.updateWalletRecord(walletRecord)
       }
     })
-    return isLastPage
+    return !isLastPage
 
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
