@@ -7,6 +7,12 @@
  *    version of the actual object, as long as it is compatible.
  *
  * 2) Rewrites relative URIs as absolute URIs.
+ *
+ * NOTE: The `uri` field on each object is being rewritten as an
+ * absolute URI by the `web-api` module. Therefore we do not need to
+ * deal with it here. Accounts' sub-objects are an exception, because
+ * they may come either from a direct request or from an account
+ * request that embeds them.
  */
 
 import type { HttpResponse } from '../web-api'
