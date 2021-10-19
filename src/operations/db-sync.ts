@@ -243,50 +243,6 @@ async function generateObjectUpdaters(server: ServerSession, userId: number, upd
   return updaters
 }
 
-function tryToPatchExistingRecord(
-  existingRecord: LogObjectRecord,
-  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>,
-): TransferV0 | AccountLedgerV0 | undefined {
-  let patchedObject: AccountLedgerRecord | TransferRecord | undefined
-  const { objectUpdateId, data, addedAt } = logInfo
-
-  if (objectUpdateId !== undefined && data !== undefined) {
-    switch (existingRecord.type) {
-      case 'AccountLedger':
-        patchedObject = {
-          ...existingRecord as AccountLedgerRecord,
-          principal: BigInt(data.principal as bigint),
-          nextEntryId: BigInt(data.nextEntryId as bigint),
-          latestUpdateId: objectUpdateId,
-          latestUpdateAt: addedAt,
-        } as AccountLedgerRecord
-        break
-      case 'Transfer':
-        patchedObject = {
-          ...existingRecord as TransferRecord,
-          latestUpdateId: objectUpdateId,
-          latestUpdateAt: addedAt,
-        } as TransferRecord
-        if (data.finalizedAt !== undefined) {
-          const hasError = data.errorCode === undefined
-          patchedObject.result = {
-            type: 'TransferResult',
-            finalizedAt: String(data.finalizedAt),
-            committedAmount: hasError ? 0n : patchedObject.amount
-          }
-          if (hasError) {
-            patchedObject.result.error = {
-              type: 'TransferError',
-              errorCode: String(data.errorCode),
-            }
-          }
-        }
-        break
-    }
-  }
-  return patchedObject
-}
-
 async function prepareObjectUpdate(
   userId: number,
   updateInfo: ObjectUpdateInfo,
@@ -386,6 +342,50 @@ async function prepareObjectUpdate(
         relatedUpdates: [],
       }
   }
+}
+
+function tryToPatchExistingRecord(
+  existingRecord: LogObjectRecord,
+  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>,
+): TransferV0 | AccountLedgerV0 | undefined {
+  const { objectUpdateId, data, addedAt } = logInfo
+  let patchedRecord: AccountLedgerRecord | TransferRecord | undefined
+
+  if (objectUpdateId !== undefined && data !== undefined) {
+    switch (existingRecord.type) {
+      case 'AccountLedger':
+        patchedRecord = {
+          ...existingRecord as AccountLedgerRecord,
+          principal: BigInt(data.principal as bigint),
+          nextEntryId: BigInt(data.nextEntryId as bigint),
+          latestUpdateId: objectUpdateId,
+          latestUpdateAt: addedAt,
+        } as AccountLedgerRecord
+        break
+      case 'Transfer':
+        patchedRecord = {
+          ...existingRecord as TransferRecord,
+          latestUpdateId: objectUpdateId,
+          latestUpdateAt: addedAt,
+        } as TransferRecord
+        if (data.finalizedAt !== undefined) {
+          const hasError = data.errorCode === undefined
+          patchedRecord.result = {
+            type: 'TransferResult',
+            finalizedAt: String(data.finalizedAt),
+            committedAmount: hasError ? 0n : patchedRecord.amount
+          }
+          if (hasError) {
+            patchedRecord.result.error = {
+              type: 'TransferError',
+              errorCode: String(data.errorCode),
+            }
+          }
+        }
+        break
+    }
+  }
+  return patchedRecord
 }
 
 function createUpdateInfo(obj: LogObjectRecord): ObjectUpdateInfo {
