@@ -122,8 +122,9 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 
 /* Connects to the server, processes one page of log entries and
  * updates the wallet record. Throws `BrokenLogStream` if the log
- * stream is broken. */
-export async function processLogPage(server: ServerSession, userId: number): Promise<void> {
+ * stream is broken. Returns `true` when there are no more log pages
+ * to process. */
+export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
@@ -154,6 +155,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         await db.updateWalletRecord(walletRecord)
       }
     })
+    return isLastPage
+
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
       db.executeTransaction(async () => {
