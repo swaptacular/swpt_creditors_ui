@@ -39,6 +39,7 @@ import type {
   LedgerEntry,
   CurrencyPeg,
   TransferCreationRequest,
+  DebtorInfo,
 } from '../web-api-schemas'
 
 export type {
@@ -58,6 +59,7 @@ export type TypeMatcher = {
 export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
 export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
+export const DEBTOR_INFO_TYPE = /^DebtorInfo(-v[1-9][0-9]{0,5})?$/
 export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
 export const ACCOUNTS_LIST_TYPE = /^(AccountsList(-v[1-9][0-9]{0,5})?|PaginatedList(-v[1-9][0-9]{0,5})?)$/
 export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
@@ -131,6 +133,9 @@ export type LedgerEntryV0 = LedgerEntry & {
 export type CommittedTransferV0 = CommittedTransfer & {
   type: 'CommittedTransfer',
 }
+export type DebtorInfoV0 = DebtorInfo & {
+  type: 'DebtorInfo',
+}
 export type AccountV0 = Account & {
   type: 'Account',
   ledger: AccountLedgerV0,
@@ -146,9 +151,11 @@ export type AccountLedgerV0 = AccountLedger & {
 }
 export type AccountInfoV0 = AccountInfo & {
   type: 'AccountInfo',
+  debtorInfo?: DebtorInfoV0,
 }
 export type AccountKnowledgeV0 = AccountKnowledge & {
   type: 'AccountKnowledge',
+  debtorInfo?: DebtorInfoV0,
 }
 export type AccountExchangeV0 = AccountExchange & {
   type: 'AccountExchange',
@@ -269,21 +276,31 @@ export function makeAccountExchange(data: AccountExchange, baseUri: string): Acc
 
 export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): AccountKnowledgeV0 {
   matchType(ACCOUNT_KNOWLEDGE_TYPE, data.type ?? 'AccountKnowledge')
+  matchType(DEBTOR_INFO_TYPE, data.debtorInfo?.type ?? 'DebtorInfo')
   return {
     ...data,
     type: 'AccountKnowledge',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    debtorInfo: data.debtorInfo ? {
+      ...data.debtorInfo,
+      type: 'DebtorInfo',
+    } : undefined,
   }
 }
 
 export function makeAccountInfo(data: AccountInfo, baseUri: string): AccountInfoV0 {
   matchType(ACCOUNT_INFO_TYPE, data.type)
+  matchType(DEBTOR_INFO_TYPE, data.debtorInfo?.type ?? 'DebtorInfo')
   return {
     ...data,
     type: 'AccountInfo',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    debtorInfo: data.debtorInfo ? {
+      ...data.debtorInfo,
+      type: 'DebtorInfo',
+    } : undefined,
   }
 }
 
