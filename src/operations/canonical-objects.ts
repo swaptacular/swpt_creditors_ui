@@ -98,7 +98,7 @@ export type WalletV0 = Wallet & {
 export type LogEntryV0 = LogEntry & {
   type: 'LogEntry',
 }
-export type LogEntriesPageV0 = {
+export type LogEntriesPageV0 = LogEntriesPage & {
   type: 'LogEntriesPage',
   items: LogEntryV0[],
   next?: string,
