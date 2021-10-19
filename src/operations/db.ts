@@ -419,28 +419,30 @@ class CreditorsDb extends Dexie {
 
   async updateLogObjectRecord(updateInfo: ObjectUpdateInfo, objectRecord: LogObjectRecord | null): Promise<void> {
     const { objectUri, objectType, logInfo } = updateInfo
-    const deleted = logInfo?.deleted
-    const objectUpdateId = logInfo?.objectUpdateId
-    const table = this.getLogObjectTable(objectType)
-
-    await this.transaction('rw', [table], async () => {
-      if (objectUpdateId) {
+    let updateId: bigint | undefined
+    let deleted: boolean | undefined
+    if (objectRecord !== null) {
+      updateId = objectRecord.latestUpdateId ?? MAX_INT64
+      deleted = false
+    } else if (logInfo) {
+      updateId = logInfo.objectUpdateId ?? MAX_INT64
+      deleted = true
+    }
+    if (updateId !== undefined) {
+      const table = this.getLogObjectTable(objectType)
+      await this.transaction('rw', [table], async () => {
         const existingRecord = await table.get(objectUri)
-        if (existingRecord) {
-          assert(existingRecord.latestUpdateId !== undefined)
-          if (existingRecord.latestUpdateId >= objectUpdateId) {
-            return  // The record already exists and is up-to-date.
+        if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
+          if (deleted) {
+            assert(!objectRecord)
+            await table.delete(objectUri)
+          } else {
+            assert(objectRecord)
+            await table.put(objectRecord)
           }
         }
-      }
-      if (deleted) {
-        assert(!objectRecord)
-        await table.delete(objectUri)
-      } else {
-        assert(objectRecord)
-        await table.put(objectRecord)
-      }
-    })
+      })
+    }
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {

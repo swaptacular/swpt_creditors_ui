@@ -45,6 +45,8 @@ import type {
 export type {
   Error as WebApiError,
   ObjectReference,
+  AccountIdentity,
+  DebtorIdentity,
 } from '../web-api-schemas'
 
 export type TypeMatcher = {
