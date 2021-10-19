@@ -421,6 +421,7 @@ class CreditorsDb extends Dexie {
     const { objectUri, objectType, logInfo } = updateInfo
     let updateId: bigint | undefined
     let deleted: boolean | undefined
+
     if (objectRecord !== null) {
       updateId = objectRecord.latestUpdateId ?? MAX_INT64
       deleted = false
@@ -428,6 +429,7 @@ class CreditorsDb extends Dexie {
       updateId = logInfo.objectUpdateId ?? MAX_INT64
       deleted = true
     }
+
     if (updateId !== undefined) {
       const table = this.getLogObjectTable(objectType)
       await this.transaction('rw', [table], async () => {
