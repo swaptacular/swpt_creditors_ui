@@ -65,11 +65,10 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
 }
 
 /* Ensures that the initial loading of transfers from the server to
- * the local database has finished successfully. This must be done in
+ * the local database has finished successfully. This must be done
  * before the synchronization via the log stream can start. */
 export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<WalletRecordWithId> {
   const walletRecord = await db.getWalletRecord(userId)
-  const transfersListUri = new URL(walletRecord.transfersList.uri, walletRecord.uri).href
 
   async function fetchTransfers(uris: string[]): Promise<TransferV0[]> {
     const timeout = calcParallelTimeout(uris.length)
@@ -89,7 +88,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
     let urisToFetch: string[] = []
-    for await (const { item, pageUrl } of iterTransfersList(server, transfersListUri)) {
+    for await (const { item, pageUrl } of iterTransfersList(server, walletRecord.transfersList.uri)) {
       const transferUri = new URL(item.uri, pageUrl).href
       const transferRecord = await db.getTransferRecord(transferUri)
       const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
