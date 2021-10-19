@@ -135,7 +135,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
     const page = makeLogEntriesPage(pageResponse)
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
-    const updaters = await generateObjectUpdaters(server, userId, updates)
+    const updaters = await generateObjectUpdaters(updates, server, userId)
     const isLastPage = page.next === undefined
     const next = isLastPage ? page.forthcoming : page.next
     assert(next !== undefined)
@@ -228,26 +228,26 @@ function collectObjectUpdates(
   }
 }
 
-async function generateObjectUpdaters(server: ServerSession, userId: number, updates: ObjectUpdateInfo[]): Promise<ObjectUpdater[]> {
+async function generateObjectUpdaters(updates: ObjectUpdateInfo[], server: ServerSession, userId: number): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
-  const promises = Promise.all(updates.map(x => prepareObjectUpdate(userId, x, server, timeout)))
+  const promises = Promise.all(updates.map(update => prepareObjectUpdate(update, server, userId, timeout)))
   for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
   if (conbinedRelatedUpdates.length > 0) {
-    updaters = updaters.concat(await generateObjectUpdaters(server, userId, conbinedRelatedUpdates))
+    updaters = updaters.concat(await generateObjectUpdaters(conbinedRelatedUpdates, server, userId))
   }
   return updaters
 }
 
 async function prepareObjectUpdate(
-  userId: number,
   updateInfo: ObjectUpdateInfo,
   server: ServerSession,
-  timeout: number,
+  userId: number,
+  timeout?: number,
 ): Promise<PreparedUpdate> {
   const { objectUri, logInfo } = updateInfo
   let patchedObject: TransferV0 | AccountLedgerV0 | undefined
