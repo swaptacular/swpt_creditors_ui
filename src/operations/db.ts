@@ -447,9 +447,11 @@ class CreditorsDb extends Dexie {
         const existingRecord = await table.get(objectUri)
         if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
           if (deleted) {
-            // TODO: Check the type of the object here. If this is an
-            // account sub-object -- do not delete it. If it is an
-            // account object -- delete all the sub-objects as well.
+            // TODO: Check the type of the object here:
+            // * If this is an account sub-object -- do not delete it.
+            // * If it is an account object -- delete all the
+            //   sub-objects as well.
+            // * It this is a transfer obejct -- do not delete it.
             assert(!objectRecord)
             await table.delete(objectUri)
           } else {
