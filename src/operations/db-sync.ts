@@ -264,15 +264,14 @@ async function prepareObjectUpdate(
   timeout?: number,
 ): Promise<PreparedUpdate> {
   const { objectUri, objectType, logInfo } = updateInfo
-  let patchedObject: TransferV0 | AccountLedgerV0 | undefined
-  let logObject: LogObject
 
+  let patchedObject: TransferV0 | AccountLedgerV0 | undefined
   if (logInfo) {
     const { deleted, objectUpdateId } = logInfo
     if (deleted) {
       // The log says that the object has been deleted, so we delete it.
       return {
-        updater: () => db.updateLogObjectRecord(updateInfo, null),
+        updater: () => db.storeLogObjectRecord(null, updateInfo),
         relatedUpdates: [],
       }
     }
@@ -293,6 +292,7 @@ async function prepareObjectUpdate(
     }
   }
 
+  let logObject: LogObject
   if (patchedObject) {
     logObject = patchedObject
   } else {
@@ -303,7 +303,7 @@ async function prepareObjectUpdate(
       if (e instanceof HttpError && e.status === 404) {
         // The object does not exist anymore, so we delete it.
         return {
-          updater: () => db.updateLogObjectRecord(updateInfo, null),
+          updater: () => db.storeLogObjectRecord(null, updateInfo),
           relatedUpdates: [],
         }
       }
@@ -311,9 +311,9 @@ async function prepareObjectUpdate(
     }
     logObject = makeLogObject(response)
   }
-
-  // Some types of objects need a special treatment.
   assert(logObject.type === objectType)
+
+  // Some types of objects require special treatment.
   switch (logObject.type) {
     case 'Transfer':
       return {
@@ -332,13 +332,13 @@ async function prepareObjectUpdate(
       } = splitIntoRecords(userId, logObject)
       return {
         updater: async () => {
-          await db.updateLogObjectRecord(updateInfo, accountRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountInfoRecord), accountInfoRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountDisplayRecord), accountDisplayRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountKnowledgeRecord), accountKnowledgeRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountExchangeRecord), accountExchangeRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountLedgerRecord), accountLedgerRecord)
-          await db.updateLogObjectRecord(createUpdateInfo(accountConfigRecord), accountConfigRecord)
+          await db.storeLogObjectRecord(accountRecord, updateInfo)
+          await db.storeLogObjectRecord(accountInfoRecord)
+          await db.storeLogObjectRecord(accountDisplayRecord)
+          await db.storeLogObjectRecord(accountKnowledgeRecord)
+          await db.storeLogObjectRecord(accountExchangeRecord)
+          await db.storeLogObjectRecord(accountLedgerRecord)
+          await db.storeLogObjectRecord(accountConfigRecord)
         },
         relatedUpdates: [],
       }
@@ -347,13 +347,21 @@ async function prepareObjectUpdate(
       // TODO: Fetch the ledger entries and pass the corresponding
       //       transfer URIs as `relatedUpdates` here.
       return {
-        updater: () => db.updateLogObjectRecord(updateInfo, ledgerRecord),
+        updater: () => db.storeLogObjectRecord(ledgerRecord, updateInfo),
         relatedUpdates: [],
       }
-    default:
+    case 'Account':
+    case 'AccountConfig':
+    case 'AccountDisplay':
+    case 'AccountKnowledge':
+    case 'AccountExchange':
+    case 'AccountInfo':
+    case 'CommittedTransfer':
+    case 'Creditor':
+    case 'PinInfo':
       const logObjectRecord: LogObjectRecord = { ...logObject, userId }
       return {
-        updater: () => db.updateLogObjectRecord(updateInfo, logObjectRecord),
+        updater: () => db.storeLogObjectRecord(logObjectRecord, updateInfo),
         relatedUpdates: [],
       }
   }
@@ -401,11 +409,4 @@ function tryToPatchExistingRecord(
     }
   }
   return patchedRecord
-}
-
-function createUpdateInfo(obj: LogObjectRecord): ObjectUpdateInfo {
-  return {
-    objectUri: obj.uri,
-    objectType: obj.type,
-  }
 }

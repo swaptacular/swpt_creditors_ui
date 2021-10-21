@@ -428,7 +428,14 @@ class CreditorsDb extends Dexie {
     return await table.get(objectUri)
   }
 
-  async updateLogObjectRecord(updateInfo: ObjectUpdateInfo, objectRecord: LogObjectRecord | null): Promise<void> {
+  async storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo?: ObjectUpdateInfo): Promise<void> {
+    if (updateInfo === undefined) {
+      assert(objectRecord)
+      updateInfo = {
+        objectUri: objectRecord.uri,
+        objectType: objectRecord.type,
+      }
+    }
     const { objectUri, objectType, logInfo } = updateInfo
     let updateId: bigint | undefined
     let deleted: boolean | undefined
@@ -447,15 +454,34 @@ class CreditorsDb extends Dexie {
         const existingRecord = await table.get(objectUri)
         if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
           if (deleted) {
-            // TODO: Check the type of the object here:
-            // * If this is an account sub-object -- do not delete it.
-            // * If it is an account object -- delete all the
-            //   sub-objects as well.
-            // * It this is a transfer obejct -- do not delete it.
             assert(!objectRecord)
-            await table.delete(objectUri)
+            switch (table) {
+              // Transfers must remain in the local database, even
+              // after they have been deleted from the server. This
+              // allows the user to review transfers history.
+              case this.transfers:
+
+              // Account sub-objects must be deleted only when the
+              // corresponding account gets deleted. This guarantees
+              // that all sub-objects exist for every account.
+              case this.accountObjects:
+                break
+
+              // When an account gets deleted, objects related to the
+              // account must be deleted as well.
+              case this.accounts:
+                await this.committedTransfers.where('account.uri').equals(objectUri).delete()
+                await this.ledgerEntries.where('account.uri').equals(objectUri).delete()
+                await this.accountObjects.where('account.uri').equals(objectUri).delete()
+                await table.delete(objectUri)
+                break
+
+              default:
+                await table.delete(objectUri)
+            }
           } else {
             assert(objectRecord)
+            assert(table !== this.transfers)
             await table.put(objectRecord)
           }
         }
