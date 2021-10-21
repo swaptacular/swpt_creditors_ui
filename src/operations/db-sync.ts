@@ -277,6 +277,9 @@ async function prepareObjectUpdate(
     if (existingRecord) {
       if ((existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
         // The object's record is already up-to-date, so we do nothing.
+        //
+        // TODO: Make sure this happens for existing
+        // CommittedTransfers, even if `logInfo === undefined`.
         return {
           updater: async () => undefined,
           relatedUpdates: [],
