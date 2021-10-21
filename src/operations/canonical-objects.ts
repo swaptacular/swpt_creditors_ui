@@ -31,6 +31,7 @@ import type {
   Wallet,
   LogEntry,
   LogEntriesPage,
+  LedgerEntriesPage,
   PaginatedStream,
   PaginatedList,
   TransferError,
@@ -65,7 +66,7 @@ export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
 export const DEBTOR_INFO_TYPE = /^DebtorInfo(-v[1-9][0-9]{0,5})?$/
 export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
-export const ACCOUNTS_LIST_TYPE = /^(AccountsList(-v[1-9][0-9]{0,5})?)$/
+export const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
@@ -74,10 +75,11 @@ export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
 export const CURRENCY_PEG_TYPE = /^CurrencyPeg(-v[1-9][0-9]{0,5})?$/
-export const TRANSFERS_LIST_TYPE = /^(TransfersList(-v[1-9][0-9]{0,5})?$/
+export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
 export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
-export const LOG_ENTRIES_PAGE_TYPE = /^LogEntriesPage(-v[1-9][0-9]{0,5})?$/
+export const LOG_ENTRIES_PAGE_TYPE = /^.*$/
+export const LEDGER_ENTRIES_PAGE_TYPE = /^.*$/
 export const PAGINATED_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
@@ -110,6 +112,11 @@ export type LogEntriesPageV0 = LogEntriesPage & {
   items: LogEntryV0[],
   next?: string,
   forthcoming?: string,
+}
+export type LedgerEntriesPageV0 = LedgerEntriesPage & {
+  type: 'LedgerEntriesPage',
+  items: LedgerEntryV0[],
+  next?: string,
 }
 export type PinInfoV0 = PinInfo & {
   type: 'PinInfo',
@@ -436,6 +443,24 @@ export function makeLogEntriesPage(response: HttpResponse<LogEntriesPage>): LogE
       ...item,
       type: 'LogEntry',
       object: { uri: response.buildUri(item.object.uri) },
+    })),
+  }
+}
+
+export function makeLedgerEntriesPage(response: HttpResponse<LedgerEntriesPage>): LedgerEntriesPageV0 {
+  const data = response.data
+  matchType(LEDGER_ENTRIES_PAGE_TYPE, data.type)
+  for (const item of data.items) {
+    matchType(LEDGER_ENTRY_TYPE, item.type)
+  }
+  return {
+    ...data,
+    type: 'LedgerEntriesPage',
+    items: data.items.map(item => ({
+      ...item,
+      type: 'LedgerEntry',
+      transfer: item.transfer ? { uri: response.buildUri(item.transfer.uri) } : undefined,
+      ledger: { uri: response.buildUri(item.ledger.uri)},
     })),
   }
 }

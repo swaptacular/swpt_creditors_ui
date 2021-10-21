@@ -186,7 +186,6 @@ export type LedgerEntryRecord =
   & UserReference
   & LedgerEntryV0
   & {
-    account: ObjectReference,
     id?: number,  // an autoincremented ID
   }
 
@@ -358,7 +357,7 @@ class CreditorsDb extends Dexie {
       // "fake-indexeddb", which we use for testing, does not support
       // compound primary keys.
       transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,&[account.uri+entryId],userId',
+      ledgerEntries: '++id,&[ledger.uri+entryId],userId',
 
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
@@ -456,29 +455,32 @@ class CreditorsDb extends Dexie {
           if (deleted) {
             assert(!objectRecord)
             assert(table !== this.committedTransfers)
-            switch (table) {
-              // Transfers must remain in the local database, even
-              // after they have been deleted from the server. This
-              // allows the user to review transfers history.
-              case this.transfers:
+            if (existingRecord) {
+              switch (table) {
+                // Transfers must remain in the local database, even
+                // after they have been deleted from the server. This
+                // allows the user to review transfers history.
+                case this.transfers:
 
-              // Account sub-objects must be deleted only when the
-              // corresponding account gets deleted. This guarantees
-              // that all sub-objects exist for every account.
-              case this.accountObjects:
-                break
+                // Account sub-objects must be deleted only when the
+                // corresponding account gets deleted. This guarantees
+                // that all sub-objects exist for every account.
+                case this.accountObjects:
+                  break
 
-              // When an account gets deleted, objects related to the
-              // account must be deleted as well.
-              case this.accounts:
-                await this.committedTransfers.where('account.uri').equals(objectUri).delete()
-                await this.ledgerEntries.where('account.uri').equals(objectUri).delete()
-                await this.accountObjects.where('account.uri').equals(objectUri).delete()
-                await table.delete(objectUri)
-                break
+                // When an account gets deleted, all objects related
+                // to the account must be deleted as well.
+                case this.accounts:
+                  const ledgerUri = (existingRecord as AccountRecord).ledger.uri
+                  await this.ledgerEntries.where('ledger.uri').equals(ledgerUri).delete()
+                  await this.committedTransfers.where('account.uri').equals(objectUri).delete()
+                  await this.accountObjects.where('account.uri').equals(objectUri).delete()
+                  await this.accounts.delete(objectUri)
+                  break
 
-              default:
-                await table.delete(objectUri)
+                default:
+                  await table.delete(objectUri)
+              }
             }
           } else {
             assert(objectRecord)

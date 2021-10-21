@@ -320,6 +320,7 @@ async function prepareObjectUpdate(
         updater: async () => { db.storeTransfer(userId, logObject as TransferV0) },
         relatedUpdates: [],
       }
+
     case 'Account':
       const {
         accountRecord,
@@ -342,6 +343,7 @@ async function prepareObjectUpdate(
         },
         relatedUpdates: [],
       }
+
     case 'AccountLedger':
       const ledgerRecord: AccountLedgerRecord = { ...logObject, userId }
       // TODO: Fetch the ledger entries and pass the corresponding
@@ -350,7 +352,7 @@ async function prepareObjectUpdate(
         updater: () => db.storeLogObjectRecord(ledgerRecord, updateInfo),
         relatedUpdates: [],
       }
-    case 'Account':
+
     case 'AccountConfig':
     case 'AccountDisplay':
     case 'AccountKnowledge':
