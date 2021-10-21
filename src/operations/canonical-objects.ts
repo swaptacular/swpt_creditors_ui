@@ -40,6 +40,8 @@ import type {
   CurrencyPeg,
   TransferCreationRequest,
   DebtorInfo,
+  AccountsList,
+  TransfersList,
 } from '../web-api-schemas'
 
 export type {
@@ -63,7 +65,7 @@ export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
 export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
 export const DEBTOR_INFO_TYPE = /^DebtorInfo(-v[1-9][0-9]{0,5})?$/
 export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
-export const ACCOUNTS_LIST_TYPE = /^(AccountsList(-v[1-9][0-9]{0,5})?|PaginatedList(-v[1-9][0-9]{0,5})?)$/
+export const ACCOUNTS_LIST_TYPE = /^(AccountsList(-v[1-9][0-9]{0,5})?)$/
 export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
@@ -72,10 +74,11 @@ export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
 export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
 export const CURRENCY_PEG_TYPE = /^CurrencyPeg(-v[1-9][0-9]{0,5})?$/
-export const TRANSFERS_LIST_TYPE = /^(TransfersList(-v[1-9][0-9]{0,5})?|PaginatedList(-v[1-9][0-9]{0,5})?)$/
+export const TRANSFERS_LIST_TYPE = /^(TransfersList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
 export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
 export const LOG_ENTRIES_PAGE_TYPE = /^LogEntriesPage(-v[1-9][0-9]{0,5})?$/
+export const PAGINATED_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
@@ -114,6 +117,10 @@ export type PinInfoV0 = PinInfo & {
 export type CreditorV0 = Creditor & {
   type: 'Creditor',
 }
+export type TransfersListV0 = TransfersList & {
+  type: 'TransfersList',
+  itemsType: 'ObjectReference',
+}
 export type TransferV0 = Transfer & {
   type: 'Transfer',
   options: TransferOptionsV0,
@@ -137,6 +144,10 @@ export type CommittedTransferV0 = CommittedTransfer & {
 }
 export type DebtorInfoV0 = DebtorInfo & {
   type: 'DebtorInfo',
+}
+export type AccountsListV0 = AccountsList & {
+  type: 'AccountsList',
+  itemsType: 'ObjectReference',
 }
 export type AccountV0 = Account & {
   type: 'Account',
@@ -221,6 +232,32 @@ export function makePinInfo(response: HttpResponse<PinInfo>): PinInfoV0 {
     ...data,
     type: 'PinInfo',
     wallet: { uri: response.buildUri(data.wallet.uri) },
+  }
+}
+
+export function makeAccountsList(response: HttpResponse<AccountsList>): AccountsListV0 {
+  const data = response.data
+  matchType(ACCOUNTS_LIST_TYPE, data.type)
+  matchType(OBJECT_REFERENCE_TYPE, data.itemsType)
+  return {
+    ...data,
+    type: 'AccountsList',
+    itemsType: 'ObjectReference',
+    wallet: { uri: response.buildUri(data.wallet.uri) },
+    first: response.buildUri(data.first),
+  }
+}
+
+export function makeTransfersList(response: HttpResponse<TransfersList>): TransfersListV0 {
+  const data = response.data
+  matchType(TRANSFERS_LIST_TYPE, data.type)
+  matchType(OBJECT_REFERENCE_TYPE, data.itemsType)
+  return {
+    ...data,
+    type: 'TransfersList',
+    itemsType: 'ObjectReference',
+    wallet: { uri: response.buildUri(data.wallet.uri) },
+    first: response.buildUri(data.first),
   }
 }
 
@@ -457,7 +494,38 @@ export function getCanonicalType(objectType: string) {
       return 'CommittedTransfer'
     case TRANSFER_TYPE.test(objectType):
       return 'Transfer'
+    case ACCOUNTS_LIST_TYPE.test(objectType):
+      return 'AccountsList'
+    case TRANSFERS_LIST_TYPE.test(objectType):
+      return 'TransfersList'
     default:
-      throw new WrongObjectType()
+      return undefined
+  }
+}
+
+export function createTypeValidationFunction(expectedType: string): ((value: unknown) => boolean) {
+  switch (expectedType) {
+    case 'number':
+      return (value: unknown) => typeof value === 'number'
+    case 'bigint':
+      return (value: unknown) => typeof value === 'bigint'
+    case 'string':
+      return (value: unknown) => typeof value === 'string'
+    case 'boolean':
+      return (value: unknown) => typeof value === 'boolean'
+    case 'ObjectReference':
+      return (value: unknown) => {
+        if (typeof value === 'object' && value !== null) {
+          const propertyNames = Object.getOwnPropertyNames(value)
+          return propertyNames.length === 1 && propertyNames[0] === 'uri'
+        }
+        return false
+      }
+    default:
+      return (value: unknown) => (
+        typeof value === 'object'
+        && value !== null
+        && (value as { type: unknown }).type === expectedType
+      )
   }
 }

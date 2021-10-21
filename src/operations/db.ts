@@ -63,7 +63,18 @@ export type LogStream = {
 
 export type ObjectUpdateInfo = {
   objectUri: string,
-  objectType: string,
+  objectType:
+  | 'Account'
+  | 'AccountConfig'
+  | 'AccountDisplay'
+  | 'AccountKnowledge'
+  | 'AccountExchange'
+  | 'AccountInfo'
+  | 'AccountLedger'
+  | 'Transfer'
+  | 'CommittedTransfer'
+  | 'Creditor'
+  | 'PinInfo'
   logInfo?: {
     addedAt: string,
     deleted: boolean,

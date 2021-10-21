@@ -32,6 +32,7 @@ import {
   makeTransfer,
   makeLogObject,
   makeLogEntriesPage,
+  getCanonicalType,
 } from './canonical-objects'
 import type {
   TransferV0,
@@ -213,16 +214,27 @@ function collectObjectUpdates(
     if (entryId !== ++latestEntryId) {
       throw new BrokenLogStream()
     }
-    updates.set(uri, {
-      objectUri: uri,
-      objectType,
-      logInfo: {
-        addedAt,
-        deleted,
-        objectUpdateId,
-        data,
-      },
-    })
+    const canonicalType = getCanonicalType(objectType)
+    if (
+      canonicalType !== undefined
+      && canonicalType !== 'AccountsList'
+      && canonicalType !== 'TransfersList'
+    ) {
+      // NOTE: We ignore unknown log object types. Also, we ignore
+      // changes in `TransfersList` and `AccountsList` objects,
+      // because we do not need the information contained in them to
+      // properly maintain transfers and account lists.
+      updates.set(uri, {
+        objectUri: uri,
+        objectType: canonicalType,
+        logInfo: {
+          addedAt,
+          deleted,
+          objectUpdateId,
+          data,
+        },
+      })
+    }
   }
   return {
     latestEntryId,
@@ -251,7 +263,7 @@ async function prepareObjectUpdate(
   userId: number,
   timeout?: number,
 ): Promise<PreparedUpdate> {
-  const { objectUri, logInfo } = updateInfo
+  const { objectUri, objectType, logInfo } = updateInfo
   let patchedObject: TransferV0 | AccountLedgerV0 | undefined
   let logObject: LogObject
 
@@ -282,7 +294,7 @@ async function prepareObjectUpdate(
   }
 
   if (patchedObject) {
-     logObject = patchedObject
+    logObject = patchedObject
   } else {
     let response
     try {
@@ -301,6 +313,7 @@ async function prepareObjectUpdate(
   }
 
   // Some types of objects need a special treatment.
+  assert(logObject.type === objectType)
   switch (logObject.type) {
     case 'Transfer':
       return {
