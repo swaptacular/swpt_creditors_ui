@@ -455,6 +455,7 @@ class CreditorsDb extends Dexie {
         if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
           if (deleted) {
             assert(!objectRecord)
+            assert(table !== this.committedTransfers)
             switch (table) {
               // Transfers must remain in the local database, even
               // after they have been deleted from the server. This
