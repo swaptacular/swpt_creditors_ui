@@ -185,11 +185,9 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
   const pinInfo = makePinInfo(pinInfoResponse)
 
-  const accountsListUri = walletResponse.buildUri(wallet.accountsList.uri)
   const accountUris = []
-  for await (const { item, pageUrl } of iterAccountsList(server, accountsListUri)) {
-    const accountUri = new URL(item.uri, pageUrl).href
-    accountUris.push(accountUri)
+  for await (const { item, pageUrl } of iterAccountsList(server, wallet.accountsList.uri)) {
+    accountUris.push(new URL(item.uri, pageUrl).href)
   }
   const timeout = calcParallelTimeout(accountUris.length)
   const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]
