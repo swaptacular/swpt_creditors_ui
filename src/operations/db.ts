@@ -454,10 +454,12 @@ class CreditorsDb extends Dexie {
       const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
       if (!alreadyUpToDate) {
         if (objectRecord) {
+          // Update the record.
           assert(table !== this.transfers)
           await table.put(objectRecord)
 
         } else if (existingRecord) {
+          // Delete the record.
           switch (table) {
             // Committed transfers are immutable, and normally will
             // not be deleted. Nevertheless, under some very unlikely
@@ -465,6 +467,7 @@ class CreditorsDb extends Dexie {
             // server, before the corresponding log entry has been
             // processed), this could happen.
             case this.committedTransfers:
+              assert(objectType === 'CommittedTransfer')
               break
 
             // Transfers must remain in the local database, even
