@@ -447,9 +447,9 @@ class CreditorsDb extends Dexie {
       objectType = objectRecord.type
       updateId = objectRecord.latestUpdateId ?? MAX_INT64
     }
-    const table = this.getLogObjectTable(objectType)
 
-    await this.transaction('rw', [table], async () => {
+    await this.transaction('rw', this.allTables, async () => {
+      const table = this.getLogObjectTable(objectType)
       const existingRecord = await table.get(objectUri)
       if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
         if (objectRecord) {
@@ -463,21 +463,16 @@ class CreditorsDb extends Dexie {
               // after they have been deleted from the server. This
               // allows the user to review transfers history.
               case this.transfers:
+                break
 
-              // Account sub-objects must be deleted only when the
+              // Account sub-objects will be deleted when the
               // corresponding account gets deleted. This guarantees
               // that all sub-objects exist for every account.
               case this.accountObjects:
                 break
 
-              // When an account gets deleted, all objects related
-              // to the account must be deleted as well.
               case this.accounts:
-                const ledgerUri = (existingRecord as AccountRecord).ledger.uri
-                await this.ledgerEntries.where('ledger.uri').equals(ledgerUri).delete()
-                await this.committedTransfers.where('account.uri').equals(objectUri).delete()
-                await this.accountObjects.where('account.uri').equals(objectUri).delete()
-                await this.accounts.delete(objectUri)
+                await this.deleteAccount(objectUri)
                 break
 
               default:
@@ -814,10 +809,15 @@ class CreditorsDb extends Dexie {
   async deleteAccount(accountUri: string): Promise<void> {
     const tables = [this.accounts, this.accountObjects, this.ledgerEntries, this.committedTransfers]
     await this.transaction('rw', tables, async () => {
-      await this.accounts.delete(accountUri)
-      await this.accountObjects.where({ 'account.uri': accountUri }).delete()
-      await this.ledgerEntries.where({ 'account.uri': accountUri }).delete()
+      const accountObjectsQuery = this.accountObjects.where({ 'account.uri': accountUri })
+      for (const accountObject of await accountObjectsQuery.toArray()) {
+        if (accountObject.type === 'AccountLedger') {
+          await this.ledgerEntries.where({ 'ledger.uri': accountObject.uri }).delete()
+        }
+      }
+      await accountObjectsQuery.delete()
       await this.committedTransfers.where({ 'account.uri': accountUri }).delete()
+      await this.accounts.delete(accountUri)
     })
   }
 
