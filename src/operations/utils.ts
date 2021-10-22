@@ -55,6 +55,9 @@ export async function* iterPages<T>(server: ServerSession, next: string, itemsTy
     const pageResponse = await server.get(next) as HttpResponse<Page<T>>
     const pageUrl = pageResponse.url
     const data = pageResponse.data
+    assert(data.next === undefined || typeof data.next === 'string')
+    assert(data.items instanceof Array)
+
     for (const item of data.items) {
       if (!isValidType(item)) {
         throw new WrongObjectType()

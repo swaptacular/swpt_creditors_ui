@@ -78,8 +78,6 @@ export const CURRENCY_PEG_TYPE = /^CurrencyPeg(-v[1-9][0-9]{0,5})?$/
 export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
 export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
 export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
-export const LOG_ENTRIES_PAGE_TYPE = /^.*$/
-export const LEDGER_ENTRIES_PAGE_TYPE = /^.*$/
 export const PAGINATED_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
 export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
 export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
@@ -433,11 +431,14 @@ export function makeWallet(response: HttpResponse<Wallet>): WalletV0 {
 
 export function makeLogEntriesPage(response: HttpResponse<LogEntriesPage>): LogEntriesPageV0 {
   const data = response.data
-  matchType(LOG_ENTRIES_PAGE_TYPE, data.type)
+  assert(data.items instanceof Array)
+  assert(data.next === undefined || typeof data.next === 'string')
+  assert(data.forthcoming === undefined || typeof data.forthcoming === 'string')
+  assert(data.next !== undefined || data.forthcoming !== undefined)
+
   for (const item of data.items) {
     matchType(LOG_ENTRY_TYPE, item.type)
   }
-  assert(data.next !== undefined || data.forthcoming !== undefined)
   return {
     ...data,
     type: 'LogEntriesPage',
@@ -451,7 +452,9 @@ export function makeLogEntriesPage(response: HttpResponse<LogEntriesPage>): LogE
 
 export function makeLedgerEntriesPage(response: HttpResponse<LedgerEntriesPage>): LedgerEntriesPageV0 {
   const data = response.data
-  matchType(LEDGER_ENTRIES_PAGE_TYPE, data.type)
+  assert(data.items instanceof Array)
+  assert(data.next === undefined || typeof data.next === 'string')
+
   for (const item of data.items) {
     matchType(LEDGER_ENTRY_TYPE, item.type)
   }

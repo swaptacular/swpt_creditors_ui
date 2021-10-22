@@ -37,7 +37,6 @@ import {
 import type {
   TransferV0,
   LogEntryV0,
-  AccountLedgerV0,
   LogObject,
 } from './canonical-objects'
 import { iterAccountsList, iterTransfersList, calcParallelTimeout } from './utils'
@@ -225,12 +224,10 @@ function collectObjectUpdates(
       updates.set(uri, {
         objectUri: uri,
         objectType: canonicalType,
-        logInfo: {
-          addedAt,
-          deleted,
-          objectUpdateId,
-          data,
-        },
+        updatedAt: addedAt,
+        deleted,
+        objectUpdateId,
+        data,
       })
     }
   }
@@ -261,66 +258,42 @@ async function prepareObjectUpdate(
   userId: number,
   timeout?: number,
 ): Promise<PreparedUpdate> {
-  const { objectUri, objectType, logInfo } = updateInfo
-
-  let patchedObject: TransferV0 | AccountLedgerV0 | undefined
-  if (logInfo) {
-    const { deleted, objectUpdateId } = logInfo
-    if (deleted) {
-      // The log says that the object has been deleted, so we delete it.
-      return {
-        updater: () => db.storeLogObjectRecord(null, updateInfo),
-        relatedUpdates: [],
-      }
-    }
-    const existingRecord = await db.getLogObjectRecord(updateInfo)
-    if (existingRecord) {
-      if ((existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
-        // The object's record is already up-to-date, so we do nothing.
-        //
-        // TODO: Make sure this happens for existing
-        // CommittedTransfers, even if `logInfo === undefined`.
-        return {
-          updater: async () => undefined,
-          relatedUpdates: [],
-        }
-      }
-      // Sometimes we can reconstruct the current version of the
-      // object by updating (patching) an old version of the object
-      // with the data received from the log record. In this case, we
-      // spare a needless network request.
-      patchedObject = tryToPatchExistingRecord(existingRecord, logInfo)
-    }
+  if (updateInfo.deleted) {
+    return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
+  }
+  const existingRecord = await db.getLogObjectRecord(updateInfo)
+  const alreadyUpToDate = (
+    existingRecord !== undefined
+    && (existingRecord.latestUpdateId ?? MAX_INT64) >= (updateInfo.objectUpdateId ?? MAX_INT64)
+  )
+  if (alreadyUpToDate) {
+    return makeUpdate(() => Promise.resolve())
   }
 
-  let logObject: LogObject
-  if (patchedObject) {
-    logObject = patchedObject
-  } else {
-    let response
+  // Sometimes we can reconstruct the current version of the object by
+  // updating the existing version of the object with the data
+  // received from the log record. In such cases we spare a needless
+  // network request.
+  let obj = tryToReconstructLogObject(updateInfo, existingRecord)
+  if (!obj) {
     try {
-      response = await server.get(objectUri, { timeout }) as HttpResponse<unknown>
+      const uri = updateInfo.objectUri
+      const response = await server.get(uri, { timeout }) as HttpResponse<unknown>
+      obj = makeLogObject(response)
     } catch (e: unknown) {
       if (e instanceof HttpError && e.status === 404) {
-        // The object does not exist anymore, so we delete it.
-        return {
-          updater: () => db.storeLogObjectRecord(null, updateInfo),
-          relatedUpdates: [],
-        }
-      }
-      throw e
+        return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
+      } else throw e
     }
-    logObject = makeLogObject(response)
   }
-  assert(logObject.type === objectType)
+  assert(obj.type === updateInfo.objectType)
 
   // Some types of objects require special treatment.
-  switch (logObject.type) {
+  switch (obj.type) {
     case 'Transfer':
-      return {
-        updater: async () => { db.storeTransfer(userId, logObject as TransferV0) },
-        relatedUpdates: [],
-      }
+      return makeUpdate(async () => {
+        db.storeTransfer(userId, obj as TransferV0)
+      })
 
     case 'Account':
       const {
@@ -331,28 +304,24 @@ async function prepareObjectUpdate(
         accountExchangeRecord,
         accountLedgerRecord,
         accountConfigRecord,
-      } = splitIntoRecords(userId, logObject)
-      return {
-        updater: async () => {
-          await db.storeLogObjectRecord(accountRecord, updateInfo)
-          await db.storeLogObjectRecord(accountInfoRecord)
-          await db.storeLogObjectRecord(accountDisplayRecord)
-          await db.storeLogObjectRecord(accountKnowledgeRecord)
-          await db.storeLogObjectRecord(accountExchangeRecord)
-          await db.storeLogObjectRecord(accountLedgerRecord)
-          await db.storeLogObjectRecord(accountConfigRecord)
-        },
-        relatedUpdates: [],
-      }
+      } = splitIntoRecords(userId, obj)
+      return makeUpdate(async () => {
+        await db.storeLogObjectRecord(accountRecord, updateInfo)
+        await db.storeLogObjectRecord(accountInfoRecord)
+        await db.storeLogObjectRecord(accountDisplayRecord)
+        await db.storeLogObjectRecord(accountKnowledgeRecord)
+        await db.storeLogObjectRecord(accountExchangeRecord)
+        await db.storeLogObjectRecord(accountLedgerRecord)
+        await db.storeLogObjectRecord(accountConfigRecord)
+      })
 
     case 'AccountLedger':
-      const ledgerRecord: AccountLedgerRecord = { ...logObject, userId }
+      const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
       // TODO: Fetch the ledger entries and pass the corresponding
       //       transfer URIs as `relatedUpdates` here.
-      return {
-        updater: () => db.storeLogObjectRecord(ledgerRecord, updateInfo),
-        relatedUpdates: [],
-      }
+      return makeUpdate(async () => {
+        db.storeLogObjectRecord(ledgerRecord, updateInfo)
+      }, [])
 
     case 'AccountConfig':
     case 'AccountDisplay':
@@ -362,37 +331,31 @@ async function prepareObjectUpdate(
     case 'CommittedTransfer':
     case 'Creditor':
     case 'PinInfo':
-      const logObjectRecord: LogObjectRecord = { ...logObject, userId }
-      return {
-        updater: () => db.storeLogObjectRecord(logObjectRecord, updateInfo),
-        relatedUpdates: [],
-      }
+      const record: LogObjectRecord = { ...obj, userId }
+      return makeUpdate(() => db.storeLogObjectRecord(record, updateInfo))
   }
 }
 
-function tryToPatchExistingRecord(
-  existingRecord: LogObjectRecord,
-  logInfo: NonNullable<ObjectUpdateInfo['logInfo']>,
-): TransferV0 | AccountLedgerV0 | undefined {
-  const { objectUpdateId, data, addedAt } = logInfo
+function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObjectRecord): LogObject | undefined {
+  const { objectUpdateId, data, updatedAt } = updateInfo
   let patchedRecord: AccountLedgerRecord | TransferRecord | undefined
 
-  if (objectUpdateId !== undefined && data !== undefined) {
-    switch (existingRecord.type) {
+  if (record && objectUpdateId !== undefined && data !== undefined) {
+    switch (record.type) {
       case 'AccountLedger':
         patchedRecord = {
-          ...existingRecord as AccountLedgerRecord,
+          ...record as AccountLedgerRecord,
           principal: BigInt(data.principal as bigint),
           nextEntryId: BigInt(data.nextEntryId as bigint),
           latestUpdateId: objectUpdateId,
-          latestUpdateAt: addedAt,
+          latestUpdateAt: updatedAt,
         } as AccountLedgerRecord
         break
       case 'Transfer':
         patchedRecord = {
-          ...existingRecord as TransferRecord,
+          ...record as TransferRecord,
           latestUpdateId: objectUpdateId,
-          latestUpdateAt: addedAt,
+          latestUpdateAt: updatedAt,
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
           const hasError = data.errorCode === undefined
@@ -412,4 +375,8 @@ function tryToPatchExistingRecord(
     }
   }
   return patchedRecord
+}
+
+function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
+  return { updater, relatedUpdates }
 }

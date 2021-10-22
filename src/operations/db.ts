@@ -75,12 +75,10 @@ export type ObjectUpdateInfo = {
   | 'CommittedTransfer'
   | 'Creditor'
   | 'PinInfo'
-  logInfo?: {
-    addedAt: string,
-    deleted: boolean,
-    objectUpdateId?: bigint,
-    data?: { [key: string]: unknown },
-  }
+  updatedAt: string,
+  deleted: boolean,
+  objectUpdateId?: bigint,
+  data?: { [key: string]: unknown },
 }
 
 export type LogObjectRecord =
@@ -428,68 +426,67 @@ class CreditorsDb extends Dexie {
   }
 
   async storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo?: ObjectUpdateInfo): Promise<void> {
-    if (updateInfo === undefined) {
-      assert(objectRecord)
-      updateInfo = {
-        objectUri: objectRecord.uri,
-        objectType: objectRecord.type,
+    let objectUri: string
+    let objectType: string
+    let updateId: bigint
+
+    if (updateInfo) {
+      objectUri = updateInfo.objectUri
+      objectType = updateInfo.objectType
+      if (objectRecord) {
+        assert(objectRecord.uri === objectUri)
+        assert(objectRecord.type === objectType)
+        assert(!updateInfo.deleted)
+        updateId = objectRecord.latestUpdateId ?? MAX_INT64
+      } else {
+        updateId = updateInfo.objectUpdateId ?? MAX_INT64
       }
-    }
-    const { objectUri, objectType, logInfo } = updateInfo
-    let updateId: bigint | undefined
-    let deleted: boolean | undefined
-
-    if (objectRecord !== null) {
+    } else {
+      assert(objectRecord)
+      objectUri = objectRecord.uri
+      objectType = objectRecord.type
       updateId = objectRecord.latestUpdateId ?? MAX_INT64
-      deleted = false
-    } else if (logInfo) {
-      updateId = logInfo.objectUpdateId ?? MAX_INT64
-      deleted = true
     }
+    const table = this.getLogObjectTable(objectType)
 
-    if (updateId !== undefined) {
-      const table = this.getLogObjectTable(objectType)
-      await this.transaction('rw', [table], async () => {
-        const existingRecord = await table.get(objectUri)
-        if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
-          if (deleted) {
-            assert(!objectRecord)
-            assert(table !== this.committedTransfers)
-            if (existingRecord) {
-              switch (table) {
-                // Transfers must remain in the local database, even
-                // after they have been deleted from the server. This
-                // allows the user to review transfers history.
-                case this.transfers:
+    await this.transaction('rw', [table], async () => {
+      const existingRecord = await table.get(objectUri)
+      if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
+        if (objectRecord) {
+          assert(table !== this.transfers)
+          await table.put(objectRecord)
+        } else {
+          assert(table !== this.committedTransfers)
+          if (existingRecord) {
+            switch (table) {
+              // Transfers must remain in the local database, even
+              // after they have been deleted from the server. This
+              // allows the user to review transfers history.
+              case this.transfers:
 
-                // Account sub-objects must be deleted only when the
-                // corresponding account gets deleted. This guarantees
-                // that all sub-objects exist for every account.
-                case this.accountObjects:
-                  break
+              // Account sub-objects must be deleted only when the
+              // corresponding account gets deleted. This guarantees
+              // that all sub-objects exist for every account.
+              case this.accountObjects:
+                break
 
-                // When an account gets deleted, all objects related
-                // to the account must be deleted as well.
-                case this.accounts:
-                  const ledgerUri = (existingRecord as AccountRecord).ledger.uri
-                  await this.ledgerEntries.where('ledger.uri').equals(ledgerUri).delete()
-                  await this.committedTransfers.where('account.uri').equals(objectUri).delete()
-                  await this.accountObjects.where('account.uri').equals(objectUri).delete()
-                  await this.accounts.delete(objectUri)
-                  break
+              // When an account gets deleted, all objects related
+              // to the account must be deleted as well.
+              case this.accounts:
+                const ledgerUri = (existingRecord as AccountRecord).ledger.uri
+                await this.ledgerEntries.where('ledger.uri').equals(ledgerUri).delete()
+                await this.committedTransfers.where('account.uri').equals(objectUri).delete()
+                await this.accountObjects.where('account.uri').equals(objectUri).delete()
+                await this.accounts.delete(objectUri)
+                break
 
-                default:
-                  await table.delete(objectUri)
-              }
+              default:
+                await table.delete(objectUri)
             }
-          } else {
-            assert(objectRecord)
-            assert(table !== this.transfers)
-            await table.put(objectRecord)
           }
         }
-      })
-    }
+      }
+    })
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
