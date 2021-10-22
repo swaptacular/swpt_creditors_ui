@@ -451,34 +451,36 @@ class CreditorsDb extends Dexie {
     await this.transaction('rw', this.allTables, async () => {
       const table = this.getLogObjectTable(objectType)
       const existingRecord = await table.get(objectUri)
-      if (!existingRecord || (existingRecord.latestUpdateId ?? MAX_INT64) < (updateId as bigint)) {
+      const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
+      if (!alreadyUpToDate) {
         if (objectRecord) {
           assert(table !== this.transfers)
           await table.put(objectRecord)
-        } else {
+
+        } else if (existingRecord) {
           assert(table !== this.committedTransfers)
-          if (existingRecord) {
-            switch (table) {
-              // Transfers must remain in the local database, even
-              // after they have been deleted from the server. This
-              // allows the user to review transfers history.
-              case this.transfers:
-                await this.markTranferDeletion(objectUri)
-                break
+          switch (table) {
+            // Transfers must remain in the local database, even
+            // after they have been deleted from the server. This
+            // allows the user to review transfers history.
+            case this.transfers:
+              assert(objectType === 'Transfer')
+              await this.markTranferDeletion(objectUri)
+              break
 
-              // Account sub-objects will be deleted when the
-              // corresponding account gets deleted. This guarantees
-              // that all sub-objects exist for every account.
-              case this.accountObjects:
-                break
+            // Account sub-objects will be deleted when the
+            // corresponding account gets deleted. This guarantees
+            // that all sub-objects for every account always exist.
+            case this.accountObjects:
+              break
 
-              case this.accounts:
-                await this.deleteAccount(objectUri)
-                break
+            case this.accounts:
+              assert(objectType === 'Account')
+              await this.deleteAccount(objectUri)
+              break
 
-              default:
-                await table.delete(objectUri)
-            }
+            default:
+              await table.delete(objectUri)
           }
         }
       }
