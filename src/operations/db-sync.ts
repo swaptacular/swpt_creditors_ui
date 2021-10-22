@@ -38,8 +38,14 @@ import type {
   TransferV0,
   LogEntryV0,
   LogObject,
+  LedgerEntryV0,
 } from './canonical-objects'
-import { iterAccountsList, iterTransfersList, calcParallelTimeout } from './utils'
+import {
+  iterAccountsList,
+  iterTransfersList,
+  iterLedgerEntries,
+  calcParallelTimeout,
+} from './utils'
 
 type ObjectUpdater = () => Promise<void>
 
@@ -316,11 +322,29 @@ async function prepareObjectUpdate(
 
     case 'AccountLedger':
       const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
-      // TODO: Fetch the ledger entries and pass the corresponding
-      //       transfer URIs as `relatedUpdates` here.
+      const latestEntryId = 1  // TODO: read this from the db.
+      const firstPageUri = ledgerRecord.entries.first  // TODO: add &stop=`${latestEntryId}`.
+      let newEntries: LedgerEntryV0[] = []
+      for await (const entry of iterLedgerEntries(server, firstPageUri)) {
+        if (entry.entryId <= latestEntryId) {
+          break
+        }
+        newEntries.push(entry)
+      }
+      const relatedUpdates: ObjectUpdateInfo[] = newEntries
+          .filter(entry => entry.transfer !== undefined)
+          .map(entry => ({
+            objectUri: entry.transfer?.uri as string,
+            objectType: 'CommittedTransfer',
+            deleted: false,
+            updatedAt: new Date().toISOString(),
+          }))
       return makeUpdate(async () => {
         db.storeLogObjectRecord(ledgerRecord, updateInfo)
-      }, [])
+        for (const entry of newEntries) {
+          db.storeLedgerEntryRecord({ ...entry, userId })
+        }
+      }, relatedUpdates)
 
     case 'AccountConfig':
     case 'AccountDisplay':
@@ -342,6 +366,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
   if (record && objectUpdateId !== undefined && data !== undefined) {
     switch (record.type) {
       case 'AccountLedger':
+        // TODO: update entries.first here!
         patchedRecord = {
           ...record as AccountLedgerRecord,
           principal: BigInt(data.principal as bigint),
@@ -350,6 +375,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           latestUpdateAt: updatedAt,
         } as AccountLedgerRecord
         break
+
       case 'Transfer':
         patchedRecord = {
           ...record as TransferRecord,

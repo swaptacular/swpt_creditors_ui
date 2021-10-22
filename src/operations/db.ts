@@ -497,6 +497,15 @@ class CreditorsDb extends Dexie {
     })
   }
 
+  async storeLedgerEntryRecord(record: LedgerEntryRecord): Promise<void> {
+    try {
+      await this.ledgerEntries.put(record)
+    } catch (e: unknown) {
+      if (e instanceof Dexie.ConstraintError) { /* already stored*/ }
+      else throw e
+    }
+  }
+
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
     return await this.documents.get(uri)
   }
