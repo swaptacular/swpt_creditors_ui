@@ -458,8 +458,10 @@ class CreditorsDb extends Dexie {
           await table.put(objectRecord)
 
         } else if (existingRecord) {
-          assert(table !== this.committedTransfers)
           switch (table) {
+            case this.committedTransfers:
+              throw new Error('committed transfers must never get deleted')
+
             // Transfers must remain in the local database, even
             // after they have been deleted from the server. This
             // allows the user to review transfers history.
