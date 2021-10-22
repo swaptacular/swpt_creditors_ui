@@ -361,7 +361,7 @@ class CreditorsDb extends Dexie {
       documents: 'uri',
 
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
-      tasks: '++taskId,[userId+scheduledFor]',
+      tasks: '++taskId,[userId+scheduledFor],transferUri',
     })
 
     this.wallets = this.table('wallets')
@@ -463,6 +463,7 @@ class CreditorsDb extends Dexie {
               // after they have been deleted from the server. This
               // allows the user to review transfers history.
               case this.transfers:
+                await this.markTranferDeletion(objectUri)
                 break
 
               // Account sub-objects will be deleted when the
@@ -857,6 +858,17 @@ class CreditorsDb extends Dexie {
 
   private async isInstalledUser(userId: number): Promise<boolean> {
     return await this.wallets.where({ userId }).count() === 1
+  }
+
+  private async markTranferDeletion(transferUri: string): Promise<void> {
+    await this.actions
+      .where({ transferUri })
+      .filter(action => action.actionType === 'AbortTransfer')
+      .delete()
+    await this.tasks
+      .where({ transferUri })
+      .filter(task => task.taskType === 'DeleteTransfer')
+      .delete()
   }
 
   private get allTables() {
