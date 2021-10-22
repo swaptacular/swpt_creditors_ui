@@ -88,8 +88,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 
   async function* iterTransfers(): AsyncIterable<TransferV0> {
     let urisToFetch: string[] = []
-    for await (const { item, pageUrl } of iterTransfersList(server, walletRecord.transfersList.uri)) {
-      const transferUri = new URL(item.uri, pageUrl).href
+    for await (const { uri: transferUri } of iterTransfersList(server, walletRecord.transfersList.uri)) {
       const transferRecord = await db.getTransferRecord(transferUri)
       const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
       if (!isConcludedTransfer) {
@@ -185,8 +184,8 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const pinInfo = makePinInfo(pinInfoResponse)
 
   const accountUris = []
-  for await (const { item, pageUrl } of iterAccountsList(server, wallet.accountsList.uri)) {
-    accountUris.push(new URL(item.uri, pageUrl).href)
+  for await (const { uri: accountUri } of iterAccountsList(server, wallet.accountsList.uri)) {
+    accountUris.push(accountUri)
   }
   const timeout = calcParallelTimeout(accountUris.length)
   const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]

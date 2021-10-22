@@ -43,6 +43,7 @@ import type {
   DebtorInfo,
   AccountsList,
   TransfersList,
+  ObjectReference,
 } from '../web-api-schemas'
 
 export type {
@@ -368,6 +369,24 @@ export function makeAccountLedger(data: AccountLedger, baseUri: string): Account
   }
 }
 
+export function makeLedgerEntry(data: LedgerEntry, baseUri: string): LedgerEntryV0 {
+  matchType(LEDGER_ENTRY_TYPE, data.type)
+  return {
+    ...data,
+    type: 'LedgerEntry',
+    transfer: data.transfer ? { uri: new URL(data.transfer.uri, baseUri).href } : undefined,
+    ledger: { uri: new URL(data.ledger.uri, baseUri).href },
+  }
+}
+
+export function makeObjectReference(value: ObjectReference, baseUri: string): ObjectReference {
+  const propertyNames = Object.getOwnPropertyNames(value)
+  if (propertyNames.length !== 1 || propertyNames[0] !== 'uri') {
+    throw new WrongObjectType()
+  }
+  return { uri: new URL(value.uri, baseUri).href }
+}
+
 export function makeTransfer(response: HttpResponse<Transfer>): TransferV0 {
   const data = response.data
   matchType(TRANSFER_TYPE, data.type)
@@ -530,32 +549,5 @@ export function getCanonicalType(objectType: string) {
       return 'TransfersList'
     default:
       return undefined
-  }
-}
-
-export function createTypeValidationFunction(expectedType: string): ((value: unknown) => boolean) {
-  switch (expectedType) {
-    case 'number':
-      return (value: unknown) => typeof value === 'number'
-    case 'bigint':
-      return (value: unknown) => typeof value === 'bigint'
-    case 'string':
-      return (value: unknown) => typeof value === 'string'
-    case 'boolean':
-      return (value: unknown) => typeof value === 'boolean'
-    case 'ObjectReference':
-      return (value: unknown) => {
-        if (typeof value === 'object' && value !== null) {
-          const propertyNames = Object.getOwnPropertyNames(value)
-          return propertyNames.length === 1 && propertyNames[0] === 'uri'
-        }
-        return false
-      }
-    default:
-      return (value: unknown) => (
-        typeof value === 'object'
-        && value !== null
-        && (value as { type: unknown }).type === expectedType
-      )
   }
 }
