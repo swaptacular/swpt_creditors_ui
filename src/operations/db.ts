@@ -459,8 +459,13 @@ class CreditorsDb extends Dexie {
 
         } else if (existingRecord) {
           switch (table) {
+            // Committed transfers are immutable, and normally will
+            // not be deleted. Nevertheless, under some very unlikely
+            // conditions (for example, being garbage collected on the
+            // server, before the corresponding log entry has been
+            // processed), this could happen.
             case this.committedTransfers:
-              throw new Error('committed transfers must never get deleted')
+              break
 
             // Transfers must remain in the local database, even
             // after they have been deleted from the server. This
