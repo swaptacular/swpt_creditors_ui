@@ -366,9 +366,12 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
   if (record && objectUpdateId !== undefined && data !== undefined) {
     switch (record.type) {
       case 'AccountLedger':
-        // TODO: update entries.first here!
         patchedRecord = {
           ...record as AccountLedgerRecord,
+          entries: {
+            ...record.entries,
+            first: String(data.firstPage as string),
+          },
           principal: BigInt(data.principal as bigint),
           nextEntryId: BigInt(data.nextEntryId as bigint),
           latestUpdateId: objectUpdateId,
