@@ -1,58 +1,23 @@
-import {
-  ServerSession,
-  HttpResponse,
-  HttpError,
+import type {
+  ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, Transfer, LogEntriesPage
 } from './server'
 import type {
-  Creditor,
-  PinInfo,
-  Wallet,
-  Account,
-  Transfer,
-  LogEntriesPage,
-} from './server'
-import {
-  db,
-  splitIntoRecords,
-  MAX_INT64,
-} from './db'
-import type {
-  UserData,
-  WalletRecordWithId,
-  LogObjectRecord,
-  AccountLedgerRecord,
-  TransferRecord,
+  UserData, WalletRecordWithId, LogObjectRecord, AccountLedgerRecord, TransferRecord,
   ObjectUpdateInfo,
 } from './db'
-import {
-  makeCreditor,
-  makePinInfo,
-  makeAccount,
-  makeWallet,
-  makeTransfer,
-  makeLogObject,
-  makeLogEntriesPage,
-  getCanonicalType,
-} from './canonical-objects'
 import type {
-  TransferV0,
-  LogEntryV0,
-  LogObject,
-  LedgerEntryV0,
+  TransferV0, LogEntryV0, LedgerEntryV0, LogObject
+} from './canonical-objects'
+
+import { HttpError } from './server'
+import { db, splitIntoRecords, MAX_INT64 } from './db'
+import {
+  makeCreditor, makePinInfo, makeAccount, makeWallet, makeTransfer, makeLogObject,
+  makeLogEntriesPage, getCanonicalType,
 } from './canonical-objects'
 import {
-  iterAccountsList,
-  iterTransfersList,
-  iterLedgerEntries,
-  calcParallelTimeout,
+  iterAccountsList, iterTransfersList, iterLedgerEntries, calcParallelTimeout
 } from './utils'
-
-type ObjectUpdater = () => Promise<void>
-
-type PreparedUpdate = {
-  updater: ObjectUpdater,
-  relatedUpdates: ObjectUpdateInfo[],
-}
 
 export class BrokenLogStream extends Error {
   name = 'BrokenLogStream'
@@ -173,6 +138,13 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     }
     throw e
   }
+}
+
+type ObjectUpdater = () => Promise<void>
+
+type PreparedUpdate = {
+  updater: ObjectUpdater,
+  relatedUpdates: ObjectUpdateInfo[],
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
