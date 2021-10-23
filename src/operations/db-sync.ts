@@ -411,11 +411,23 @@ async function fetchNewLedgerEntries(
   if (latestEntryId !== undefined) {
     first.searchParams.append('stop', String(latestEntryId))
   }
+  let previousEntryId: bigint | undefined
   for await (const entry of iterLedgerEntries(server, first.href)) {
-    if (latestEntryId !== undefined && entry.entryId <= latestEntryId) {
+    const { entryId } = entry
+    if (previousEntryId !== undefined) {
+      const expectedId = previousEntryId - 1n
+      if (entryId < expectedId) {
+        // There are missing entries between the previous entry and this one.
+        break
+      }
+      assert(entryId === expectedId)
+    }
+    if (latestEntryId !== undefined && entryId <= latestEntryId) {
+      // This is an already known entry.
       break
     }
     newLedgerEntries.push(entry)
+    previousEntryId = entryId
   }
   return newLedgerEntries
 }
