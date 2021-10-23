@@ -55,7 +55,6 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
 export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
   assert(walletRecord.logStream.loadedTransfers)
-
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
   }
@@ -68,6 +67,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const updaters = await generateObjectUpdaters(updates, server, userId)
     const isLastPage = page.next === undefined
 
+    // Write all object updates to the local database, and store the
+    // current position in the log stream.
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
       if (walletRecord.logStream.latestEntryId === previousEntryId) {
@@ -82,10 +83,12 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         await db.updateWalletRecord(walletRecord)
       }
     })
+
     return !isLastPage
 
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
+      // Mark the log stream as broken (and then re-throw).
       db.executeTransaction(async () => {
         const walletRecord = await db.getWalletRecord(userId)
         if (walletRecord.logStream.latestEntryId === previousEntryId) {
