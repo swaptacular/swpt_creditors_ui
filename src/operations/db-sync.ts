@@ -63,9 +63,9 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
   try {
     const response = await server.get(walletRecord.logStream.forthcoming) as HttpResponse<LogEntriesPage>
     const page = makeLogEntriesPage(response)
+    const isLastPage = page.next === undefined
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const updaters = await generateObjectUpdaters(updates, server, userId)
-    const isLastPage = page.next === undefined
 
     // Write all object updates to the local database, and store the
     // current position in the log stream. Note that before we start,
