@@ -65,7 +65,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const page = makeLogEntriesPage(response)
     const isLastPage = page.next === undefined
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
-    const updaters = await generateObjectUpdaters(updates, server, userId)
+    const objectUpdaters = await generateObjectUpdaters(updates, server, userId)
 
     // Write all object updates to the local database, and store the
     // current position in the log stream. Note that before we start,
@@ -74,7 +74,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
       if (walletRecord.logStream.latestEntryId === previousEntryId) {
-        for (const performObjectUpdate of updaters) {
+        for (const performObjectUpdate of objectUpdaters) {
           await performObjectUpdate()
         }
         if (isLastPage) {
@@ -85,7 +85,6 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         await db.updateWalletRecord(walletRecord)
       }
     })
-
     return !isLastPage
 
   } catch (e: unknown) {
