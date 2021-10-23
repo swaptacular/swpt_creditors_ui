@@ -7,12 +7,6 @@ import {
   makeAccountsList,
 } from './canonical-objects'
 
-
-type Page<ItemsType> = {
-  items: ItemsType[],
-  next?: string,
-}
-
 export function calcParallelTimeout(numberOfParallelRequests: number): number {
   const n = 6  // a rough guess for the maximum number of parallel connections
   return appConfig.serverApiTimeout * (numberOfParallelRequests + n - 1) / n
@@ -46,6 +40,11 @@ export const iterLedgerEntries = (
   firstPageUri,
   makeLedgerEntry,
 )
+
+type Page<ItemsType> = {
+  items: ItemsType[],
+  next?: string,
+}
 
 async function* iterPages<OriginalItem, TransformedItem>(
   server: ServerSession,
