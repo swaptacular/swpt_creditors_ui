@@ -324,13 +324,13 @@ async function prepareObjectUpdate(
       const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
       const newEntries = await fetchNewLedgerEntries(server, ledgerRecord)
       const relatedUpdates: ObjectUpdateInfo[] = newEntries
-          .filter(entry => entry.transfer !== undefined)
-          .map(entry => ({
-            objectUri: entry.transfer!.uri,
-            objectType: 'CommittedTransfer',
-            deleted: false,
-            updatedAt: ledgerRecord.latestUpdateAt,
-          }))
+        .filter(entry => entry.transfer !== undefined)
+        .map(entry => ({
+          objectUri: entry.transfer!.uri,
+          objectType: 'CommittedTransfer',
+          deleted: false,
+          updatedAt: ledgerRecord.latestUpdateAt,
+        }))
       return makeUpdate(async () => {
         db.storeLogObjectRecord(ledgerRecord, updateInfo)
         for (const entry of newEntries) {
@@ -405,29 +405,27 @@ async function fetchNewLedgerEntries(
   server: ServerSession,
   ledgerRecord: AccountLedgerRecord,
 ): Promise<LedgerEntryV0[]> {
+  // NOTE: The entries are iterated in reverse-chronological order
+  // (bigger entryIds go first).
+
   let newLedgerEntries: LedgerEntryV0[] = []
   const first = new URL(ledgerRecord.entries.first)
   const latestEntryId = await db.getLatestLedgerEntryId(ledgerRecord.uri)
   if (latestEntryId !== undefined) {
     first.searchParams.append('stop', String(latestEntryId))
   }
-  let previousEntryId: bigint | undefined
+  let iteratedId = ledgerRecord.nextEntryId
   for await (const entry of iterLedgerEntries(server, first.href)) {
     const { entryId } = entry
-    if (previousEntryId !== undefined) {
-      const expectedId = previousEntryId - 1n
-      if (entryId < expectedId) {
-        // There are missing entries between the previous entry and this one.
-        break
-      }
-      assert(entryId === expectedId)
+    assert(entryId < iteratedId)
+    if (iteratedId - entryId !== 1n) {
+      break  // There are missing entries.
     }
     if (latestEntryId !== undefined && entryId <= latestEntryId) {
-      // This is an already known entry.
-      break
+      break  // This is an already known entry.
     }
     newLedgerEntries.push(entry)
-    previousEntryId = entryId
+    iteratedId = entryId
   }
   return newLedgerEntries
 }
