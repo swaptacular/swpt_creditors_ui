@@ -316,6 +316,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
           assert(typeof data.finalizedAt === 'string')
+          assert(Number.isFinite(new Date(data.finalizedAt).getTime()))
           const hasError = data.errorCode !== undefined
           let result: TransferResultV0 = {
             type: 'TransferResult',
