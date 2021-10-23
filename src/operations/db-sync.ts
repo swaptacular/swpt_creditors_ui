@@ -65,7 +65,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const page = makeLogEntriesPage(response)
     const isLastPage = page.next === undefined
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
-    const objectUpdaters = await generateObjectUpdaters(updates, server, userId)
+    const objectUpdaters = await generateObjectUpdaters(server, userId, updates)
 
     // Write all object updates to the local database, and store the
     // current position in the log stream. Note that before we start,
@@ -107,6 +107,10 @@ type ObjectUpdater = () => Promise<void>
 type PreparedUpdate = {
   updater: ObjectUpdater,
   relatedUpdates: ObjectUpdateInfo[],
+}
+
+function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
+  return { updater, relatedUpdates }
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -177,9 +181,9 @@ function collectObjectUpdates(
 }
 
 async function generateObjectUpdaters(
-  updates: ObjectUpdateInfo[],
   server: ServerSession,
   userId: number,
+  updates: ObjectUpdateInfo[],
 ): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
@@ -190,7 +194,7 @@ async function generateObjectUpdaters(
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
   if (conbinedRelatedUpdates.length > 0) {
-    updaters = updaters.concat(await generateObjectUpdaters(conbinedRelatedUpdates, server, userId))
+    updaters = updaters.concat(await generateObjectUpdaters(server, userId, conbinedRelatedUpdates))
   }
   return updaters
 }
@@ -199,7 +203,7 @@ async function prepareObjectUpdate(
   updateInfo: ObjectUpdateInfo,
   server: ServerSession,
   userId: number,
-  timeout?: number,
+  timeout: number,
 ): Promise<PreparedUpdate> {
   if (updateInfo.deleted) {
     return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
@@ -235,7 +239,7 @@ async function prepareObjectUpdate(
   switch (obj.type) {
     case 'Transfer':
       return makeUpdate(async () => {
-        db.storeTransfer(userId, obj as TransferV0)
+        await db.storeTransfer(userId, obj as TransferV0)
       })
 
     case 'Account':
@@ -270,9 +274,9 @@ async function prepareObjectUpdate(
           updatedAt: ledgerRecord.latestUpdateAt,
         }))
       return makeUpdate(async () => {
-        db.storeLogObjectRecord(ledgerRecord, updateInfo)
+        await db.storeLogObjectRecord(ledgerRecord, updateInfo)
         for (const entry of newEntries) {
-          db.storeLedgerEntryRecord({ ...entry, userId })
+          await db.storeLedgerEntryRecord({ ...entry, userId })
         }
       }, relatedUpdates)
 
@@ -333,10 +337,6 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
     }
   }
   return patchedRecord
-}
-
-function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
-  return { updater, relatedUpdates }
 }
 
 async function fetchNewLedgerEntries(
