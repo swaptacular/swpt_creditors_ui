@@ -38,13 +38,20 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
  * the local database has finished successfully. This must be done
  * before the synchronization via the log stream can start. */
 export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
-  const walletRecord = await db.getWalletRecord(userId)
-  if (!walletRecord.logStream.loadedTransfers) {
+  let walletRecord
+  while (walletRecord = await db.getWalletRecord(userId), !walletRecord.logStream.loadedTransfers) {
+    const latestEntryId = walletRecord.logStream.latestEntryId
     for await (const transfer of iterTransfers(server, walletRecord.transfersList.uri)) {
       await db.storeTransfer(userId, transfer)
     }
-    walletRecord.logStream.loadedTransfers = true
-    await db.updateWalletRecord(walletRecord)
+    // Mark the log stream as redy for updates.
+    db.executeTransaction(async () => {
+      const walletRecord = await db.getWalletRecord(userId)
+      if (!walletRecord.logStream.loadedTransfers && walletRecord.logStream.latestEntryId === latestEntryId) {
+        walletRecord.logStream.loadedTransfers = true
+        await db.updateWalletRecord(walletRecord)
+      }
+    })
   }
 }
 
