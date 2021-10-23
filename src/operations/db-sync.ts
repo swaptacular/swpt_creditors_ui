@@ -114,8 +114,6 @@ function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] =
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
-  const collectedAfter = new Date()
-
   const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
   const wallet = makeWallet(walletResponse)
 
@@ -128,21 +126,15 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const pinInfo = makePinInfo(pinInfoResponse)
 
   const accountUris = []
-  for await (const { uri: accountUri } of iterAccountsList(server, wallet.accountsList.uri)) {
-    accountUris.push(accountUri)
+  for await (const { uri } of iterAccountsList(server, wallet.accountsList.uri)) {
+    accountUris.push(uri)
   }
   const timeout = calcParallelTimeout(accountUris.length)
   const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]
   const accountResponses = await Promise.all(promises)
   const accounts = accountResponses.map(response => makeAccount(response))
 
-  return {
-    collectedAfter,
-    accounts,
-    wallet,
-    creditor,
-    pinInfo,
-  }
+  return { accounts, wallet, creditor, pinInfo }
 }
 
 function collectObjectUpdates(
@@ -194,6 +186,11 @@ async function generateObjectUpdaters(
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
   if (conbinedRelatedUpdates.length > 0) {
+    // When some of the updated objects contain references (links) to
+    // another objects on the server, the referred (related) objects
+    // should be requested as well. We do this recursively
+    // here. Reference cycles between log objects are (hopefully)
+    // impossible.
     updaters = updaters.concat(await generateObjectUpdaters(server, userId, conbinedRelatedUpdates))
   }
   return updaters

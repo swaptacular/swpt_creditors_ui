@@ -46,7 +46,6 @@ export type ListQueryOptions = {
 }
 
 export type UserData = {
-  collectedAfter: Date,
   accounts: AccountV0[],
   wallet: WalletV0,
   creditor: CreditorV0,
