@@ -5,7 +5,7 @@ import type {
   UserData, LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
 } from './db'
 import type {
-  TransferV0, LogEntryV0, LogObject
+  TransferV0, LogEntryV0, TransferResultV0, LogObject
 } from './canonical-objects'
 
 import { HttpError } from './server'
@@ -312,18 +312,19 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           latestUpdateAt: updatedAt,
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
-          const hasError = data.errorCode === undefined
-          patchedRecord.result = {
+          const hasError = data.errorCode !== undefined
+          let result: TransferResultV0 = {
             type: 'TransferResult',
             finalizedAt: data.finalizedAt as string,
             committedAmount: hasError ? 0n : patchedRecord.amount
           }
           if (hasError) {
-            patchedRecord.result.error = {
+            result.error = {
               type: 'TransferError',
               errorCode: data.errorCode as string,
             }
           }
+          patchedRecord.result = result
         }
         break
     }
