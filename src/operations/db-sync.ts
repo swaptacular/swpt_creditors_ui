@@ -4,9 +4,7 @@ import type {
 import type {
   UserData, LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
 } from './db'
-import type {
-  TransferV0, LogEntryV0, LedgerEntryV0, LogObject
-} from './canonical-objects'
+import type { TransferV0, LogEntryV0, LogObject } from './canonical-objects'
 
 import { HttpError } from './server'
 import { db, splitIntoRecords, MAX_INT64 } from './db'
@@ -15,7 +13,7 @@ import {
   getCanonicalType,
 } from './canonical-objects'
 import {
-  iterAccountsList, iterTransfers, iterLedgerEntries, calcParallelTimeout
+  iterAccountsList, iterTransfers, calcParallelTimeout, fetchNewLedgerEntries
 } from './utils'
 
 export class BrokenLogStream extends Error {
@@ -334,33 +332,4 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
     }
   }
   return patchedRecord
-}
-
-async function fetchNewLedgerEntries(
-  server: ServerSession,
-  ledgerRecord: AccountLedgerRecord,
-): Promise<LedgerEntryV0[]> {
-  // NOTE: The entries are iterated in reverse-chronological order
-  // (bigger entryIds go first).
-
-  let newLedgerEntries: LedgerEntryV0[] = []
-  const first = new URL(ledgerRecord.entries.first)
-  const latestEntryId = await db.getLatestLedgerEntryId(ledgerRecord.uri)
-  if (latestEntryId !== undefined) {
-    first.searchParams.append('stop', String(latestEntryId))
-  }
-  let iteratedId = ledgerRecord.nextEntryId
-  for await (const entry of iterLedgerEntries(server, first.href)) {
-    const { entryId } = entry
-    assert(entryId < iteratedId)
-    if (iteratedId - entryId !== 1n) {
-      break  // There are missing entries.
-    }
-    if (latestEntryId !== undefined && entryId <= latestEntryId) {
-      break  // This is an already known entry.
-    }
-    newLedgerEntries.push(entry)
-    iteratedId = entryId
-  }
-  return newLedgerEntries
 }

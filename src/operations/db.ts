@@ -511,8 +511,8 @@ class CreditorsDb extends Dexie {
     }
   }
 
-  async getLatestLedgerEntryId(ledgerUri: string): Promise<bigint | undefined> {
-    const latestLedgerEntryRecord = await this.ledgerEntries.where({ 'ledger.uri': ledgerUri }).last()
+  async getLatestLedgerEntryId(accountLedgerUri: string): Promise<bigint | undefined> {
+    const latestLedgerEntryRecord = await this.ledgerEntries.where({ 'ledger.uri': accountLedgerUri }).last()
     return latestLedgerEntryRecord?.entryId
   }
 

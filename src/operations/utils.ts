@@ -1,5 +1,6 @@
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
-import type { TransferV0 } from './canonical-objects'
+import type { AccountLedgerRecord } from './db'
+import type { TransferV0, LedgerEntryV0 } from './canonical-objects'
 
 import { HttpError } from './server'
 import { db } from './db'
@@ -16,11 +17,6 @@ export const iterAccountsList = (
   server: ServerSession,
   accountsListUri: string,
 ) => iterPaginatedList(server, accountsListUri, makeAccountsList, makeObjectReference)
-
-export const iterLedgerEntries = (
-  server: ServerSession,
-  firstPageUri: string,
-) => iterPages(server, firstPageUri, makeLedgerEntry)
 
 export async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
   let urisToFetch: string[] = []
@@ -44,10 +40,45 @@ export async function* iterTransfers(server: ServerSession, transfersListUri: st
   yield* await fetchTransfers(server, urisToFetch)
 }
 
+export async function fetchNewLedgerEntries(
+  server: ServerSession,
+  accountLedgerRecord: AccountLedgerRecord,
+): Promise<LedgerEntryV0[]> {
+  // NOTE: The entries are iterated in reverse-chronological order
+  // (bigger entryIds go first).
+
+  let newLedgerEntries: LedgerEntryV0[] = []
+  const first = new URL(accountLedgerRecord.entries.first)
+  const latestEntryId = await db.getLatestLedgerEntryId(accountLedgerRecord.uri)
+  if (latestEntryId !== undefined) {
+    first.searchParams.append('stop', String(latestEntryId))
+  }
+  let iteratedId = accountLedgerRecord.nextEntryId
+
+  for await (const entry of iterLedgerEntries(server, first.href)) {
+    const { entryId } = entry
+    assert(entryId < iteratedId)
+    if (iteratedId - entryId !== 1n) {
+      break  // There are missing entries.
+    }
+    if (latestEntryId !== undefined && entryId <= latestEntryId) {
+      break  // This is an already known entry.
+    }
+    newLedgerEntries.push(entry)
+    iteratedId = entryId
+  }
+  return newLedgerEntries
+}
+
 type Page<ItemsType> = {
   items: ItemsType[],
   next?: string,
 }
+
+const iterLedgerEntries = (
+  server: ServerSession,
+  firstPageUri: string,
+) => iterPages(server, firstPageUri, makeLedgerEntry)
 
 const iterTransfersList = (
   server: ServerSession,
