@@ -1,10 +1,7 @@
 import type { ServerSession, HttpResponse } from './server'
 import type { PaginatedList } from './server'
 import {
-  makeLedgerEntry,
-  makeObjectReference,
-  makeTransfersList,
-  makeAccountsList,
+  makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList,
 } from './canonical-objects'
 
 export function calcParallelTimeout(numberOfParallelRequests: number): number {
@@ -15,31 +12,17 @@ export function calcParallelTimeout(numberOfParallelRequests: number): number {
 export const iterAccountsList = (
   server: ServerSession,
   accountsListUri: string,
-) => iterPaginatedList(
-  server,
-  accountsListUri,
-  makeAccountsList,
-  makeObjectReference,
-)
+) => iterPaginatedList(server, accountsListUri, makeAccountsList, makeObjectReference)
 
 export const iterTransfersList = (
   server: ServerSession,
   transfersListUri: string,
-) => iterPaginatedList(
-  server,
-  transfersListUri,
-  makeTransfersList,
-  makeObjectReference,
-)
+) => iterPaginatedList(server, transfersListUri, makeTransfersList, makeObjectReference)
 
 export const iterLedgerEntries = (
   server: ServerSession,
   firstPageUri: string,
-) => iterPages(
-  server,
-  firstPageUri,
-  makeLedgerEntry,
-)
+) => iterPages(server, firstPageUri, makeLedgerEntry)
 
 type Page<ItemsType> = {
   items: ItemsType[],
