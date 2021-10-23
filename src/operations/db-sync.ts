@@ -75,8 +75,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
       const walletRecord = await db.getWalletRecord(userId)
       if (
         !walletRecord.logStream.isBroken
-        && walletRecord.logStream.latestEntryId === previousEntryId
         && walletRecord.logStream.loadedTransfers
+        && walletRecord.logStream.latestEntryId === previousEntryId
       ) {
         for (const performObjectUpdate of objectUpdaters) {
           await performObjectUpdate()
@@ -98,8 +98,8 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         const walletRecord = await db.getWalletRecord(userId)
         if (
           !walletRecord.logStream.isBroken
-          && walletRecord.logStream.latestEntryId === previousEntryId
           && walletRecord.logStream.loadedTransfers
+          && walletRecord.logStream.latestEntryId === previousEntryId
         ) {
           walletRecord.logStream.isBroken = true
           await db.updateWalletRecord(walletRecord)
