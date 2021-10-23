@@ -322,10 +322,11 @@ async function prepareObjectUpdate(
 
     case 'AccountLedger':
       const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
-      const latestEntryId = 1  // TODO: read this from the db.
-      const firstPageUri = ledgerRecord.entries.first  // TODO: add &stop=`${latestEntryId}`.
+      const latestEntryId = 0  // TODO: read this from the db.
+      const firstPage = new URL(ledgerRecord.entries.first)
+      firstPage.searchParams.append('stop', String(latestEntryId))
       let newEntries: LedgerEntryV0[] = []
-      for await (const entry of iterLedgerEntries(server, firstPageUri)) {
+      for await (const entry of iterLedgerEntries(server, firstPage.href)) {
         if (entry.entryId <= latestEntryId) {
           break
         }
