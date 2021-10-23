@@ -227,12 +227,12 @@ async function prepareObjectUpdate(
 
   // Some types of objects require special treatment.
   switch (obj.type) {
-    case 'Transfer':
+    case 'Transfer': {
       return makeUpdate(async () => {
         await db.storeTransfer(userId, obj as TransferV0)
       })
-
-    case 'Account':
+    }
+    case 'Account': {
       const {
         accountRecord,
         accountInfoRecord,
@@ -251,24 +251,25 @@ async function prepareObjectUpdate(
         await db.storeLogObjectRecord(accountLedgerRecord)
         await db.storeLogObjectRecord(accountConfigRecord)
       })
-
-    case 'AccountLedger':
-      const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
-      const newEntries = await fetchNewLedgerEntries(server, ledgerRecord)
-      const relatedUpdates: ObjectUpdateInfo[] = newEntries
+    }
+    case 'AccountLedger': {
+      const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
+      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord)
+      const relatedUpdates: ObjectUpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => ({
           objectUri: entry.transfer!.uri,
           objectType: 'CommittedTransfer',
           deleted: false,
-          updatedAt: ledgerRecord.latestUpdateAt,
+          updatedAt: accountLedgerRecord.latestUpdateAt,
         }))
       return makeUpdate(async () => {
-        await db.storeLogObjectRecord(ledgerRecord, updateInfo)
-        for (const entry of newEntries) {
-          await db.storeLedgerEntryRecord({ ...entry, userId })
+        await db.storeLogObjectRecord(accountLedgerRecord, updateInfo)
+        for (const ledgerEntry of newLedgerEntries) {
+          await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
       }, relatedUpdates)
+    }
 
     case 'AccountConfig':
     case 'AccountDisplay':
@@ -277,9 +278,10 @@ async function prepareObjectUpdate(
     case 'AccountInfo':
     case 'CommittedTransfer':
     case 'Creditor':
-    case 'PinInfo':
-      const record: LogObjectRecord = { ...obj, userId }
-      return makeUpdate(() => db.storeLogObjectRecord(record, updateInfo))
+    case 'PinInfo': {
+      const logObjectRecord: LogObjectRecord = { ...obj, userId }
+      return makeUpdate(() => db.storeLogObjectRecord(logObjectRecord, updateInfo))
+    }
   }
 }
 
@@ -294,10 +296,10 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           ...record as AccountLedgerRecord,
           entries: {
             ...record.entries,
-            first: String(data.firstPage as string),
+            first: data.firstPage as string,
           },
-          principal: BigInt(data.principal as bigint),
-          nextEntryId: BigInt(data.nextEntryId as bigint),
+          principal: data.principal as bigint,
+          nextEntryId: data.nextEntryId as bigint,
           latestUpdateId: objectUpdateId,
           latestUpdateAt: updatedAt,
         } as AccountLedgerRecord
@@ -313,13 +315,13 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           const hasError = data.errorCode === undefined
           patchedRecord.result = {
             type: 'TransferResult',
-            finalizedAt: String(data.finalizedAt),
+            finalizedAt: data.finalizedAt as string,
             committedAmount: hasError ? 0n : patchedRecord.amount
           }
           if (hasError) {
             patchedRecord.result.error = {
               type: 'TransferError',
-              errorCode: String(data.errorCode),
+              errorCode: data.errorCode as string,
             }
           }
         }
