@@ -4,7 +4,9 @@ import type {
 import type {
   UserData, LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
 } from './db'
-import type { TransferV0, LogEntryV0, LogObject } from './canonical-objects'
+import type {
+  TransferV0, LogEntryV0, LogObject
+} from './canonical-objects'
 
 import { HttpError } from './server'
 import { db, splitIntoRecords, MAX_INT64 } from './db'
@@ -112,16 +114,9 @@ function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] =
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
-  const walletResponse = await server.getEntrypointResponse() as HttpResponse<Wallet>
-  const wallet = makeWallet(walletResponse)
-
-  const creditorUri = walletResponse.buildUri(wallet.creditor.uri)
-  const creditorResponse = await server.get(creditorUri) as HttpResponse<Creditor>
-  const creditor = makeCreditor(creditorResponse)
-
-  const pinInfoUri = walletResponse.buildUri(wallet.pinInfo.uri)
-  const pinInfoResponse = await server.get(pinInfoUri) as HttpResponse<PinInfo>
-  const pinInfo = makePinInfo(pinInfoResponse)
+  const wallet = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
+  const creditor = makeCreditor(await server.get(wallet.creditor.uri) as HttpResponse<Creditor>)
+  const pinInfo = makePinInfo(await server.get(wallet.pinInfo.uri) as HttpResponse<PinInfo>)
 
   const accountUris = []
   for await (const { uri } of iterAccountsList(server, wallet.accountsList.uri)) {
@@ -132,7 +127,7 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const accountResponses = await Promise.all(promises)
   const accounts = accountResponses.map(response => makeAccount(response))
 
-  return { accounts, wallet, creditor, pinInfo }
+  return { wallet, creditor, pinInfo, accounts }
 }
 
 function collectObjectUpdates(
