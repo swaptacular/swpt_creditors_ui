@@ -322,23 +322,14 @@ async function prepareObjectUpdate(
 
     case 'AccountLedger':
       const ledgerRecord: AccountLedgerRecord = { ...obj, userId }
-      const latestEntryId = 0  // TODO: read this from the db.
-      const firstPage = new URL(ledgerRecord.entries.first)
-      firstPage.searchParams.append('stop', String(latestEntryId))
-      let newEntries: LedgerEntryV0[] = []
-      for await (const entry of iterLedgerEntries(server, firstPage.href)) {
-        if (entry.entryId <= latestEntryId) {
-          break
-        }
-        newEntries.push(entry)
-      }
+      const newEntries = await fetchNewLedgerEntries(server, ledgerRecord)
       const relatedUpdates: ObjectUpdateInfo[] = newEntries
           .filter(entry => entry.transfer !== undefined)
           .map(entry => ({
-            objectUri: entry.transfer?.uri as string,
+            objectUri: entry.transfer!.uri,
             objectType: 'CommittedTransfer',
             deleted: false,
-            updatedAt: new Date().toISOString(),
+            updatedAt: ledgerRecord.latestUpdateAt,
           }))
       return makeUpdate(async () => {
         db.storeLogObjectRecord(ledgerRecord, updateInfo)
@@ -408,4 +399,23 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
 
 function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
   return { updater, relatedUpdates }
+}
+
+async function fetchNewLedgerEntries(
+  server: ServerSession,
+  ledgerRecord: AccountLedgerRecord,
+): Promise<LedgerEntryV0[]> {
+  let newLedgerEntries: LedgerEntryV0[] = []
+  const first = new URL(ledgerRecord.entries.first)
+  const latestEntryId = await db.getLatestLedgerEntryId(ledgerRecord.uri)
+  if (latestEntryId !== undefined) {
+    first.searchParams.append('stop', String(latestEntryId))
+  }
+  for await (const entry of iterLedgerEntries(server, first.href)) {
+    if (latestEntryId !== undefined && entry.entryId <= latestEntryId) {
+      break
+    }
+    newLedgerEntries.push(entry)
+  }
+  return newLedgerEntries
 }

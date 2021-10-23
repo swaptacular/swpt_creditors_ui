@@ -455,7 +455,13 @@ class CreditorsDb extends Dexie {
       if (!alreadyUpToDate) {
         if (objectRecord) {
           // Update the record.
+
+          // Special bookkeeping is required when transfers are
+          // created/updated. For this reason, the `storeTransfer`
+          // method must be used for transfers, instead of
+          // `storeLogObjectRecord`.
           assert(table !== this.transfers)
+
           await table.put(objectRecord)
 
         } else if (existingRecord) {
@@ -504,6 +510,11 @@ class CreditorsDb extends Dexie {
       if (e instanceof Dexie.ConstraintError) { /* already stored*/ }
       else throw e
     }
+  }
+
+  async getLatestLedgerEntryId(ledgerUri: string): Promise<bigint | undefined> {
+    const latestLedgerEntryRecord = await this.ledgerEntries.where({ 'ledger.uri': ledgerUri }).last()
+    return latestLedgerEntryRecord?.entryId
   }
 
   async getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
