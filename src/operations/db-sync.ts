@@ -68,7 +68,9 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const isLastPage = page.next === undefined
 
     // Write all object updates to the local database, and store the
-    // current position in the log stream.
+    // current position in the log stream. Note that before we start,
+    // we ensure that the position in the log stream had not been
+    // changed by a parallel update.
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
       if (walletRecord.logStream.latestEntryId === previousEntryId) {
@@ -175,7 +177,11 @@ function collectObjectUpdates(
   }
 }
 
-async function generateObjectUpdaters(updates: ObjectUpdateInfo[], server: ServerSession, userId: number): Promise<ObjectUpdater[]> {
+async function generateObjectUpdaters(
+  updates: ObjectUpdateInfo[],
+  server: ServerSession,
+  userId: number,
+): Promise<ObjectUpdater[]> {
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
