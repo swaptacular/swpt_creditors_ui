@@ -36,7 +36,7 @@ export async function* iterTransfers(server: ServerSession, transfersListUri: st
       // created for the transfer.
       yield transferRecord
     }
-    if (urisToFetch.length >= 10) {
+    if (urisToFetch.length >= 20) {
       yield* await fetchTransfers(server, urisToFetch)
       urisToFetch = []
     }
