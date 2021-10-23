@@ -54,20 +54,19 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
  * process. */
 export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
+  assert(walletRecord.logStream.loadedTransfers)
+
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
   }
   const previousEntryId = walletRecord.logStream.latestEntryId
 
   try {
-    const pageUrl = walletRecord.logStream.forthcoming
-    const pageResponse = await server.get(pageUrl) as HttpResponse<LogEntriesPage>
-    const page = makeLogEntriesPage(pageResponse)
-    assert(page.next !== undefined || page.forthcoming !== undefined)
+    const response = await server.get(walletRecord.logStream.forthcoming) as HttpResponse<LogEntriesPage>
+    const page = makeLogEntriesPage(response)
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const updaters = await generateObjectUpdaters(updates, server, userId)
     const isLastPage = page.next === undefined
-    const next = new URL((isLastPage ? page.forthcoming : page.next) as string, pageUrl).href
 
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
@@ -78,7 +77,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
         if (isLastPage) {
           walletRecord.logStream.syncedAt = new Date()
         }
-        walletRecord.logStream.forthcoming = next
+        walletRecord.logStream.forthcoming = (isLastPage ? page.forthcoming : page.next) as string
         walletRecord.logStream.latestEntryId = latestEntryId
         await db.updateWalletRecord(walletRecord)
       }

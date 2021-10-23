@@ -394,6 +394,8 @@ export function makeLogEntriesPage(response: HttpResponse<LogEntriesPage>): LogE
   return {
     ...data,
     type: 'LogEntriesPage',
+    next: data.next !== undefined ? response.buildUri(data.next) : undefined,
+    forthcoming: data.forthcoming !== undefined ? response.buildUri(data.forthcoming) : undefined,
     items: data.items.map(item => ({
       ...item,
       type: 'LogEntry',
@@ -413,6 +415,7 @@ export function makeLedgerEntriesPage(response: HttpResponse<LedgerEntriesPage>)
   return {
     ...data,
     type: 'LedgerEntriesPage',
+    next: data.next !== undefined ? response.buildUri(data.next) : undefined,
     items: data.items.map(item => ({
       ...item,
       type: 'LedgerEntry',
