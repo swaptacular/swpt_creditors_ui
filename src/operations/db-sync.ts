@@ -292,14 +292,17 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
   if (record && objectUpdateId !== undefined && data !== undefined) {
     switch (record.type) {
       case 'AccountLedger':
+        assert(typeof data.principal === 'bigint')
+        assert(typeof data.nextEntryId === 'bigint')
+        assert(typeof data.firstPage === 'string')
         patchedRecord = {
           ...record as AccountLedgerRecord,
           entries: {
             ...record.entries,
-            first: data.firstPage as string,
+            first: data.firstPage,
           },
-          principal: data.principal as bigint,
-          nextEntryId: data.nextEntryId as bigint,
+          principal: data.principal,
+          nextEntryId: data.nextEntryId,
           latestUpdateId: objectUpdateId,
           latestUpdateAt: updatedAt,
         } as AccountLedgerRecord
@@ -312,16 +315,18 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           latestUpdateAt: updatedAt,
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
+          assert(typeof data.finalizedAt === 'string')
           const hasError = data.errorCode !== undefined
           let result: TransferResultV0 = {
             type: 'TransferResult',
-            finalizedAt: data.finalizedAt as string,
+            finalizedAt: data.finalizedAt,
             committedAmount: hasError ? 0n : patchedRecord.amount
           }
           if (hasError) {
+            assert(typeof data.errorCode === 'string')
             result.error = {
               type: 'TransferError',
-              errorCode: data.errorCode as string,
+              errorCode: data.errorCode,
             }
           }
           patchedRecord.result = result
