@@ -183,7 +183,8 @@ async function generateObjectUpdaters(
     // another objects on the server, the referred (related) objects
     // should be requested as well. We do this recursively
     // here. Reference cycles between log objects are (hopefully)
-    // impossible.
+    // impossible. Currently this is used for ledger entries to load
+    // their correspoinding transfers.
     updaters = updaters.concat(await generateObjectUpdaters(server, userId, conbinedRelatedUpdates))
   }
   return updaters
