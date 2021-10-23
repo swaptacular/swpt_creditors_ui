@@ -53,7 +53,7 @@ export type {
   DebtorIdentity,
 } from '../web-api-schemas'
 
-export type TypeMatcher = {
+type TypeMatcher = {
   test(t: string): boolean,
 }
 
@@ -62,31 +62,30 @@ export type TypeMatcher = {
  * compatible with the object types (and versions) which the
  * implementation understands.
  */
-export const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
-export const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
-export const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
-export const DEBTOR_INFO_TYPE = /^DebtorInfo(-v[1-9][0-9]{0,5})?$/
-export const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
-export const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_KNOWLEDGE_TYPE = /^AccountKnowledge(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
-export const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
-export const CURRENCY_PEG_TYPE = /^CurrencyPeg(-v[1-9][0-9]{0,5})?$/
-export const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
-export const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
-export const PAGINATED_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
-export const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
-export const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
-export const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_ERROR_TYPE = /^TransferError(-v[1-9][0-9]{0,5})?$/
-export const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
-export const COMMITTED_TRANSFER_TYPE = /^CommittedTransfer(-v[1-9][0-9]{0,5})?$/
+const WALLET_TYPE = /^Wallet(-v[1-9][0-9]{0,5})?$/
+const CREDITOR_TYPE = /^Creditor(-v[1-9][0-9]{0,5})?$/
+const PIN_INFO_TYPE = /^PinInfo(-v[1-9][0-9]{0,5})?$/
+const DEBTOR_INFO_TYPE = /^DebtorInfo(-v[1-9][0-9]{0,5})?$/
+const OBJECT_REFERENCE_TYPE = /^ObjectReference$/
+const ACCOUNTS_LIST_TYPE = /^AccountsList(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_TYPE = /^Account(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_INFO_TYPE = /^AccountInfo(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_DISPLAY_TYPE = /^AccountDisplay(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_KNOWLEDGE_TYPE = /^AccountKnowledge(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_EXCHANGE_TYPE = /^AccountExchange(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_LEDGER_TYPE = /^AccountLedger(-v[1-9][0-9]{0,5})?$/
+const ACCOUNT_CONFIG_TYPE = /^AccountConfig(-v[1-9][0-9]{0,5})?$/
+const CURRENCY_PEG_TYPE = /^CurrencyPeg(-v[1-9][0-9]{0,5})?$/
+const TRANSFERS_LIST_TYPE = /^TransfersList(-v[1-9][0-9]{0,5})?$/
+const TRANSFER_TYPE = /^Transfer(-v[1-9][0-9]{0,5})?$/
+const LOG_ENTRY_TYPE = /^LogEntry(-v[1-9][0-9]{0,5})?$/
+const PAGINATED_STREAM_TYPE = /^PaginatedStream(-v[1-9][0-9]{0,5})?$/
+const LEDGER_ENTRY_TYPE = /^LedgerEntry(-v[1-9][0-9]{0,5})?$/
+const LEDGER_ENTRIES_LIST_TYPE = /^PaginatedList(-v[1-9][0-9]{0,5})?$/
+const TRANSFER_RESULT_TYPE = /^TransferResult(-v[1-9][0-9]{0,5})?$/
+const TRANSFER_ERROR_TYPE = /^TransferError(-v[1-9][0-9]{0,5})?$/
+const TRANSFER_OPTIONS_TYPE = /^TransferOptions(-v[1-9][0-9]{0,5})?$/
+const COMMITTED_TRANSFER_TYPE = /^CommittedTransfer(-v[1-9][0-9]{0,5})?$/
 
 /* 
  * The types which the implementation understands.
@@ -217,12 +216,6 @@ export class WrongObjectType extends Error {
   name = 'WrongObjectType'
 }
 
-export function matchType(matcher: TypeMatcher, objType: string): void {
-  if (!matcher.test(objType)) {
-    throw new WrongObjectType(objType)
-  }
-}
-
 export function makeCreditor(response: HttpResponse<Creditor>): CreditorV0 {
   const data = response.data
   matchType(CREDITOR_TYPE, data.type ?? 'Creditor')
@@ -243,8 +236,8 @@ export function makePinInfo(response: HttpResponse<PinInfo>): PinInfoV0 {
   }
 }
 
-export function makeAccountsList(response: HttpResponse<AccountsList>): AccountsListV0 {
-  const data = response.data
+export function makeAccountsList(response: HttpResponse<PaginatedList>): AccountsListV0 {
+  const data = response.data as AccountsList
   matchType(ACCOUNTS_LIST_TYPE, data.type)
   matchType(OBJECT_REFERENCE_TYPE, data.itemsType)
   return {
@@ -256,8 +249,8 @@ export function makeAccountsList(response: HttpResponse<AccountsList>): Accounts
   }
 }
 
-export function makeTransfersList(response: HttpResponse<TransfersList>): TransfersListV0 {
-  const data = response.data
+export function makeTransfersList(response: HttpResponse<PaginatedList>): TransfersListV0 {
+  const data = response.data as TransfersList
   matchType(TRANSFERS_LIST_TYPE, data.type)
   matchType(OBJECT_REFERENCE_TYPE, data.itemsType)
   return {
@@ -549,5 +542,11 @@ export function getCanonicalType(objectType: string) {
       return 'TransfersList'
     default:
       return undefined
+  }
+}
+
+function matchType(matcher: TypeMatcher, objType: string): void {
+  if (!matcher.test(objType)) {
+    throw new WrongObjectType(objType)
   }
 }

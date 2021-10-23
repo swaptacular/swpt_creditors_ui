@@ -1,13 +1,10 @@
 import type { ServerSession, HttpResponse } from './server'
 import type { PaginatedList } from './server'
-import type { TypeMatcher } from './canonical-objects'
 import {
-  OBJECT_REFERENCE_TYPE,
-  ACCOUNTS_LIST_TYPE,
-  TRANSFERS_LIST_TYPE,
   makeLedgerEntry,
-  matchType,
   makeObjectReference,
+  makeTransfersList,
+  makeAccountsList,
 } from './canonical-objects'
 
 
@@ -27,8 +24,7 @@ export const iterAccountsList = (
 ) => iterPaginatedList(
   server,
   accountsListUri,
-  ACCOUNTS_LIST_TYPE,
-  OBJECT_REFERENCE_TYPE,
+  makeAccountsList,
   makeObjectReference,
 )
 
@@ -38,8 +34,7 @@ export const iterTransfersList = (
 ) => iterPaginatedList(
   server,
   transfersListUri,
-  TRANSFERS_LIST_TYPE,
-  OBJECT_REFERENCE_TYPE,
+  makeTransfersList,
   makeObjectReference,
 )
 
@@ -52,7 +47,7 @@ export const iterLedgerEntries = (
   makeLedgerEntry,
 )
 
-export async function* iterPages<OriginalItem, TransformedItem>(
+async function* iterPages<OriginalItem, TransformedItem>(
   server: ServerSession,
   next: string,
   transformItem: (item: OriginalItem, pageUrl: string) => TransformedItem,
@@ -74,14 +69,10 @@ export async function* iterPages<OriginalItem, TransformedItem>(
 async function* iterPaginatedList<OriginalItem, TransformedItem>(
   server: ServerSession,
   listUri: string,
-  listTypeMatcher: TypeMatcher,
-  itemsTypeMatcher: TypeMatcher,
+  makeList: (response: HttpResponse<PaginatedList>) => PaginatedList,
   transformItem: (item: OriginalItem, pageUrl: string) => TransformedItem,
 ): AsyncIterable<TransformedItem> {
-  const listResponse = await server.get(listUri) as HttpResponse<PaginatedList>
-  const data = listResponse.data
-  matchType(listTypeMatcher, data.type)
-  matchType(itemsTypeMatcher, data.itemsType)
-  const first = listResponse.buildUri(data.first)
-  yield* iterPages(server, first, transformItem)
+  const response = await server.get(listUri) as HttpResponse<PaginatedList>
+  const list = makeList(response)
+  yield* iterPages(server, list.first, transformItem)
 }
