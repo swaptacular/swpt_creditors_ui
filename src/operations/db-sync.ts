@@ -1,9 +1,8 @@
 import type {
-  ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, Transfer, LogEntriesPage
+  ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, LogEntriesPage
 } from './server'
 import type {
-  UserData, WalletRecordWithId, LogObjectRecord, AccountLedgerRecord, TransferRecord,
-  ObjectUpdateInfo,
+  UserData, LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
 } from './db'
 import type {
   TransferV0, LogEntryV0, LedgerEntryV0, LogObject
@@ -12,11 +11,11 @@ import type {
 import { HttpError } from './server'
 import { db, splitIntoRecords, MAX_INT64 } from './db'
 import {
-  makeCreditor, makePinInfo, makeAccount, makeWallet, makeTransfer, makeLogObject,
-  makeLogEntriesPage, getCanonicalType,
+  makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
+  getCanonicalType,
 } from './canonical-objects'
 import {
-  iterAccountsList, iterTransfersList, iterLedgerEntries, calcParallelTimeout
+  iterAccountsList, iterTransfers, iterLedgerEntries, calcParallelTimeout
 } from './utils'
 
 export class BrokenLogStream extends Error {
@@ -38,55 +37,15 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
 /* Ensures that the initial loading of transfers from the server to
  * the local database has finished successfully. This must be done
  * before the synchronization via the log stream can start. */
-export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<WalletRecordWithId> {
+export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
   const walletRecord = await db.getWalletRecord(userId)
-
-  async function fetchTransfers(uris: string[]): Promise<TransferV0[]> {
-    const timeout = calcParallelTimeout(uris.length)
-    const results = await Promise.allSettled(
-      uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
-    )
-    const rejected = results.filter(x => x.status === 'rejected') as PromiseRejectedResult[]
-    const errors = rejected.map(x => x.reason)
-    for (const e of errors) {
-      if (e instanceof HttpError && e.status === 404) { /* ingnore */ }
-      else throw e
-    }
-    const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
-    const responses = fulfilled.map(x => x.value)
-    return responses.map(response => makeTransfer(response))
-  }
-
-  async function* iterTransfers(): AsyncIterable<TransferV0> {
-    let urisToFetch: string[] = []
-    for await (const { uri: transferUri } of iterTransfersList(server, walletRecord.transfersList.uri)) {
-      const transferRecord = await db.getTransferRecord(transferUri)
-      const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
-      if (!isConcludedTransfer) {
-        urisToFetch.push(transferUri)
-      } else if (!transferRecord.aborted && transferRecord.result?.committedAmount === 0n) {
-        // At this point we know that the transfer is registered in
-        // the local database as unsuccessful, but has not been
-        // aborted yet. This means we should ensure that an abort
-        // transfer action will be created for the transfer.
-        yield transferRecord
-      }
-      if (urisToFetch.length >= 10) {
-        yield* await fetchTransfers(urisToFetch)
-        urisToFetch = []
-      }
-    }
-    yield* await fetchTransfers(urisToFetch)
-  }
-
   if (!walletRecord.logStream.loadedTransfers) {
-    for await (const transfer of iterTransfers()) {
+    for await (const transfer of iterTransfers(server, walletRecord.transfersList.uri)) {
       await db.storeTransfer(userId, transfer)
     }
     walletRecord.logStream.loadedTransfers = true
     await db.updateWalletRecord(walletRecord)
   }
-  return walletRecord
 }
 
 /* Connects to the server, processes one page of log entries and
