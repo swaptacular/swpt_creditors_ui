@@ -69,11 +69,15 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
 
     // Write all object updates to the local database, and store the
     // current position in the log stream. Note that before we start,
-    // we ensure that the position in the log stream had not been
+    // we ensure that the status of the log stream had not been
     // changed by a parallel update.
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
-      if (walletRecord.logStream.latestEntryId === previousEntryId) {
+      if (
+        !walletRecord.logStream.isBroken
+        && walletRecord.logStream.latestEntryId === previousEntryId
+        && walletRecord.logStream.loadedTransfers
+      ) {
         for (const performObjectUpdate of objectUpdaters) {
           await performObjectUpdate()
         }
@@ -92,7 +96,11 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
       // Mark the log stream as broken (and then re-throw).
       db.executeTransaction(async () => {
         const walletRecord = await db.getWalletRecord(userId)
-        if (walletRecord.logStream.latestEntryId === previousEntryId) {
+        if (
+          !walletRecord.logStream.isBroken
+          && walletRecord.logStream.latestEntryId === previousEntryId
+          && walletRecord.logStream.loadedTransfers
+        ) {
           walletRecord.logStream.isBroken = true
           await db.updateWalletRecord(walletRecord)
         }
