@@ -234,7 +234,7 @@ function collectObjectUpdates(
   logEntries: LogEntryV0[],
   latestEntryId: bigint,
 ): { latestEntryId: bigint, updates: ObjectUpdateInfo[] } {
-  const updates: Map<string, ObjectUpdateInfo> = new Map()
+  const updates: ObjectUpdateInfo[] = []
   for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId !== ++latestEntryId) {
       throw new BrokenLogStream()
@@ -249,7 +249,7 @@ function collectObjectUpdates(
       // changes in `TransfersList` and `AccountsList` objects,
       // because we do not need the information contained in them to
       // properly maintain transfers and account lists.
-      updates.set(uri, {
+      updates.push({
         objectUri: uri,
         objectType: canonicalType,
         addedAt,
@@ -259,10 +259,7 @@ function collectObjectUpdates(
       })
     }
   }
-  return {
-    latestEntryId,
-    updates: [...updates.values()],
-  }
+  return { latestEntryId, updates }
 }
 
 async function generateObjectUpdaters(
@@ -276,10 +273,12 @@ async function generateObjectUpdaters(
     // Ignore the update if the same or newer update is pending.
     const { objectUri, objectUpdateId } = update
     const pendingUpdate = pendingUpdates.get(objectUri)
-    return !pendingUpdate || (pendingUpdate.objectUpdateId ?? MAX_INT64) < (objectUpdateId ?? MAX_INT64)
+    if (!pendingUpdate || (pendingUpdate.objectUpdateId ?? MAX_INT64) < (objectUpdateId ?? MAX_INT64)) {
+      pendingUpdates.set(objectUri, update)
+      return true
+    }
+    return false
   })
-  updates.forEach(update => pendingUpdates.set(update.objectUri, update))
-
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
