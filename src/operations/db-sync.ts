@@ -325,7 +325,7 @@ async function prepareObjectUpdate(
 
   // Sometimes we can obtain the object from the cache, or reconstruct
   // the current version by updating the existing version with the
-  // data received from the log record. In such cases we spare a
+  // data received from the log entry. In such cases we spare a
   // needless network request.
   let obj: LogObject
   try {
@@ -408,7 +408,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
   const { objectUpdateId, data, addedAt } = updateInfo
   let patchedRecord: AccountLedgerRecord | TransferRecord | undefined
 
-  if (record && objectUpdateId !== undefined && data !== undefined) {
+  if (record !== undefined && objectUpdateId !== undefined && data !== undefined) {
     switch (record.type) {
       case 'AccountLedger':
         assert(typeof data.principal === 'bigint')
