@@ -289,12 +289,12 @@ async function generateObjectUpdaters(
     conbinedRelatedUpdates.push(...relatedUpdates)
   }
   if (conbinedRelatedUpdates.length > 0) {
-    // When some of the updated objects contain important links to
-    // another objects on the server, the referred (related) objects
-    // should be requested as well. We do this recursively
-    // here. Infinite cycles should be impossible, because we use
-    // `pendingUpdates` to remember which updates have already
-    // started, and do not start them the second time.
+    // When some of the updated objects are related to other objects
+    // by foreign keys, the referred objects should be requested from
+    // the server as well. We do this recursively here. Infinite
+    // cycles should be impossible, because we use `pendingUpdates` to
+    // remember which updates have already started, and do not start
+    // them the second time.
     updaters = updaters.concat(
       await generateObjectUpdaters(conbinedRelatedUpdates, server, userId, objCache, pendingUpdates))
   }
