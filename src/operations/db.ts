@@ -459,32 +459,43 @@ class CreditorsDb extends Dexie {
         } else {
           // Delete the record.
           switch (table) {
-            // Committed transfers are immutable, and normally will
-            // not be deleted. Nevertheless, under some very unlikely
-            // conditions (for example, being garbage collected on the
-            // server, before the corresponding log entry has been
-            // processed), this could happen.
             case this.committedTransfers:
               assert(objectType === 'CommittedTransfer')
+              console.warn(
+                `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
+                `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
+                `some very unlikely conditions (for example, being garbage collected on the server, ` +
+                `before the corresponding log entry has been processed), this could happen.`
+              )
               break
 
-            // Transfers must remain in the local database, even
-            // after they have been deleted from the server. This
-            // allows the user to review transfers history.
             case this.transfers:
+              // Transfers must remain in the local database, even
+              // after they have been deleted from the server. This
+              // allows the user to review transfers history.
               assert(objectType === 'Transfer')
               await this.markTranferDeletion(objectUri)
               break
 
-            // Account sub-objects will be deleted when the
-            // corresponding account gets deleted. This guarantees
-            // that all sub-objects for every account always exist.
             case this.accountObjects:
+              console.log(
+                `An attempt to delete an account sub-object via the log stream has been ignored. Account ` +
+                `sub-objects will be deleted when the corresponding account gets deleted. This guarantees ` +
+                `that all sub-objects always exist for every account.`
+              )
               break
 
             case this.accounts:
               assert(objectType === 'Account')
               await this.deleteAccount(objectUri)
+              break
+
+            case this.walletObjects:
+              assert(objectType === 'Creditor' || objectType === 'PinInfo')
+              console.error(
+                `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
+                `objects are singletons that normally must not be deleted via the log stream.`
+              )
               break
 
             default:
