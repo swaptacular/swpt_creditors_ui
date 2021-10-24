@@ -411,7 +411,7 @@ class CreditorsDb extends Dexie {
   }
 
   async getLogObjectRecord(
-    { objectUri, objectType }: { objectUri: string, objectType: string }
+    { objectUri, objectType }: { objectUri: ObjectUpdateInfo['objectUri'], objectType: ObjectUpdateInfo['objectType'] }
   ): Promise<LogObjectRecord | undefined> {
     const table = this.getLogObjectTable(objectType)
     return await table.get(objectUri)
@@ -430,6 +430,12 @@ class CreditorsDb extends Dexie {
         assert(objectRecord.type === objectType)
         assert(!updateInfo.deleted)
         updateId = objectRecord.latestUpdateId ?? MAX_INT64
+        assert(
+          updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
+          'The version of the object received from the server is older that the version ' +
+          'promised by in log entry. Normally this should never happen. The most ' +
+          'probable reason for this is having misconfigured HTTP caches somewhere.',
+        )
       } else {
         updateId = updateInfo.objectUpdateId ?? MAX_INT64
       }
