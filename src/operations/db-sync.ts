@@ -208,7 +208,6 @@ async function storeUserData(data: UserData): Promise<number> {
           accountConfigRecord,
         } = splitIntoRecords(userId, account)
         await db.accounts.put(accountRecord)
-        await db.accountObjects.where({ 'account.uri': account.uri }).delete()
         await db.accountObjects.bulkPut([
           accountInfoRecord,
           accountDisplayRecord,
