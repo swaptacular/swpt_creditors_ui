@@ -15,7 +15,7 @@ import {
   getCanonicalType,
 } from './canonical-objects'
 import {
-  iterAccountsList, iterTransfers, calcParallelTimeout, fetchNewLedgerEntries
+  iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers
 } from './utils'
 
 export class BrokenLogStream extends Error {
@@ -451,4 +451,26 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
     }
   }
   return patchedRecord
+}
+
+async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
+  let urisToFetch: string[] = []
+  for await (const { uri: transferUri } of iterTransfersList(server, transfersListUri)) {
+    const transferRecord = await db.getTransferRecord(transferUri)
+    const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
+    if (!isConcludedTransfer) {
+      urisToFetch.push(transferUri)
+    } else if (!transferRecord.aborted && transferRecord.result?.committedAmount === 0n) {
+      // At this point we know that the transfer is unsuccessful, but
+      // has not been aborted yet. We must include it in the
+      // iteration, to ensure that an abort transfer action will be
+      // created for the transfer.
+      yield transferRecord
+    }
+    if (urisToFetch.length >= 20) {
+      yield* await fetchTransfers(server, urisToFetch)
+      urisToFetch = []
+    }
+  }
+  yield* await fetchTransfers(server, urisToFetch)
 }
