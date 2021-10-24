@@ -419,7 +419,7 @@ class CreditorsDb extends Dexie {
 
   async storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo?: ObjectUpdateInfo): Promise<void> {
     let objectUri: string
-    let objectType: string
+    let objectType: ObjectUpdateInfo['objectType']
     let updateId: bigint
 
     if (updateInfo) {
@@ -440,7 +440,7 @@ class CreditorsDb extends Dexie {
       updateId = objectRecord.latestUpdateId ?? MAX_INT64
     }
 
-    await this.transaction('rw', this.allTables, async () => {
+    await this.transaction('rw', this.allTables, async (): Promise<void> => {
       const table = this.getLogObjectTable(objectType)
       const existingRecord = await table.get(objectUri)
       const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
@@ -458,9 +458,8 @@ class CreditorsDb extends Dexie {
 
         } else {
           // Delete the record.
-          switch (table) {
-            case this.committedTransfers:
-              assert(objectType === 'CommittedTransfer')
+          switch (objectType) {
+            case 'CommittedTransfer':
               console.warn(
                 `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
                 `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
@@ -469,15 +468,19 @@ class CreditorsDb extends Dexie {
               )
               break
 
-            case this.transfers:
+            case 'Transfer':
               // Transfers must remain in the local database, even
               // after they have been deleted from the server. This
               // allows the user to review transfers history.
-              assert(objectType === 'Transfer')
               await this.markTranferDeletion(objectUri)
               break
 
-            case this.accountObjects:
+            case 'AccountConfig':
+            case 'AccountDisplay':
+            case 'AccountKnowledge':
+            case 'AccountExchange':
+            case 'AccountInfo':
+            case 'AccountLedger':
               console.log(
                 `An attempt to delete an account sub-object via the log stream has been ignored. Account ` +
                 `sub-objects will be deleted when the corresponding account gets deleted. This guarantees ` +
@@ -485,13 +488,12 @@ class CreditorsDb extends Dexie {
               )
               break
 
-            case this.accounts:
-              assert(objectType === 'Account')
+            case 'Account':
               await this.deleteAccount(objectUri)
               break
 
-            case this.walletObjects:
-              assert(objectType === 'Creditor' || objectType === 'PinInfo')
+            case 'Creditor':
+            case 'PinInfo':
               console.error(
                 `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
                 `objects are singletons that normally must not be deleted via the log stream.`
@@ -499,7 +501,7 @@ class CreditorsDb extends Dexie {
               break
 
             default:
-              await table.delete(objectUri)
+              throw new Error('unknown object type')
           }
         }
       }
