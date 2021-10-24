@@ -456,7 +456,7 @@ class CreditorsDb extends Dexie {
 
           await table.put(objectRecord)
 
-        } else if (existingRecord) {
+        } else {
           // Delete the record.
           switch (table) {
             // Committed transfers are immutable, and normally will
