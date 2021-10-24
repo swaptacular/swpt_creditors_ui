@@ -269,18 +269,19 @@ async function generateObjectUpdaters(
   objCache: Map<string, LogObject | '404'> = new Map(),
   pendingUpdates: Map<string, ObjectUpdateInfo> = new Map(),
 ): Promise<ObjectUpdater[]> {
-  let newUris = new Set<string>()
+  let uniqueUpdates = new Map<string, ObjectUpdateInfo>()
   updates.forEach(update => {
-    // Add the URI of the update to `pendingUpdates` and `newUris`,
-    // but only if the same or newer update is not already pending.
+    // Add the URI of the update to `pendingUpdates` and
+    // `uniqueUpdates`, but only if the same or newer update is not
+    // already pending.
     const { objectUri, objectUpdateId } = update
     const pendingUpdate = pendingUpdates.get(objectUri)
     if (!pendingUpdate || (pendingUpdate.objectUpdateId ?? MAX_INT64) < (objectUpdateId ?? MAX_INT64)) {
       pendingUpdates.set(objectUri, update)
-      newUris.add(objectUri)
+      uniqueUpdates.set(objectUri, update)
     }
   })
-  updates = updates.filter(update => newUris.has(update.objectUri))
+  updates = [...uniqueUpdates.values()]
 
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
