@@ -87,7 +87,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     const page = makeLogEntriesPage(response)
     const isLastPage = page.next === undefined
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
-    const objectUpdaters = await generateObjectUpdaters(server, userId, updates)
+    const objectUpdaters = await generateObjectUpdaters(updates, server, userId)
 
     // Write all object updates to the local database, and store the
     // current position in the log stream. Note that before we start,
@@ -266,9 +266,9 @@ function collectObjectUpdates(
 }
 
 async function generateObjectUpdaters(
+  updates: ObjectUpdateInfo[],
   server: ServerSession,
   userId: number,
-  updates: ObjectUpdateInfo[],
   objCache: Map<string, LogObject | '404'> = new Map(),
   pendingUpdates: Map<string, ObjectUpdateInfo> = new Map(),
 ): Promise<ObjectUpdater[]> {
@@ -292,11 +292,11 @@ async function generateObjectUpdaters(
     // When some of the updated objects contain references (links) to
     // another objects on the server, the referred (related) objects
     // should be requested as well. We do this recursively
-    // here. Reference cycles between log objects are
-    // impossible. Because we use `pendingUpdates` to remember which
+    // here. Reference cycles between log objects should be
+    // impossible, because we use `pendingUpdates` to remember which
     // updates have already started.
     updaters = updaters.concat(
-      await generateObjectUpdaters(server, userId, conbinedRelatedUpdates, objCache, pendingUpdates))
+      await generateObjectUpdaters(conbinedRelatedUpdates, server, userId, objCache, pendingUpdates))
   }
   return updaters
 }
