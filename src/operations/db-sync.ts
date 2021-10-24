@@ -252,7 +252,7 @@ function collectObjectUpdates(
       updates.set(uri, {
         objectUri: uri,
         objectType: canonicalType,
-        updatedAt: addedAt,
+        addedAt,
         deleted,
         objectUpdateId,
         data,
@@ -351,14 +351,14 @@ async function prepareObjectUpdate(
       const { info, display, knowledge, exchange, ledger, config } = obj
       const { accountRecord } = splitIntoRecords(userId, obj)
       const relatedObjects = [info, display, knowledge, exchange, ledger, config]
-      const relatedUpdates = relatedObjects.map(x => ({
-        objectUri: x.uri,
-        objectType: x.type,
-        objectUpdateId: x.latestUpdateId,
+      const relatedUpdates = relatedObjects.map(relatedObject => ({
+        objectUri: relatedObject.uri,
+        objectType: relatedObject.type,
+        objectUpdateId: relatedObject.latestUpdateId,
         deleted: false,
-        updatedAt: x.latestUpdateAt,
+        addedAt: relatedObject.latestUpdateAt,
       }))
-      relatedObjects.forEach(x => objCache.set(x.uri, x))
+      relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
       return makeUpdate(() => db.storeLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
     }
     case 'AccountLedger': {
@@ -377,7 +377,7 @@ async function prepareObjectUpdate(
           objectUri: entry.transfer!.uri,
           objectType: 'CommittedTransfer',
           deleted: false,
-          updatedAt: accountLedgerRecord.latestUpdateAt,  // could be anything, really
+          addedAt: accountLedgerRecord.latestUpdateAt,  // could be anything, will be ignored
         }))
       return makeUpdate(async () => {
         await db.storeLogObjectRecord(accountLedgerRecord, updateInfo)
@@ -395,14 +395,14 @@ async function prepareObjectUpdate(
     case 'CommittedTransfer':
     case 'Creditor':
     case 'PinInfo': {
-      const logObjectRecord: LogObjectRecord = { ...obj, userId }
-      return makeUpdate(() => db.storeLogObjectRecord(logObjectRecord, updateInfo))
+      const record: LogObjectRecord = { ...obj, userId }
+      return makeUpdate(() => db.storeLogObjectRecord(record, updateInfo))
     }
   }
 }
 
 function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObjectRecord): LogObject | undefined {
-  const { objectUpdateId, data, updatedAt } = updateInfo
+  const { objectUpdateId, data, addedAt } = updateInfo
   let patchedRecord: AccountLedgerRecord | TransferRecord | undefined
 
   if (record && objectUpdateId !== undefined && data !== undefined) {
@@ -420,7 +420,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           principal: data.principal,
           nextEntryId: data.nextEntryId,
           latestUpdateId: objectUpdateId,
-          latestUpdateAt: updatedAt,
+          latestUpdateAt: addedAt,
         } as AccountLedgerRecord
         break
 
@@ -428,7 +428,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
         patchedRecord = {
           ...record as TransferRecord,
           latestUpdateId: objectUpdateId,
-          latestUpdateAt: updatedAt,
+          latestUpdateAt: addedAt,
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
           assert(typeof data.finalizedAt === 'string')

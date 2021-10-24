@@ -67,7 +67,7 @@ export type ObjectUpdateInfo = {
   | 'CommittedTransfer'
   | 'Creditor'
   | 'PinInfo'
-  updatedAt: string,
+  addedAt: string,
   deleted: boolean,
   objectUpdateId?: bigint,
   data?: { [key: string]: unknown },
