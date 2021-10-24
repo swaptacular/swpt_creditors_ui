@@ -310,27 +310,29 @@ async function prepareObjectUpdate(
 ): Promise<PreparedUpdate> {
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
   if (deleted) {
+    // The log says that the object is deleted.
     return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
   }
+
   const existingRecord = await db.getLogObjectRecord(updateInfo)
   if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
     // The object is already up-to-date.
     return makeUpdate(() => Promise.resolve())
   }
 
+  // Sometimes we can obtain the object from the cache, or reconstruct
+  // the current version by updating the existing version with the
+  // data received from the log record. In such cases we spare a
+  // needless network request.
   let obj: LogObject
   try {
-    // Sometimes we can obtain the object from the cache, or
-    // reconstruct the current version of the object by updating the
-    // existing version of the object with the data received from the
-    // log record. In such cases we spare a needless network request.
     const cached = objCache.get(objectUri); if (cached === '404') throw '404'
     obj = cached
       ?? tryToReconstructLogObject(updateInfo, existingRecord)
       ?? makeLogObject(await server.get(objectUri, { timeout }))
   } catch (e: unknown) {
-    if (e instanceof HttpError && e.status === 404 || e === '404') {
-      // The has been deleted from the server.
+    if ((e instanceof HttpError && e.status === 404) || (e === '404')) {
+      // The object has been deleted from the server.
       objCache.set(objectUri, '404')
       return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
     } else throw e
