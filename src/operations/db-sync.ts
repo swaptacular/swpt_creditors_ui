@@ -309,16 +309,12 @@ async function prepareObjectUpdate(
   timeout: number,
 ): Promise<PreparedUpdate> {
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
-
   if (deleted) {
     return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
   }
   const existingRecord = await db.getLogObjectRecord(updateInfo)
-  const alreadyUpToDate = (
-    existingRecord !== undefined
-    && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)
-  )
-  if (alreadyUpToDate) {
+  if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
+    // The object is already up-to-date.
     return makeUpdate(() => Promise.resolve())
   }
 
@@ -334,6 +330,7 @@ async function prepareObjectUpdate(
       ?? makeLogObject(await server.get(objectUri, { timeout }))
   } catch (e: unknown) {
     if (e instanceof HttpError && e.status === 404 || e === '404') {
+      // The has been deleted from the server.
       objCache.set(objectUri, '404')
       return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
     } else throw e
