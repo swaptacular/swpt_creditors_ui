@@ -45,13 +45,6 @@ export type ListQueryOptions = {
   latestFirst?: boolean,
 }
 
-export type UserData = {
-  accounts: AccountV0[],
-  wallet: WalletV0,
-  creditor: CreditorV0,
-  pinInfo: PinInfoV0,
-}
-
 export type LogStream = {
   latestEntryId: bigint,
   forthcoming: string,
@@ -779,62 +772,6 @@ class CreditorsDb extends Dexie {
           break
       }
       return transferRecord
-    })
-  }
-
-  async storeUserData(data: UserData): Promise<number> {
-    // TODO: Delete user's existing actions (excluding
-    // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
-    // consider deleting some of user's tasks.
-
-    const { accounts, wallet, creditor, pinInfo } = data
-    const { requirePin, log, ...walletRecord } = {
-      ...wallet,
-      logStream: {
-        latestEntryId: wallet.logLatestEntryId,
-        forthcoming: wallet.log.forthcoming,
-        loadedTransfers: false,
-        isBroken: false,
-      },
-    }
-
-    return await this.transaction('rw', this.allTables, async () => {
-      let userId = await this.getUserId(wallet.uri)
-      userId = await this.wallets.put({ ...walletRecord, userId })
-      await this.walletObjects.put({ ...creditor, userId })
-      await this.walletObjects.put({ ...pinInfo, userId })
-      const oldAccountRecordsArray = await this.accounts.where({ userId }).toArray()
-      const oldAccountRecordsMap = new Map(oldAccountRecordsArray.map(x => [x.uri, x]))
-
-      for (const account of accounts) {
-        const {
-          accountRecord,
-          accountInfoRecord,
-          accountDisplayRecord,
-          accountKnowledgeRecord,
-          accountExchangeRecord,
-          accountLedgerRecord,
-          accountConfigRecord,
-        } = splitIntoRecords(userId, account)
-        await this.accounts.put(accountRecord)
-        await this.accountObjects.where({ 'account.uri': account.uri }).delete()
-        await this.accountObjects.bulkPut([
-          accountInfoRecord,
-          accountDisplayRecord,
-          accountKnowledgeRecord,
-          accountExchangeRecord,
-          accountLedgerRecord,
-          accountConfigRecord,
-        ])
-        oldAccountRecordsMap.delete(account.uri)
-      }
-
-      // Delete all old accounts, which are missing from the received
-      // `accounts` array.
-      for (const accountUri of oldAccountRecordsMap.keys()) {
-        await this.deleteAccount(accountUri)
-      }
-      return userId
     })
   }
 

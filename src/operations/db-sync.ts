@@ -2,10 +2,10 @@ import type {
   ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, LogEntriesPage
 } from './server'
 import type {
-  UserData, LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
+  LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
 } from './db'
 import type {
-  TransferV0, LogEntryV0, TransferResultV0, LogObject
+  PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject
 } from './canonical-objects'
 
 import { HttpError } from './server'
@@ -29,29 +29,42 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
   let userId = await db.getUserId(entrypoint)
   if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
     const userData = await getUserData(server)
-    userId = await db.storeUserData(userData)
+    userId = await storeUserData(userData)
   }
   return userId
 }
 
 /* Ensures that the initial loading of transfers from the server to
  * the local database has finished successfully. This must be done
- * before the synchronization via the log stream can start. */
+ * before the synchronization via the log stream can start. Throws
+ * `BrokenLogStream` if the log stream is broken. */
 export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
   let walletRecord
-  while (walletRecord = await db.getWalletRecord(userId), !walletRecord.logStream.loadedTransfers) {
+  while (
+    walletRecord = await db.getWalletRecord(userId),
+    !walletRecord.logStream.isBroken && !walletRecord.logStream.loadedTransfers
+  ) {
     const latestEntryId = walletRecord.logStream.latestEntryId
     for await (const transfer of iterTransfers(server, walletRecord.transfersList.uri)) {
       await db.storeTransfer(userId, transfer)
     }
-    // Mark the log stream as redy for updates.
+    // Mark the log stream as redy for updates. Note that before we
+    // start, we ensure that the status of the log stream had not been
+    // changed by a parallel update.
     db.executeTransaction(async () => {
       const walletRecord = await db.getWalletRecord(userId)
-      if (!walletRecord.logStream.loadedTransfers && walletRecord.logStream.latestEntryId === latestEntryId) {
+      if (
+        !walletRecord.logStream.isBroken
+        && !walletRecord.logStream.loadedTransfers
+        && walletRecord.logStream.latestEntryId === latestEntryId
+      ) {
         walletRecord.logStream.loadedTransfers = true
         await db.updateWalletRecord(walletRecord)
       }
     })
+  }
+  if (walletRecord.logStream.isBroken) {
+    throw new BrokenLogStream()
   }
 }
 
@@ -61,9 +74,11 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
  * process. */
 export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
-  assert(walletRecord.logStream.loadedTransfers)
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
+  }
+  if (walletRecord.logStream.loadedTransfers) {
+    return false
   }
   const previousEntryId = walletRecord.logStream.latestEntryId
 
@@ -100,7 +115,9 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
 
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
-      // Mark the log stream as broken (and then re-throw).
+      // Mark the log stream as broken (and then re-throw). Note that
+      // before we start, we ensure that the status of the log stream
+      // had not been changed by a parallel update.
       db.executeTransaction(async () => {
         const walletRecord = await db.getWalletRecord(userId)
         if (
@@ -124,6 +141,13 @@ type PreparedUpdate = {
   relatedUpdates: ObjectUpdateInfo[],
 }
 
+type UserData = {
+  accounts: AccountV0[],
+  wallet: WalletV0,
+  creditor: CreditorV0,
+  pinInfo: PinInfoV0,
+}
+
 function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
   return { updater, relatedUpdates }
 }
@@ -143,6 +167,67 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   const accounts = accountResponses.map(response => makeAccount(response))
 
   return { wallet, creditor, pinInfo, accounts }
+}
+
+async function storeUserData(data: UserData): Promise<number> {
+  // TODO: Delete user's existing actions (excluding
+  // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
+  // consider deleting some of user's tasks.
+
+  const { accounts, wallet, creditor, pinInfo } = data
+  const { requirePin, log, ...walletRecord } = {
+    ...wallet,
+    logStream: {
+      latestEntryId: wallet.logLatestEntryId,
+      forthcoming: wallet.log.forthcoming,
+      loadedTransfers: false,
+      isBroken: false,
+    },
+  }
+
+  // Delete all old user's data and store the new one. Note that
+  // before we start, we ensure that the status of the log stream had
+  // not been changed by a parallel update.
+  return db.executeTransaction(async () => {
+    let userId = await db.getUserId(wallet.uri)
+    if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
+      userId = await db.wallets.put({ ...walletRecord, userId })
+      await db.walletObjects.put({ ...creditor, userId })
+      await db.walletObjects.put({ ...pinInfo, userId })
+      const oldAccountRecordsArray = await db.accounts.where({ userId }).toArray()
+      const oldAccountRecordsMap = new Map(oldAccountRecordsArray.map(x => [x.uri, x]))
+
+      for (const account of accounts) {
+        const {
+          accountRecord,
+          accountInfoRecord,
+          accountDisplayRecord,
+          accountKnowledgeRecord,
+          accountExchangeRecord,
+          accountLedgerRecord,
+          accountConfigRecord,
+        } = splitIntoRecords(userId, account)
+        await db.accounts.put(accountRecord)
+        await db.accountObjects.where({ 'account.uri': account.uri }).delete()
+        await db.accountObjects.bulkPut([
+          accountInfoRecord,
+          accountDisplayRecord,
+          accountKnowledgeRecord,
+          accountExchangeRecord,
+          accountLedgerRecord,
+          accountConfigRecord,
+        ])
+        oldAccountRecordsMap.delete(account.uri)
+      }
+
+      // Delete all old accounts, which are missing from the received
+      // `accounts` array.
+      for (const accountUri of oldAccountRecordsMap.keys()) {
+        await db.deleteAccount(accountUri)
+      }
+    }
+    return userId
+  })
 }
 
 function collectObjectUpdates(

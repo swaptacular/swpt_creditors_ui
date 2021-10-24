@@ -61,8 +61,8 @@ export async function authorizePinReset(): Promise<void> {
  * the server. Any network failures will be swallowed. */
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
-    await ensureLoadedTransfers(server, userId)
     try {
+      await ensureLoadedTransfers(server, userId)
       while (await processLogPage(server, userId));
     } catch (e: unknown) {
       if (e instanceof BrokenLogStream) {
