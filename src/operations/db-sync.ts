@@ -269,11 +269,17 @@ async function generateObjectUpdaters(
   server: ServerSession,
   userId: number,
   updates: ObjectUpdateInfo[],
+  objCache: Map<string, LogObject | '404'> = new Map(),
+  pendingUpdates: Map<string, ObjectUpdateInfo> = new Map(),
 ): Promise<ObjectUpdater[]> {
+  // TODO: check the latestUpdateId before discarding an update here!
+  updates = updates.filter(update => !pendingUpdates.has(update.objectUri))
+  updates.forEach(update => pendingUpdates.set(update.objectUri, update))
+
   let updaters: ObjectUpdater[] = []
   let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
-  const promises = Promise.all(updates.map(update => prepareObjectUpdate(update, server, userId, timeout)))
+  const promises = Promise.all(updates.map(update => prepareObjectUpdate(update, objCache, server, userId, timeout)))
   for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
@@ -282,49 +288,54 @@ async function generateObjectUpdaters(
     // When some of the updated objects contain references (links) to
     // another objects on the server, the referred (related) objects
     // should be requested as well. We do this recursively
-    // here. Reference cycles between log objects are (hopefully)
-    // impossible. Currently this is used for ledger entries to load
-    // their correspoinding transfers.
-    updaters = updaters.concat(await generateObjectUpdaters(server, userId, conbinedRelatedUpdates))
+    // here. Reference cycles between log objects are
+    // impossible. Because we use `pendingUpdates` to remember which
+    // updates have already started.
+    updaters = updaters.concat(
+      await generateObjectUpdaters(server, userId, conbinedRelatedUpdates, objCache, pendingUpdates))
   }
   return updaters
 }
 
 async function prepareObjectUpdate(
   updateInfo: ObjectUpdateInfo,
+  objCache: Map<string, LogObject | '404'>,
   server: ServerSession,
   userId: number,
   timeout: number,
 ): Promise<PreparedUpdate> {
-  if (updateInfo.deleted) {
+  const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
+
+  if (deleted) {
     return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
   }
   const existingRecord = await db.getLogObjectRecord(updateInfo)
   const alreadyUpToDate = (
     existingRecord !== undefined
-    && (existingRecord.latestUpdateId ?? MAX_INT64) >= (updateInfo.objectUpdateId ?? MAX_INT64)
+    && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)
   )
   if (alreadyUpToDate) {
     return makeUpdate(() => Promise.resolve())
   }
 
-  // Sometimes we can reconstruct the current version of the object by
-  // updating the existing version of the object with the data
-  // received from the log record. In such cases we spare a needless
-  // network request.
-  let obj = tryToReconstructLogObject(updateInfo, existingRecord)
-  if (!obj) {
-    try {
-      const uri = updateInfo.objectUri
-      const response = await server.get(uri, { timeout }) as HttpResponse<unknown>
-      obj = makeLogObject(response)
-    } catch (e: unknown) {
-      if (e instanceof HttpError && e.status === 404) {
-        return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
-      } else throw e
-    }
+  let obj: LogObject
+  try {
+    // Sometimes we can obtain the object from the cache, or
+    // reconstruct the current version of the object by updating the
+    // existing version of the object with the data received from the
+    // log record. In such cases we spare a needless network request.
+    const cached = objCache.get(objectUri); if (cached === '404') throw '404'
+    obj = cached
+      ?? tryToReconstructLogObject(updateInfo, existingRecord)
+      ?? makeLogObject(await server.get(objectUri, { timeout }))
+  } catch (e: unknown) {
+    if (e instanceof HttpError && e.status === 404 || e === '404') {
+      objCache.set(objectUri, '404')
+      return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
+    } else throw e
   }
-  assert(obj.type === updateInfo.objectType)
+  assert(obj.type === objectType)
+  objCache.set(objectUri, obj)
 
   // Some types of objects require special treatment.
   switch (obj.type) {
@@ -334,35 +345,36 @@ async function prepareObjectUpdate(
       })
     }
     case 'Account': {
-      const {
-        accountRecord,
-        accountInfoRecord,
-        accountDisplayRecord,
-        accountKnowledgeRecord,
-        accountExchangeRecord,
-        accountLedgerRecord,
-        accountConfigRecord,
-      } = splitIntoRecords(userId, obj)
-      return makeUpdate(async () => {
-        await db.storeLogObjectRecord(accountRecord, updateInfo)
-        await db.storeLogObjectRecord(accountInfoRecord)
-        await db.storeLogObjectRecord(accountDisplayRecord)
-        await db.storeLogObjectRecord(accountKnowledgeRecord)
-        await db.storeLogObjectRecord(accountExchangeRecord)
-        await db.storeLogObjectRecord(accountLedgerRecord)
-        await db.storeLogObjectRecord(accountConfigRecord)
-      })
+      const { info, display, knowledge, exchange, ledger, config } = obj
+      const { accountRecord } = splitIntoRecords(userId, obj)
+      const relatedObjects = [info, display, knowledge, exchange, ledger, config]
+      const relatedUpdates = relatedObjects.map(x => ({
+        objectUri: x.uri,
+        objectType: x.type,
+        objectUpdateId: x.latestUpdateId,
+        deleted: false,
+        updatedAt: x.latestUpdateAt,
+      }))
+      relatedObjects.forEach(x => objCache.set(x.uri, x))
+      return makeUpdate(() => db.storeLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
     }
     case 'AccountLedger': {
+      let latestEntryId: bigint
+      if (existingRecord) {
+        assert(existingRecord.type === 'AccountLedger')
+        latestEntryId = existingRecord.nextEntryId - 1n
+      } else {
+        latestEntryId = obj.nextEntryId - 1n
+      }
       const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
-      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord)
+      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId)
       const relatedUpdates: ObjectUpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => ({
           objectUri: entry.transfer!.uri,
           objectType: 'CommittedTransfer',
           deleted: false,
-          updatedAt: accountLedgerRecord.latestUpdateAt,
+          updatedAt: accountLedgerRecord.latestUpdateAt,  // could be anything, really
         }))
       return makeUpdate(async () => {
         await db.storeLogObjectRecord(accountLedgerRecord, updateInfo)
