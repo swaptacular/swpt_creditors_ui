@@ -77,7 +77,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
   }
-  if (walletRecord.logStream.loadedTransfers) {
+  if (!walletRecord.logStream.loadedTransfers) {
     return false
   }
   const previousEntryId = walletRecord.logStream.latestEntryId

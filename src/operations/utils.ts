@@ -43,29 +43,28 @@ export async function* iterTransfers(server: ServerSession, transfersListUri: st
 export async function fetchNewLedgerEntries(
   server: ServerSession,
   accountLedgerRecord: AccountLedgerRecord,
+  latestEntryId: bigint,
 ): Promise<LedgerEntryV0[]> {
-  // NOTE: The entries are iterated in reverse-chronological order
-  // (bigger entryIds go first).
-
   let newLedgerEntries: LedgerEntryV0[] = []
-  const first = new URL(accountLedgerRecord.entries.first)
-  const latestEntryId = await db.getLatestLedgerEntryId(accountLedgerRecord.uri)
-  if (latestEntryId !== undefined) {
-    first.searchParams.append('stop', String(latestEntryId))
-  }
   let iteratedId = accountLedgerRecord.nextEntryId
 
-  for await (const entry of iterLedgerEntries(server, first.href)) {
-    const { entryId } = entry
-    assert(entryId < iteratedId)
-    if (iteratedId - entryId !== 1n) {
-      break  // There are missing entries.
+  // NOTE: The entries are iterated in reverse-chronological order
+  // (bigger entryIds go first).
+  if (latestEntryId + 1n < iteratedId) {
+    const first = new URL(accountLedgerRecord.entries.first)
+    first.searchParams.append('stop', String(latestEntryId))
+    for await (const entry of iterLedgerEntries(server, first.href)) {
+      const { entryId } = entry
+      assert(entryId < iteratedId)
+      if (iteratedId - entryId !== 1n) {
+        break  // There are missing entries.
+      }
+      if (entryId <= latestEntryId) {
+        break  // This is an already known entry.
+      }
+      newLedgerEntries.push(entry)
+      iteratedId = entryId
     }
-    if (latestEntryId !== undefined && entryId <= latestEntryId) {
-      break  // This is an already known entry.
-    }
-    newLedgerEntries.push(entry)
-    iteratedId = entryId
   }
   return newLedgerEntries
 }
