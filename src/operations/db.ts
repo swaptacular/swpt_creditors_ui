@@ -22,7 +22,6 @@ import type {
   WebApiError,
   ObjectReference,
 } from './canonical-objects'
-import { getCanonicalType } from './canonical-objects'
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
@@ -72,19 +71,6 @@ export type ObjectUpdateInfo = {
   objectUpdateId?: bigint,
   data?: { [key: string]: unknown },
 }
-
-export type LogObjectRecord =
-  | AccountRecord
-  | AccountConfigRecord
-  | AccountDisplayRecord
-  | AccountKnowledgeRecord
-  | AccountExchangeRecord
-  | AccountInfoRecord
-  | AccountLedgerRecord
-  | TransferRecord
-  | CommittedTransferRecord
-  | CreditorRecord
-  | PinInfoRecord
 
 export type WalletRecord =
   & Partial<UserReference>
@@ -368,6 +354,21 @@ class CreditorsDb extends Dexie {
     this.tasks = this.table('tasks')
   }
 
+  get allTables() {
+    return [
+      this.wallets,
+      this.walletObjects,
+      this.accounts,
+      this.accountObjects,
+      this.committedTransfers,
+      this.transfers,
+      this.ledgerEntries,
+      this.documents,
+      this.actions,
+      this.tasks,
+    ]
+  }
+
   async clearAllTables(): Promise<void> {
     await this.transaction('rw', this.allTables, async () => {
       for (const table of this.allTables) {
@@ -408,103 +409,6 @@ class CreditorsDb extends Dexie {
       throw new UserDoesNotExist()
     }
     assert(updated === 1)
-  }
-
-  async getLogObjectRecord(
-    { objectUri, objectType }: { objectUri: ObjectUpdateInfo['objectUri'], objectType: ObjectUpdateInfo['objectType'] }
-  ): Promise<LogObjectRecord | undefined> {
-    const table = this.getLogObjectTable(objectType)
-    return await table.get(objectUri)
-  }
-
-  async storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo?: ObjectUpdateInfo): Promise<void> {
-    let objectUri: string
-    let objectType: ObjectUpdateInfo['objectType']
-    let updateId: bigint
-
-    if (updateInfo) {
-      objectUri = updateInfo.objectUri
-      objectType = updateInfo.objectType
-      if (objectRecord) {
-        assert(objectRecord.uri === objectUri)
-        assert(objectRecord.type === objectType)
-        assert(!updateInfo.deleted)
-        updateId = objectRecord.latestUpdateId ?? MAX_INT64
-        assert(
-          updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
-          'The version of the object received from the server is older that the version ' +
-          'promised by in log entry. Normally this should never happen. The most ' +
-          'probable reason for this is having misconfigured HTTP caches somewhere.',
-        )
-      } else {
-        updateId = updateInfo.objectUpdateId ?? MAX_INT64
-      }
-    } else {
-      assert(objectRecord)
-      objectUri = objectRecord.uri
-      objectType = objectRecord.type
-      updateId = objectRecord.latestUpdateId ?? MAX_INT64
-    }
-
-    await this.transaction('rw', this.allTables, async (): Promise<void> => {
-      const table = this.getLogObjectTable(objectType)
-      const existingRecord = await table.get(objectUri)
-      const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
-      if (!alreadyUpToDate) {
-        if (objectRecord) {
-          // Update the record.
-
-          // Special bookkeeping is required when transfers are
-          // created/updated. For this reason, the `storeTransfer`
-          // method must be used for transfers, instead of
-          // `storeLogObjectRecord`.
-          assert(table !== this.transfers)
-
-          await table.put(objectRecord)
-
-        } else {
-          // Delete the record.
-          switch (objectType) {
-            case 'CommittedTransfer':
-              console.warn(
-                `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
-                `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
-                `some very unlikely conditions (for example, being garbage collected on the server, ` +
-                `before the corresponding log entry has been processed), this could happen.`
-              )
-              break
-
-            case 'Transfer':
-              await this.markTranferDeletion(objectUri)
-              break
-
-            case 'AccountConfig':
-            case 'AccountDisplay':
-            case 'AccountKnowledge':
-            case 'AccountExchange':
-            case 'AccountInfo':
-            case 'AccountLedger':
-              await this.deleteAccountObject(objectUri)
-              break
-
-            case 'Account':
-              await this.deleteAccount(objectUri)
-              break
-
-            case 'Creditor':
-            case 'PinInfo':
-              console.error(
-                `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
-                `objects are singletons that normally must not be deleted via the log stream.`
-              )
-              break
-
-            default:
-              throw new Error('unknown object type')
-          }
-        }
-      }
-    })
   }
 
   async storeLedgerEntryRecord(record: LedgerEntryRecord): Promise<void> {
@@ -815,39 +719,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  async isConcludedTransfer(transferUri: string): Promise<boolean> {
-    const transferRecord = await this.transfers.get(transferUri)
-    return transferRecord !== undefined && (transferRecord.result !== undefined || transferRecord.aborted === true)
-  }
-
-  private getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
-    switch (getCanonicalType(objectType)) {
-      case 'Account':
-        return this.accounts
-      case 'AccountDisplay':
-      case 'AccountKnowledge':
-      case 'AccountExchange':
-      case 'AccountLedger':
-      case 'AccountConfig':
-      case 'AccountInfo':
-        return this.accountObjects
-      case 'Creditor':
-      case 'PinInfo':
-        return this.walletObjects
-      case 'CommittedTransfer':
-        return this.committedTransfers
-      case 'Transfer':
-        return this.transfers
-      default:
-        throw new Error('unknown object type')
-    }
-  }
-
-  private async isInstalledUser(userId: number): Promise<boolean> {
-    return await this.wallets.where({ userId }).count() === 1
-  }
-
-  private async markTranferDeletion(transferUri: string): Promise<void> {
+  async markTranferDeletion(transferUri: string): Promise<void> {
     // Transfers must remain in the local database, even after they
     // have been deleted from the server. This allows the user to
     // review transfers history. Here we only remove actions and tasks
@@ -862,21 +734,9 @@ class CreditorsDb extends Dexie {
       .delete()
   }
 
-  get allTables() {
-    return [
-      this.wallets,
-      this.walletObjects,
-      this.accounts,
-      this.accountObjects,
-      this.committedTransfers,
-      this.transfers,
-      this.ledgerEntries,
-      this.documents,
-      this.actions,
-      this.tasks,
-    ]
+  private async isInstalledUser(userId: number): Promise<boolean> {
+    return await this.wallets.where({ userId }).count() === 1
   }
-
 }
 
 export function splitIntoRecords(userId: number, account: AccountV0): {

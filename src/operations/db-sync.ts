@@ -2,7 +2,9 @@ import type {
   ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, LogEntriesPage
 } from './server'
 import type {
-  LogObjectRecord, AccountLedgerRecord, TransferRecord, ObjectUpdateInfo
+  AccountLedgerRecord, TransferRecord, ObjectUpdateInfo, AccountRecord, AccountConfigRecord,
+  AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
+  CommittedTransferRecord, CreditorRecord, PinInfoRecord
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject
@@ -169,6 +171,19 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
 }
 
 type ObjectUpdater = () => Promise<void>
+
+type LogObjectRecord =
+  | AccountRecord
+  | AccountConfigRecord
+  | AccountDisplayRecord
+  | AccountKnowledgeRecord
+  | AccountExchangeRecord
+  | AccountInfoRecord
+  | AccountLedgerRecord
+  | TransferRecord
+  | CommittedTransferRecord
+  | CreditorRecord
+  | PinInfoRecord
 
 type PreparedUpdate = {
   updater: ObjectUpdater,
@@ -347,10 +362,10 @@ async function prepareObjectUpdate(
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
   if (deleted) {
     // The log says that the object is deleted.
-    return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
+    return makeUpdate(() => storeLogObjectRecord(null, updateInfo))
   }
 
-  const existingRecord = await db.getLogObjectRecord(updateInfo)
+  const existingRecord = await getLogObjectRecord(updateInfo)
   if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
     // The object is already up-to-date.
     return makeUpdate(() => Promise.resolve())
@@ -370,7 +385,7 @@ async function prepareObjectUpdate(
     if ((e instanceof HttpError && e.status === 404) || (e === '404')) {
       // The object has been deleted from the server.
       objCache.set(objectUri, '404')
-      return makeUpdate(() => db.storeLogObjectRecord(null, updateInfo))
+      return makeUpdate(() => storeLogObjectRecord(null, updateInfo))
     } else throw e
   }
   assert(obj.type === objectType)
@@ -395,7 +410,7 @@ async function prepareObjectUpdate(
         addedAt: relatedObject.latestUpdateAt,
       }))
       relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
-      return makeUpdate(() => db.storeLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
+      return makeUpdate(() => storeLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
     }
     case 'AccountLedger': {
       let latestEntryId: bigint
@@ -416,7 +431,7 @@ async function prepareObjectUpdate(
           addedAt: accountLedgerRecord.latestUpdateAt,  // could be anything, will be ignored
         }))
       return makeUpdate(async () => {
-        await db.storeLogObjectRecord(accountLedgerRecord, updateInfo)
+        await storeLogObjectRecord(accountLedgerRecord, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
@@ -432,7 +447,7 @@ async function prepareObjectUpdate(
     case 'Creditor':
     case 'PinInfo': {
       const record: LogObjectRecord = { ...obj, userId }
-      return makeUpdate(() => db.storeLogObjectRecord(record, updateInfo))
+      return makeUpdate(() => storeLogObjectRecord(record, updateInfo))
     }
   }
 }
@@ -510,4 +525,113 @@ async function* iterTransfers(server: ServerSession, transfersListUri: string): 
     }
   }
   yield* await fetchTransfers(server, urisToFetch)
+}
+
+async function getLogObjectRecord(updateInfo: ObjectUpdateInfo): Promise<LogObjectRecord | undefined> {
+  const table = getLogObjectTable(updateInfo.objectType)
+  return await table.get(updateInfo.objectUri)
+}
+
+async function storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo: ObjectUpdateInfo): Promise<void> {
+  const objectUri = updateInfo.objectUri
+  const objectType = updateInfo.objectType
+  let updateId: bigint
+
+  if (objectRecord) {
+    assert(objectRecord.uri === objectUri)
+    assert(objectRecord.type === objectType)
+    assert(!updateInfo.deleted)
+    updateId = objectRecord.latestUpdateId ?? MAX_INT64
+    assert(
+      updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
+      'The version of the object received from the server is older that the version ' +
+      'promised by in log entry. Normally this should never happen. The most ' +
+      'probable reason for this is having misconfigured HTTP caches somewhere.',
+    )
+  } else {
+    updateId = updateInfo.objectUpdateId ?? MAX_INT64
+  }
+
+  await db.transaction('rw', db.allTables, async (): Promise<void> => {
+    const table = getLogObjectTable(objectType)
+    const existingRecord = await table.get(objectUri)
+    const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
+    if (!alreadyUpToDate) {
+      if (objectRecord) {
+        // Update the record.
+
+        // Special bookkeeping is required when transfers are
+        // created/updated. For this reason, the `storeTransfer`
+        // method must be used for transfers, instead of
+        // `storeLogObjectRecord`.
+        assert(table !== db.transfers)
+
+        await table.put(objectRecord)
+
+      } else {
+        // Delete the record.
+        switch (objectType) {
+          case 'CommittedTransfer':
+            console.warn(
+              `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
+              `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
+              `some very unlikely conditions (for example, being garbage collected on the server, ` +
+              `before the corresponding log entry has been processed), this could happen.`
+            )
+            break
+
+          case 'Transfer':
+            await db.markTranferDeletion(objectUri)
+            break
+
+          case 'AccountConfig':
+          case 'AccountDisplay':
+          case 'AccountKnowledge':
+          case 'AccountExchange':
+          case 'AccountInfo':
+          case 'AccountLedger':
+            await db.deleteAccountObject(objectUri)
+            break
+
+          case 'Account':
+            await db.deleteAccount(objectUri)
+            break
+
+          case 'Creditor':
+          case 'PinInfo':
+            console.error(
+              `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
+              `objects are singletons that normally must not be deleted via the log stream.`
+            )
+            break
+
+          default:
+            throw new Error('unknown object type')
+        }
+      }
+    }
+  })
+}
+
+function getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
+  switch (getCanonicalType(objectType)) {
+    case 'Account':
+      return db.accounts
+    case 'AccountDisplay':
+    case 'AccountKnowledge':
+    case 'AccountExchange':
+    case 'AccountLedger':
+    case 'AccountConfig':
+    case 'AccountInfo':
+      return db.accountObjects
+    case 'Creditor':
+    case 'PinInfo':
+      return db.walletObjects
+    case 'CommittedTransfer':
+      return db.committedTransfers
+    case 'Transfer':
+      return db.transfers
+    default:
+      throw new Error('unknown object type')
+  }
 }
