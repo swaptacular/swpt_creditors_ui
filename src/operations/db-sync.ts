@@ -43,39 +43,27 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
  * record. Throws `PinNotRequired` if PIN is not required for
  * potentially dangerous operations. */
 export async function fetchWallet(server: ServerSession, userId: number): Promise<void> {
-  const {
-    uri,
-    creditor,
-    debtorLookup,
-    pinInfo,
-    createTransfer,
-    createAccount,
-    accountLookup,
-    accountsList,
-    transfersList,
-    logRetentionDays,
-    requirePin,
-  } = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
+  const wallet = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
 
   db.executeTransaction(async () => {
     let walletRecord = await db.getWalletRecord(userId)
 
     // Most of the fields in the wallet are URIs that must not change.
-    assert(walletRecord.uri === uri)
-    assert(walletRecord.creditor.uri === creditor.uri)
-    assert(walletRecord.pinInfo.uri === pinInfo.uri)
-    assert(walletRecord.debtorLookup.uri === debtorLookup.uri)
-    assert(walletRecord.accountLookup.uri === accountLookup.uri)
-    assert(walletRecord.createTransfer.uri === createTransfer.uri)
-    assert(walletRecord.createAccount.uri === createAccount.uri)
-    assert(walletRecord.accountsList.uri === accountsList.uri)
-    assert(walletRecord.transfersList.uri === transfersList.uri)
+    assert(walletRecord.uri === wallet.uri)
+    assert(walletRecord.creditor.uri === wallet.creditor.uri)
+    assert(walletRecord.pinInfo.uri === wallet.pinInfo.uri)
+    assert(walletRecord.debtorLookup.uri === wallet.debtorLookup.uri)
+    assert(walletRecord.accountLookup.uri === wallet.accountLookup.uri)
+    assert(walletRecord.createTransfer.uri === wallet.createTransfer.uri)
+    assert(walletRecord.createAccount.uri === wallet.createAccount.uri)
+    assert(walletRecord.accountsList.uri === wallet.accountsList.uri)
+    assert(walletRecord.transfersList.uri === wallet.transfersList.uri)
 
-    walletRecord.logRetentionDays = logRetentionDays
+    walletRecord.logRetentionDays = wallet.logRetentionDays
     await db.updateWalletRecord(walletRecord)
   })
 
-  if (!requirePin) {
+  if (!wallet.requirePin) {
     throw new PinNotRequired()
   }
 }
