@@ -414,14 +414,14 @@ async function prepareObjectUpdate(
       const record: AccountRecord = splitIntoRecords(userId, obj).accountRecord
       if (existingRecord) {
         assert(existingRecord.type === record.type)
+        assert(existingRecord.accountsList.uri === record.accountsList.uri)
+        assert(existingRecord.debtor.uri === record.debtor.uri)
         assert(existingRecord.info.uri === record.info.uri)
         assert(existingRecord.display.uri === record.display.uri)
         assert(existingRecord.knowledge.uri === record.knowledge.uri)
         assert(existingRecord.exchange.uri === record.exchange.uri)
         assert(existingRecord.ledger.uri === record.ledger.uri)
         assert(existingRecord.config.uri === record.config.uri)
-        assert(existingRecord.accountsList.uri === record.accountsList.uri)
-        assert(existingRecord.debtor.uri === record.debtor.uri)
       }
       const relatedObjects = [info, display, knowledge, exchange, ledger, config]
       const relatedUpdates = relatedObjects.map(relatedObject => {
