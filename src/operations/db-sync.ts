@@ -2,9 +2,9 @@ import type {
   ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, LogEntriesPage
 } from './server'
 import type {
-  AccountLedgerRecord, TransferRecord, ObjectUpdateInfo, AccountRecord, AccountConfigRecord,
+  AccountLedgerRecord, TransferRecord, AccountRecord, AccountConfigRecord, PinInfoRecord,
   AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
-  CommittedTransferRecord, CreditorRecord, PinInfoRecord
+  CommittedTransferRecord, CreditorRecord
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject
@@ -184,6 +184,26 @@ type LogObjectRecord =
   | CommittedTransferRecord
   | CreditorRecord
   | PinInfoRecord
+
+type ObjectUpdateInfo = {
+  objectUri: string,
+  objectType:
+  | 'Account'
+  | 'AccountConfig'
+  | 'AccountDisplay'
+  | 'AccountKnowledge'
+  | 'AccountExchange'
+  | 'AccountInfo'
+  | 'AccountLedger'
+  | 'Transfer'
+  | 'CommittedTransfer'
+  | 'Creditor'
+  | 'PinInfo'
+  addedAt: string,
+  deleted: boolean,
+  objectUpdateId?: bigint,
+  data?: { [key: string]: unknown },
+}
 
 type PreparedUpdate = {
   updater: ObjectUpdater,

@@ -1,27 +1,15 @@
-import equal from 'fast-deep-equal'
-import { Dexie } from 'dexie'
 import type { Collection } from 'dexie'
-import { parseTransferNote } from '../payment-requests'
 import type { PaymentInfo } from '../payment-requests'
 import type { ResourceReference, DocumentWithHash } from '../debtor-info'
 import type {
-  LedgerEntryV0,
-  TransferV0,
-  CommittedTransferV0,
-  PinInfoV0,
-  CreditorV0,
-  WalletV0,
-  AccountV0,
-  AccountLedgerV0,
-  AccountInfoV0,
-  AccountKnowledgeV0,
-  AccountExchangeV0,
-  AccountDisplayV0,
-  AccountConfigV0,
-  TransferCreationRequestV0,
-  WebApiError,
-  ObjectReference,
+  LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
+  AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
+  AccountConfigV0, TransferCreationRequestV0, WebApiError, ObjectReference
 } from './canonical-objects'
+
+import equal from 'fast-deep-equal'
+import { Dexie } from 'dexie'
+import { parseTransferNote } from '../payment-requests'
 
 type UserReference = {
   userId: number,
@@ -48,26 +36,6 @@ export type LogStream = {
   loadedTransfers: boolean,
   syncedAt?: Date,
   isBroken: boolean,
-}
-
-export type ObjectUpdateInfo = {
-  objectUri: string,
-  objectType:
-  | 'Account'
-  | 'AccountConfig'
-  | 'AccountDisplay'
-  | 'AccountKnowledge'
-  | 'AccountExchange'
-  | 'AccountInfo'
-  | 'AccountLedger'
-  | 'Transfer'
-  | 'CommittedTransfer'
-  | 'Creditor'
-  | 'PinInfo'
-  addedAt: string,
-  deleted: boolean,
-  objectUpdateId?: bigint,
-  data?: { [key: string]: unknown },
 }
 
 export type WalletRecord =
