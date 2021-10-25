@@ -396,9 +396,9 @@ async function prepareObjectUpdate(
     case 'Transfer': {
       if (existingRecord) {
         assert(existingRecord.type === obj.type)
-        assert(existingRecord.initiatedAt === obj.initiatedAt)
         assert(existingRecord.transfersList.uri === obj.transfersList.uri)
         assert(existingRecord.transferUuid === obj.transferUuid)
+        assert(existingRecord.initiatedAt === obj.initiatedAt)
         assert(existingRecord.amount === obj.amount)
         assert(existingRecord.recipient.uri === obj.recipient.uri)
         assert(existingRecord.noteFormat === obj.noteFormat)
