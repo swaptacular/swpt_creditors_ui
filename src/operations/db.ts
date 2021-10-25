@@ -785,31 +785,31 @@ class CreditorsDb extends Dexie {
   async deleteAccount(accountUri: string): Promise<void> {
     const tables = [this.accounts, this.accountObjects, this.ledgerEntries, this.committedTransfers]
     await this.transaction('rw', tables, async () => {
-      const accountObjectsQuery = this.accountObjects.where({ 'account.uri': accountUri })
-      for (const accountObject of await accountObjectsQuery.toArray()) {
-        if (accountObject.type === 'AccountLedger') {
-          await this.ledgerEntries.where({ 'ledger.uri': accountObject.uri }).delete()
-        }
-      }
-      await accountObjectsQuery.delete()
-      await this.committedTransfers.where({ 'account.uri': accountUri }).delete()
       await this.accounts.delete(accountUri)
+      await this.committedTransfers.where({ 'account.uri': accountUri }).delete()
+      const accountObjects = await this.accountObjects.where({ 'account.uri': accountUri }).toArray()
+      for (const accountObject of accountObjects) {
+        await this.deleteAccountObject(accountObject.uri)
+      }
     })
   }
 
   async deleteAccountObject(accountObjectUri: string): Promise<void> {
-    await this.transaction('rw', [this.accounts, this.accountObjects], async () => {
+    await this.transaction('rw', [this.accounts, this.accountObjects, this.ledgerEntries], async () => {
       const accountObject = await this.accountObjects.get(accountObjectUri)
       if (accountObject) {
         const account = await this.accounts.get(accountObject.account.uri)
         if (account) {
           console.log(
-            `An attempt to delete an account sub-object via the log stream has been ignored. Account ` +
-            `sub-objects will be deleted when the corresponding account gets deleted. This guarantees ` +
+            `An attempt to delete an account sub-object has been ignored. Account sub-objects ` +
+            `will be deleted when the corresponding account gets deleted. This guarantees ` +
             `that all sub-objects always exist for every account.`
           )
         } else {
           await this.accountObjects.delete(accountObjectUri)
+          if (accountObject.type === 'AccountLedger') {
+            await this.ledgerEntries.where({ 'ledger.uri': accountObject.uri }).delete()
+          }
         }
       }
     })
