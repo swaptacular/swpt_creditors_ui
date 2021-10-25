@@ -559,13 +559,7 @@ async function storeLogObjectRecord(objectRecord: LogObjectRecord | null, update
     if (!alreadyUpToDate) {
       if (objectRecord) {
         // Update the record.
-
-        // Special bookkeeping is required when transfers are
-        // created/updated. For this reason, the `storeTransfer`
-        // method must be used for transfers, instead of
-        // `storeLogObjectRecord`.
         assert(table !== db.transfers)
-
         await table.put(objectRecord)
 
       } else {
