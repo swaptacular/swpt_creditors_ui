@@ -401,6 +401,18 @@ async function prepareObjectUpdate(
     case 'Account': {
       const { info, display, knowledge, exchange, ledger, config } = obj
       const { accountRecord } = splitIntoRecords(userId, obj)
+      if (existingRecord) {
+        // Many of the fields in the account record are URIs that must not change.
+        assert(existingRecord.type === 'Account')
+        assert(existingRecord.info.uri === accountRecord.info.uri)
+        assert(existingRecord.display.uri === accountRecord.display.uri)
+        assert(existingRecord.knowledge.uri === accountRecord.knowledge.uri)
+        assert(existingRecord.exchange.uri === accountRecord.exchange.uri)
+        assert(existingRecord.ledger.uri === accountRecord.ledger.uri)
+        assert(existingRecord.config.uri === accountRecord.config.uri)
+        assert(existingRecord.accountsList.uri === accountRecord.accountsList.uri)
+        assert(existingRecord.debtor.uri === accountRecord.debtor.uri)
+      }
       const relatedObjects = [info, display, knowledge, exchange, ledger, config]
       const relatedUpdates = relatedObjects.map(relatedObject => ({
         objectUri: relatedObject.uri,
