@@ -15,7 +15,8 @@ import {
   getCanonicalType,
 } from './canonical-objects'
 import {
-  iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers
+  iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers,
+  settleAndIgnore404
 } from './utils'
 
 export class BrokenLogStream extends Error {
@@ -163,7 +164,7 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   }
   const timeout = calcParallelTimeout(accountUris.length)
   const promises = accountUris.map(uri => server.get(uri, { timeout })) as Promise<HttpResponse<Account>>[]
-  const accountResponses = await Promise.all(promises)
+  const accountResponses = await settleAndIgnore404(promises)
   const accounts = accountResponses.map(response => makeAccount(response))
 
   return { wallet, creditor, pinInfo, accounts }

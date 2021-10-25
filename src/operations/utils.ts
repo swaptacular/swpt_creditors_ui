@@ -24,18 +24,22 @@ export const iterTransfersList = (
 
 export async function fetchTransfers(server: ServerSession, uris: string[]): Promise<TransferV0[]> {
   const timeout = calcParallelTimeout(uris.length)
-  const results = await Promise.allSettled(
-    uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
-  )
+  const responsePromises = uris.map(uri => server.get(uri, { timeout }) as Promise<HttpResponse<Transfer>>)
+  const responses = await settleAndIgnore404(responsePromises)
+  return responses.map(response => makeTransfer(response))
+}
+
+export async function settleAndIgnore404<T>(responsePromises: Promise<HttpResponse<T>>[]): Promise<HttpResponse<T>[]> {
+  const results = await Promise.allSettled(responsePromises)
   const rejected = results.filter(x => x.status === 'rejected') as PromiseRejectedResult[]
   const errors = rejected.map(x => x.reason)
   for (const e of errors) {
     if (e instanceof HttpError && e.status === 404) { /* ingnore */ }
     else throw e
   }
-  const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<Transfer>>[]
+  const fulfilled = results.filter(x => x.status === 'fulfilled') as PromiseFulfilledResult<HttpResponse<T>>[]
   const responses = fulfilled.map(x => x.value)
-  return responses.map(response => makeTransfer(response))
+  return responses
 }
 
 export async function fetchNewLedgerEntries(
