@@ -475,9 +475,6 @@ class CreditorsDb extends Dexie {
               break
 
             case 'Transfer':
-              // Transfers must remain in the local database, even
-              // after they have been deleted from the server. This
-              // allows the user to review transfers history.
               await this.markTranferDeletion(objectUri)
               break
 
@@ -487,11 +484,7 @@ class CreditorsDb extends Dexie {
             case 'AccountExchange':
             case 'AccountInfo':
             case 'AccountLedger':
-              console.log(
-                `An attempt to delete an account sub-object via the log stream has been ignored. Account ` +
-                `sub-objects will be deleted when the corresponding account gets deleted. This guarantees ` +
-                `that all sub-objects always exist for every account.`
-              )
+              await this.deleteAccountObject(objectUri)
               break
 
             case 'Account':
@@ -804,6 +797,24 @@ class CreditorsDb extends Dexie {
     })
   }
 
+  async deleteAccountObject(accountObjectUri: string): Promise<void> {
+    await this.transaction('rw', [this.accounts, this.accountObjects], async () => {
+      const accountObject = await this.accountObjects.get(accountObjectUri)
+      if (accountObject) {
+        const account = await this.accounts.get(accountObject.account.uri)
+        if (account) {
+          console.log(
+            `An attempt to delete an account sub-object via the log stream has been ignored. Account ` +
+            `sub-objects will be deleted when the corresponding account gets deleted. This guarantees ` +
+            `that all sub-objects always exist for every account.`
+          )
+        } else {
+          await this.accountObjects.delete(accountObjectUri)
+        }
+      }
+    })
+  }
+
   async isConcludedTransfer(transferUri: string): Promise<boolean> {
     const transferRecord = await this.transfers.get(transferUri)
     return transferRecord !== undefined && (transferRecord.result !== undefined || transferRecord.aborted === true)
@@ -843,6 +854,10 @@ class CreditorsDb extends Dexie {
   }
 
   private async markTranferDeletion(transferUri: string): Promise<void> {
+    // Transfers must remain in the local database, even after they
+    // have been deleted from the server. This allows the user to
+    // review transfers history. Here we only remove actions and tasks
+    // related to the deleted transfer.
     await this.actions
       .where({ transferUri })
       .filter(action => action.actionType === 'AbortTransfer')
