@@ -394,56 +394,74 @@ async function prepareObjectUpdate(
   // Some types of objects require special treatment.
   switch (obj.type) {
     case 'Transfer': {
+      if (existingRecord) {
+        assert(existingRecord.type === obj.type)
+        assert(existingRecord.initiatedAt === obj.initiatedAt)
+        assert(existingRecord.transfersList.uri === obj.transfersList.uri)
+        assert(existingRecord.transferUuid === obj.transferUuid)
+        assert(existingRecord.amount === obj.amount)
+        assert(existingRecord.recipient.uri === obj.recipient.uri)
+        assert(existingRecord.noteFormat === obj.noteFormat)
+        assert(existingRecord.note === obj.note)
+      }
       return makeUpdate(async () => {
         await db.storeTransfer(userId, obj as TransferV0)
       })
     }
+
     case 'Account': {
       const { info, display, knowledge, exchange, ledger, config } = obj
-      const { accountRecord } = splitIntoRecords(userId, obj)
+      const record: AccountRecord = splitIntoRecords(userId, obj).accountRecord
       if (existingRecord) {
-        // Many of the fields in the account record are URIs that must not change.
-        assert(existingRecord.type === 'Account')
-        assert(existingRecord.info.uri === accountRecord.info.uri)
-        assert(existingRecord.display.uri === accountRecord.display.uri)
-        assert(existingRecord.knowledge.uri === accountRecord.knowledge.uri)
-        assert(existingRecord.exchange.uri === accountRecord.exchange.uri)
-        assert(existingRecord.ledger.uri === accountRecord.ledger.uri)
-        assert(existingRecord.config.uri === accountRecord.config.uri)
-        assert(existingRecord.accountsList.uri === accountRecord.accountsList.uri)
-        assert(existingRecord.debtor.uri === accountRecord.debtor.uri)
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.info.uri === record.info.uri)
+        assert(existingRecord.display.uri === record.display.uri)
+        assert(existingRecord.knowledge.uri === record.knowledge.uri)
+        assert(existingRecord.exchange.uri === record.exchange.uri)
+        assert(existingRecord.ledger.uri === record.ledger.uri)
+        assert(existingRecord.config.uri === record.config.uri)
+        assert(existingRecord.accountsList.uri === record.accountsList.uri)
+        assert(existingRecord.debtor.uri === record.debtor.uri)
       }
       const relatedObjects = [info, display, knowledge, exchange, ledger, config]
-      const relatedUpdates = relatedObjects.map(relatedObject => ({
-        objectUri: relatedObject.uri,
-        objectType: relatedObject.type,
-        objectUpdateId: relatedObject.latestUpdateId,
-        deleted: false,
-        addedAt: relatedObject.latestUpdateAt,
-      }))
+      const relatedUpdates = relatedObjects.map(relatedObject => {
+        assert(relatedObject.account.uri === obj.uri)
+        return {
+          objectUri: relatedObject.uri,
+          objectType: relatedObject.type,
+          objectUpdateId: relatedObject.latestUpdateId,
+          deleted: false,
+          addedAt: relatedObject.latestUpdateAt,
+        }
+      })
       relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
-      return makeUpdate(() => storeLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
+      return makeUpdate(() => storeLogObjectRecord(record, updateInfo), relatedUpdates)
     }
+
     case 'AccountLedger': {
+      const record: AccountLedgerRecord = { ...obj, userId }
       let latestEntryId: bigint
       if (existingRecord) {
-        assert(existingRecord.type === 'AccountLedger')
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.account.uri === record.account.uri)
         latestEntryId = existingRecord.nextEntryId - 1n
       } else {
         latestEntryId = obj.nextEntryId - 1n
       }
-      const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
-      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId)
+      const newLedgerEntries = await fetchNewLedgerEntries(server, record, latestEntryId)
       const relatedUpdates: ObjectUpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
-        .map(entry => ({
-          objectUri: entry.transfer!.uri,
-          objectType: 'CommittedTransfer',
-          deleted: false,
-          addedAt: accountLedgerRecord.latestUpdateAt,  // could be anything, will be ignored
-        }))
+        .map(entry => {
+          assert(entry.ledger.uri === obj.uri)
+          return {
+            objectUri: entry.transfer!.uri,
+            objectType: 'CommittedTransfer',
+            deleted: false,
+            addedAt: record.latestUpdateAt,  // could be anything, will be ignored
+          }
+        })
       return makeUpdate(async () => {
-        await storeLogObjectRecord(accountLedgerRecord, updateInfo)
+        await storeLogObjectRecord(record, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
@@ -455,10 +473,22 @@ async function prepareObjectUpdate(
     case 'AccountKnowledge':
     case 'AccountExchange':
     case 'AccountInfo':
-    case 'CommittedTransfer':
+    case 'CommittedTransfer': {
+      const record: LogObjectRecord = { ...obj, userId }
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.account.uri === record.account.uri)
+      }
+      return makeUpdate(() => storeLogObjectRecord(record, updateInfo))
+    }
+
     case 'Creditor':
     case 'PinInfo': {
       const record: LogObjectRecord = { ...obj, userId }
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.wallet.uri === record.wallet.uri)
+      }
       return makeUpdate(() => storeLogObjectRecord(record, updateInfo))
     }
   }
