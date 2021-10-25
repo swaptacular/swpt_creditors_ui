@@ -45,7 +45,7 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
 export async function fetchWallet(server: ServerSession, userId: number): Promise<void> {
   const wallet = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
 
-  db.executeTransaction(async () => {
+  await db.transaction('rw', db.allTables, async () => {
     let walletRecord = await db.getWalletRecord(userId)
 
     // Most of the fields in the wallet are URIs that must not change.
@@ -85,7 +85,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
     // Mark the log stream as redy for updates. Note that before we
     // start, we ensure that the status of the log stream had not been
     // changed by a parallel update.
-    db.executeTransaction(async () => {
+    await db.transaction('rw', db.allTables, async () => {
       const walletRecord = await db.getWalletRecord(userId)
       if (
         !walletRecord.logStream.isBroken
@@ -127,7 +127,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
     // current position in the log stream. Note that before we start,
     // we ensure that the status of the log stream had not been
     // changed by a parallel update.
-    db.executeTransaction(async () => {
+    await db.transaction('rw', db.allTables, async () => {
       const walletRecord = await db.getWalletRecord(userId)
       if (
         !walletRecord.logStream.isBroken
@@ -152,7 +152,7 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
       // Mark the log stream as broken (and then re-throw). Note that
       // before we start, we ensure that the status of the log stream
       // had not been changed by a parallel update.
-      db.executeTransaction(async () => {
+      await db.transaction('rw', db.allTables, async () => {
         const walletRecord = await db.getWalletRecord(userId)
         if (
           !walletRecord.logStream.isBroken
@@ -222,7 +222,7 @@ async function storeUserData(data: UserData): Promise<number> {
   // Delete all old user's data and store the new one. Note that
   // before we start, we ensure that the status of the log stream had
   // not been changed by a parallel update.
-  return db.executeTransaction(async () => {
+  return await db.transaction('rw', db.allTables, async () => {
     let userId = await db.getUserId(wallet.uri)
     if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
       userId = await db.wallets.put({ ...walletRecord, userId })

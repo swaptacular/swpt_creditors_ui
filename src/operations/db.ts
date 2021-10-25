@@ -820,12 +820,6 @@ class CreditorsDb extends Dexie {
     return transferRecord !== undefined && (transferRecord.result !== undefined || transferRecord.aborted === true)
   }
 
-  async executeTransaction<Result>(func: () => Promise<Result>): Promise<Result> {
-    return await this.transaction('rw', this.allTables, async () => {
-      return await func()
-    })
-  }
-
   private getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
     switch (getCanonicalType(objectType)) {
       case 'Account':
@@ -868,7 +862,7 @@ class CreditorsDb extends Dexie {
       .delete()
   }
 
-  private get allTables() {
+  get allTables() {
     return [
       this.wallets,
       this.walletObjects,
