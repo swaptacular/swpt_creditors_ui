@@ -30,19 +30,17 @@ export type ListQueryOptions = {
   latestFirst?: boolean,
 }
 
-export type LogStream = {
-  latestEntryId: bigint,
-  forthcoming: string,
-  loadedTransfers: boolean,
-  syncedAt?: Date,
-  isBroken: boolean,
-}
-
 export type WalletRecord =
   & Partial<UserReference>
   & Omit<WalletV0, 'requirePin' | 'log' | 'logLatestEntryId'>
   & {
-    logStream: LogStream,
+    logStream: {
+      latestEntryId: bigint,
+      forthcoming: string,
+      loadedTransfers: boolean,
+      syncedAt?: Date,
+      isBroken: boolean,
+    },
   }
 
 export type WalletRecordWithId =
@@ -127,13 +125,7 @@ export type TransferRecord =
 export type LedgerEntryRecord =
   & UserReference
   & LedgerEntryV0
-  & {
-    id?: number,  // an autoincremented ID
-  }
-
-export type LedgerEntryRecordWithId =
-  & LedgerEntryRecord
-  & { id: number }
+  & { id?: number }  // an autoincremented ID
 
 export type DocumentRecord =
   & ResourceReference
