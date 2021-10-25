@@ -1,11 +1,12 @@
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
-import type { AccountLedgerRecord } from './db'
-import type { TransferV0, LedgerEntryV0 } from './canonical-objects'
+import type { TransferV0, LedgerEntryV0, AccountLedgerV0 } from './canonical-objects'
 
 import { HttpError } from './server'
 import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
+
+export const MAX_INT64 = (1n << 63n) - 1n
 
 export function calcParallelTimeout(numberOfParallelRequests: number): number {
   const n = 6  // a rough guess for the maximum number of parallel connections
@@ -44,16 +45,16 @@ export async function settleAndIgnore404<T>(responsePromises: Promise<HttpRespon
 
 export async function fetchNewLedgerEntries(
   server: ServerSession,
-  accountLedgerRecord: AccountLedgerRecord,
+  accountLedger: AccountLedgerV0,
   latestEntryId: bigint,
 ): Promise<LedgerEntryV0[]> {
   let newLedgerEntries: LedgerEntryV0[] = []
-  let iteratedId = accountLedgerRecord.nextEntryId
+  let iteratedId = accountLedger.nextEntryId
 
   // NOTE: The entries are iterated in reverse-chronological order
   // (bigger entryIds go first).
   if (latestEntryId + 1n < iteratedId) {
-    const first = new URL(accountLedgerRecord.entries.first)
+    const first = new URL(accountLedger.entries.first)
     first.searchParams.append('stop', String(latestEntryId))
     try {
       for await (const entry of iterLedgerEntries(server, first.href)) {

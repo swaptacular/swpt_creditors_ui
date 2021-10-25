@@ -23,8 +23,6 @@ import type {
   ObjectReference,
 } from './canonical-objects'
 
-export const MAX_INT64 = (1n << 63n) - 1n
-
 type UserReference = {
   userId: number,
 }

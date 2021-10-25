@@ -11,14 +11,14 @@ import type {
 } from './canonical-objects'
 
 import { HttpError } from './server'
-import { db, splitIntoRecords, MAX_INT64 } from './db'
+import { db, splitIntoRecords } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
   getCanonicalType,
 } from './canonical-objects'
 import {
   iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers,
-  settleAndIgnore404
+  settleAndIgnore404, MAX_INT64
 } from './utils'
 
 export class BrokenLogStream extends Error {
