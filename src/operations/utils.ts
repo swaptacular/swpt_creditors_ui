@@ -51,17 +51,22 @@ export async function fetchNewLedgerEntries(
   if (latestEntryId + 1n < iteratedId) {
     const first = new URL(accountLedgerRecord.entries.first)
     first.searchParams.append('stop', String(latestEntryId))
-    for await (const entry of iterLedgerEntries(server, first.href)) {
-      const { entryId } = entry
-      assert(entryId < iteratedId)
-      if (iteratedId - entryId !== 1n) {
-        break  // There are missing entries.
+    try {
+      for await (const entry of iterLedgerEntries(server, first.href)) {
+        const { entryId } = entry
+        assert(entryId < iteratedId)
+        if (iteratedId - entryId !== 1n) {
+          break  // There are missing entries.
+        }
+        if (entryId <= latestEntryId) {
+          break  // This is an already known entry.
+        }
+        newLedgerEntries.push(entry)
+        iteratedId = entryId
       }
-      if (entryId <= latestEntryId) {
-        break  // This is an already known entry.
-      }
-      newLedgerEntries.push(entry)
-      iteratedId = entryId
+    } catch (e: unknown) {
+      if (e instanceof HttpError && e.status === 404) { /* The account seems to have been deleted. */ }
+      else throw e
     }
   }
   return newLedgerEntries
