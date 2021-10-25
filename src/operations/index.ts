@@ -21,9 +21,11 @@ import type {
 } from './db'
 import {
   getOrCreateUserId,
+  fetchWallet,
   ensureLoadedTransfers,
   processLogPage,
   BrokenLogStream,
+  PinNotRequired,
 } from './db-sync'
 
 export {
@@ -61,6 +63,7 @@ export async function authorizePinReset(): Promise<void> {
  * the server. Any network failures will be swallowed. */
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
+    await fetchWallet(server, userId)
     try {
       await ensureLoadedTransfers(server, userId)
       while (await processLogPage(server, userId));
@@ -88,6 +91,9 @@ export async function update(server: ServerSession, userId: number): Promise<voi
         break
       case error instanceof HttpError:
         event = new Event('update-http-error', { cancelable: true })
+        break
+      case error instanceof PinNotRequired:
+        event = new Event('pin-not-required', { cancelable: true })
         break
       default:
         throw error

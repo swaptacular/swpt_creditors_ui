@@ -23,6 +23,10 @@ export class BrokenLogStream extends Error {
   name = 'BrokenLogStream'
 }
 
+export class PinNotRequired extends Error {
+  name = 'PinNotRequired'
+}
+
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
@@ -33,6 +37,47 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
     userId = await storeUserData(userData)
   }
   return userId
+}
+
+/* Reads the wallet from the server and updates the wallet
+ * record. Throws `PinNotRequired` if PIN is not required for
+ * potentially dangerous operations. */
+export async function fetchWallet(server: ServerSession, userId: number): Promise<void> {
+  const {
+    uri,
+    creditor,
+    debtorLookup,
+    pinInfo,
+    createTransfer,
+    createAccount,
+    accountLookup,
+    accountsList,
+    transfersList,
+    logRetentionDays,
+    requirePin,
+  } = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
+
+  db.executeTransaction(async () => {
+    let walletRecord = await db.getWalletRecord(userId)
+
+    // Most of the fields in the wallet are URIs that must not change.
+    assert(walletRecord.uri === uri)
+    assert(walletRecord.creditor.uri === creditor.uri)
+    assert(walletRecord.pinInfo.uri === pinInfo.uri)
+    assert(walletRecord.debtorLookup.uri === debtorLookup.uri)
+    assert(walletRecord.accountLookup.uri === accountLookup.uri)
+    assert(walletRecord.createTransfer.uri === createTransfer.uri)
+    assert(walletRecord.createAccount.uri === createAccount.uri)
+    assert(walletRecord.accountsList.uri === accountsList.uri)
+    assert(walletRecord.transfersList.uri === transfersList.uri)
+
+    walletRecord.logRetentionDays = logRetentionDays
+    await db.updateWalletRecord(walletRecord)
+  })
+
+  if (!requirePin) {
+    throw new PinNotRequired()
+  }
 }
 
 /* Ensures that the initial loading of transfers from the server to
