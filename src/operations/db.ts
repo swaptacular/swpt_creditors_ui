@@ -644,6 +644,20 @@ class CreditorsDb extends Dexie {
     })
   }
 
+  async storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
+    await this.transaction('rw', [this.accounts, this.committedTransfers], async () => {
+      const account = await this.accounts.get(record.account.uri)
+      if (account) {
+        await this.committedTransfers.put(record)
+      } else {
+        console.log(
+          `An attempt to store an orphaned committed transfer record has been ignored. Committed ` +
+          `transfers will be stored only if a corresponding account record exists.`
+        )
+      }
+    })
+  }
+
   async deleteAccount(accountUri: string): Promise<void> {
     const tables = [this.accounts, this.accountObjects, this.ledgerEntries, this.committedTransfers]
     await this.transaction('rw', tables, async () => {

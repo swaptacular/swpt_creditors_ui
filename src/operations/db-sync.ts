@@ -621,8 +621,17 @@ async function storeLogObjectRecord(objectRecord: LogObjectRecord | null, update
     if (!alreadyUpToDate) {
       if (objectRecord) {
         // Update the record.
-        assert(table !== db.transfers)
-        await table.put(objectRecord)
+        switch(objectType) {
+          case 'CommittedTransfer':
+            assert(objectRecord.type === objectType)
+            await db.storeCommittedTransferRecord(objectRecord)
+            break
+
+          default:
+            assert(table !== db.transfers)
+            assert(objectRecord.type === objectType)
+            await table.put(objectRecord)
+        }
 
       } else {
         // Delete the record.
