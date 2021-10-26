@@ -680,62 +680,88 @@ async function storeLogObjectRecord(
     const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
     if (!alreadyUpToDate) {
       if (objectRecord) {
-        // Update the record.
-        switch (objectType) {
-          case 'CommittedTransfer':
-            assert(objectRecord.type === objectType)
-            await db.storeCommittedTransferRecord(objectRecord)
-            break
-
-          default:
-            assert(table !== db.transfers)
-            assert(objectRecord.type === objectType)
-            await table.put(objectRecord)
-        }
-
+        await updateLogObjectRecord(objectRecord)
       } else {
-        // Delete the record.
-        switch (objectType) {
-          case 'CommittedTransfer':
-            console.warn(
-              `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
-              `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
-              `some very unlikely conditions (for example, being garbage collected on the server, ` +
-              `before the corresponding log entry has been processed), this could happen.`
-            )
-            break
-
-          case 'Transfer':
-            await db.markTranferDeletion(objectUri)
-            break
-
-          case 'AccountConfig':
-          case 'AccountDisplay':
-          case 'AccountKnowledge':
-          case 'AccountExchange':
-          case 'AccountInfo':
-          case 'AccountLedger':
-            await db.deleteAccountObject(objectUri)
-            break
-
-          case 'Account':
-            await db.deleteAccount(objectUri)
-            break
-
-          case 'Creditor':
-          case 'PinInfo':
-            console.error(
-              `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
-              `objects are singletons that normally must not be deleted via the log stream.`
-            )
-            break
-
-          default:
-            throw new Error('unknown object type')
-        }
+        await deleteLogObjectRecord(objectType, objectUri)
       }
     }
   })
+}
+
+async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<void> {
+  switch (objectRecord.type) {
+    case 'Creditor':
+    case 'PinInfo':
+      db.walletObjects.put(objectRecord)
+      break
+
+    case 'CommittedTransfer':
+      await db.storeCommittedTransferRecord(objectRecord)
+      break
+
+    case 'Transfer':
+      throw new Error('Transfers records must be updated using the `db.storeTransfer` method.')
+
+    case 'AccountConfig':
+    case 'AccountDisplay':
+    case 'AccountKnowledge':
+    case 'AccountExchange':
+    case 'AccountInfo':
+    case 'AccountLedger':
+      db.accountObjects.put(objectRecord)
+      break
+
+    case 'Account':
+      db.accounts.put(objectRecord)
+      break
+
+    default:
+      throw new Error('unknown object type')  // This must never happen.
+  }
+}
+
+async function deleteLogObjectRecord(
+  objectType: ObjectUpdateInfo['objectType'],
+  objectUri: string,
+): Promise<void> {
+  switch (objectType) {
+    case 'Creditor':
+    case 'PinInfo':
+      console.error(
+        `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
+        `objects are singletons that normally must not be deleted via the log stream.`
+      )
+      break
+
+    case 'CommittedTransfer':
+      console.warn(
+        `An attempt to delete a ${objectType} via the log stream has been ignored. Committed ` +
+        `transfers are immutable, and normally will not be deleted. Nevertheless, under ` +
+        `some very unlikely conditions (for example, being garbage collected on the server, ` +
+        `before the corresponding log entry has been processed), this could happen.`
+      )
+      break
+
+    case 'Transfer':
+      await db.markTranferDeletion(objectUri)
+      break
+
+    case 'AccountConfig':
+    case 'AccountDisplay':
+    case 'AccountKnowledge':
+    case 'AccountExchange':
+    case 'AccountInfo':
+    case 'AccountLedger':
+      await db.deleteAccountObject(objectUri)
+      break
+
+    case 'Account':
+      await db.deleteAccount(objectUri)
+      break
+
+    default:
+      throw new Error('unknown object type')  // This must never happen.
+  }
 }
 
 function getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
