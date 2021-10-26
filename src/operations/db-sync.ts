@@ -11,7 +11,7 @@ import type {
   AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0
 } from './canonical-objects'
 
-import { HttpError } from './server'
+import { HttpError, AuthenticationError } from './server'
 import { db, splitIntoRecords } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -42,10 +42,44 @@ export async function getOrCreateUserId(server: ServerSession, entrypoint: strin
   return userId
 }
 
+/* Queries the server for the latest changes and updates the local
+ * database accordingly. Throws `PinNotRequired` if PIN is not
+ * required for potentially dangerous operations.*/
+export async function sync(server: ServerSession, userId: number): Promise<void> {
+  await fetchWallet(server, userId)
+  try {
+    await ensureLoadedTransfers(server, userId)
+    while (await processLogPage(server, userId));
+  } catch (e: unknown) {
+    if (e instanceof BrokenLogStream) {
+      // When log entries has been lost, user's data must be loaded
+      // from the server again. If we do this here, it could disturb
+      // the user interaction with the UI. Instead, we give up on
+      // the update, and invite the user to re-authenticate. (The
+      // user's data will be loaded after the authentication.)
+      await server.forgetCurrentToken()
+      throw new AuthenticationError()
+    } else throw e
+  }
+}
+
+/* Stores an object received from a direct HTTP request to the
+ * server. */
+export async function storeObject(
+  userId: number,
+  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | TransferV0
+): Promise<void> {
+  if (obj.type === 'Transfer') {
+    await db.storeTransfer(userId, obj)
+  } else {
+    await storeLogObjectRecord({ ...obj, userId })
+  }
+}
+
 /* Reads the wallet from the server and updates the wallet
  * record. Throws `PinNotRequired` if PIN is not required for
  * potentially dangerous operations. */
-export async function fetchWallet(server: ServerSession, userId: number): Promise<void> {
+async function fetchWallet(server: ServerSession, userId: number): Promise<void> {
   const wallet = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
 
   await db.transaction('rw', db.allTables, async () => {
@@ -75,7 +109,7 @@ export async function fetchWallet(server: ServerSession, userId: number): Promis
  * the local database has finished successfully. This must be done
  * before the synchronization via the log stream can start. Throws
  * `BrokenLogStream` if the log stream is broken. */
-export async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
+async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
   let walletRecord
   while (
     walletRecord = await db.getWalletRecord(userId),
@@ -109,7 +143,7 @@ export async function ensureLoadedTransfers(server: ServerSession, userId: numbe
  * updates the wallet record. Throws `BrokenLogStream` if the log
  * stream is broken. Returns `true` if there are more log pages to
  * process. */
-export async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
+async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
   const walletRecord = await db.getWalletRecord(userId)
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
@@ -168,19 +202,6 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
       })
     }
     throw e
-  }
-}
-
-/* Stores an object received from a direct HTTP request to the
- * server. */
-export async function storeObject(
-  userId: number,
-  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | TransferV0
-): Promise<void> {
-  if (obj.type === 'Transfer') {
-    await db.storeTransfer(userId, obj)
-  } else {
-    await storeLogObjectRecord({ ...obj, userId })
   }
 }
 
