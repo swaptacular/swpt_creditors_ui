@@ -261,10 +261,19 @@ async function storeUserData(data: UserData): Promise<number> {
     let userId = await db.getUserId(wallet.uri)
     if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
       userId = await db.wallets.put({ ...walletRecord, userId })
-      await db.walletObjects.put({ ...creditor, userId })
-      await db.walletObjects.put({ ...pinInfo, userId })
-      const oldAccountRecordsArray = await db.accounts.where({ userId }).toArray()
-      const oldAccountRecordsMap = new Map(oldAccountRecordsArray.map(x => [x.uri, x]))
+      await db.walletObjects.bulkPut([
+        { ...creditor, userId },
+        { ...pinInfo, userId },
+      ])
+
+      const oldAccountUris = new Set<string>()
+      for (const accountUri of await db.accounts.where({ userId }).primaryKeys()) {
+        oldAccountUris.add(accountUri)
+      }
+      const accountObjects = await db.accountObjects.where({ userId }).toArray()
+      for (const accountUri of accountObjects.map(obj => obj.account.uri)) {
+        oldAccountUris.add(accountUri)
+      }
 
       for (const account of accounts) {
         const {
@@ -285,12 +294,12 @@ async function storeUserData(data: UserData): Promise<number> {
           accountLedgerRecord,
           accountConfigRecord,
         ])
-        oldAccountRecordsMap.delete(account.uri)
+        oldAccountUris.delete(account.uri)
       }
 
       // Delete all old accounts, which are missing from the received
       // `accounts` array.
-      for (const accountUri of oldAccountRecordsMap.keys()) {
+      for (const accountUri of oldAccountUris.keys()) {
         await db.deleteAccount(accountUri)
       }
     }
