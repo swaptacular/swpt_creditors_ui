@@ -751,8 +751,16 @@ async function deleteLogObjectRecord(
 
 function getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
   switch (getCanonicalType(objectType)) {
-    case 'Account':
-      return db.accounts
+    case 'Creditor':
+    case 'PinInfo':
+      return db.walletObjects
+
+    case 'CommittedTransfer':
+      return db.committedTransfers
+
+    case 'Transfer':
+      return db.transfers
+
     case 'AccountDisplay':
     case 'AccountKnowledge':
     case 'AccountExchange':
@@ -760,13 +768,10 @@ function getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, str
     case 'AccountConfig':
     case 'AccountInfo':
       return db.accountObjects
-    case 'Creditor':
-    case 'PinInfo':
-      return db.walletObjects
-    case 'CommittedTransfer':
-      return db.committedTransfers
-    case 'Transfer':
-      return db.transfers
+
+    case 'Account':
+      return db.accounts
+
     default:
       throw new Error('unknown object type')
   }
