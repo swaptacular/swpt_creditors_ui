@@ -8,7 +8,7 @@ import type {
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
-  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0
+  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
 } from './canonical-objects'
 
 import { HttpError, AuthenticationError } from './server'
@@ -558,7 +558,7 @@ async function prepareObjectUpdate(
 
 function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObjectRecord): LogObject | undefined {
   const { objectUpdateId, data, addedAt } = updateInfo
-  let patchedRecord: AccountLedgerRecord | TransferRecord | undefined
+  let patchedObject: AccountLedgerV0 | TransferV0 | undefined
 
   if (record !== undefined && objectUpdateId !== undefined && data !== undefined) {
     switch (record.type) {
@@ -566,8 +566,8 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
         assert(typeof data.principal === 'bigint')
         assert(typeof data.nextEntryId === 'bigint')
         assert(typeof data.firstPage === 'string')
-        patchedRecord = {
-          ...record as AccountLedgerRecord,
+        patchedObject = {
+          ...record,
           entries: {
             ...record.entries,
             first: data.firstPage,
@@ -577,11 +577,12 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           latestUpdateId: objectUpdateId,
           latestUpdateAt: addedAt,
         } as AccountLedgerRecord
+        delete (patchedObject as any).userId
         break
 
       case 'Transfer':
-        patchedRecord = {
-          ...record as TransferRecord,
+        patchedObject = {
+          ...record,
           latestUpdateId: objectUpdateId,
           latestUpdateAt: addedAt,
         } as TransferRecord
@@ -592,7 +593,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
           let result: TransferResultV0 = {
             type: 'TransferResult',
             finalizedAt: data.finalizedAt,
-            committedAmount: hasError ? 0n : patchedRecord.amount
+            committedAmount: hasError ? 0n : patchedObject.amount
           }
           if (hasError) {
             assert(typeof data.errorCode === 'string')
@@ -601,12 +602,13 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
               errorCode: data.errorCode,
             }
           }
-          patchedRecord.result = result
+          patchedObject.result = result
         }
+        delete (patchedObject as any).userId
         break
     }
   }
-  return patchedRecord
+  return patchedObject
 }
 
 async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
