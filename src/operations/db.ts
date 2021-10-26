@@ -663,9 +663,9 @@ class CreditorsDb extends Dexie {
     await this.transaction('rw', tables, async () => {
       await this.accounts.delete(accountUri)
       await this.committedTransfers.where({ 'account.uri': accountUri }).delete()
-      const accountObjects = await this.accountObjects.where({ 'account.uri': accountUri }).toArray()
-      for (const accountObject of accountObjects) {
-        await this.deleteAccountObject(accountObject.uri)
+      const accountObjectUris = await this.accountObjects.where({ 'account.uri': accountUri }).primaryKeys()
+      for (const accountObjectUri of accountObjectUris) {
+        await this.deleteAccountObject(accountObjectUri)
       }
     })
   }
@@ -674,8 +674,9 @@ class CreditorsDb extends Dexie {
     await this.transaction('rw', [this.accounts, this.accountObjects, this.ledgerEntries], async () => {
       const accountObject = await this.accountObjects.get(accountObjectUri)
       if (accountObject) {
-        const account = await this.accounts.get(accountObject.account.uri)
-        if (account) {
+        const accountQuery = this.accounts.where({ uri: accountObject.account.uri })
+        const hasAccount = await accountQuery.count() > 0
+        if (hasAccount) {
           console.log(
             `An attempt to delete an account sub-object has been ignored. Account sub-objects ` +
             `will be deleted when the corresponding account gets deleted. This guarantees ` +
