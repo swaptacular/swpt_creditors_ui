@@ -117,7 +117,7 @@ async function ensureLoadedTransfers(server: ServerSession, userId: number): Pro
   ) {
     const latestEntryId = walletRecord.logStream.latestEntryId
     for await (const transfer of iterTransfers(server, walletRecord.transfersList.uri)) {
-      await db.storeTransfer(userId, transfer)
+      await storeObject(userId, transfer)
     }
     // Mark the log stream as redy for updates. Note that before we
     // start, we ensure that the status of the log stream had not been
@@ -154,8 +154,8 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
   const previousEntryId = walletRecord.logStream.latestEntryId
 
   try {
-    const response = await server.get(walletRecord.logStream.forthcoming) as HttpResponse<LogEntriesPage>
-    const page = makeLogEntriesPage(response)
+    const pageUrl = walletRecord.logStream.forthcoming
+    const page = makeLogEntriesPage(await server.get(pageUrl) as HttpResponse<LogEntriesPage>)
     const isLastPage = page.next === undefined
     const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
     const objectUpdaters = await generateObjectUpdaters(updates, server, userId)
@@ -186,9 +186,9 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
 
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
-      // Mark the log stream as broken (and then re-throw). Note that
-      // before we start, we ensure that the status of the log stream
-      // had not been changed by a parallel update.
+      // Mark the log stream as broken and re-throw. Note that before
+      // we start, we ensure that the status of the log stream had not
+      // been changed by a parallel update.
       await db.transaction('rw', db.allTables, async () => {
         const walletRecord = await db.getWalletRecord(userId)
         if (
@@ -469,7 +469,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.note === obj.note)
       }
       return makeUpdate(async () => {
-        await db.storeTransfer(userId, obj as TransferV0)
+        await storeObject(userId, obj as TransferV0)
       })
     }
 
