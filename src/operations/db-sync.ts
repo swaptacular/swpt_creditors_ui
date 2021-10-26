@@ -116,7 +116,7 @@ async function ensureLoadedTransfers(server: ServerSession, userId: number): Pro
     !walletRecord.logStream.isBroken && !walletRecord.logStream.loadedTransfers
   ) {
     const latestEntryId = walletRecord.logStream.latestEntryId
-    for await (const transfer of iterTransfers(server, walletRecord.transfersList.uri)) {
+    for await (const transfer of iterTransfersToLoad(server, walletRecord.transfersList.uri)) {
       await storeObject(userId, transfer)
     }
     // Mark the log stream as redy for updates. Note that before we
@@ -611,7 +611,7 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
   return patchedObject
 }
 
-async function* iterTransfers(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
+async function* iterTransfersToLoad(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
   let urisToFetch: string[] = []
   for await (const { uri: transferUri } of iterTransfersList(server, transfersListUri)) {
     const transferRecord = await db.getTransferRecord(transferUri)
@@ -620,11 +620,15 @@ async function* iterTransfers(server: ServerSession, transfersListUri: string): 
       urisToFetch.push(transferUri)
     } else if (!transferRecord.aborted && transferRecord.result?.committedAmount === 0n) {
       // At this point we know that the transfer is unsuccessful, but
-      // has not been aborted yet. We must include it in the
-      // iteration, to ensure that an abort transfer action will be
-      // created for the transfer.
+      // has not been aborted yet. We must include it in the transfers
+      // to load, to ensure that an abort transfer action will be
+      // created for this transfer. Note that we return a
+      // `TransferRecord` instead of `TransferV0` here, but this is
+      // OK, because the extra properties will be ignored (not saved)
+      // by the `db.storeTransfer` method.
       yield transferRecord
     }
+    // Request the transfers from the server in parallel, up to 20 at once.
     if (urisToFetch.length >= 20) {
       yield* await fetchTransfers(server, urisToFetch)
       urisToFetch = []
