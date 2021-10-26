@@ -646,8 +646,9 @@ class CreditorsDb extends Dexie {
 
   async storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
     await this.transaction('rw', [this.accounts, this.committedTransfers], async () => {
-      const account = await this.accounts.get(record.account.uri)
-      if (account) {
+      const accountQuery = this.accounts.where({ uri: record.account.uri })
+      const hasAccount = await accountQuery.count() > 0
+      if (hasAccount) {
         await this.committedTransfers.put(record)
       } else {
         console.log(
