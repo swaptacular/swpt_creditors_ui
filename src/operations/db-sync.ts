@@ -273,21 +273,10 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   return { wallet, creditor, pinInfo, accounts }
 }
 
-async function storeUserData(data: UserData): Promise<number> {
+async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData): Promise<number> {
   // TODO: Delete user's existing actions (excluding
   // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
   // consider deleting some of user's tasks.
-
-  const { accounts, wallet, creditor, pinInfo } = data
-  const { requirePin, log, logLatestEntryId, ...walletRecord } = {
-    ...wallet,
-    logStream: {
-      latestEntryId: wallet.logLatestEntryId,
-      forthcoming: wallet.log.forthcoming,
-      loadedTransfers: false,
-      isBroken: false,
-    },
-  }
 
   // Delete all old user's data and store the new one. Note that
   // before we start, we ensure that the status of the log stream had
@@ -295,6 +284,15 @@ async function storeUserData(data: UserData): Promise<number> {
   return await db.transaction('rw', db.allTables, async () => {
     let userId = await db.getUserId(wallet.uri)
     if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
+      const { requirePin, log, logLatestEntryId, ...walletRecord } = {
+        ...wallet,
+        logStream: {
+          latestEntryId: wallet.logLatestEntryId,
+          forthcoming: wallet.log.forthcoming,
+          loadedTransfers: false,
+          isBroken: false,
+        },
+      }
       userId = await db.wallets.put({ ...walletRecord, userId })
       await db.walletObjects.bulkPut([
         { ...creditor, userId },
