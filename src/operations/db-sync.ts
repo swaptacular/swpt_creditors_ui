@@ -646,34 +646,19 @@ async function storeLogObjectRecord(
   objectRecord: LogObjectRecord | null,
   updateInfo?: ObjectUpdateInfo,
 ): Promise<void> {
-  let objectUri: string
-  let objectType: ObjectUpdateInfo['objectType']
-  let updateId: bigint
+  assert(objectRecord || updateInfo)
+  const objectUri = objectRecord ? objectRecord.uri : updateInfo!.objectUri
+  const objectType = objectRecord ? objectRecord.type : updateInfo!.objectType
+  const updateId = (objectRecord ? objectRecord.latestUpdateId : updateInfo!.objectUpdateId) ?? MAX_INT64
 
-  if (updateInfo) {
-    objectUri = updateInfo.objectUri
-    objectType = updateInfo.objectType
-    if (objectRecord) {
-      assert(objectRecord.uri === objectUri)
-      assert(objectRecord.type === objectType)
-      assert(!updateInfo.deleted)
-      updateId = objectRecord.latestUpdateId ?? MAX_INT64
-      assert(
-        updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
-        'The version of the object received from the server is older that the version ' +
-        'promised by in log entry. Normally this should never happen. The most ' +
-        'probable reason for this is having misconfigured HTTP caches somewhere.',
-      )
-    } else {
-      updateId = updateInfo.objectUpdateId ?? MAX_INT64
-    }
-  } else {
-    assert(objectRecord)
-    objectUri = objectRecord.uri
-    objectType = objectRecord.type
-    updateId = objectRecord.latestUpdateId ?? MAX_INT64
-  }
-
+  assert(!updateInfo || !updateInfo.deleted || !objectRecord)
+  assert(!updateInfo || updateInfo.objectUri === objectUri)
+  assert(!updateInfo || updateInfo.objectType === objectType)
+  assert(!updateInfo || (updateInfo.objectUpdateId ?? MAX_INT64) <= updateId,
+    'The version of the object received from the server is older that the version ' +
+    'promised by in log entry. Normally this should never happen. The most ' +
+    'probable reason for this is having misconfigured HTTP caches somewhere.',
+  )
   await db.transaction('rw', db.allTables, async (): Promise<void> => {
     const table = getLogObjectTable(objectType)
     const existingRecord = await table.get(objectUri)
