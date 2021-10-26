@@ -7,7 +7,8 @@ import type {
   CommittedTransferRecord, CreditorRecord
 } from './db'
 import type {
-  PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject
+  PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
+  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0
 } from './canonical-objects'
 
 import { HttpError } from './server'
@@ -167,6 +168,19 @@ export async function processLogPage(server: ServerSession, userId: number): Pro
       })
     }
     throw e
+  }
+}
+
+/* Stores an object received from a direct HTTP request to the
+ * server. */
+export async function storeObject(
+  userId: number,
+  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | TransferV0
+): Promise<void> {
+  if (obj.type === 'Transfer') {
+    await db.storeTransfer(userId, obj)
+  } else {
+    await storeLogObjectRecord({ ...obj, userId })
   }
 }
 
@@ -603,24 +617,36 @@ async function getLogObjectRecord(updateInfo: ObjectUpdateInfo): Promise<LogObje
   return await table.get(updateInfo.objectUri)
 }
 
-async function storeLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo: ObjectUpdateInfo): Promise<void> {
-  const objectUri = updateInfo.objectUri
-  const objectType = updateInfo.objectType
+async function storeLogObjectRecord(
+  objectRecord: LogObjectRecord | null,
+  updateInfo?: ObjectUpdateInfo,
+): Promise<void> {
+  let objectUri: string
+  let objectType: ObjectUpdateInfo['objectType']
   let updateId: bigint
 
-  if (objectRecord) {
-    assert(objectRecord.uri === objectUri)
-    assert(objectRecord.type === objectType)
-    assert(!updateInfo.deleted)
-    updateId = objectRecord.latestUpdateId ?? MAX_INT64
-    assert(
-      updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
-      'The version of the object received from the server is older that the version ' +
-      'promised by in log entry. Normally this should never happen. The most ' +
-      'probable reason for this is having misconfigured HTTP caches somewhere.',
-    )
+  if (updateInfo) {
+    objectUri = updateInfo.objectUri
+    objectType = updateInfo.objectType
+    if (objectRecord) {
+      assert(objectRecord.uri === objectUri)
+      assert(objectRecord.type === objectType)
+      assert(!updateInfo.deleted)
+      updateId = objectRecord.latestUpdateId ?? MAX_INT64
+      assert(
+        updateId >= (updateInfo.objectUpdateId ?? MAX_INT64),
+        'The version of the object received from the server is older that the version ' +
+        'promised by in log entry. Normally this should never happen. The most ' +
+        'probable reason for this is having misconfigured HTTP caches somewhere.',
+      )
+    } else {
+      updateId = updateInfo.objectUpdateId ?? MAX_INT64
+    }
   } else {
-    updateId = updateInfo.objectUpdateId ?? MAX_INT64
+    assert(objectRecord)
+    objectUri = objectRecord.uri
+    objectType = objectRecord.type
+    updateId = objectRecord.latestUpdateId ?? MAX_INT64
   }
 
   await db.transaction('rw', db.allTables, async (): Promise<void> => {
@@ -630,7 +656,7 @@ async function storeLogObjectRecord(objectRecord: LogObjectRecord | null, update
     if (!alreadyUpToDate) {
       if (objectRecord) {
         // Update the record.
-        switch(objectType) {
+        switch (objectType) {
           case 'CommittedTransfer':
             assert(objectRecord.type === objectType)
             await db.storeCommittedTransferRecord(objectRecord)
