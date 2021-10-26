@@ -677,7 +677,7 @@ async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<voi
   switch (objectRecord.type) {
     case 'Creditor':
     case 'PinInfo':
-      db.walletObjects.put(objectRecord)
+      await db.walletObjects.put(objectRecord)
       break
 
     case 'CommittedTransfer':
@@ -693,11 +693,11 @@ async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<voi
     case 'AccountExchange':
     case 'AccountInfo':
     case 'AccountLedger':
-      db.accountObjects.put(objectRecord)
+      await db.accountObjects.put(objectRecord)
       break
 
     case 'Account':
-      db.accounts.put(objectRecord)
+      await db.accounts.put(objectRecord)
       break
 
     default:
