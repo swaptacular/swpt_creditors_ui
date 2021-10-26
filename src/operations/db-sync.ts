@@ -244,7 +244,7 @@ async function storeUserData(data: UserData): Promise<number> {
   // consider deleting some of user's tasks.
 
   const { accounts, wallet, creditor, pinInfo } = data
-  const { requirePin, log, ...walletRecord } = {
+  const { requirePin, log, logLatestEntryId, ...walletRecord } = {
     ...wallet,
     logStream: {
       latestEntryId: wallet.logLatestEntryId,
