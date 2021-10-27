@@ -453,9 +453,7 @@ async function prepareUpdate(
   switch (obj.type) {
     case 'Transfer': {
       const transfer: TransferV0 = obj
-      return new PreparedUpdate(async () => {
-        await storeObject(userId, transfer)
-      })
+      return new PreparedUpdate(() => storeObject(userId, transfer))
     }
 
     case 'Account': {
@@ -475,9 +473,7 @@ async function prepareUpdate(
           addedAt: relatedObject.latestUpdateAt,
         }
       })
-      return new PreparedUpdate(async () => {
-        await reviseLogObjectRecord(accountRecord, updateInfo)
-      }, relatedUpdates)
+      return new PreparedUpdate(() => reviseLogObjectRecord(accountRecord, updateInfo), relatedUpdates)
     }
 
     case 'AccountLedger': {
@@ -514,9 +510,7 @@ async function prepareUpdate(
     case 'AccountInfo':
     case 'CommittedTransfer': {
       const record: CreditorRecord | PinInfoRecord | AccountObjectRecord | CommittedTransferRecord = { ...obj, userId }
-      return new PreparedUpdate(async () => {
-        await reviseLogObjectRecord(record, updateInfo)
-      })
+      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo))
     }
 
     default:
