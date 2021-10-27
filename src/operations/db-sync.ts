@@ -275,9 +275,6 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
   // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
   // consider deleting some of user's tasks.
 
-  // Delete all old user's data and store the new one. Note that
-  // before we start, we ensure that the status of the log stream had
-  // not been changed by a parallel update.
   return await db.transaction('rw', db.allTables, async () => {
     let userId = await db.getUserId(wallet.uri)
     if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
@@ -294,14 +291,10 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
       await db.walletObjects.put({ ...creditor, userId })
       await db.walletObjects.put({ ...pinInfo, userId })
 
-      const oldAccountUris = new Set<string>()
-      for (const accountUri of await db.accounts.where({ userId }).primaryKeys()) {
-        oldAccountUris.add(accountUri)
-      }
-      const accountObjects = await db.accountObjects.where({ userId }).toArray()
-      for (const accountUri of accountObjects.map(obj => obj.account.uri)) {
-        oldAccountUris.add(accountUri)
-      }
+      const oldAccountUris = new Set(await db.accounts.where({ userId }).primaryKeys())
+      const oldAccountObjectRecords = await db.accountObjects.where({ userId }).toArray()
+      oldAccountObjectRecords.forEach(record => oldAccountUris.add(record.account.uri))
+
       for (const account of accounts) {
         const records = splitIntoRecords(userId, account)
         await db.accounts.put(records.accountRecord)
@@ -315,9 +308,6 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         ])
         oldAccountUris.delete(account.uri)
       }
-
-      // Delete all old accounts, which are missing from the received
-      // `accounts` array.
       for (const accountUri of oldAccountUris.keys()) {
         await db.deleteAccount(accountUri)
       }
