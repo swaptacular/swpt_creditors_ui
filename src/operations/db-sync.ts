@@ -420,16 +420,12 @@ async function prepareUpdate(
 ): Promise<PreparedUpdate> {
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
   if (deleted) {
-    // The log says that the object is deleted.
     return new PreparedUpdate(() => reviseLogObjectRecord(null, updateInfo))
   }
-
   const existingRecord = await getLogObjectRecord(objectType, objectUri)
   if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= objectUpdateId) {
-    // The object is already up-to-date.
     return new PreparedUpdate(() => Promise.resolve())
   }
-
   // Sometimes we can obtain the object from the cache, or reconstruct
   // the current version by updating the existing version with the
   // data received from the log entry. In such cases we spare a
@@ -442,7 +438,6 @@ async function prepareUpdate(
       ?? makeLogObject(await server.get(objectUri, { timeout }))
   } catch (e: unknown) {
     if ((e instanceof HttpError && e.status === 404) || (e === '404')) {
-      // The object has been deleted from the server.
       objCache.set(objectUri, '404')
       return new PreparedUpdate(() => reviseLogObjectRecord(null, updateInfo))
     } else throw e
@@ -450,12 +445,19 @@ async function prepareUpdate(
   assert(obj.type === objectType)
   objCache.set(objectUri, obj)
 
-  switch (obj.type) {
-    case 'Transfer': {
-      const transfer: TransferV0 = obj
-      return new PreparedUpdate(() => storeObject(userId, transfer))
-    }
+  return await fetchRelatedData(obj, existingRecord, updateInfo, objCache, server, userId, timeout)
+}
 
+async function fetchRelatedData(
+  obj: LogObject,
+  existingRecord: LogObjectRecord | undefined,
+  updateInfo: UpdateInfo,
+  objCache: Map<string, LogObject | '404'>,
+  server: ServerSession,
+  userId: number,
+  timeout: number,
+): Promise<PreparedUpdate> {
+  switch (obj.type) {
     case 'Account': {
       const accountRecord: AccountRecord = splitIntoRecords(userId, obj).accountRecord
       const { info, display, knowledge, exchange, ledger, config } = obj
@@ -480,7 +482,7 @@ async function prepareUpdate(
       const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
       const existingAccountLedgerRecord = existingRecord as AccountLedgerRecord | undefined
       const latestEntryId = (existingAccountLedgerRecord ?? accountLedgerRecord).nextEntryId - 1n
-      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId)
+      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId, timeout)
       const relatedUpdates: UpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => {
@@ -499,6 +501,11 @@ async function prepareUpdate(
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
       }, relatedUpdates)
+    }
+
+    case 'Transfer': {
+      const transfer: TransferV0 = obj
+      return new PreparedUpdate(() => storeObject(userId, transfer))
     }
 
     case 'Creditor':

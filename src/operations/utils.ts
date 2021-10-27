@@ -47,6 +47,7 @@ export async function fetchNewLedgerEntries(
   server: ServerSession,
   accountLedger: AccountLedgerV0,
   latestEntryId: bigint,
+  timeout: number,
 ): Promise<LedgerEntryV0[]> {
   let newLedgerEntries: LedgerEntryV0[] = []
   let iteratedId = accountLedger.nextEntryId
@@ -57,7 +58,7 @@ export async function fetchNewLedgerEntries(
     const first = new URL(accountLedger.entries.first)
     first.searchParams.append('stop', String(latestEntryId))
     try {
-      for await (const entry of iterLedgerEntries(server, first.href)) {
+      for await (const entry of iterLedgerEntries(server, first.href, timeout)) {
         const { entryId } = entry
         assert(entryId < iteratedId)
         if (iteratedId - entryId !== 1n) {
@@ -85,15 +86,17 @@ type Page<ItemsType> = {
 const iterLedgerEntries = (
   server: ServerSession,
   firstPageUri: string,
-) => iterPages(server, firstPageUri, makeLedgerEntry)
+  timeout: number,
+) => iterPages(server, firstPageUri, makeLedgerEntry, timeout)
 
 async function* iterPages<OriginalItem, TransformedItem>(
   server: ServerSession,
   next: string,
   transformItem: (item: OriginalItem, pageUrl: string) => TransformedItem,
+  timeout?: number,
 ): AsyncIterable<TransformedItem> {
   do {
-    const pageResponse = await server.get(next) as HttpResponse<Page<OriginalItem>>
+    const pageResponse = await server.get(next, { timeout }) as HttpResponse<Page<OriginalItem>>
     const pageUrl = pageResponse.url
     const data = pageResponse.data
     assert(data.next === undefined || typeof data.next === 'string')
