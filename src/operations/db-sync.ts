@@ -4,7 +4,7 @@ import type {
 import type {
   AccountLedgerRecord, TransferRecord, AccountRecord, AccountConfigRecord, PinInfoRecord,
   AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
-  CommittedTransferRecord, CreditorRecord
+  CommittedTransferRecord, CreditorRecord, AccountObjectRecord
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
@@ -250,7 +250,7 @@ type UserData = {
 }
 
 class PreparedUpdate {
-  constructor(public updater: ObjectUpdater, public relatedUpdates: UpdateInfo[] = []) {}
+  constructor(public updater: ObjectUpdater, public relatedUpdates: UpdateInfo[] = []) { }
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -450,39 +450,21 @@ async function prepareUpdate(
   assert(obj.type === objectType)
   objCache.set(objectUri, obj)
 
-  // Some types of objects require special treatment.
   switch (obj.type) {
     case 'Transfer': {
-      if (existingRecord) {
-        assert(existingRecord.type === obj.type)
-        assert(existingRecord.transfersList.uri === obj.transfersList.uri)
-        assert(existingRecord.transferUuid === obj.transferUuid)
-        assert(existingRecord.initiatedAt === obj.initiatedAt)
-        assert(existingRecord.amount === obj.amount)
-        assert(existingRecord.recipient.uri === obj.recipient.uri)
-        assert(existingRecord.noteFormat === obj.noteFormat)
-        assert(existingRecord.note === obj.note)
-      }
+      const transfer: TransferV0 = obj
       return new PreparedUpdate(async () => {
-        await storeObject(userId, obj as TransferV0)
+        await storeObject(userId, transfer)
       })
     }
 
     case 'Account': {
+      const accountRecord: AccountRecord = splitIntoRecords(userId, obj).accountRecord
       const { info, display, knowledge, exchange, ledger, config } = obj
-      const record: AccountRecord = splitIntoRecords(userId, obj).accountRecord
-      if (existingRecord) {
-        assert(existingRecord.type === record.type)
-        assert(existingRecord.accountsList.uri === record.accountsList.uri)
-        assert(existingRecord.debtor.uri === record.debtor.uri)
-        assert(existingRecord.info.uri === record.info.uri)
-        assert(existingRecord.display.uri === record.display.uri)
-        assert(existingRecord.knowledge.uri === record.knowledge.uri)
-        assert(existingRecord.exchange.uri === record.exchange.uri)
-        assert(existingRecord.ledger.uri === record.ledger.uri)
-        assert(existingRecord.config.uri === record.config.uri)
-      }
       const relatedObjects = [info, display, knowledge, exchange, ledger, config]
+      for (const relatedObject of relatedObjects) {
+        objCache.set(relatedObject.uri, relatedObject)
+      }
       const relatedUpdates = relatedObjects.map(relatedObject => {
         assert(relatedObject.account.uri === obj.uri)
         return {
@@ -493,21 +475,16 @@ async function prepareUpdate(
           addedAt: relatedObject.latestUpdateAt,
         }
       })
-      relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
-      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo), relatedUpdates)
+      return new PreparedUpdate(async () => {
+        await reviseLogObjectRecord(accountRecord, updateInfo)
+      }, relatedUpdates)
     }
 
     case 'AccountLedger': {
-      const record: AccountLedgerRecord = { ...obj, userId }
-      let latestEntryId: bigint
-      if (existingRecord) {
-        assert(existingRecord.type === record.type)
-        assert(existingRecord.account.uri === record.account.uri)
-        latestEntryId = existingRecord.nextEntryId - 1n
-      } else {
-        latestEntryId = obj.nextEntryId - 1n
-      }
-      const newLedgerEntries = await fetchNewLedgerEntries(server, record, latestEntryId)
+      const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
+      const existingAccountLedgerRecord = existingRecord as AccountLedgerRecord | undefined
+      const latestEntryId = (existingAccountLedgerRecord ?? accountLedgerRecord).nextEntryId - 1n
+      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId)
       const relatedUpdates: UpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => {
@@ -517,40 +494,33 @@ async function prepareUpdate(
             objectType: 'CommittedTransfer',
             objectUpdateId: MAX_INT64,
             deleted: false,
-            addedAt: record.latestUpdateAt,  // could be anything, will be ignored
+            addedAt: accountLedgerRecord.latestUpdateAt,  // could be anything (will be ignored)
           }
         })
       return new PreparedUpdate(async () => {
-        await reviseLogObjectRecord(record, updateInfo)
+        await reviseLogObjectRecord(accountLedgerRecord, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
       }, relatedUpdates)
     }
 
+    case 'Creditor':
+    case 'PinInfo':
     case 'AccountConfig':
     case 'AccountDisplay':
     case 'AccountKnowledge':
     case 'AccountExchange':
     case 'AccountInfo':
     case 'CommittedTransfer': {
-      const record: LogObjectRecord = { ...obj, userId }
-      if (existingRecord) {
-        assert(existingRecord.type === record.type)
-        assert(existingRecord.account.uri === record.account.uri)
-      }
-      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo))
+      const record: CreditorRecord | PinInfoRecord | AccountObjectRecord | CommittedTransferRecord = { ...obj, userId }
+      return new PreparedUpdate(async () => {
+        await reviseLogObjectRecord(record, updateInfo)
+      })
     }
 
-    case 'Creditor':
-    case 'PinInfo': {
-      const record: LogObjectRecord = { ...obj, userId }
-      if (existingRecord) {
-        assert(existingRecord.type === record.type)
-        assert(existingRecord.wallet.uri === record.wallet.uri)
-      }
-      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo))
-    }
+    default:
+      throw new Error('unknown object type')  // This must never happen.
   }
 }
 
@@ -652,7 +622,7 @@ async function reviseLogObjectRecord(objectRecord: LogObjectRecord | null, updat
     const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= objectUpdateId
     if (!alreadyUpToDate) {
       if (objectRecord) {
-        await updateLogObjectRecord(objectRecord)
+        await updateLogObjectRecord(objectRecord, existingRecord)
       } else {
         await deleteLogObjectRecord(objectType, objectUri)
       }
@@ -729,19 +699,35 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
   }
 }
 
-async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<void> {
-  switch (objectRecord.type) {
+async function updateLogObjectRecord(newRecord: LogObjectRecord, oldRecord?: LogObjectRecord): Promise<void> {
+  switch (newRecord.type) {
     case 'Creditor':
     case 'PinInfo':
-      await db.walletObjects.put(objectRecord)
+      assert(oldRecord)
+      assert(oldRecord.userId === newRecord.userId)
+      assert(oldRecord.type === newRecord.type)
+      assert(oldRecord.wallet.uri === newRecord.wallet.uri)
+      await db.walletObjects.put(newRecord)
       break
 
     case 'CommittedTransfer':
-      await db.storeCommittedTransferRecord(objectRecord)
+      if (oldRecord) {
+        assert(oldRecord.type === newRecord.type)
+        assert(oldRecord.userId === newRecord.userId)
+        assert(oldRecord.account.uri === newRecord.account.uri)
+        assert(oldRecord.committedAt === newRecord.committedAt)
+        assert(oldRecord.acquiredAmount === newRecord.acquiredAmount)
+        assert(oldRecord.sender.uri === newRecord.sender.uri)
+        assert(oldRecord.recipient.uri === newRecord.recipient.uri)
+        assert(oldRecord.noteFormat === newRecord.noteFormat)
+        assert(oldRecord.note === newRecord.note)
+        assert(oldRecord.rationale === newRecord.rationale)
+      }
+      await db.storeCommittedTransferRecord(newRecord)
       break
 
     case 'Transfer':
-      await db.storeTransfer(objectRecord.userId, objectRecord)
+      await db.storeTransfer(newRecord.userId, newRecord)
       break
 
     case 'AccountConfig':
@@ -750,11 +736,28 @@ async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<voi
     case 'AccountExchange':
     case 'AccountInfo':
     case 'AccountLedger':
-      await db.accountObjects.put(objectRecord)
+      if (oldRecord) {
+        assert(oldRecord.type === newRecord.type)
+        assert(oldRecord.userId === newRecord.userId)
+        assert(oldRecord.account.uri === newRecord.account.uri)
+      }
+      await db.accountObjects.put(newRecord)
       break
 
     case 'Account':
-      await db.accounts.put(objectRecord)
+      if (oldRecord) {
+        assert(oldRecord.type === newRecord.type)
+        assert(oldRecord.userId === newRecord.userId)
+        assert(oldRecord.accountsList.uri === newRecord.accountsList.uri)
+        assert(oldRecord.debtor.uri === newRecord.debtor.uri)
+        assert(oldRecord.info.uri === newRecord.info.uri)
+        assert(oldRecord.display.uri === newRecord.display.uri)
+        assert(oldRecord.knowledge.uri === newRecord.knowledge.uri)
+        assert(oldRecord.exchange.uri === newRecord.exchange.uri)
+        assert(oldRecord.ledger.uri === newRecord.ledger.uri)
+        assert(oldRecord.config.uri === newRecord.config.uri)
+      }
+      await db.accounts.put(newRecord)
       break
 
     default:

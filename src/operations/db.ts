@@ -568,6 +568,13 @@ class CreditorsDb extends Dexie {
       const existingTransferRecord = await this.transfers.get(transferUri)
       if (existingTransferRecord) {
         assert(existingTransferRecord.userId === userId, 'wrong userId')
+        assert(existingTransferRecord.transfersList.uri === transfer.transfersList.uri)
+        assert(existingTransferRecord.transferUuid === transfer.transferUuid)
+        assert(existingTransferRecord.initiatedAt === transfer.initiatedAt)
+        assert(existingTransferRecord.amount === transfer.amount)
+        assert(existingTransferRecord.recipient.uri === transfer.recipient.uri)
+        assert(existingTransferRecord.noteFormat === transfer.noteFormat)
+        assert(existingTransferRecord.note === transfer.note)
         if (existingTransferRecord.latestUpdateId >= transfer.latestUpdateId) {
           transferRecord = existingTransferRecord
         } else {
