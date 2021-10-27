@@ -220,9 +220,7 @@ type LogObjectRecord =
   | CreditorRecord
   | PinInfoRecord
 
-type ObjectUpdateInfo = {
-  objectUri: string,
-  objectType:
+type LogObjectType =
   | 'Account'
   | 'AccountConfig'
   | 'AccountDisplay'
@@ -234,6 +232,10 @@ type ObjectUpdateInfo = {
   | 'CommittedTransfer'
   | 'Creditor'
   | 'PinInfo'
+
+type UpdateInfo = {
+  objectUri: string,
+  objectType: LogObjectType,
   addedAt: string,
   deleted: boolean,
   objectUpdateId?: bigint,
@@ -248,7 +250,7 @@ type UserData = {
 }
 
 class PreparedUpdate {
-  constructor(public updater: ObjectUpdater, public relatedUpdates: ObjectUpdateInfo[] = []) {}
+  constructor(public updater: ObjectUpdater, public relatedUpdates: UpdateInfo[] = []) {}
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -338,8 +340,8 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
 function collectObjectUpdates(
   logEntries: LogEntryV0[],
   latestEntryId: bigint,
-): { latestEntryId: bigint, updates: ObjectUpdateInfo[] } {
-  const updates: ObjectUpdateInfo[] = []
+): { latestEntryId: bigint, updates: UpdateInfo[] } {
+  const updates: UpdateInfo[] = []
   for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId !== ++latestEntryId) {
       throw new BrokenLogStream()
@@ -368,13 +370,13 @@ function collectObjectUpdates(
 }
 
 async function generateObjectUpdaters(
-  updates: ObjectUpdateInfo[],
+  updates: UpdateInfo[],
   server: ServerSession,
   userId: number,
   objCache: Map<string, LogObject | '404'> = new Map(),
-  pendingUpdates: Map<string, ObjectUpdateInfo> = new Map(),
+  pendingUpdates: Map<string, UpdateInfo> = new Map(),
 ): Promise<ObjectUpdater[]> {
-  let uniqueUpdates = new Map<string, ObjectUpdateInfo>()
+  let uniqueUpdates = new Map<string, UpdateInfo>()
   updates.forEach(update => {
     // Add the URI of the update to `pendingUpdates` and
     // `uniqueUpdates`, but only if the same or newer update is not
@@ -389,9 +391,9 @@ async function generateObjectUpdaters(
   updates = [...uniqueUpdates.values()]
 
   let updaters: ObjectUpdater[] = []
-  let conbinedRelatedUpdates: ObjectUpdateInfo[] = []
+  let conbinedRelatedUpdates: UpdateInfo[] = []
   const timeout = calcParallelTimeout(updates.length)
-  const promises = Promise.all(updates.map(update => prepareObjectUpdate(update, objCache, server, userId, timeout)))
+  const promises = Promise.all(updates.map(update => prepareUpdate(update, objCache, server, userId, timeout)))
   for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
     conbinedRelatedUpdates.push(...relatedUpdates)
@@ -409,8 +411,8 @@ async function generateObjectUpdaters(
   return updaters
 }
 
-async function prepareObjectUpdate(
-  updateInfo: ObjectUpdateInfo,
+async function prepareUpdate(
+  updateInfo: UpdateInfo,
   objCache: Map<string, LogObject | '404'>,
   server: ServerSession,
   userId: number,
@@ -506,7 +508,7 @@ async function prepareObjectUpdate(
         latestEntryId = obj.nextEntryId - 1n
       }
       const newLedgerEntries = await fetchNewLedgerEntries(server, record, latestEntryId)
-      const relatedUpdates: ObjectUpdateInfo[] = newLedgerEntries
+      const relatedUpdates: UpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => {
           assert(entry.ledger.uri === obj.uri)
@@ -551,7 +553,7 @@ async function prepareObjectUpdate(
   }
 }
 
-function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObjectRecord): LogObject | undefined {
+function tryToReconstructLogObject(updateInfo: UpdateInfo, record?: LogObjectRecord): LogObject | undefined {
   const { objectUpdateId, data, addedAt } = updateInfo
   let patchedObject: AccountLedgerV0 | TransferV0 | undefined
 
@@ -631,10 +633,7 @@ async function* iterTransfersToLoad(server: ServerSession, transfersListUri: str
   yield* await fetchTransfers(server, urisToFetch)
 }
 
-async function reviseLogObjectRecord(
-  objectRecord: LogObjectRecord | null,
-  updateInfo?: ObjectUpdateInfo,
-): Promise<void> {
+async function reviseLogObjectRecord(objectRecord: LogObjectRecord | null, updateInfo?: UpdateInfo): Promise<void> {
   assert(objectRecord || updateInfo)
   const objectUri = objectRecord ? objectRecord.uri : updateInfo!.objectUri
   const objectType = objectRecord ? objectRecord.type : updateInfo!.objectType
@@ -660,10 +659,7 @@ async function reviseLogObjectRecord(
   })
 }
 
-async function getLogObjectRecord(
-  objectType: ObjectUpdateInfo['objectType'],
-  objectUri: string,
-): Promise<LogObjectRecord | undefined> {
+async function getLogObjectRecord(objectType: LogObjectType, objectUri: string): Promise<LogObjectRecord | undefined> {
   switch (objectType) {
     case 'Creditor':
     case 'PinInfo':
@@ -691,10 +687,7 @@ async function getLogObjectRecord(
   }
 }
 
-async function deleteLogObjectRecord(
-  objectType: ObjectUpdateInfo['objectType'],
-  objectUri: string,
-): Promise<void> {
+async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: string): Promise<void> {
   switch (objectType) {
     case 'Creditor':
     case 'PinInfo':
