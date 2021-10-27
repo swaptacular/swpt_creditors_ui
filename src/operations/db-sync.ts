@@ -427,7 +427,7 @@ async function prepareObjectUpdate(
     return makeUpdate(() => storeLogObjectRecord(null, updateInfo))
   }
 
-  const existingRecord = await getLogObjectRecord(updateInfo)
+  const existingRecord = await getLogObjectRecord(objectType, objectUri)
   if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
     // The object is already up-to-date.
     return makeUpdate(() => Promise.resolve())
@@ -637,11 +637,6 @@ async function* iterTransfersToLoad(server: ServerSession, transfersListUri: str
   yield* await fetchTransfers(server, urisToFetch)
 }
 
-async function getLogObjectRecord(updateInfo: ObjectUpdateInfo): Promise<LogObjectRecord | undefined> {
-  const table = getLogObjectTable(updateInfo.objectType)
-  return await table.get(updateInfo.objectUri)
-}
-
 async function storeLogObjectRecord(
   objectRecord: LogObjectRecord | null,
   updateInfo?: ObjectUpdateInfo,
@@ -651,17 +646,15 @@ async function storeLogObjectRecord(
   const objectType = objectRecord ? objectRecord.type : updateInfo!.objectType
   const updateId = (objectRecord ? objectRecord.latestUpdateId : updateInfo!.objectUpdateId) ?? MAX_INT64
 
-  assert(!updateInfo || !updateInfo.deleted || !objectRecord)
   assert(!updateInfo || updateInfo.objectUri === objectUri)
   assert(!updateInfo || updateInfo.objectType === objectType)
   assert(!updateInfo || (updateInfo.objectUpdateId ?? MAX_INT64) <= updateId,
     'The version of the object received from the server is older that the version ' +
-    'promised by in log entry. Normally this should never happen. The most ' +
-    'probable reason for this is having misconfigured HTTP caches somewhere.',
+    'promised by in log entry. Normally this should never happen. A probable ' +
+    'reason for this is having misconfigured HTTP caches somewhere.',
   )
   await db.transaction('rw', db.allTables, async (): Promise<void> => {
-    const table = getLogObjectTable(objectType)
-    const existingRecord = await table.get(objectUri)
+    const existingRecord = await getLogObjectRecord(objectType, objectUri)
     const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
     if (!alreadyUpToDate) {
       if (objectRecord) {
@@ -673,35 +666,34 @@ async function storeLogObjectRecord(
   })
 }
 
-async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<void> {
-  switch (objectRecord.type) {
+async function getLogObjectRecord(
+  objectType: ObjectUpdateInfo['objectType'],
+  objectUri: string,
+): Promise<LogObjectRecord | undefined> {
+  switch (objectType) {
     case 'Creditor':
     case 'PinInfo':
-      await db.walletObjects.put(objectRecord)
-      break
+      return await db.walletObjects.get(objectUri)
 
     case 'CommittedTransfer':
-      await db.storeCommittedTransferRecord(objectRecord)
-      break
+      return await db.committedTransfers.get(objectUri)
 
     case 'Transfer':
-      throw new Error('Transfers records must be updated using the `db.storeTransfer` method.')
+      return await db.transfers.get(objectUri)
 
-    case 'AccountConfig':
     case 'AccountDisplay':
     case 'AccountKnowledge':
     case 'AccountExchange':
-    case 'AccountInfo':
     case 'AccountLedger':
-      await db.accountObjects.put(objectRecord)
-      break
+    case 'AccountConfig':
+    case 'AccountInfo':
+      return await db.accountObjects.get(objectUri)
 
     case 'Account':
-      await db.accounts.put(objectRecord)
-      break
+      return await db.accounts.get(objectUri)
 
     default:
-      throw new Error('unknown object type')  // This must never happen.
+      throw new Error('unknown object type')
   }
 }
 
@@ -712,11 +704,11 @@ async function deleteLogObjectRecord(
   switch (objectType) {
     case 'Creditor':
     case 'PinInfo':
-      console.error(
-        `An attempt to delete a ${objectType} via the log stream has been ignored. Wallet ` +
-        `objects are singletons that normally must not be deleted via the log stream.`
+      throw new Error(
+        `An attempt to delete a ${objectType} via the log stream has been detected. Wallet ` +
+        `objects are singletons that must not be deleted via the log stream. A probable ` +
+        `reason for this is having misconfigured HTTP caches somewhere.`
       )
-      break
 
     case 'CommittedTransfer':
       console.warn(
@@ -728,7 +720,7 @@ async function deleteLogObjectRecord(
       break
 
     case 'Transfer':
-      await db.markTranferDeletion(objectUri)
+      await db.registerTranferDeletion(objectUri)
       break
 
     case 'AccountConfig':
@@ -749,30 +741,35 @@ async function deleteLogObjectRecord(
   }
 }
 
-function getLogObjectTable(objectType: string): Dexie.Table<LogObjectRecord, string> {
-  switch (getCanonicalType(objectType)) {
+async function updateLogObjectRecord(objectRecord: LogObjectRecord): Promise<void> {
+  switch (objectRecord.type) {
     case 'Creditor':
     case 'PinInfo':
-      return db.walletObjects
+      await db.walletObjects.put(objectRecord)
+      break
 
     case 'CommittedTransfer':
-      return db.committedTransfers
+      await db.storeCommittedTransferRecord(objectRecord)
+      break
 
     case 'Transfer':
-      return db.transfers
+      await db.storeTransfer(objectRecord.userId, objectRecord)
+      break
 
+    case 'AccountConfig':
     case 'AccountDisplay':
     case 'AccountKnowledge':
     case 'AccountExchange':
-    case 'AccountLedger':
-    case 'AccountConfig':
     case 'AccountInfo':
-      return db.accountObjects
+    case 'AccountLedger':
+      await db.accountObjects.put(objectRecord)
+      break
 
     case 'Account':
-      return db.accounts
+      await db.accounts.put(objectRecord)
+      break
 
     default:
-      throw new Error('unknown object type')
+      throw new Error('unknown object type')  // This must never happen.
   }
 }

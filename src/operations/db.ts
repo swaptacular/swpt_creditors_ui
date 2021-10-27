@@ -693,7 +693,7 @@ class CreditorsDb extends Dexie {
     })
   }
 
-  async markTranferDeletion(transferUri: string): Promise<void> {
+  async registerTranferDeletion(transferUri: string): Promise<void> {
     // Transfers must remain in the local database, even after they
     // have been deleted from the server. This allows the user to
     // review transfers history. Here we only remove actions and tasks
