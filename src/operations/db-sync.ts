@@ -207,19 +207,6 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
 
 type ObjectUpdater = () => Promise<void>
 
-type LogObjectRecord =
-  | AccountRecord
-  | AccountConfigRecord
-  | AccountDisplayRecord
-  | AccountKnowledgeRecord
-  | AccountExchangeRecord
-  | AccountInfoRecord
-  | AccountLedgerRecord
-  | TransferRecord
-  | CommittedTransferRecord
-  | CreditorRecord
-  | PinInfoRecord
-
 type LogObjectType =
   | 'Account'
   | 'AccountConfig'
@@ -233,12 +220,25 @@ type LogObjectType =
   | 'Creditor'
   | 'PinInfo'
 
+type LogObjectRecord =
+  | AccountRecord
+  | AccountConfigRecord
+  | AccountDisplayRecord
+  | AccountKnowledgeRecord
+  | AccountExchangeRecord
+  | AccountInfoRecord
+  | AccountLedgerRecord
+  | TransferRecord
+  | CommittedTransferRecord
+  | CreditorRecord
+  | PinInfoRecord
+
 type UpdateInfo = {
   objectUri: string,
   objectType: LogObjectType,
   addedAt: string,
   deleted: boolean,
-  objectUpdateId?: bigint,
+  objectUpdateId: bigint,
   data?: { [key: string]: unknown },
 }
 
@@ -359,9 +359,9 @@ function collectObjectUpdates(
       updates.push({
         objectUri: uri,
         objectType: canonicalType,
+        objectUpdateId: objectUpdateId ?? MAX_INT64,
         addedAt,
         deleted,
-        objectUpdateId,
         data,
       })
     }
@@ -383,7 +383,7 @@ async function generateObjectUpdaters(
     // already pending.
     const { objectUri, objectUpdateId } = update
     const pendingUpdate = pendingUpdates.get(objectUri)
-    if (!pendingUpdate || (pendingUpdate.objectUpdateId ?? MAX_INT64) < (objectUpdateId ?? MAX_INT64)) {
+    if (!pendingUpdate || pendingUpdate.objectUpdateId < objectUpdateId) {
       pendingUpdates.set(objectUri, update)
       uniqueUpdates.set(objectUri, update)
     }
@@ -425,7 +425,7 @@ async function prepareUpdate(
   }
 
   const existingRecord = await getLogObjectRecord(objectType, objectUri)
-  if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
+  if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= objectUpdateId) {
     // The object is already up-to-date.
     return new PreparedUpdate(() => Promise.resolve())
   }
@@ -515,6 +515,7 @@ async function prepareUpdate(
           return {
             objectUri: entry.transfer!.uri,
             objectType: 'CommittedTransfer',
+            objectUpdateId: MAX_INT64,
             deleted: false,
             addedAt: record.latestUpdateAt,  // could be anything, will be ignored
           }
@@ -557,7 +558,7 @@ function tryToReconstructLogObject(updateInfo: UpdateInfo, record?: LogObjectRec
   const { objectUpdateId, data, addedAt } = updateInfo
   let patchedObject: AccountLedgerV0 | TransferV0 | undefined
 
-  if (record !== undefined && objectUpdateId !== undefined && data !== undefined) {
+  if (record !== undefined && data !== undefined) {
     switch (record.type) {
       case 'AccountLedger':
         assert(typeof data.principal === 'bigint')
@@ -637,18 +638,18 @@ async function reviseLogObjectRecord(objectRecord: LogObjectRecord | null, updat
   assert(objectRecord || updateInfo)
   const objectUri = objectRecord ? objectRecord.uri : updateInfo!.objectUri
   const objectType = objectRecord ? objectRecord.type : updateInfo!.objectType
-  const updateId = (objectRecord ? objectRecord.latestUpdateId : updateInfo!.objectUpdateId) ?? MAX_INT64
+  const objectUpdateId = objectRecord ? (objectRecord.latestUpdateId ?? MAX_INT64) : updateInfo!.objectUpdateId
 
   assert(!updateInfo || updateInfo.objectUri === objectUri)
   assert(!updateInfo || updateInfo.objectType === objectType)
-  assert(!updateInfo || (updateInfo.objectUpdateId ?? MAX_INT64) <= updateId,
+  assert(!updateInfo || updateInfo.objectUpdateId <= objectUpdateId,
     'The version of the object received from the server is older that the version ' +
     'promised by in log entry. Normally this should never happen. A probable ' +
     'reason for this is having misconfigured HTTP caches somewhere.',
   )
   await db.transaction('rw', db.allTables, async (): Promise<void> => {
     const existingRecord = await getLogObjectRecord(objectType, objectUri)
-    const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= updateId
+    const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= objectUpdateId
     if (!alreadyUpToDate) {
       if (objectRecord) {
         await updateLogObjectRecord(objectRecord)
