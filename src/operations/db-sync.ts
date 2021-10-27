@@ -72,7 +72,7 @@ export async function storeObject(
   if (obj.type === 'Transfer') {
     await db.storeTransfer(userId, obj)
   } else {
-    await storeLogObjectRecord({ ...obj, userId })
+    await reviseLogObjectRecord({ ...obj, userId })
   }
 }
 
@@ -424,7 +424,7 @@ async function prepareObjectUpdate(
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
   if (deleted) {
     // The log says that the object is deleted.
-    return makeUpdate(() => storeLogObjectRecord(null, updateInfo))
+    return makeUpdate(() => reviseLogObjectRecord(null, updateInfo))
   }
 
   const existingRecord = await getLogObjectRecord(objectType, objectUri)
@@ -447,7 +447,7 @@ async function prepareObjectUpdate(
     if ((e instanceof HttpError && e.status === 404) || (e === '404')) {
       // The object has been deleted from the server.
       objCache.set(objectUri, '404')
-      return makeUpdate(() => storeLogObjectRecord(null, updateInfo))
+      return makeUpdate(() => reviseLogObjectRecord(null, updateInfo))
     } else throw e
   }
   assert(obj.type === objectType)
@@ -497,7 +497,7 @@ async function prepareObjectUpdate(
         }
       })
       relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
-      return makeUpdate(() => storeLogObjectRecord(record, updateInfo), relatedUpdates)
+      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo), relatedUpdates)
     }
 
     case 'AccountLedger': {
@@ -523,7 +523,7 @@ async function prepareObjectUpdate(
           }
         })
       return makeUpdate(async () => {
-        await storeLogObjectRecord(record, updateInfo)
+        await reviseLogObjectRecord(record, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
@@ -541,7 +541,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.type === record.type)
         assert(existingRecord.account.uri === record.account.uri)
       }
-      return makeUpdate(() => storeLogObjectRecord(record, updateInfo))
+      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo))
     }
 
     case 'Creditor':
@@ -551,7 +551,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.type === record.type)
         assert(existingRecord.wallet.uri === record.wallet.uri)
       }
-      return makeUpdate(() => storeLogObjectRecord(record, updateInfo))
+      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo))
     }
   }
 }
@@ -588,7 +588,6 @@ function tryToReconstructLogObject(updateInfo: ObjectUpdateInfo, record?: LogObj
         } as TransferRecord
         if (data.finalizedAt !== undefined) {
           assert(typeof data.finalizedAt === 'string')
-          assert(Number.isFinite(new Date(data.finalizedAt).getTime()))
           const hasError = data.errorCode !== undefined
           let result: TransferResultV0 = {
             type: 'TransferResult',
@@ -637,7 +636,7 @@ async function* iterTransfersToLoad(server: ServerSession, transfersListUri: str
   yield* await fetchTransfers(server, urisToFetch)
 }
 
-async function storeLogObjectRecord(
+async function reviseLogObjectRecord(
   objectRecord: LogObjectRecord | null,
   updateInfo?: ObjectUpdateInfo,
 ): Promise<void> {
