@@ -240,11 +240,6 @@ type ObjectUpdateInfo = {
   data?: { [key: string]: unknown },
 }
 
-type PreparedUpdate = {
-  updater: ObjectUpdater,
-  relatedUpdates: ObjectUpdateInfo[],
-}
-
 type UserData = {
   accounts: AccountV0[],
   wallet: WalletV0,
@@ -252,8 +247,8 @@ type UserData = {
   pinInfo: PinInfoV0,
 }
 
-function makeUpdate(updater: ObjectUpdater, relatedUpdates: ObjectUpdateInfo[] = []): PreparedUpdate {
-  return { updater, relatedUpdates }
+class PreparedUpdate {
+  constructor(public updater: ObjectUpdater, public relatedUpdates: ObjectUpdateInfo[] = []) {}
 }
 
 async function getUserData(server: ServerSession): Promise<UserData> {
@@ -424,13 +419,13 @@ async function prepareObjectUpdate(
   const { objectUri, objectType, objectUpdateId, deleted } = updateInfo
   if (deleted) {
     // The log says that the object is deleted.
-    return makeUpdate(() => reviseLogObjectRecord(null, updateInfo))
+    return new PreparedUpdate(() => reviseLogObjectRecord(null, updateInfo))
   }
 
   const existingRecord = await getLogObjectRecord(objectType, objectUri)
   if (existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= (objectUpdateId ?? MAX_INT64)) {
     // The object is already up-to-date.
-    return makeUpdate(() => Promise.resolve())
+    return new PreparedUpdate(() => Promise.resolve())
   }
 
   // Sometimes we can obtain the object from the cache, or reconstruct
@@ -447,7 +442,7 @@ async function prepareObjectUpdate(
     if ((e instanceof HttpError && e.status === 404) || (e === '404')) {
       // The object has been deleted from the server.
       objCache.set(objectUri, '404')
-      return makeUpdate(() => reviseLogObjectRecord(null, updateInfo))
+      return new PreparedUpdate(() => reviseLogObjectRecord(null, updateInfo))
     } else throw e
   }
   assert(obj.type === objectType)
@@ -466,7 +461,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.noteFormat === obj.noteFormat)
         assert(existingRecord.note === obj.note)
       }
-      return makeUpdate(async () => {
+      return new PreparedUpdate(async () => {
         await storeObject(userId, obj as TransferV0)
       })
     }
@@ -497,7 +492,7 @@ async function prepareObjectUpdate(
         }
       })
       relatedObjects.forEach(relatedObject => objCache.set(relatedObject.uri, relatedObject))
-      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo), relatedUpdates)
+      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo), relatedUpdates)
     }
 
     case 'AccountLedger': {
@@ -522,7 +517,7 @@ async function prepareObjectUpdate(
             addedAt: record.latestUpdateAt,  // could be anything, will be ignored
           }
         })
-      return makeUpdate(async () => {
+      return new PreparedUpdate(async () => {
         await reviseLogObjectRecord(record, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
           await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
@@ -541,7 +536,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.type === record.type)
         assert(existingRecord.account.uri === record.account.uri)
       }
-      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo))
+      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo))
     }
 
     case 'Creditor':
@@ -551,7 +546,7 @@ async function prepareObjectUpdate(
         assert(existingRecord.type === record.type)
         assert(existingRecord.wallet.uri === record.wallet.uri)
       }
-      return makeUpdate(() => reviseLogObjectRecord(record, updateInfo))
+      return new PreparedUpdate(() => reviseLogObjectRecord(record, updateInfo))
     }
   }
 }
