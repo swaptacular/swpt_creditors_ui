@@ -622,7 +622,7 @@ async function reviseLogObjectRecord(objectRecord: LogObjectRecord | null, updat
     const alreadyUpToDate = existingRecord && (existingRecord.latestUpdateId ?? MAX_INT64) >= objectUpdateId
     if (!alreadyUpToDate) {
       if (objectRecord) {
-        await updateLogObjectRecord(objectRecord, existingRecord)
+        await storeLogObjectRecord(objectRecord, existingRecord)
       } else {
         await deleteLogObjectRecord(objectType, objectUri)
       }
@@ -699,35 +699,35 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
   }
 }
 
-async function updateLogObjectRecord(newRecord: LogObjectRecord, oldRecord?: LogObjectRecord): Promise<void> {
-  switch (newRecord.type) {
+async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: LogObjectRecord): Promise<void> {
+  switch (record.type) {
     case 'Creditor':
     case 'PinInfo':
-      assert(oldRecord)
-      assert(oldRecord.userId === newRecord.userId)
-      assert(oldRecord.type === newRecord.type)
-      assert(oldRecord.wallet.uri === newRecord.wallet.uri)
-      await db.walletObjects.put(newRecord)
+      assert(existingRecord)
+      assert(existingRecord.userId === record.userId)
+      assert(existingRecord.type === record.type)
+      assert(existingRecord.wallet.uri === record.wallet.uri)
+      await db.walletObjects.put(record)
       break
 
     case 'CommittedTransfer':
-      if (oldRecord) {
-        assert(oldRecord.type === newRecord.type)
-        assert(oldRecord.userId === newRecord.userId)
-        assert(oldRecord.account.uri === newRecord.account.uri)
-        assert(oldRecord.committedAt === newRecord.committedAt)
-        assert(oldRecord.acquiredAmount === newRecord.acquiredAmount)
-        assert(oldRecord.sender.uri === newRecord.sender.uri)
-        assert(oldRecord.recipient.uri === newRecord.recipient.uri)
-        assert(oldRecord.noteFormat === newRecord.noteFormat)
-        assert(oldRecord.note === newRecord.note)
-        assert(oldRecord.rationale === newRecord.rationale)
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.userId === record.userId)
+        assert(existingRecord.account.uri === record.account.uri)
+        assert(existingRecord.committedAt === record.committedAt)
+        assert(existingRecord.acquiredAmount === record.acquiredAmount)
+        assert(existingRecord.sender.uri === record.sender.uri)
+        assert(existingRecord.recipient.uri === record.recipient.uri)
+        assert(existingRecord.noteFormat === record.noteFormat)
+        assert(existingRecord.note === record.note)
+        assert(existingRecord.rationale === record.rationale)
       }
-      await db.storeCommittedTransferRecord(newRecord)
+      await db.storeCommittedTransferRecord(record)
       break
 
     case 'Transfer':
-      await db.storeTransfer(newRecord.userId, newRecord)
+      await db.storeTransfer(record.userId, record)
       break
 
     case 'AccountConfig':
@@ -736,28 +736,28 @@ async function updateLogObjectRecord(newRecord: LogObjectRecord, oldRecord?: Log
     case 'AccountExchange':
     case 'AccountInfo':
     case 'AccountLedger':
-      if (oldRecord) {
-        assert(oldRecord.type === newRecord.type)
-        assert(oldRecord.userId === newRecord.userId)
-        assert(oldRecord.account.uri === newRecord.account.uri)
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.userId === record.userId)
+        assert(existingRecord.account.uri === record.account.uri)
       }
-      await db.accountObjects.put(newRecord)
+      await db.accountObjects.put(record)
       break
 
     case 'Account':
-      if (oldRecord) {
-        assert(oldRecord.type === newRecord.type)
-        assert(oldRecord.userId === newRecord.userId)
-        assert(oldRecord.accountsList.uri === newRecord.accountsList.uri)
-        assert(oldRecord.debtor.uri === newRecord.debtor.uri)
-        assert(oldRecord.info.uri === newRecord.info.uri)
-        assert(oldRecord.display.uri === newRecord.display.uri)
-        assert(oldRecord.knowledge.uri === newRecord.knowledge.uri)
-        assert(oldRecord.exchange.uri === newRecord.exchange.uri)
-        assert(oldRecord.ledger.uri === newRecord.ledger.uri)
-        assert(oldRecord.config.uri === newRecord.config.uri)
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.userId === record.userId)
+        assert(existingRecord.accountsList.uri === record.accountsList.uri)
+        assert(existingRecord.debtor.uri === record.debtor.uri)
+        assert(existingRecord.info.uri === record.info.uri)
+        assert(existingRecord.display.uri === record.display.uri)
+        assert(existingRecord.knowledge.uri === record.knowledge.uri)
+        assert(existingRecord.exchange.uri === record.exchange.uri)
+        assert(existingRecord.ledger.uri === record.ledger.uri)
+        assert(existingRecord.config.uri === record.config.uri)
       }
-      await db.accounts.put(newRecord)
+      await db.accounts.put(record)
       break
 
     default:
