@@ -157,7 +157,7 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
     const pageUrl = walletRecord.logStream.forthcoming
     const page = makeLogEntriesPage(await server.get(pageUrl) as HttpResponse<LogEntriesPage>)
     const isLastPage = page.next === undefined
-    const { updates, latestEntryId } = collectObjectUpdates(page.items, previousEntryId)
+    const [updates, latestEntryId] = collectObjectUpdates(page.items, previousEntryId)
     const objectUpdaters = await generateObjectUpdaters(updates, server, userId)
 
     // Write all object updates to the local database, and store the
@@ -291,10 +291,8 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         },
       }
       userId = await db.wallets.put({ ...walletRecord, userId })
-      await db.walletObjects.bulkPut([
-        { ...creditor, userId },
-        { ...pinInfo, userId },
-      ])
+      await db.walletObjects.put({ ...creditor, userId })
+      await db.walletObjects.put({ ...pinInfo, userId })
 
       const oldAccountUris = new Set<string>()
       for (const accountUri of await db.accounts.where({ userId }).primaryKeys()) {
@@ -304,25 +302,16 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
       for (const accountUri of accountObjects.map(obj => obj.account.uri)) {
         oldAccountUris.add(accountUri)
       }
-
       for (const account of accounts) {
-        const {
-          accountRecord,
-          accountInfoRecord,
-          accountDisplayRecord,
-          accountKnowledgeRecord,
-          accountExchangeRecord,
-          accountLedgerRecord,
-          accountConfigRecord,
-        } = splitIntoRecords(userId, account)
-        await db.accounts.put(accountRecord)
+        const records = splitIntoRecords(userId, account)
+        await db.accounts.put(records.accountRecord)
         await db.accountObjects.bulkPut([
-          accountInfoRecord,
-          accountDisplayRecord,
-          accountKnowledgeRecord,
-          accountExchangeRecord,
-          accountLedgerRecord,
-          accountConfigRecord,
+          records.accountInfoRecord,
+          records.accountDisplayRecord,
+          records.accountKnowledgeRecord,
+          records.accountExchangeRecord,
+          records.accountLedgerRecord,
+          records.accountConfigRecord,
         ])
         oldAccountUris.delete(account.uri)
       }
@@ -337,10 +326,7 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
   })
 }
 
-function collectObjectUpdates(
-  logEntries: LogEntryV0[],
-  latestEntryId: bigint,
-): { latestEntryId: bigint, updates: UpdateInfo[] } {
+function collectObjectUpdates(logEntries: LogEntryV0[], latestEntryId: bigint): [UpdateInfo[], bigint] {
   const updates: UpdateInfo[] = []
   for (const { entryId, addedAt, object: { uri }, objectType, objectUpdateId, deleted, data } of logEntries) {
     if (entryId !== ++latestEntryId) {
@@ -366,7 +352,7 @@ function collectObjectUpdates(
       })
     }
   }
-  return { latestEntryId, updates }
+  return [updates, latestEntryId]
 }
 
 async function generateObjectUpdaters(
