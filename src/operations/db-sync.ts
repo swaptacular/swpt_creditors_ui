@@ -352,29 +352,16 @@ async function generateObjectUpdaters(
   objCache: Map<string, LogObject | '404'> = new Map(),
   pendingUpdates: Map<string, UpdateInfo> = new Map(),
 ): Promise<ObjectUpdater[]> {
-  let uniqueUpdates = new Map<string, UpdateInfo>()
-  updates.forEach(update => {
-    // Add the URI of the update to `pendingUpdates` and
-    // `uniqueUpdates`, but only if the same or newer update is not
-    // already pending.
-    const { objectUri, objectUpdateId } = update
-    const pendingUpdate = pendingUpdates.get(objectUri)
-    if (!pendingUpdate || pendingUpdate.objectUpdateId < objectUpdateId) {
-      pendingUpdates.set(objectUri, update)
-      uniqueUpdates.set(objectUri, update)
-    }
-  })
-  updates = [...uniqueUpdates.values()]
-
+  const uniqueUpdates = removeRedundantUpdates(updates, pendingUpdates)
+  const timeout = calcParallelTimeout(uniqueUpdates.length)
+  const promises = Promise.all(uniqueUpdates.map(update => prepareUpdate(update, objCache, server, userId, timeout)))
   let updaters: ObjectUpdater[] = []
-  let conbinedRelatedUpdates: UpdateInfo[] = []
-  const timeout = calcParallelTimeout(updates.length)
-  const promises = Promise.all(updates.map(update => prepareUpdate(update, objCache, server, userId, timeout)))
+  let relatedUpdatesList: UpdateInfo[] = []
   for (const { updater, relatedUpdates } of await promises) {
     updaters.push(updater)
-    conbinedRelatedUpdates.push(...relatedUpdates)
+    relatedUpdatesList.push(...relatedUpdates)
   }
-  if (conbinedRelatedUpdates.length > 0) {
+  if (relatedUpdatesList.length > 0) {
     // When some of the updated objects are related to other objects
     // by foreign keys, the referred objects should be requested from
     // the server as well. We do this recursively here. Infinite
@@ -382,9 +369,24 @@ async function generateObjectUpdaters(
     // remember which updates have already started, and do not start
     // them the second time.
     updaters = updaters.concat(
-      await generateObjectUpdaters(conbinedRelatedUpdates, server, userId, objCache, pendingUpdates))
+      await generateObjectUpdaters(relatedUpdatesList, server, userId, objCache, pendingUpdates))
   }
   return updaters
+}
+
+function removeRedundantUpdates(updates: UpdateInfo[], pendingUpdates: Map<string, UpdateInfo>): UpdateInfo[] {
+  let updatesMap = new Map<string, UpdateInfo>()
+  updates.forEach(update => {
+    // Add the URI of the update to `pendingUpdates` and `updatesMap`,
+    // but only if the same or newer update is not already pending.
+    const { objectUri, objectUpdateId } = update
+    const pendingUpdate = pendingUpdates.get(objectUri)
+    if (!pendingUpdate || pendingUpdate.objectUpdateId < objectUpdateId) {
+      pendingUpdates.set(objectUri, update)
+      updatesMap.set(objectUri, update)
+    }
+  })
+  return [...updatesMap.values()]
 }
 
 async function prepareUpdate(
