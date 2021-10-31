@@ -1,15 +1,15 @@
 import type { Collection } from 'dexie'
-import type { PaymentInfo } from '../payment-requests'
-import type { ResourceReference, DocumentWithHash } from '../debtor-info'
+import type { PaymentInfo } from '../../payment-requests'
+import type { ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
   AccountConfigV0, TransferCreationRequestV0, WebApiError, ObjectReference
-} from './canonical-objects'
+} from '../canonical-objects'
 
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
-import { parseTransferNote } from '../payment-requests'
+import { parseTransferNote } from '../../payment-requests'
 
 type UserReference = {
   userId: number,

@@ -11,19 +11,17 @@ import {
 import type {
   PinInfo,
 } from './server'
-import {
-  db,
-} from './db'
 import type {
   WalletRecordWithId,
   ActionRecordWithId,
   ListQueryOptions,
 } from './db'
 import {
+  db,
   getOrCreateUserId,
   sync,
   PinNotRequired,
-} from './db-sync'
+} from './db'
 
 export {
   AuthenticationError,
