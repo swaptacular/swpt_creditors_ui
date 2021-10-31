@@ -17,9 +17,10 @@ import type {
   ListQueryOptions,
 } from './db'
 import {
-  db,
+  getWalletRecord,
   getOrCreateUserId,
   sync,
+  getActionRecords,
   PinNotRequired,
 } from './db'
 
@@ -104,7 +105,7 @@ export class UserContext {
     this.userId = walletRecord.userId
     this.walletRecord = walletRecord
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
-    this.getActionRecords = db.getActionRecords.bind(db, this.userId)
+    this.getActionRecords = getActionRecords.bind(undefined, this.userId)
   }
 
   /* The caller must be prepared this method to throw
@@ -192,6 +193,6 @@ export async function obtainUserContext(
   return new UserContext(
     server,
     updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId)),
-    await db.getWalletRecord(userId),
+    await getWalletRecord(userId),
   )
 }

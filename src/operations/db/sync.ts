@@ -12,7 +12,7 @@ import type {
 } from '../canonical-objects'
 
 import { HttpError, AuthenticationError } from '../server'
-import { db, splitIntoRecords } from './schema'
+import { db } from './schema'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
   getCanonicalType,
@@ -21,6 +21,11 @@ import {
   iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers,
   settleAndIgnore404, MAX_INT64
 } from '../utils'
+import { updateWalletRecord, getWalletRecord, getUserId } from './users'
+import { registerTranferDeletion, getTransferRecord, storeTransfer } from './transfers'
+import {
+  storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords
+} from './accounts'
 
 export class BrokenLogStream extends Error {
   name = 'BrokenLogStream'
@@ -34,8 +39,8 @@ export class PinNotRequired extends Error {
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
 export async function getOrCreateUserId(server: ServerSession, entrypoint: string): Promise<number> {
-  let userId = await db.getUserId(entrypoint)
-  if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
+  let userId = await getUserId(entrypoint)
+  if (userId === undefined || (await getWalletRecord(userId)).logStream.isBroken) {
     const userData = await getUserData(server)
     userId = await storeUserData(userData)
   }
@@ -70,7 +75,7 @@ export async function storeObject(
   obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | TransferV0
 ): Promise<void> {
   if (obj.type === 'Transfer') {
-    await db.storeTransfer(userId, obj)
+    await storeTransfer(userId, obj)
   } else {
     await reviseLogObjectRecord({ ...obj, userId })
   }
@@ -83,7 +88,7 @@ async function fetchWallet(server: ServerSession, userId: number): Promise<void>
   const wallet = makeWallet(await server.getEntrypointResponse() as HttpResponse<Wallet>)
 
   await db.transaction('rw', db.allTables, async () => {
-    let walletRecord = await db.getWalletRecord(userId)
+    let walletRecord = await getWalletRecord(userId)
 
     // Most of the fields in the wallet are URIs that must not change.
     assert(walletRecord.uri === wallet.uri)
@@ -97,7 +102,7 @@ async function fetchWallet(server: ServerSession, userId: number): Promise<void>
     assert(walletRecord.transfersList.uri === wallet.transfersList.uri)
 
     walletRecord.logRetentionDays = wallet.logRetentionDays
-    await db.updateWalletRecord(walletRecord)
+    await updateWalletRecord(walletRecord)
   })
 
   if (!wallet.requirePin) {
@@ -112,7 +117,7 @@ async function fetchWallet(server: ServerSession, userId: number): Promise<void>
 async function ensureLoadedTransfers(server: ServerSession, userId: number): Promise<void> {
   let walletRecord
   while (
-    walletRecord = await db.getWalletRecord(userId),
+    walletRecord = await getWalletRecord(userId),
     !walletRecord.logStream.isBroken && !walletRecord.logStream.loadedTransfers
   ) {
     const latestEntryId = walletRecord.logStream.latestEntryId
@@ -123,14 +128,14 @@ async function ensureLoadedTransfers(server: ServerSession, userId: number): Pro
     // start, we ensure that the status of the log stream had not been
     // changed by a parallel update.
     await db.transaction('rw', db.allTables, async () => {
-      const walletRecord = await db.getWalletRecord(userId)
+      const walletRecord = await getWalletRecord(userId)
       if (
         !walletRecord.logStream.isBroken
         && !walletRecord.logStream.loadedTransfers
         && walletRecord.logStream.latestEntryId === latestEntryId
       ) {
         walletRecord.logStream.loadedTransfers = true
-        await db.updateWalletRecord(walletRecord)
+        await updateWalletRecord(walletRecord)
       }
     })
   }
@@ -144,7 +149,7 @@ async function ensureLoadedTransfers(server: ServerSession, userId: number): Pro
  * stream is broken. Returns `true` if there are more log pages to
  * process. */
 async function processLogPage(server: ServerSession, userId: number): Promise<boolean> {
-  const walletRecord = await db.getWalletRecord(userId)
+  const walletRecord = await getWalletRecord(userId)
   if (walletRecord.logStream.isBroken) {
     throw new BrokenLogStream()
   }
@@ -165,7 +170,7 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
     // we ensure that the status of the log stream had not been
     // changed by a parallel update.
     await db.transaction('rw', db.allTables, async () => {
-      const walletRecord = await db.getWalletRecord(userId)
+      const walletRecord = await getWalletRecord(userId)
       if (
         !walletRecord.logStream.isBroken
         && walletRecord.logStream.loadedTransfers
@@ -179,7 +184,7 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
         }
         walletRecord.logStream.forthcoming = (isLastPage ? page.forthcoming : page.next) as string
         walletRecord.logStream.latestEntryId = latestEntryId
-        await db.updateWalletRecord(walletRecord)
+        await updateWalletRecord(walletRecord)
       }
     })
     return !isLastPage
@@ -190,14 +195,14 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
       // we start, we ensure that the status of the log stream had not
       // been changed by a parallel update.
       await db.transaction('rw', db.allTables, async () => {
-        const walletRecord = await db.getWalletRecord(userId)
+        const walletRecord = await getWalletRecord(userId)
         if (
           !walletRecord.logStream.isBroken
           && walletRecord.logStream.loadedTransfers
           && walletRecord.logStream.latestEntryId === previousEntryId
         ) {
           walletRecord.logStream.isBroken = true
-          await db.updateWalletRecord(walletRecord)
+          await updateWalletRecord(walletRecord)
         }
       })
     }
@@ -276,8 +281,8 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
   // consider deleting some of user's tasks.
 
   return await db.transaction('rw', db.allTables, async () => {
-    let userId = await db.getUserId(wallet.uri)
-    if (userId === undefined || (await db.getWalletRecord(userId)).logStream.isBroken) {
+    let userId = await getUserId(wallet.uri)
+    if (userId === undefined || (await getWalletRecord(userId)).logStream.isBroken) {
       const { requirePin, log, logLatestEntryId, ...walletRecord } = {
         ...wallet,
         logStream: {
@@ -309,7 +314,7 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         oldAccountUris.delete(account.uri)
       }
       for (const accountUri of oldAccountUris.keys()) {
-        await db.deleteAccount(accountUri)
+        await deleteAccount(accountUri)
       }
     }
     return userId
@@ -476,7 +481,7 @@ async function fetchRelatedData(
       return new PreparedUpdate(async () => {
         await reviseLogObjectRecord(accountLedgerRecord, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
-          await db.storeLedgerEntryRecord({ ...ledgerEntry, userId })
+          await storeLedgerEntryRecord({ ...ledgerEntry, userId })
         }
       }, relatedUpdates)
     }
@@ -560,7 +565,7 @@ function tryToReconstructLogObject(updateInfo: UpdateInfo, record?: LogObjectRec
 async function* iterTransfersToLoad(server: ServerSession, transfersListUri: string): AsyncIterable<TransferV0> {
   let urisToFetch: string[] = []
   for await (const { uri: transferUri } of iterTransfersList(server, transfersListUri)) {
-    const transferRecord = await db.getTransferRecord(transferUri)
+    const transferRecord = await getTransferRecord(transferUri)
     const isConcludedTransfer = transferRecord && (transferRecord.result || transferRecord.aborted)
     if (!isConcludedTransfer) {
       urisToFetch.push(transferUri)
@@ -657,7 +662,7 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
       break
 
     case 'Transfer':
-      await db.registerTranferDeletion(objectUri)
+      await registerTranferDeletion(objectUri)
       break
 
     case 'AccountConfig':
@@ -666,11 +671,11 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
     case 'AccountExchange':
     case 'AccountInfo':
     case 'AccountLedger':
-      await db.deleteAccountObject(objectUri)
+      await deleteAccountObject(objectUri)
       break
 
     case 'Account':
-      await db.deleteAccount(objectUri)
+      await deleteAccount(objectUri)
       break
 
     default:
@@ -702,11 +707,11 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.note === record.note)
         assert(existingRecord.rationale === record.rationale)
       }
-      await db.storeCommittedTransferRecord(record)
+      await storeCommittedTransferRecord(record)
       break
 
     case 'Transfer':
-      await db.storeTransfer(record.userId, record)
+      await storeTransfer(record.userId, record)
       break
 
     case 'AccountConfig':
