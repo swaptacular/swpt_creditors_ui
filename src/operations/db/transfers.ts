@@ -2,14 +2,12 @@ import type { Collection } from 'dexie'
 import type { TransferV0 } from '../canonical-objects'
 import type {
   CreateTransferAction, CreateTransferActionWithId, TransferRecord, AbortTransferActionWithId,
-  AbortTransferAction
+  AbortTransferAction, ListQueryOptions
 } from './schema'
-import type { ListQueryOptions } from './common'
 
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'
-import { getIsoTimeOrNow } from './common'
 import { db, RecordDoesNotExist } from './schema'
 import { UserDoesNotExist, isInstalledUser } from './users'
 
@@ -266,4 +264,9 @@ export async function registerTranferDeletion(transferUri: string): Promise<void
 function hasTimedOut(startedAt: Date, currentTime: number = Date.now()): boolean {
   const deadline = startedAt.getTime() + 1000 * TRANSFER_DELETION_MIN_DELAY_SECONDS
   return currentTime + MAX_PROCESSING_DELAY_MILLISECONDS > deadline
+}
+
+function getIsoTimeOrNow(isoTime?: string): number {
+  const time = isoTime ? new Date(isoTime).getTime() : NaN
+  return Number.isFinite(time) ? time : Date.now()
 }

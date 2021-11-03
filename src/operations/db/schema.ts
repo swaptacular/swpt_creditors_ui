@@ -12,6 +12,13 @@ export class RecordDoesNotExist extends Error {
   name = 'RecordDoesNotExist'
 }
 
+export type ListQueryOptions = {
+  before?: number,
+  after?: number,
+  limit?: number,
+  latestFirst?: boolean,
+}
+
 type UserReference = {
   userId: number,
 }

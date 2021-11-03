@@ -1,4 +1,3 @@
-export type { ListQueryOptions } from './common'
 export * from './schema'
 export * from './sync'
 export * from './transfers'

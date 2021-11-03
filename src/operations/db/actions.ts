@@ -1,7 +1,4 @@
-import type { ListQueryOptions } from './common'
-import type {
-  ActionRecord, ActionRecordWithId, ExecutionState
-} from './schema'
+import type { ActionRecord, ActionRecordWithId, ExecutionState, ListQueryOptions } from './schema'
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
