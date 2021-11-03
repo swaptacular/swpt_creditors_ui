@@ -219,7 +219,7 @@ class CreditorsDb extends Dexie {
       // separated in their own table.
       committedTransfers: 'uri,userId,account.uri',
 
-      // Here '[userId+time],&uri' / '[account.uri+entryId],userId'
+      // Here '[userId+time],&uri' / '[ledger.uri+entryId],userId'
       // would probably be a bit more efficient, because the records
       // would be ordered physically in the same way as they are
       // normally queried. The problem is that it seems
