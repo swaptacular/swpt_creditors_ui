@@ -150,14 +150,6 @@ export type CreateTransferActionWithId =
   & ActionRecordWithId
   & CreateTransferAction
 
-export type CreateTransferActionStatus =
-  | 'Draft'
-  | 'Not sent'
-  | 'Not confirmed'
-  | 'Initiated'
-  | 'Failed'
-  | 'Timed out'
-
 export type AbortTransferAction =
   & ActionData
   & {
@@ -170,7 +162,7 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
-export type TaskData =
+type TaskData =
   & UserReference
   & {
     taskId?: number,
@@ -195,14 +187,6 @@ export type DeleteTransferTask =
 export type DeleteTransferTaskWithId =
   & TaskRecordWithId
   & DeleteTransferTask
-
-export class UserDoesNotExist extends Error {
-  name = 'UserDoesNotExist'
-}
-
-export class RecordDoesNotExist extends Error {
-  name = 'RecordDoesNotExist'
-}
 
 class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>

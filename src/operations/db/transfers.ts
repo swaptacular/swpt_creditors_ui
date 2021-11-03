@@ -1,19 +1,21 @@
 import type { Collection } from 'dexie'
 import type { TransferV0 } from '../canonical-objects'
 import type {
-  CreateTransferAction, CreateTransferActionWithId, CreateTransferActionStatus, TransferRecord,
-  AbortTransferActionWithId, AbortTransferAction
+  CreateTransferAction, CreateTransferActionWithId, TransferRecord, AbortTransferActionWithId,
+  AbortTransferAction
 } from './schema'
 import type { ListQueryOptions } from './common'
 
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'
-import { getIsoTimeOrNow } from './common'
-import { db, RecordDoesNotExist, UserDoesNotExist } from './schema'
-import { isInstalledUser } from './users'
+import { getIsoTimeOrNow, RecordDoesNotExist } from './common'
+import { db } from './schema'
+import { UserDoesNotExist, isInstalledUser } from './users'
 
-export function getTransferState(transfer: TransferV0): 'waiting' | 'delayed' | 'successful' | 'unsuccessful' {
+export type TransferState = 'waiting' | 'delayed' | 'successful' | 'unsuccessful'
+
+export function getTransferState(transfer: TransferV0): TransferState {
   switch (transfer.result?.committedAmount) {
     case undefined:
       const initiatedAt = new Date(transfer.initiatedAt)
@@ -26,6 +28,14 @@ export function getTransferState(transfer: TransferV0): 'waiting' | 'delayed' | 
       return 'successful'
   }
 }
+
+export type CreateTransferActionStatus =
+  | 'Draft'
+  | 'Not sent'
+  | 'Not confirmed'
+  | 'Initiated'
+  | 'Failed'
+  | 'Timed out'
 
 export function getCreateTransferActionStatus(
   action: CreateTransferAction,
@@ -44,7 +54,6 @@ export function getCreateTransferActionStatus(
       return 'Failed'
   }
 }
-
 
 export async function getTransferRecords(userId: number, options: ListQueryOptions = {}): Promise<TransferRecord[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
@@ -212,20 +221,22 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
 }
 
 export async function abortTransfer(userId: number, transferUri: string): Promise<void> {
-  let transferRecord = await db.transfers.get(transferUri)
-  if (transferRecord && transferRecord.userId === userId) {
-    if (getTransferState(transferRecord) !== 'successful') {
-      const initiationTime = getIsoTimeOrNow(transferRecord.initiatedAt)
-      transferRecord.aborted = true
-      await db.transfers.put(transferRecord)
-      await db.tasks.put({
-        userId,
-        taskType: 'DeleteTransfer',
-        scheduledFor: new Date(initiationTime + 1000 * TRANSFER_DELETION_MIN_DELAY_SECONDS),
-        transferUri,
-      })
+  await db.transaction('rw', [db.transfers, db.tasks], async () => {
+    let transferRecord = await db.transfers.get(transferUri)
+    if (transferRecord && transferRecord.userId === userId) {
+      if (getTransferState(transferRecord) !== 'successful') {
+        const initiationTime = getIsoTimeOrNow(transferRecord.initiatedAt)
+        transferRecord.aborted = true
+        await db.transfers.put(transferRecord)
+        await db.tasks.put({
+          userId,
+          taskType: 'DeleteTransfer',
+          scheduledFor: new Date(initiationTime + 1000 * TRANSFER_DELETION_MIN_DELAY_SECONDS),
+          transferUri,
+        })
+      }
     }
-  }
+  })
 }
 
 export async function registerTranferDeletion(transferUri: string): Promise<void> {
@@ -233,14 +244,17 @@ export async function registerTranferDeletion(transferUri: string): Promise<void
   // have been deleted from the server. This allows the user to
   // review transfers history. Here we only remove actions and tasks
   // related to the deleted transfer.
-  await db.actions
-    .where({ transferUri })
-    .filter(action => action.actionType === 'AbortTransfer')
-    .delete()
-  await db.tasks
-    .where({ transferUri })
-    .filter(task => task.taskType === 'DeleteTransfer')
-    .delete()
+
+  await db.transaction('rw', [db.actions, db.tasks], async () => {
+    await db.actions
+      .where({ transferUri })
+      .filter(action => action.actionType === 'AbortTransfer')
+      .delete()
+    await db.tasks
+      .where({ transferUri })
+      .filter(task => task.taskType === 'DeleteTransfer')
+      .delete()
+  })
 }
 
 const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side

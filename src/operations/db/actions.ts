@@ -5,8 +5,9 @@ import type {
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
-import { db, RecordDoesNotExist, UserDoesNotExist } from './schema'
-import { isInstalledUser } from './users'
+import { db } from './schema'
+import { RecordDoesNotExist } from './common'
+import { UserDoesNotExist, isInstalledUser } from './users'
 import { abortTransfer } from './transfers'
 
 export async function getActionRecords(userId: number, options: ListQueryOptions = {}): Promise<ActionRecordWithId[]> {
@@ -43,8 +44,12 @@ export async function removeActionRecord(actionId: number): Promise<void> {
     const action = await db.actions.get(actionId)
     if (action) {
       await db.actions.delete(actionId)
-      if (action.actionType === 'AbortTransfer') {
-        await abortTransfer(action.userId, action.transferUri)
+      switch (action.actionType) {
+        case 'AbortTransfer':
+          await abortTransfer(action.userId, action.transferUri)
+          break
+        default:
+          // Do nothing more.
       }
     }
   })

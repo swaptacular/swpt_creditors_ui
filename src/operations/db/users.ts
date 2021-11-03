@@ -1,5 +1,9 @@
 import type { WalletRecordWithId } from './schema'
-import { db, UserDoesNotExist } from './schema'
+import { db } from './schema'
+
+export class UserDoesNotExist extends Error {
+  name = 'UserDoesNotExist'
+}
 
 export async function clearAllTables(): Promise<void> {
   await db.transaction('rw', db.allTables, async () => {
@@ -9,8 +13,8 @@ export async function clearAllTables(): Promise<void> {
   })
 }
 
-export async function getUserId(walletUri: string): Promise<number | undefined> {
-  return (await db.wallets.where({ uri: walletUri }).primaryKeys())[0]
+export async function isInstalledUser(userId: number): Promise<boolean> {
+  return await db.wallets.where({ userId }).count() === 1
 }
 
 export async function uninstallUser(userId: number): Promise<void> {
@@ -21,6 +25,10 @@ export async function uninstallUser(userId: number): Promise<void> {
       }
     }
   })
+}
+
+export async function getUserId(walletUri: string): Promise<number | undefined> {
+  return (await db.wallets.where({ uri: walletUri }).primaryKeys())[0]
 }
 
 export async function getWalletRecord(userId: number): Promise<WalletRecordWithId> {
@@ -41,8 +49,4 @@ export async function updateWalletRecord(walletRecord: WalletRecordWithId): Prom
     throw new UserDoesNotExist()
   }
   assert(updated === 1)
-}
-
-export async function isInstalledUser(userId: number): Promise<boolean> {
-  return await db.wallets.where({ userId }).count() === 1
 }

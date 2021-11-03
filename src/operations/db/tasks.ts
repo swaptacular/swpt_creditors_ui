@@ -12,4 +12,3 @@ export async function getTasks(userId: number, scheduledFor: Date = new Date(), 
 export async function removeTask(taskId: number): Promise<void> {
   await db.tasks.delete(taskId)
 }
-
