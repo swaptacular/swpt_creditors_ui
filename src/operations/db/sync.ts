@@ -157,6 +157,7 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
     return false
   }
   const previousEntryId = walletRecord.logStream.latestEntryId
+  const now = new Date()
 
   try {
     const pageUrl = walletRecord.logStream.forthcoming
@@ -180,7 +181,7 @@ async function processLogPage(server: ServerSession, userId: number): Promise<bo
           await performObjectUpdate()
         }
         if (isLastPage) {
-          walletRecord.logStream.syncedAt = new Date()
+          walletRecord.logStream.syncedAt = now
         }
         walletRecord.logStream.forthcoming = (isLastPage ? page.forthcoming : page.next) as string
         walletRecord.logStream.latestEntryId = latestEntryId
