@@ -4,7 +4,6 @@ import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
   AccountConfigRecord, AccountDisplayRecord, AccountRecord
 } from './schema'
-
 import { Dexie } from 'dexie'
 import { db } from './schema'
 

@@ -1,32 +1,29 @@
 import type {
   ServerSession, HttpResponse, Creditor, PinInfo, Wallet, Account, LogEntriesPage
-} from '../server'
+} from './server'
 import type {
   AccountLedgerRecord, TransferRecord, AccountRecord, AccountConfigRecord, PinInfoRecord,
   AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
   CommittedTransferRecord, CreditorRecord, AccountObjectRecord
-} from './schema'
+} from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
   AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
-} from '../canonical-objects'
-
-import { HttpError, AuthenticationError } from '../server'
-import { db } from './schema'
+} from './canonical-objects'
+import { HttpError, AuthenticationError } from './server'
+import {
+  db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
+  updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
+  resolveOldNotConfirmedCreateTransferRequests
+} from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
   getCanonicalType,
-} from '../canonical-objects'
+} from './canonical-objects'
 import {
   iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers,
   settleAndIgnore404, MAX_INT64
-} from '../utils'
-import { updateWalletRecord, getWalletRecord, getUserId } from './users'
-import { registerTranferDeletion, getTransferRecord, storeTransfer } from './transfers'
-import {
-  storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords
-} from './accounts'
-import { resolveOldNotConfirmedCreateTransferRequests } from './actions'
+} from './utils'
 
 export class BrokenLogStream extends Error {
   name = 'BrokenLogStream'

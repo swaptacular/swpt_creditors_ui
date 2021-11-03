@@ -1,5 +1,4 @@
 import type { ActionRecord, ActionRecordWithId, ExecutionState, ListQueryOptions } from './schema'
-
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'

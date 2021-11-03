@@ -4,7 +4,6 @@ import type {
   CreateTransferAction, CreateTransferActionWithId, TransferRecord, AbortTransferActionWithId,
   AbortTransferAction, ListQueryOptions
 } from './schema'
-
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'

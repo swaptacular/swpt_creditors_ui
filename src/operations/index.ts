@@ -1,31 +1,12 @@
+import type { PinInfo } from './server'
+import type { WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions } from './db'
 import { UpdateScheduler } from '../update-scheduler'
 import {
-  server as defaultServer,
-  Oauth2TokenSource,
-  ServerSession,
-  ServerSessionError,
-  AuthenticationError,
-  HttpResponse,
-  HttpError,
+  server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
+  HttpResponse, HttpError,
 } from './server'
-import type {
-  PinInfo,
-} from './server'
-import type {
-  WalletRecordWithId,
-  ActionRecordWithId,
-  TaskRecordWithId,
-  ListQueryOptions,
-} from './db'
-import {
-  getWalletRecord,
-  getOrCreateUserId,
-  sync,
-  getTasks,
-  removeTask,
-  getActionRecords,
-  PinNotRequired,
-} from './db'
+import { getWalletRecord, getTasks, removeTask, getActionRecords } from './db'
+import { getOrCreateUserId, sync, PinNotRequired } from './db-sync'
 import { calcParallelTimeout } from './utils'
 
 export {

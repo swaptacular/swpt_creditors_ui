@@ -1,6 +1,6 @@
 export * from './schema'
-export * from './sync'
 export * from './transfers'
 export * from './actions'
 export * from './users'
 export * from './tasks'
+export * from './accounts'

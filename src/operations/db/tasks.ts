@@ -1,5 +1,4 @@
 import type { TaskRecordWithId } from './schema'
-
 import { Dexie } from 'dexie'
 import { db } from './schema'
 
