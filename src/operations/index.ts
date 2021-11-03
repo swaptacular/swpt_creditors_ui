@@ -14,15 +14,19 @@ import type {
 import type {
   WalletRecordWithId,
   ActionRecordWithId,
+  TaskRecordWithId,
   ListQueryOptions,
 } from './db'
 import {
   getWalletRecord,
   getOrCreateUserId,
   sync,
+  getTasks,
+  removeTask,
   getActionRecords,
   PinNotRequired,
 } from './db'
+import { calcParallelTimeout } from './utils'
 
 export {
   AuthenticationError,
@@ -60,7 +64,7 @@ export async function authorizePinReset(): Promise<void> {
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
     await sync(server, userId)
-    // TODO: await executeReadyTasks(server, userId)
+    await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
     let event
@@ -84,6 +88,32 @@ export async function update(server: ServerSession, userId: number): Promise<voi
       console.error(error)
     }
   }
+}
+
+async function executeReadyTasks(server: ServerSession, userId: number): Promise<void> {
+  const createTaskExecutor = (task: TaskRecordWithId): ((timeout: number) => Promise<void>) => {
+    switch (task.taskType) {
+      case 'DeleteTransfer':
+        return async (timeout) => {
+          try {
+            await server.delete(task.transferUri, { timeout })
+          } catch (e: unknown) {
+            if (!(e instanceof HttpError && e.status === 404)) throw e
+          }
+          await removeTask(task.taskId)
+        }
+      default:
+        throw new Error('unknown task type')  // This must never happen.
+    }
+  }
+  const limit = 100
+  let tasks
+  do {
+    tasks = await getTasks(userId, new Date(), limit)
+    const timeout = calcParallelTimeout(tasks.length)
+    const taskExecutors = tasks.map(task => createTaskExecutor(task))
+    await Promise.all(taskExecutors.map(taskExecutor => taskExecutor(timeout)))
+  } while (tasks.length >= limit)
 }
 
 export class UserContext {

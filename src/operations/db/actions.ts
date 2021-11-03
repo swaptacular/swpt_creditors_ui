@@ -1,13 +1,14 @@
 import type { ListQueryOptions } from './common'
 import type {
-  ActionRecord, ActionRecordWithId
+  ActionRecord, ActionRecordWithId, ExecutionState
 } from './schema'
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
 import { UserDoesNotExist, isInstalledUser } from './users'
-import { abortTransfer } from './transfers'
+import { getWalletRecord } from './users'
+import { abortTransfer, getCreateTransferActionStatus, MAX_PROCESSING_DELAY_MILLISECONDS } from './transfers'
 
 export async function getActionRecords(userId: number, options: ListQueryOptions = {}): Promise<ActionRecordWithId[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
@@ -48,7 +49,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
           await abortTransfer(action.userId, action.transferUri)
           break
         default:
-          // Do nothing more.
+        // Do nothing more.
       }
     }
   })
@@ -81,6 +82,29 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
       if (replacement) {
         await db.actions.add(replacement)
       }
+    }
+  })
+}
+
+export async function resolveOldNotConfirmedCreateTransferRequests(userId: number): Promise<void> {
+  await db.transaction('rw', [db.wallets, db.actions], async () => {
+    const walletRecord = await getWalletRecord(userId)
+    const syncedAt = walletRecord.logStream.syncedAt
+    if (syncedAt) {
+      assert(!Number.isNaN(syncedAt.getTime()))
+      const currentTime = Date.now()
+      const cutoffTime = syncedAt.getTime() - MAX_PROCESSING_DELAY_MILLISECONDS
+      await db.actions
+        .where('[userId+createdAt]')
+        .between([userId, Dexie.minKey], [userId, Dexie.maxKey])
+        .filter(action => (
+          action.actionType === 'CreateTransfer' &&
+          getCreateTransferActionStatus(action, currentTime) === 'Not confirmed' &&
+          action.execution!.unresolvedRequestAt!.getTime() < cutoffTime
+        ))
+        .modify((action: { execution: ExecutionState }) => {
+          delete action.execution.unresolvedRequestAt
+        })
     }
   })
 }

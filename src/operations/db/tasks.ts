@@ -1,5 +1,7 @@
+import type { TaskRecordWithId } from './schema'
+
 import { Dexie } from 'dexie'
-import { db, TaskRecordWithId } from './schema'
+import { db } from './schema'
 
 export async function getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
   let collection = db.tasks

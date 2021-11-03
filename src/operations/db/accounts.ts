@@ -1,11 +1,12 @@
 import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
 import type { AccountV0 } from '../canonical-objects'
-
-import { Dexie } from 'dexie'
-import {
-  db, AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
+import type {
+  AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
   AccountConfigRecord, AccountDisplayRecord, AccountRecord
 } from './schema'
+
+import { Dexie } from 'dexie'
+import { db } from './schema'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {

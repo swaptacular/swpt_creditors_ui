@@ -26,6 +26,7 @@ import { registerTranferDeletion, getTransferRecord, storeTransfer } from './tra
 import {
   storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords
 } from './accounts'
+import { resolveOldNotConfirmedCreateTransferRequests } from './actions'
 
 export class BrokenLogStream extends Error {
   name = 'BrokenLogStream'
@@ -55,6 +56,7 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
   try {
     await ensureLoadedTransfers(server, userId)
     while (await processLogPage(server, userId));
+    await resolveOldNotConfirmedCreateTransferRequests(userId)
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
       // When log entries has been lost, user's data must be loaded

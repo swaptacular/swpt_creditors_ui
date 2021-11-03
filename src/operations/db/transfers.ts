@@ -13,6 +13,12 @@ import { getIsoTimeOrNow } from './common'
 import { db, RecordDoesNotExist } from './schema'
 import { UserDoesNotExist, isInstalledUser } from './users'
 
+export const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side
+export const TRANSFER_NORMAL_WAIT_SECONDS = 86400  // 24 hours before the transfer is considered delayed.
+export const TRANSFER_DELETION_MIN_DELAY_SECONDS = 5 * 86400  // 5 days
+export const TRANSFER_DELETION_DELAY_SECONDS = Math.max(
+  appConfig.TransferDeletionDelaySeconds, TRANSFER_DELETION_MIN_DELAY_SECONDS)
+
 export type TransferState = 'waiting' | 'delayed' | 'successful' | 'unsuccessful'
 
 export function getTransferState(transfer: TransferV0): TransferState {
@@ -256,12 +262,6 @@ export async function registerTranferDeletion(transferUri: string): Promise<void
       .delete()
   })
 }
-
-const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side
-const TRANSFER_NORMAL_WAIT_SECONDS = 86400  // 24 hours before the transfer is considered delayed.
-const TRANSFER_DELETION_MIN_DELAY_SECONDS = 5 * 86400  // 5 days
-const TRANSFER_DELETION_DELAY_SECONDS = Math.max(
-  appConfig.TransferDeletionDelaySeconds, TRANSFER_DELETION_MIN_DELAY_SECONDS)
 
 function hasTimedOut(startedAt: Date, currentTime: number = Date.now()): boolean {
   const deadline = startedAt.getTime() + 1000 * TRANSFER_DELETION_MIN_DELAY_SECONDS
