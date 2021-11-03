@@ -2,13 +2,13 @@ import type { Collection } from 'dexie'
 import type { TransferV0 } from '../canonical-objects'
 import type {
   CreateTransferAction, CreateTransferActionWithId, TransferRecord, AbortTransferActionWithId,
-  AbortTransferAction, ListQueryOptions
+  AbortTransferAction, ListQueryOptions, ExecutionState
 } from './schema'
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser } from './users'
+import { UserDoesNotExist, isInstalledUser, getWalletRecord } from './users'
 
 export const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side
 export const TRANSFER_NORMAL_WAIT_SECONDS = 86400  // 24 hours before the transfer is considered delayed.
@@ -257,6 +257,29 @@ export async function registerTranferDeletion(transferUri: string): Promise<void
       .where({ transferUri })
       .filter(task => task.taskType === 'DeleteTransfer')
       .delete()
+  })
+}
+
+export async function resolveOldNotConfirmedCreateTransferRequests(userId: number): Promise<void> {
+  await db.transaction('rw', [db.wallets, db.actions], async () => {
+    const walletRecord = await getWalletRecord(userId)
+    const syncedAt = walletRecord.logStream.syncedAt
+    if (syncedAt) {
+      assert(!Number.isNaN(syncedAt.getTime()))
+      const currentTime = Date.now()
+      const cutoffTime = syncedAt.getTime() - MAX_PROCESSING_DELAY_MILLISECONDS
+      await db.actions
+        .where('[userId+createdAt]')
+        .between([userId, Dexie.minKey], [userId, Dexie.maxKey])
+        .filter(action => (
+          action.actionType === 'CreateTransfer' &&
+          getCreateTransferActionStatus(action, currentTime) === 'Not confirmed' &&
+          action.execution!.unresolvedRequestAt!.getTime() < cutoffTime
+        ))
+        .modify((action: { execution: ExecutionState }) => {
+          delete action.execution.unresolvedRequestAt
+        })
+    }
   })
 }
 
