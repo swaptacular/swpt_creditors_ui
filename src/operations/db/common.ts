@@ -1,7 +1,3 @@
-export class RecordDoesNotExist extends Error {
-  name = 'RecordDoesNotExist'
-}
-
 export type ListQueryOptions = {
   before?: number,
   after?: number,

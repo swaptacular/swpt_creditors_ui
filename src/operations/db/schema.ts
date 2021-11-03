@@ -8,6 +8,10 @@ import type {
 
 import { Dexie } from 'dexie'
 
+export class RecordDoesNotExist extends Error {
+  name = 'RecordDoesNotExist'
+}
+
 type UserReference = {
   userId: number,
 }

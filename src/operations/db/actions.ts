@@ -5,8 +5,7 @@ import type {
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
-import { db } from './schema'
-import { RecordDoesNotExist } from './common'
+import { db, RecordDoesNotExist } from './schema'
 import { UserDoesNotExist, isInstalledUser } from './users'
 import { abortTransfer } from './transfers'
 
