@@ -183,6 +183,7 @@ type TaskData =
 
 export type TaskRecord =
   | DeleteTransferTask
+  | FetchDebtorInfoTask
 
 export type TaskRecordWithId =
   & TaskRecord
@@ -193,6 +194,15 @@ export type DeleteTransferTask =
   & {
     taskType: 'DeleteTransfer',
     transferUri: string,
+  }
+
+export type FetchDebtorInfoTask =
+  & TaskData
+  & {
+    taskType: 'FetchDebtorInfo',
+    debtorInfoUri: string,
+    accountObjectUri: string,
+    backoffSeconds: number,
   }
 
 export type DeleteTransferTaskWithId =
