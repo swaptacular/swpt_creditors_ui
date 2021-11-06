@@ -1,11 +1,64 @@
+import type { BaseDebtorData } from '../../debtor-info'
 import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
-  AccountConfigRecord, AccountDisplayRecord, AccountRecord
+  AccountConfigRecord, AccountDisplayRecord, AccountRecord, InterestRateInfo, AckDebtorInfoActionWithId,
+  AckInterestRateActionWithId, AckConfigErrorActionWithId
 } from './schema'
 import { Dexie } from 'dexie'
-import { db } from './schema'
+import { db, RecordDoesNotExist } from './schema'
+
+type PendingAck<T> = {
+  before: T,
+  after: T,
+  actionId?: number,
+}
+
+type AccountFacts = {
+  account: AccountRecord
+  config: AccountConfigRecord
+  display: AccountDisplayRecord
+  knowledge: AccountKnowledgeRecord
+  exchange: AccountExchangeRecord
+  info: AccountInfoRecord
+  ledger: AccountLedgerRecord
+  ackConfigError?: PendingAck<string | undefined>
+  ackInterestRate?: PendingAck<InterestRateInfo>
+  ackDebtorData?: PendingAck<BaseDebtorData>
+}
+
+class AccountData {
+  constructor(public facts: AccountFacts) { }
+}
+
+export async function getAccountData(accountUri: string): Promise<AccountData> {
+  const account = await db.accounts.get(accountUri)
+  if (!account) {
+    throw new RecordDoesNotExist()
+  }
+  const config = await db.accountObjects.get(account.config.uri)
+  const knowledge = await db.accountObjects.get(account.knowledge.uri)
+  const display = await db.accountObjects.get(account.display.uri)
+  const ledger = await db.accountObjects.get(account.ledger.uri)
+  const exchange = await db.accountObjects.get(account.exchange.uri)
+  const info = await db.accountObjects.get(account.info.uri)
+  assert(config && config.type === 'AccountConfig' && config.account.uri === accountUri)
+  assert(knowledge && knowledge.type === 'AccountKnowledge' && knowledge.account.uri === accountUri)
+  assert(display && display.type === 'AccountDisplay' && display.account.uri === accountUri)
+  assert(ledger && ledger.type === 'AccountLedger' && ledger.account.uri === accountUri)
+  assert(exchange && exchange.type === 'AccountExchange' && exchange.account.uri === accountUri)
+  assert(info && info.type === 'AccountInfo' && info.account.uri === accountUri)
+
+  const actions = await db.actions.where({ 'account.uri': accountUri }).toArray()
+  const actionsByType = new Map(actions.map(action => [action.actionType, action]))
+  return new AccountData({
+    account, config, info, knowledge, exchange, ledger, display,
+    ackConfigError: actionsByType.get('AckConfigError') as AckConfigErrorActionWithId | undefined,
+    ackInterestRate: actionsByType.get('AckInterestRate') as AckInterestRateActionWithId | undefined,
+    ackDebtorData: actionsByType.get('AckDebtorInfo') as AckDebtorInfoActionWithId | undefined,
+  })
+}
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {
@@ -94,4 +147,3 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
     accountConfigRecord: { ...config, userId },
   }
 }
-

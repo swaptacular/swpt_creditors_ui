@@ -1,5 +1,5 @@
 import type { PaymentInfo } from '../../payment-requests'
-import type { ResourceReference, DocumentWithHash } from '../../debtor-info'
+import type { BaseDebtorData, ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
@@ -10,6 +10,11 @@ import { Dexie } from 'dexie'
 
 export class RecordDoesNotExist extends Error {
   name = 'RecordDoesNotExist'
+}
+
+export type InterestRateInfo = {
+  interestRate?: number,
+  interestRateChangedAt?: string,
 }
 
 export type ListQueryOptions = {
@@ -135,6 +140,9 @@ export type DocumentRecord =
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
+  | AckInterestRateAction
+  | AckConfigErrorAction
+  | AckDebtorInfoAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -172,6 +180,45 @@ export type AbortTransferAction =
 export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
+
+export type AckInterestRateAction =
+  & ActionData
+  & {
+    actionType: 'AckInterestRate',
+    account: ObjectReference,
+    before: InterestRateInfo,
+    after: InterestRateInfo,
+  }
+
+export type AckInterestRateActionWithId =
+  & ActionRecordWithId
+  & AckInterestRateAction
+
+export type AckConfigErrorAction =
+  & ActionData
+  & {
+    actionType: 'AckConfigError',
+    account: ObjectReference,
+    before: string | undefined,
+    after: string | undefined,
+  }
+
+export type AckConfigErrorActionWithId =
+  & ActionRecordWithId
+  & AckConfigErrorAction
+
+export type AckDebtorInfoAction =
+  & ActionData
+  & {
+    actionType: 'AckDebtorInfo',
+    account: ObjectReference,
+    before: BaseDebtorData,
+    after: BaseDebtorData,
+  }
+
+export type AckDebtorInfoActionWithId =
+  & ActionRecordWithId
+  & AckDebtorInfoAction
 
 type TaskData =
   & UserReference
@@ -248,7 +295,7 @@ class CreditorsDb extends Dexie {
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
 
-      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
+      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,account.uri',
       tasks: '++taskId,[userId+scheduledFor],transferUri',
     })
 
