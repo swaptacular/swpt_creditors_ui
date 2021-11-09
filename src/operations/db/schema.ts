@@ -140,7 +140,7 @@ export type DocumentRecord =
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
-  | AckAccountInfoAction
+  | AckAccountFactsAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -179,25 +179,25 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
-export type EssentialAccountInfo = {
+export type EssentialAccountFacts = {
   debtorInfo?: BaseDebtorData,
   interestRate?: number,
   interestRateChangedAt?: string,
   configError?: string,
 }
 
-export type AckAccountInfoAction =
+export type AckAccountFactsAction =
   & ActionData
   & {
-    actionType: 'AckAccountInfo',
+    actionType: 'AckAccountFacts',
     accountUri: string,
-    before: EssentialAccountInfo,
-    after: EssentialAccountInfo,
+    before: EssentialAccountFacts,
+    after: EssentialAccountFacts,
   }
 
-export type AckAccountInfoActionWithId =
+export type AckAccountFactsActionWithId =
   & ActionRecordWithId
-  & AckAccountInfoAction
+  & AckAccountFactsAction
 
 type TaskData =
   & UserReference
