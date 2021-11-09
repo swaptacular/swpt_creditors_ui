@@ -140,9 +140,7 @@ export type DocumentRecord =
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
-  | AckInterestRateAction
-  | AckConfigErrorAction
-  | AckDebtorInfoAction
+  | AckAccountInfoAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -181,44 +179,25 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
-export type AckInterestRateAction =
+export type EssentialAccountInfo = {
+  debtorInfo?: BaseDebtorData,
+  interestRate?: number,
+  interestRateChangedAt?: string,
+  configError?: string,
+}
+
+export type AckAccountInfoAction =
   & ActionData
   & {
-    actionType: 'AckInterestRate',
-    account: ObjectReference,
-    before: InterestRateInfo,
-    after: InterestRateInfo,
+    actionType: 'AckAccountInfo',
+    accountUri: string,
+    before: EssentialAccountInfo,
+    after: EssentialAccountInfo,
   }
 
-export type AckInterestRateActionWithId =
+export type AckAccountInfoActionWithId =
   & ActionRecordWithId
-  & AckInterestRateAction
-
-export type AckConfigErrorAction =
-  & ActionData
-  & {
-    actionType: 'AckConfigError',
-    account: ObjectReference,
-    before: string | undefined,
-    after: string | undefined,
-  }
-
-export type AckConfigErrorActionWithId =
-  & ActionRecordWithId
-  & AckConfigErrorAction
-
-export type AckDebtorInfoAction =
-  & ActionData
-  & {
-    actionType: 'AckDebtorInfo',
-    account: ObjectReference,
-    before: BaseDebtorData,
-    after: BaseDebtorData,
-  }
-
-export type AckDebtorInfoActionWithId =
-  & ActionRecordWithId
-  & AckDebtorInfoAction
+  & AckAccountInfoAction
 
 type TaskData =
   & UserReference
@@ -295,7 +274,7 @@ class CreditorsDb extends Dexie {
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
 
-      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,account.uri',
+      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
       tasks: '++taskId,[userId+scheduledFor],transferUri',
     })
 
