@@ -12,11 +12,6 @@ export class RecordDoesNotExist extends Error {
   name = 'RecordDoesNotExist'
 }
 
-export type InterestRateInfo = {
-  interestRate?: number,
-  interestRateChangedAt?: string,
-}
-
 export type ListQueryOptions = {
   before?: number,
   after?: number,
