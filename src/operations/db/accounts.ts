@@ -2,59 +2,57 @@ import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
-  AccountConfigRecord, AccountDisplayRecord, AccountRecord, EssentialAccountFacts
+  AccountConfigRecord, AccountDisplayRecord, AccountRecord, EssentialAccountFacts,
+  AccountObjectRecord
 } from './schema'
 import { Dexie } from 'dexie'
 import { db, RecordDoesNotExist } from './schema'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
-type AccountFacts = {
-  account: AccountRecord
-  config: AccountConfigRecord
-  display: AccountDisplayRecord
-  knowledge: AccountKnowledgeRecord
-  exchange: AccountExchangeRecord
-  info: AccountInfoRecord
-  ledger: AccountLedgerRecord
+export class AccountFacts {
+  account!: AccountRecord
+  config!: AccountConfigRecord
+  display!: AccountDisplayRecord
+  knowledge!: AccountKnowledgeRecord
+  exchange!: AccountExchangeRecord
+  info!: AccountInfoRecord
+  ledger!: AccountLedgerRecord
   pendingAck?: PendingAck
-  hasAckAction: boolean
-}
+  hasAckAction!: boolean
 
-class AccountData {
-  constructor(public facts: AccountFacts) { }
-}
-
-export async function getAccountData(accountUri: string): Promise<AccountData> {
-  return await db.transaction('rw', [db.accounts, db.accountObjects, db.actions], async () => {
-    const account = await db.accounts.get(accountUri)
-    if (!account) {
-      throw new RecordDoesNotExist()
+  static async fromUri(accountUri: string): Promise<AccountFacts> {
+    async function getAccountObject<T extends AccountObjectRecord>(
+      objUri: string,
+      objType: AccountObjectRecord['type'],
+    ): Promise<T> {
+      const obj = await db.accountObjects.get(objUri)
+      assert(obj && obj.type === objType && obj.account.uri === objUri)
+      return obj as T
     }
-    const config = await db.accountObjects.get(account.config.uri)
-    const knowledge = await db.accountObjects.get(account.knowledge.uri)
-    const display = await db.accountObjects.get(account.display.uri)
-    const ledger = await db.accountObjects.get(account.ledger.uri)
-    const exchange = await db.accountObjects.get(account.exchange.uri)
-    const info = await db.accountObjects.get(account.info.uri)
-    const ackActionsCount = await db.actions
-      .where({ accountUri })
-      .filter(action => action.actionType === 'AckAccountFacts')
-      .count()
 
-    assert(config && config.type === 'AccountConfig' && config.account.uri === accountUri)
-    assert(knowledge && knowledge.type === 'AccountKnowledge' && knowledge.account.uri === accountUri)
-    assert(display && display.type === 'AccountDisplay' && display.account.uri === accountUri)
-    assert(ledger && ledger.type === 'AccountLedger' && ledger.account.uri === accountUri)
-    assert(exchange && exchange.type === 'AccountExchange' && exchange.account.uri === accountUri)
-    assert(info && info.type === 'AccountInfo' && info.account.uri === accountUri)
-    assert(ackActionsCount === 0 || ackActionsCount === 1)
-
-    return new AccountData({
-      account, config, info, knowledge, exchange, ledger, display,
-      hasAckAction: ackActionsCount === 1,
+    return await db.transaction('rw', [db.accounts, db.accountObjects, db.actions], async () => {
+      const account = await db.accounts.get(accountUri)
+      if (!account) {
+        throw new RecordDoesNotExist()
+      }
+      let facts = new AccountFacts()
+      facts.account = account
+      facts.config = await getAccountObject(account.config.uri, 'AccountConfig')
+      facts.display = await getAccountObject(account.display.uri, 'AccountDisplay')
+      facts.knowledge = await getAccountObject(account.knowledge.uri, 'AccountKnowledge')
+      facts.exchange = await getAccountObject(account.exchange.uri, 'AccountExchange')
+      facts.info = await getAccountObject(account.info.uri, 'AccountInfo')
+      facts.ledger = await getAccountObject(account.ledger.uri, 'AccountLedger')
+      const ackActionsCount = await db.actions
+        .where({ accountUri })
+        .filter(action => action.actionType === 'AckAccountFacts')
+        .count()
+      assert(ackActionsCount === 0 || ackActionsCount === 1)
+      facts.hasAckAction = ackActionsCount === 1
+      return facts
     })
-  })
+  }
 }
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
