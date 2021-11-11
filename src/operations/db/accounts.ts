@@ -71,7 +71,7 @@ export async function storeCommittedTransferRecord(record: CommittedTransferReco
 }
 
 export async function deleteAccount(accountUri: string): Promise<void> {
-  const tables = [db.accounts, db.accountObjects, db.ledgerEntries, db.committedTransfers]
+  const tables = [db.accounts, db.accountObjects, db.ledgerEntries, db.committedTransfers, db.actions]
   await db.transaction('rw', tables, async () => {
     await db.accounts.delete(accountUri)
     await db.committedTransfers.where({ 'account.uri': accountUri }).delete()
@@ -79,6 +79,7 @@ export async function deleteAccount(accountUri: string): Promise<void> {
     for (const accountObjectUri of accountObjectUris) {
       await deleteAccountObject(accountObjectUri)
     }
+    await db.actions.where({ accountUri }).delete()
   })
 }
 
