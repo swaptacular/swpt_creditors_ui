@@ -221,7 +221,8 @@ export type FetchDebtorInfoTask =
   & TaskData
   & {
     taskType: 'FetchDebtorInfo',
-    debtorInfoUri: string,
+    iri: string,
+    accountUri: string,
     accountObjectUri: string,
     backoffSeconds: number,
   }
@@ -270,7 +271,7 @@ class CreditorsDb extends Dexie {
       documents: 'uri',
 
       actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
-      tasks: '++taskId,[userId+scheduledFor],transferUri',
+      tasks: '++taskId,[userId+scheduledFor],transferUri,accountUri',
     })
 
     this.wallets = this.table('wallets')

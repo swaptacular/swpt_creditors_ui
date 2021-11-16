@@ -14,7 +14,7 @@ import { HttpError, AuthenticationError } from './server'
 import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
-  resolveOldNotConfirmedCreateTransferRequests
+  resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -665,11 +665,11 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
       await registerTranferDeletion(objectUri)
       break
 
+    case 'AccountKnowledge':
+    case 'AccountInfo':
     case 'AccountConfig':
     case 'AccountDisplay':
-    case 'AccountKnowledge':
     case 'AccountExchange':
-    case 'AccountInfo':
     case 'AccountLedger':
       await deleteAccountObject(objectUri)
       break
@@ -714,11 +714,17 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
       await storeTransfer(record.userId, record)
       break
 
+    case 'AccountKnowledge':
+      await storeAccountKnowledgeRecord(record)
+      break
+
+    case 'AccountInfo':
+      await storeAccountInfoRecord(record)
+      break
+
     case 'AccountConfig':
     case 'AccountDisplay':
-    case 'AccountKnowledge':
     case 'AccountExchange':
-    case 'AccountInfo':
     case 'AccountLedger':
       if (existingRecord) {
         assert(existingRecord.type === record.type)

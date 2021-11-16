@@ -71,7 +71,7 @@ export async function storeCommittedTransferRecord(record: CommittedTransferReco
 }
 
 export async function deleteAccount(accountUri: string): Promise<void> {
-  const tables = [db.accounts, db.accountObjects, db.ledgerEntries, db.committedTransfers, db.actions]
+  const tables = [db.accounts, db.accountObjects, db.ledgerEntries, db.committedTransfers, db.actions, db.tasks]
   await db.transaction('rw', tables, async () => {
     await db.accounts.delete(accountUri)
     await db.committedTransfers.where({ 'account.uri': accountUri }).delete()
@@ -80,6 +80,7 @@ export async function deleteAccount(accountUri: string): Promise<void> {
       await deleteAccountObject(accountObjectUri)
     }
     await db.actions.where({ accountUri }).delete()
+    await db.tasks.where({ accountUri }).delete()
   })
 }
 
@@ -97,8 +98,10 @@ export async function deleteAccountObject(accountObjectUri: string): Promise<voi
         )
       } else {
         await db.accountObjects.delete(accountObjectUri)
-        if (accountObject.type === 'AccountLedger') {
-          await db.ledgerEntries.where({ 'ledger.uri': accountObject.uri }).delete()
+        switch (accountObject.type) {
+          case 'AccountLedger':
+            await db.ledgerEntries.where({ 'ledger.uri': accountObject.uri }).delete()
+            break
         }
       }
     }
@@ -142,4 +145,45 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
     accountLedgerRecord: { ...ledger, userId },
     accountConfigRecord: { ...config, userId },
   }
+}
+
+export function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
+  return storeKnowledgeOrInfoRecord(record)
+}
+export function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {
+  return storeKnowledgeOrInfoRecord(record)
+}
+
+async function storeKnowledgeOrInfoRecord(record: AccountKnowledgeRecord | AccountInfoRecord): Promise<void> {
+  await db.transaction('rw', [db.accountObjects, db.tasks], async () => {
+    let newIri = record.debtorInfo?.iri
+    const accountUri = record.account.uri
+    const accountObjectUri = record.uri
+    const existingRecord = await db.accountObjects.get(accountObjectUri)
+    if (existingRecord) {
+      assert(existingRecord.type === record.type)
+      assert(existingRecord.userId === record.userId)
+      assert(existingRecord.account.uri === accountUri)
+      if (newIri === existingRecord.debtorInfo?.iri) {
+        newIri = undefined  // The IRI has not changed.
+      } else {
+        await db.tasks
+          .where({ accountUri })
+          .filter(task => task.taskType === 'FetchDebtorInfo' && task.accountObjectUri === accountObjectUri)
+          .delete()
+      }
+    }
+    if (newIri !== undefined) {
+      await db.tasks.add({
+        taskType: 'FetchDebtorInfo',
+        userId: record.userId,
+        iri: newIri,
+        scheduledFor: new Date(),
+        backoffSeconds: 0,
+        accountUri,
+        accountObjectUri,
+      })
+    }
+    await db.accountObjects.put(record)
+  })
 }
