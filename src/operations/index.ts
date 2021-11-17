@@ -5,9 +5,9 @@ import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
   HttpResponse, HttpError,
 } from './server'
-import { getWalletRecord, getTasks, removeTask, getActionRecords } from './db'
+import { getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask } from './db'
 import { getOrCreateUserId, sync, PinNotRequired } from './db-sync'
-import { calcParallelTimeout } from './utils'
+import { calcParallelTimeout, fetchWithTimeout, calcSha256 } from './utils'
 
 export {
   AuthenticationError,
@@ -79,9 +79,30 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
           try {
             await server.delete(task.transferUri, { timeout })
           } catch (e: unknown) {
-            if (!(e instanceof HttpError && e.status === 404)) throw e
+            if (!(e instanceof HttpError && e.status === 404)) throw e  // Ignore 404 errors.
           }
           await removeTask(task.taskId)
+        }
+      case 'FetchDebtorInfo':
+        return async (timeout) => {
+          let response, content, document
+          try {
+            response = await fetchWithTimeout(task.iri, { timeout })
+            if (response.ok) {
+              content = await response.arrayBuffer()
+            }
+          } catch (e: unknown ) {
+            console.error(e)  // ignore all errors
+          }
+          if (response && content) {
+            document = {
+              content,
+              contentType: response.headers.get('Content-Type') ?? 'text/plain',
+              sha256: await calcSha256(content),
+              uri: task.iri,
+            }
+          }
+          await settleFetchDebtorInfoTask(task, document)
         }
       default:
         throw new Error('unknown task type')  // This must never happen.
