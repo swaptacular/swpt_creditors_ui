@@ -59,12 +59,14 @@ export type ActionsModel = BasePageModel & {
 
 export class AppState {
   private interactionId: number = 0
+  readonly successfulPinReset: Writable<boolean>
   readonly waitingInteractions: Writable<Set<number>>
   readonly alerts: Writable<Alert[]>
   readonly pageModel: Writable<PageModel>
   goBack?: () => void
 
   constructor(private uc: UserContext, actions: Store<ActionRecordWithId[]>) {
+    this.successfulPinReset = writable(false)
     this.waitingInteractions = writable(new Set())
     this.alerts = writable([])
     this.pageModel = writable({
@@ -111,6 +113,20 @@ export class AppState {
       alert.options.continue?.()
     }, {
       startInteraction: false,
+    })
+  }
+
+  resetPin(newPin: string): Promise<void> {
+    const update = () => this.fetchDataFromServer()
+
+    return this.attempt(async () => {
+      await this.uc.resetPin(newPin)
+      this.successfulPinReset.set(true)
+      this.uc.scheduleUpdate()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: update })],
+      ],
     })
   }
 

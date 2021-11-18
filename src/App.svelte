@@ -10,6 +10,7 @@
   import LoginScreen from './components/LoginScreen.svelte'
   import Router from './components/Router.svelte'
   import Hourglass from './components/Hourglass.svelte'
+  import ResetPinDialog from './components/ResetPinDialog.svelte'
 
   const unauthenticated = writable(false)
   setContext('unauthenticated', unauthenticated)
@@ -20,6 +21,7 @@
   let httpErrorSnackbar: any
   let resolveAppStatePromise: (appState?: AppState) => void
   let rejectAppStatePromise: (error: unknown) => void
+  let showResetPinDialog: boolean = false
 
   const appStatePromise = new Promise<AppState | undefined>((resolve, reject) => {
     resolveAppStatePromise = resolve
@@ -58,6 +60,10 @@
       }
       event.preventDefault()
     })
+    addEventListener('pin-not-required', (event) => {
+      showResetPinDialog = true
+      event.preventDefault()
+    })
 
     // Note that we call `createAppState` after all update-event
     // listeners have been registered. Thus, update problems occurring
@@ -86,6 +92,7 @@
       <LoginScreen bind:snackbarBottom  />
     {:else}
       <Router app={appState} bind:snackbarBottom />
+      <ResetPinDialog app={appState} bind:open={showResetPinDialog} />
     {/if}
   {:catch error}
     <Paper style="margin: 36px 18px" elevation={8}>
