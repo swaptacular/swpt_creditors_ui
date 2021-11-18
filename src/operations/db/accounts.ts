@@ -10,6 +10,7 @@ import { db, RecordDoesNotExist } from './schema'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
+// TODO: Is this what we need?
 export class AccountFacts {
   account!: AccountRecord
   config!: AccountConfigRecord
