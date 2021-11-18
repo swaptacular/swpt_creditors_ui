@@ -1,5 +1,5 @@
 import type { PaymentInfo } from '../../payment-requests'
-import type { ResourceReference, DocumentWithHash } from '../../debtor-info'
+import type { BaseDebtorData, ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
@@ -135,6 +135,7 @@ export type DocumentRecord =
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
+  | AckAccountFactsAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -173,6 +174,26 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
+export type EssentialAccountFacts = {
+  debtorInfo?: BaseDebtorData,
+  interestRate?: number,
+  interestRateChangedAt?: string,
+  configError?: string,
+}
+
+export type AckAccountFactsAction =
+  & ActionData
+  & {
+    actionType: 'AckAccountFacts',
+    accountUri: string,
+    before: EssentialAccountFacts,
+    after: EssentialAccountFacts,
+  }
+
+export type AckAccountFactsActionWithId =
+  & ActionRecordWithId
+  & AckAccountFactsAction
+
 type TaskData =
   & UserReference
   & {
@@ -183,6 +204,7 @@ type TaskData =
 
 export type TaskRecord =
   | DeleteTransferTask
+  | FetchDebtorInfoTask
 
 export type TaskRecordWithId =
   & TaskRecord
@@ -193,6 +215,16 @@ export type DeleteTransferTask =
   & {
     taskType: 'DeleteTransfer',
     transferUri: string,
+  }
+
+export type FetchDebtorInfoTask =
+  & TaskData
+  & {
+    taskType: 'FetchDebtorInfo',
+    iri: string,
+    accountUri: string,
+    accountObjectUri: string,
+    backoffSeconds: number,
   }
 
 export type DeleteTransferTaskWithId =
@@ -238,8 +270,8 @@ class CreditorsDb extends Dexie {
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
 
-      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri',
-      tasks: '++taskId,[userId+scheduledFor],transferUri',
+      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
+      tasks: '++taskId,[userId+scheduledFor],transferUri,accountUri',
     })
 
     this.wallets = this.table('wallets')

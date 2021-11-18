@@ -12,6 +12,24 @@ export function calcParallelTimeout(numberOfParallelRequests: number): number {
   return appConfig.serverApiTimeout * (numberOfParallelRequests + n - 1) / n
 }
 
+export async function fetchWithTimeout(resource: RequestInfo, options: RequestInit & { timeout?: number }) {
+  const { timeout } = options;
+
+  if (timeout === undefined) {
+    return await fetch(resource, options);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal
+  });
+  clearTimeout(timeoutId);
+
+  return response;
+}
+
 export const iterAccountsList = (
   server: ServerSession,
   accountsListUri: string,
@@ -75,6 +93,16 @@ export async function fetchNewLedgerEntries(
     }
   }
   return newLedgerEntries
+}
+
+export function buffer2hex(buffer: ArrayBuffer, options = { toUpperCase: true }) {
+  const bytes = [...new Uint8Array(buffer)]
+  const hex = bytes.map(n => n.toString(16).padStart(2, '0')).join('')
+  return options.toUpperCase ? hex.toUpperCase() : hex
+}
+
+export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
+  return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }
 
 type Page<ItemsType> = {
