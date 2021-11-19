@@ -91,8 +91,8 @@
     {#if appState === undefined }
       <LoginScreen bind:snackbarBottom  />
     {:else}
-      <Router app={appState} bind:snackbarBottom />
       <ResetPinDialog app={appState} bind:open={showResetPinDialog} />
+      <Router app={appState} bind:snackbarBottom />
     {/if}
   {:catch error}
     <Paper style="margin: 36px 18px" elevation={8}>
