@@ -98,8 +98,8 @@
         <form noValidate autoComplete="off">
           <p>
             To improve the security of your wallet, you must choose a
-            personal identification number (PIN), which will be
-            required when performing potentially dangerous operations.
+            personal identification number (PIN). It will be required
+            when performing potentially dangerous operations.
           </p>
 
           <p>
