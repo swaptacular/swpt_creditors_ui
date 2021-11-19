@@ -1,4 +1,4 @@
-import type { WalletRecordWithId } from './schema'
+import type { WalletRecordWithId, DocumentRecord } from './schema'
 import { db } from './schema'
 
 export class UserDoesNotExist extends Error {
@@ -49,4 +49,8 @@ export async function updateWalletRecord(walletRecord: WalletRecordWithId): Prom
     throw new UserDoesNotExist()
   }
   assert(updated === 1)
+}
+
+export async function getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
+  return await db.documents.get(uri)
 }
