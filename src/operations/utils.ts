@@ -72,7 +72,7 @@ export async function fetchNewLedgerEntries(
   // NOTE: The entries are iterated in reverse-chronological order
   // (bigger entryIds go first).
   if (latestEntryId + 1n < iteratedId) {
-    const first = new URL(accountLedger.entries.first, accountLedger.uri)
+    const first = new URL(accountLedger.entries.first)
     first.searchParams.append('stop', String(latestEntryId))
     try {
       for await (const entry of iterLedgerEntries(server, first.href, timeout)) {

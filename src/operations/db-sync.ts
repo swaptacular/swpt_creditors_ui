@@ -522,7 +522,7 @@ function tryToReconstructLogObject(updateInfo: UpdateInfo, record?: LogObjectRec
           ...record,
           entries: {
             ...record.entries,
-            first: data.firstPage,
+            first: new URL(data.firstPage, record.uri).href,
           },
           principal: data.principal,
           nextEntryId: data.nextEntryId,
