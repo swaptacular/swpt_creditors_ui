@@ -8,7 +8,9 @@ import {
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask
 } from './db'
-import { getOrCreateUserId, sync, PinNotRequired } from './db-sync'
+import { getOrCreateUserId, sync, storeObject, PinNotRequired } from './db-sync'
+import { makePinInfo } from './canonical-objects'
+
 import { calcParallelTimeout, fetchWithTimeout, calcSha256 } from './utils'
 
 export {
@@ -173,7 +175,8 @@ export class UserContext {
           newPin,
         }
         try {
-          await this.server.patch(pinInfoUri, requestBody, { attemptLogin: false })
+          const response = await this.server.patch(pinInfoUri, requestBody) as HttpResponse<PinInfo>
+          await storeObject(this.userId, makePinInfo(response))
         } catch (e: unknown) {
           if (e instanceof HttpError && e.status === 409 && attemptsLeft--) continue
           else throw e
@@ -192,7 +195,7 @@ export class UserContext {
   }
 
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {
-    const response = await this.server.get(pinInfoUri, { attemptLogin: false }) as HttpResponse<PinInfo>
+    const response = await this.server.get(pinInfoUri) as HttpResponse<PinInfo>
     return response.data
   }
 }
