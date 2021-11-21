@@ -25,7 +25,8 @@
     }
   }
 
-  function submit(): void {
+  function submit(e: Event): void {
+    e.preventDefault()
     if (invalidPin) {
       const shakingSuffix = ' shaking-block'
       const origClassName = shakingElement.className
@@ -132,10 +133,10 @@
           </p>
 
           <p class="submit">
-            <!-- The type="button" is necessary to prevent form submitting.-->
-            <Button type="button" on:click={submit} variant="raised">
+            <Button on:click={submit} variant="raised">
               <Label>Save</Label>
             </Button>
+            <!-- The type="button" is necessary to prevent form submitting.-->
             <Button type="button" on:click={() => logout()}>
               <Label>Log out</Label>
             </Button>
