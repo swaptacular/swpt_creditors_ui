@@ -143,10 +143,11 @@
           </p>
 
           <p class="submit">
-            <Button on:click={submit} variant="raised">
+            <!-- The type="button" is necessary to prevent form submitting.-->
+            <Button type="button" on:click={submit} variant="raised">
               <Label>Save</Label>
             </Button>
-            <Button on:click={() => logout()}>
+            <Button type="button" on:click={() => logout()}>
               <Label>Log out</Label>
             </Button>
           </p>
