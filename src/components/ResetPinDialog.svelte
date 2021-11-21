@@ -16,6 +16,15 @@
   let newPin: string = ''
   const pinPattern = "^[0-9]{4,10}$"
 
+  function ignoreNonNumberKeys(evt: KeyboardEvent){
+    if (evt.key.length === 1) {
+      const charCode = evt.key.charCodeAt(0)
+      if (charCode < 48 || charCode > 57) {
+        evt.preventDefault()
+      }
+    }
+  }
+
   function close(): void {
     open = false
     newPin = ''
@@ -50,8 +59,9 @@
     margin-bottom: 1em;
   }
   .submit {
+    display: flex;
+    justify-content: space-between;
     margin-top: 2em;
-    text-align: right;
   }
 
   strong {
@@ -118,6 +128,7 @@
               withTrailingIcon={invalidPin}
               bind:invalid={invalidPin}
               bind:value={newPin}
+              on:keypress={ignoreNonNumberKeys}
               label="Your PIN"
               >
               <svelte:fragment slot="trailingIcon">
@@ -134,6 +145,9 @@
           <p class="submit">
             <Button on:click={submit} variant="raised">
               <Label>Save</Label>
+            </Button>
+            <Button on:click={() => logout()}>
+              <Label>Log out</Label>
             </Button>
           </p>
         </form>
