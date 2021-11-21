@@ -9,9 +9,10 @@ export type GetTokenOptions = {
 }
 
 export type AuthTokenSource = {
-  getToken: (options?: GetTokenOptions) => string | Promise<string>,
-  invalidateToken: (token: string) => void | Promise<void>,
-  logout: () => void | Promise<void>
+  getToken(options?: GetTokenOptions): string | Promise<string>,
+  isUnsafeToken(token: string): boolean | Promise<boolean>,
+  invalidateToken(token: string): void | Promise<void>,
+  logout(): void | Promise<void>
 }
 
 
@@ -32,7 +33,7 @@ export class Oauth2TokenSource implements AuthTokenSource {
       redirectUrl: appConfig.oauth2.redirectUrl,
       extraAuthorizationParams: {},
       scopes: disablePin ? ['access', 'disable_pin'] : ['access'],
-      safeScopes: ['access', 'access.readonly'],
+      safeScopes,
       async onAccessTokenExpiry(refreshAccessToken) {
         // This function is called when the access token has expired,
         // and a refresh token can be used. If the result of
@@ -85,6 +86,16 @@ export class Oauth2TokenSource implements AuthTokenSource {
     return token
   }
 
+  async isUnsafeToken(token: string): Promise<boolean> {
+    const accessContext = await this.helper.getAccessContext()
+    return Boolean(
+      accessContext.token &&
+      accessContext.token.value === token &&
+      accessContext.scopes &&
+      accessContext.scopes.some(scope => safeScopes.indexOf(scope) === -1)
+    )
+  }
+
   invalidateToken(token: string): void {
     this.helper.invalidateAccessToken(token)
   }
@@ -109,3 +120,6 @@ export class Oauth2TokenSource implements AuthTokenSource {
   }
 
 }
+
+const safeScopes = ['access', 'access.readonly']
+

@@ -21,7 +21,8 @@
   let httpErrorSnackbar: any
   let resolveAppStatePromise: (appState?: AppState) => void
   let rejectAppStatePromise: (error: unknown) => void
-  let showResetPinDialog: boolean = false
+  let pinRequired: boolean = true
+  let showResetPinModeBanner: boolean = false
 
   const appStatePromise = new Promise<AppState | undefined>((resolve, reject) => {
     resolveAppStatePromise = resolve
@@ -61,7 +62,11 @@
       event.preventDefault()
     })
     addEventListener('pin-not-required', (event) => {
-      showResetPinDialog = true
+      pinRequired = false
+      event.preventDefault()
+    })
+    addEventListener('unsafe-token', (event) => {
+      showResetPinModeBanner = true
       event.preventDefault()
     })
 
@@ -91,8 +96,8 @@
     {#if appState === undefined }
       <LoginScreen bind:snackbarBottom  />
     {:else}
-      <ResetPinDialog app={appState} bind:open={showResetPinDialog} />
-      <Router app={appState} bind:snackbarBottom />
+      <ResetPinDialog app={appState} bind:pinRequired />
+      <Router app={appState} {showResetPinModeBanner} bind:snackbarBottom />
     {/if}
   {:catch error}
     <Paper style="margin: 36px 18px" elevation={8}>

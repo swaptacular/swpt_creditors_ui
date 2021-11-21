@@ -214,14 +214,18 @@ export class ServerSession {
   }
 
   private async authenticate(options?: GetTokenOptions) {
-    let token
+    let token, isUnsafeToken
     try {
       token = await this.tokenSource.getToken({ onLoginAttempt: this.loginAttemptHandler, ...options })
+      isUnsafeToken = await this.tokenSource.isUnsafeToken(token)
     } catch (e: unknown) {
       if (e instanceof CanNotObtainToken) {
         throw new AuthenticationError('can not obtain token')
       }
       throw e
+    }
+    if (isUnsafeToken && dispatchEvent(new Event('unsafe-token', { cancelable: true }))) {
+      console.error('The dispatched unsafe-token event has been ignored.')
     }
     const tokenHash = buffer2hex(await calcSha256(token))
     const client = axios.create({

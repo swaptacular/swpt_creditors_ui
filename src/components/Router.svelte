@@ -4,6 +4,7 @@
   import ActionsPage from './ActionsPage.svelte'
 
   export let app: AppState
+  export let showResetPinModeBanner: boolean = false
   export let snackbarBottom: string = '0px'
 
   const { pageModel } = app
@@ -47,4 +48,4 @@
   $: pageComponent = getPageComponent($pageModel.type)
 </script>
 
-<svelte:component this={pageComponent} model={$pageModel} {app} bind:snackbarBottom />
+<svelte:component this={pageComponent} model={$pageModel} {app} {showResetPinModeBanner} bind:snackbarBottom />

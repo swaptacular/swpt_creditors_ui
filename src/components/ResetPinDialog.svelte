@@ -9,7 +9,7 @@
   import { logout } from '../operations'
 
   export let app: AppState
-  export let open: boolean = true
+  export let pinRequired: boolean = false
 
   let shakingElement: HTMLElement
   let invalidPin: boolean
@@ -25,13 +25,7 @@
     }
   }
 
-  function close(): void {
-    open = false
-    newPin = ''
-  }
-
-  function submit(e: Event): void {
-    e.preventDefault()
+  function submit(): void {
     if (invalidPin) {
       const shakingSuffix = ' shaking-block'
       const origClassName = shakingElement.className
@@ -41,17 +35,13 @@
       }
     } else {
       app.resetPin(newPin)
-      close()
+      pinRequired = true
+      newPin = ''
     }
   }
 
   $: successfulPinReset = app.successfulPinReset
-  $: if (open && $successfulPinReset) {
-    close()
-    alert('Using your wallet in PIN-reset mode is not safe. You will be ' +
-          'logged out. To use the application again, you will have to log in.')
-    logout()
-  }
+  $: open = !(pinRequired || $successfulPinReset)
 </script>
 
 <style>
@@ -101,7 +91,6 @@
       escapeKeyAction=""
       aria-labelledby="set-pin-dialog-title"
       aria-describedby="set-pin-dialog-content"
-      on:MDCDialog:closed={close}
       >
       <Title id="set-pin-dialog-title">Choose a PIN</Title>
       <Content id="set-pin-dialog-content">
