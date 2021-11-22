@@ -3,7 +3,6 @@
   import type { Writable } from 'svelte/store'
   import { getContext } from 'svelte'
   import { Title, Content } from '@smui/dialog'
-  import Banner, { Label as BannerLabel, Icon } from '@smui/banner'
   import Button, { Label } from '@smui/button'
   import Dialog from '@smui/dialog'
   import Textfield from '@smui/textfield'
@@ -54,7 +53,12 @@
 
   $: successfulPinReset = app.successfulPinReset
   $: open = !$successfulPinReset && !$pinRequired
-  $: showResetPinModeWarning = $successfulPinReset && $resetPinMode
+  $: if ($successfulPinReset && $resetPinMode) {
+    close()
+    alert('Using your wallet in PIN-reset mode is not safe. You will be ' +
+          'logged out. To use the application again, you will have to log in.')
+    logout()
+  }
 </script>
 
 <style>
@@ -157,13 +161,5 @@
       </Content>
     </Dialog>
   </div>
-{:else}
-  <Banner mobileStacked open={showResetPinModeWarning} on:MDCBanner:closed={() => logout()}>
-    <Icon slot="icon" class="material-icons">warning</Icon>
-    <BannerLabel slot="label">You are in reset-PIN mode. Using your wallet in this mode is not safe!</BannerLabel>
-    <svelte:fragment slot="actions">
-      <Button>Log out</Button>
-    </svelte:fragment>
-  </Banner>
 {/if}
 
