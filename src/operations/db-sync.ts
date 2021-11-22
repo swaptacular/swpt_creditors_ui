@@ -33,6 +33,8 @@ export class PinNotRequired extends Error {
   name = 'PinNotRequired'
 }
 
+export const IS_A_NEWBIE_KEY = 'creditors.IsANewbie'
+
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
@@ -275,6 +277,13 @@ async function getUserData(server: ServerSession): Promise<UserData> {
   return { wallet, creditor, pinInfo, accounts }
 }
 
+function setIsANewbieFlag(hasAccounts: boolean): void {
+  const value = localStorage.getItem(IS_A_NEWBIE_KEY)
+  if (value === null || value === 'true') {
+    localStorage.setItem(IS_A_NEWBIE_KEY, hasAccounts ? 'false' : 'true')
+  }
+}
+
 async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData): Promise<number> {
   // TODO: Delete user's existing actions (excluding
   // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
@@ -316,6 +325,7 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
       for (const accountUri of oldAccountUris.keys()) {
         await deleteAccount(accountUri)
       }
+      setIsANewbieFlag(accounts.length !== 0)
     }
     return userId
   })
