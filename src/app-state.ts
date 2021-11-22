@@ -117,15 +117,14 @@ export class AppState {
   }
 
   resetPin(newPin: string): Promise<void> {
-    const update = () => this.fetchDataFromServer()
+    const retry = () => dispatchEvent(new Event('pin-not-required', { cancelable: true }))
 
     return this.attempt(async () => {
       await this.uc.resetPin(newPin)
       this.successfulPinReset.set(true)
-      this.uc.scheduleUpdate()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: update })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: retry })],
       ],
     })
   }

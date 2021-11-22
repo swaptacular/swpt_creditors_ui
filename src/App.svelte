@@ -10,10 +10,13 @@
   import LoginScreen from './components/LoginScreen.svelte'
   import Router from './components/Router.svelte'
   import Hourglass from './components/Hourglass.svelte'
-  import ResetPinDialog from './components/ResetPinDialog.svelte'
 
   const unauthenticated = writable(false)
+  const pinRequired = writable(true)
+  const resetPinMode = writable(false)
   setContext('unauthenticated', unauthenticated)
+  setContext('pinRequired', pinRequired)
+  setContext('resetPinMode', resetPinMode)
 
   let snackbarBottom: string = '0px'
   let authenticationErrorSnackbar: any
@@ -21,8 +24,6 @@
   let httpErrorSnackbar: any
   let resolveAppStatePromise: (appState?: AppState) => void
   let rejectAppStatePromise: (error: unknown) => void
-  let pinRequired: boolean = true
-  let showResetPinModeBanner: boolean = false
 
   const appStatePromise = new Promise<AppState | undefined>((resolve, reject) => {
     resolveAppStatePromise = resolve
@@ -62,11 +63,12 @@
       event.preventDefault()
     })
     addEventListener('pin-not-required', (event) => {
-      pinRequired = false
+      pinRequired.set(false)
       event.preventDefault()
     })
     addEventListener('unsafe-token', (event) => {
-      showResetPinModeBanner = true
+      pinRequired.set(false)
+      resetPinMode.set(true)
       event.preventDefault()
     })
 
@@ -96,8 +98,7 @@
     {#if appState === undefined }
       <LoginScreen bind:snackbarBottom  />
     {:else}
-      <ResetPinDialog app={appState} bind:pinRequired />
-      <Router app={appState} {showResetPinModeBanner} bind:snackbarBottom />
+      <Router app={appState} bind:snackbarBottom />
     {/if}
   {:catch error}
     <Paper style="margin: 36px 18px" elevation={8}>

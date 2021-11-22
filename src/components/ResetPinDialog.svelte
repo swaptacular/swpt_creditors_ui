@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
+  import type { Writable } from 'svelte/store'
+  import { getContext } from 'svelte'
   import { Title, Content } from '@smui/dialog'
+  import Banner, { Label as BannerLabel, Icon } from '@smui/banner'
   import Button, { Label } from '@smui/button'
   import Dialog from '@smui/dialog'
   import Textfield from '@smui/textfield'
@@ -9,12 +12,14 @@
   import { logout } from '../operations'
 
   export let app: AppState
-  export let pinRequired: boolean = false
 
   let shakingElement: HTMLElement
-  let invalidPin: boolean
+  let invalidPin: boolean | undefined
   let newPin: string = ''
+
   const pinPattern = "^[0-9]{4,10}$"
+  const pinRequired: Writable<boolean> = getContext('pinRequired')
+  const resetPinMode: Writable<boolean> = getContext('resetPinMode')
 
   function ignoreNonNumberKeys(evt: KeyboardEvent){
     if (evt.key.length === 1) {
@@ -24,25 +29,32 @@
       }
     }
   }
-
+  function close(): void {
+    $pinRequired = true
+    invalidPin = undefined
+    newPin = ''
+  }
+  function shakeForm(): void {
+    const shakingSuffix = ' shaking-block'
+    const origClassName = shakingElement.className
+    if (!origClassName.endsWith(shakingSuffix)) {
+      shakingElement.className += shakingSuffix
+      setTimeout(() => { shakingElement.className = origClassName }, 1000)
+    }
+  }
   function submit(e: Event): void {
     e.preventDefault()
     if (invalidPin) {
-      const shakingSuffix = ' shaking-block'
-      const origClassName = shakingElement.className
-      if (!origClassName.endsWith(shakingSuffix)) {
-        shakingElement.className += shakingSuffix
-        setTimeout(() => { shakingElement.className = origClassName }, 1000)
-      }
+      shakeForm()
     } else {
       app.resetPin(newPin)
-      pinRequired = true
-      newPin = ''
+      close()
     }
   }
 
   $: successfulPinReset = app.successfulPinReset
-  $: open = !(pinRequired || $successfulPinReset)
+  $: open = !$successfulPinReset && !$pinRequired
+  $: showResetPinModeWarning = $successfulPinReset && $resetPinMode
 </script>
 
 <style>
@@ -145,5 +157,13 @@
       </Content>
     </Dialog>
   </div>
+{:else}
+  <Banner mobileStacked open={showResetPinModeWarning} on:MDCBanner:closed={() => logout()}>
+    <Icon slot="icon" class="material-icons">warning</Icon>
+    <BannerLabel slot="label">You are in reset-PIN mode. Using your wallet in this mode is not safe!</BannerLabel>
+    <svelte:fragment slot="actions">
+      <Button>Log out</Button>
+    </svelte:fragment>
+  </Banner>
 {/if}
 

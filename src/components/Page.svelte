@@ -10,14 +10,12 @@
     Title,
     AutoAdjust,
   } from '@smui/top-app-bar'
-  import Banner, { Label, Icon } from '@smui/banner'
-  import Button from '@smui/button'
   import IconButton from '@smui/icon-button'
   import Alerts from './Alerts.svelte'
   import Hourglass from './Hourglass.svelte'
+  import ResetPinDialog from './ResetPinDialog.svelte'
 
   export let title: string
-  export let showResetPinModeBanner: boolean = false
 
   const app: AppState = getContext('app')
   const { waitingInteractions, alerts, pageModel } = app
@@ -90,17 +88,7 @@
   </TopAppBar>
 
   <AutoAdjust {topAppBar}>
-    <Banner
-      mobileStacked
-      open={showResetPinModeBanner}
-      on:MDCBanner:closed={() => logout()}
-      >
-      <Icon slot="icon" class="material-icons">warning</Icon>
-      <Label slot="label">You are in reset-PIN mode. Using your wallet in this mode is not safe!</Label>
-      <svelte:fragment slot="actions">
-        <Button>Log out</Button>
-      </svelte:fragment>
-    </Banner>
+    <ResetPinDialog {app} />
 
     {#if $alerts.length > 0}
       <Alerts alerts={$alerts} {app} />

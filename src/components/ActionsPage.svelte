@@ -16,7 +16,7 @@
   })
 </script>
 
-<Page title="Actions" {...$$props}>
+<Page title="Actions">
   <svelte:fragment slot="content">
     <LayoutGrid>
       <Cell>
