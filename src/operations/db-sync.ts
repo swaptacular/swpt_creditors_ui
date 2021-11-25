@@ -759,7 +759,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.config.uri === record.config.uri)
       }
       await db.accounts.put(record)
-      // TODO: emit an account update event here?
+      // TODO: emit an account update event here? Also on account sub-object change?
       break
 
     default:
