@@ -8,7 +8,8 @@ import type {
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
-  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
+  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0,
+  AccountInfoV0
 } from './canonical-objects'
 import { HttpError, AuthenticationError } from './server'
 import {
@@ -73,7 +74,8 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
  * server. */
 export async function storeObject(
   userId: number,
-  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | TransferV0
+  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0
+    | AccountExchangeV0 | AccountInfoV0 |PinInfoV0 | TransferV0
 ): Promise<void> {
   if (obj.type === 'Transfer') {
     await storeTransfer(userId, obj)

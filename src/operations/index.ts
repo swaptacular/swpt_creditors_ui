@@ -223,6 +223,16 @@ export class UserContext {
     const account = makeAccount(response)
     await ensureAccountExists(this.userId, account)
 
+    // Here we update the local DB with the information contained in
+    // the response. Note that because at this point we do no have the
+    // corresponding ledger entries, the received `account.ledger`
+    // object is ignored.
+    await storeObject(this.userId, account.config)
+    await storeObject(this.userId, account.display)
+    await storeObject(this.userId, account.knowledge)
+    await storeObject(this.userId, account.info)
+    await storeObject(this.userId, account.exchange)
+
     return await createActionRecord({
       userId: this.userId,
       actionType: 'CreateAccount',
