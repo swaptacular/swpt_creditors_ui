@@ -686,6 +686,7 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
 
     case 'Account':
       await deleteAccount(objectUri)
+      // TODO: emit an account update event here?
       break
 
     default:
@@ -758,6 +759,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.config.uri === record.config.uri)
       }
       await db.accounts.put(record)
+      // TODO: emit an account update event here?
       break
 
     default:

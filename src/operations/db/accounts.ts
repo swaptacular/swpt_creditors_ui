@@ -89,6 +89,7 @@ export async function ensureAccountExists(userId: number, account: AccountV0): P
         records.accountLedgerRecord,
         records.accountConfigRecord,
       ])
+      // TODO: emit an account update event here?
     } else {
       assert(existingAccountRecord.userId === userId, 'wrong user ID')
     }
