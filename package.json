@@ -16,6 +16,7 @@
     "@babel/preset-env": "^7.15.6",
     "@babel/preset-typescript": "^7.15.0",
     "@originjs/vite-plugin-commonjs": "^1.0.1",
+    "@rollup/plugin-commonjs": "^21.0.1",
     "@smui/banner": "^4.2.0",
     "@smui/button": "^4.2.0",
     "@smui/card": "^4.2.0",
