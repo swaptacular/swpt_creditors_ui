@@ -54,3 +54,16 @@ export async function updateWalletRecord(walletRecord: WalletRecordWithId): Prom
 export async function getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
   return await db.documents.get(uri)
 }
+
+export async function putDocumentRecord(document: DocumentRecord): Promise<string> {
+  return await db.transaction('rw', [db.documents], async () => {
+    const uri = document.uri
+    const existingDocument = await db.documents.get(uri)
+    if (!existingDocument) {
+      await db.documents.put(document)
+    } else if (existingDocument.sha256 !== document.sha256 || existingDocument.contentType !== document.contentType) {
+      console.warn(`The supposedly immutable debtor info document at ${uri} has changed.`)
+    }
+    return uri
+  })
+}

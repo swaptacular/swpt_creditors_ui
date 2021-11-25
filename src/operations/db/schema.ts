@@ -135,6 +135,7 @@ export type DocumentRecord =
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
+  | CreateAccountAction
   | AckAccountFactsAction
 
 export type ActionRecordWithId =
@@ -193,6 +194,19 @@ export type AckAccountFactsAction =
 export type AckAccountFactsActionWithId =
   & ActionRecordWithId
   & AckAccountFactsAction
+
+export type CreateAccountAction =
+  & ActionData
+  & {
+    actionType: 'CreateAccount',
+    documentUri: string,
+    accountUri: string,
+    debtorName?: string,
+  }
+
+export type CreateAccountActionWithId =
+  & ActionRecordWithId
+  & CreateAccountAction
 
 type TaskData =
   & UserReference

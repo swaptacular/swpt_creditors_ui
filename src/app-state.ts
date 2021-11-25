@@ -12,6 +12,7 @@ import {
 import type {
   ActionRecordWithId,
 } from './operations'
+import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | null][],
@@ -20,6 +21,12 @@ type AttemptOptions = {
 
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
+
+export const ACTION_DOES_NOT_EXIST_MESSAGE = 'The requested action record does not exist.'
+
+export const INVALID_COIN_MESSAGE = 'Invalid digital coin. '
+  + 'Make sure that you are scanning the correct QR code, '
+  + 'for the correct digital coin.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
@@ -43,6 +50,7 @@ export type Store<T> = {
 
 export type PageModel =
   | ActionsModel
+  | ActionModel
 
 type BasePageModel = {
   type: string,
@@ -55,6 +63,11 @@ export type ActionsModel = BasePageModel & {
   actions: Store<ActionRecordWithId[]>,
   scrollTop?: number,
   scrollLeft?: number,
+}
+
+export type ActionModel = BasePageModel & {
+  type: 'ActionModel',
+  action: ActionRecordWithId,
 }
 
 export class AppState {
@@ -140,6 +153,40 @@ export class AppState {
           actions,
         })
       }
+    })
+  }
+
+  showAction(actionId: number, back?: () => void): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const action = await this.uc.getActionRecord(actionId)
+      if (this.interactionId === interactionId) {
+        if (action !== undefined) {
+          this.pageModel.set({
+            type: 'ActionModel',
+            reload: () => { this.showAction(actionId, back) },
+            goBack: back ?? (() => { this.showActions() }),
+            action,
+          })
+        } else {
+          this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
+        }
+      }
+    })
+  }
+
+  createAccount(coinUri: string): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const actionId = await this.uc.createAccount(coinUri)
+      if (this.interactionId === interactionId) {
+        this.showAction(actionId)
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+      ],
     })
   }
 

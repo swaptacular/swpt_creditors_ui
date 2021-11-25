@@ -1,6 +1,7 @@
+import type { DocumentRecord } from './db'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
 import type { TransferV0, LedgerEntryV0, AccountLedgerV0 } from './canonical-objects'
-import { HttpError } from './server'
+import { HttpError, ServerSessionError } from './server'
 import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
@@ -103,6 +104,23 @@ export function buffer2hex(buffer: ArrayBuffer, options = { toUpperCase: true })
 
 export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
   return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
+}
+
+export async function fetchDebtorInfoDocument(documentUri: string): Promise<DocumentRecord> {
+  let response, content
+  try {
+    response = await fetchWithTimeout(documentUri, { timeout: appConfig.serverApiTimeout })
+    if (!response.ok) throw new Error()
+    content = await response.arrayBuffer()
+  } catch {
+    throw new ServerSessionError()
+  }
+  return {
+    content,
+    contentType: response.headers.get('Content-Type') ?? 'text/plain',
+    sha256: await calcSha256(content),
+    uri: response.url,
+  }
 }
 
 type Page<ItemsType> = {
