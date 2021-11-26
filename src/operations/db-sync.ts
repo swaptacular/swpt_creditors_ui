@@ -8,8 +8,7 @@ import type {
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
-  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0,
-  AccountInfoV0
+  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
 } from './canonical-objects'
 import { HttpError, AuthenticationError } from './server'
 import {
@@ -74,13 +73,32 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
  * server. */
 export async function storeObject(
   userId: number,
-  obj: AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0
-    | AccountExchangeV0 | AccountInfoV0 |PinInfoV0 | TransferV0
+  obj: TransferV0 | AccountV0 | AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0
 ): Promise<void> {
-  if (obj.type === 'Transfer') {
-    await storeTransfer(userId, obj)
-  } else {
-    await reviseLogObjectRecord({ ...obj, userId })
+  switch (obj.type) {
+    case 'Transfer':
+      await storeTransfer(userId, obj)
+      break
+    case 'Account':
+      const records = splitIntoRecords(userId, obj)
+
+      // Because here we do not have the corresponding ledger entries,
+      // and we do not want to have missing ledger entries for the
+      // account, here we do not update the ledger record it exists
+      // already. To achieve this, we explicitly set the earliest
+      // possible version for the received ledger record.
+      records.accountLedgerRecord.latestUpdateId = 1n
+
+      await reviseLogObjectRecord(records.accountLedgerRecord)
+      await reviseLogObjectRecord(records.accountInfoRecord)
+      await reviseLogObjectRecord(records.accountDisplayRecord)
+      await reviseLogObjectRecord(records.accountKnowledgeRecord)
+      await reviseLogObjectRecord(records.accountExchangeRecord)
+      await reviseLogObjectRecord(records.accountConfigRecord)
+      await reviseLogObjectRecord(records.accountRecord)
+      break
+    default:
+      await reviseLogObjectRecord({ ...obj, userId })
   }
 }
 

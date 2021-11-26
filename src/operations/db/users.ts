@@ -55,15 +55,16 @@ export async function getDocumentRecord(uri: string): Promise<DocumentRecord | u
   return await db.documents.get(uri)
 }
 
-export async function putDocumentRecord(document: DocumentRecord): Promise<string> {
+export async function putDocumentRecord(document: DocumentRecord): Promise<boolean> {
   return await db.transaction('rw', [db.documents], async () => {
-    const uri = document.uri
-    const existingDocument = await db.documents.get(uri)
+    let success = true
+    const existingDocument = await db.documents.get(document.uri)
     if (!existingDocument) {
       await db.documents.put(document)
     } else if (existingDocument.sha256 !== document.sha256 || existingDocument.contentType !== document.contentType) {
-      console.warn(`The supposedly immutable debtor info document at ${uri} has changed.`)
+      success = false
+      console.warn(`The supposedly immutable debtor info document at ${document.uri} has changed.`)
     }
-    return uri
+    return success
   })
 }

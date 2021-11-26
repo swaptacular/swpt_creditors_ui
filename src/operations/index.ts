@@ -9,7 +9,7 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, ensureAccountExists, getActionRecord, putDocumentRecord
+  createActionRecord, getActionRecord, putDocumentRecord
 } from './db'
 import { getOrCreateUserId, sync, storeObject, PinNotRequired } from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
@@ -208,6 +208,9 @@ export class UserContext {
     if (`${debtorData.latestDebtorInfo.uri}#${debtorData.debtorIdentity.uri}` !== coinUri) {
       throw new InvalidDocument()
     }
+    if (!await putDocumentRecord(document)) {
+      throw new InvalidDocument()
+    }
 
     let response
     try {
@@ -220,24 +223,14 @@ export class UserContext {
       if (e instanceof HttpError && e.status === 422) throw new InvalidDocument()
       else throw e
     }
-
-    // Here we update the local DB with the information contained in
-    // the response. Note that because at this point we do no have the
-    // corresponding ledger entries, the received `account.ledger`
-    // object is ignored.
     const account = makeAccount(response)
-    await storeObject(this.userId, account.config)
-    await storeObject(this.userId, account.display)
-    await storeObject(this.userId, account.knowledge)
-    await storeObject(this.userId, account.info)
-    await storeObject(this.userId, account.exchange)
-    await ensureAccountExists(this.userId, account)
+    await storeObject(this.userId, account)
 
     return await createActionRecord({
       userId: this.userId,
       actionType: 'CreateAccount',
       createdAt: new Date(),
-      documentUri: await putDocumentRecord(document),
+      documentUri: document.uri,
       accountUri: account.uri,
     })
   }

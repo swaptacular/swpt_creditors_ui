@@ -7,7 +7,6 @@ import type {
 } from './schema'
 import { Dexie } from 'dexie'
 import { db, RecordDoesNotExist  } from './schema'
-import { isInstalledUser, UserDoesNotExist } from './users'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
@@ -68,30 +67,6 @@ export async function storeCommittedTransferRecord(record: CommittedTransferReco
         `An attempt to store an orphaned committed transfer record has been ignored. Committed ` +
         `transfers will be stored only if a corresponding account record exists.`
       )
-    }
-  })
-}
-
-export async function ensureAccountExists(userId: number, account: AccountV0): Promise<void> {
-  await db.transaction('rw', [db.wallets, db.accounts, db.accountObjects], async () => {
-    const existingAccountRecord = await db.accounts.get(account.uri)
-    if (!existingAccountRecord) {
-      if (!await isInstalledUser(userId)) {
-        throw new UserDoesNotExist()
-      }
-      const records = splitIntoRecords(userId, account)
-      await db.accounts.put(records.accountRecord)
-      await db.accountObjects.bulkPut([
-        records.accountInfoRecord,
-        records.accountDisplayRecord,
-        records.accountKnowledgeRecord,
-        records.accountExchangeRecord,
-        records.accountLedgerRecord,
-        records.accountConfigRecord,
-      ])
-      // TODO: emit an account update event here?
-    } else {
-      assert(existingAccountRecord.userId === userId, 'wrong user ID')
     }
   })
 }
