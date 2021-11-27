@@ -4,7 +4,7 @@ import type {
 import type {
   AccountLedgerRecord, TransferRecord, AccountRecord, AccountConfigRecord, PinInfoRecord,
   AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
-  CommittedTransferRecord, CreditorRecord, AccountObjectRecord, BaseObjectRecord
+  CommittedTransferRecord, CreditorRecord, AccountObjectRecord
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,

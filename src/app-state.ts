@@ -1,16 +1,16 @@
-import equal from 'fast-deep-equal'
-import { liveQuery } from 'dexie'
-import type { Observable } from 'dexie'
-import { writable } from 'svelte/store'
 import type { Writable } from 'svelte/store'
-import {
-  obtainUserContext,
-  UserContext,
-  AuthenticationError,
-  ServerSessionError,
-} from './operations'
+import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId,
+} from './operations'
+
+import equal from 'fast-deep-equal'
+import { liveQuery } from 'dexie'
+import { writable } from 'svelte/store'
+import {
+  obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
+  IvalidPaymentData, IvalidPaymentRequest
+
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -18,6 +18,12 @@ type AttemptOptions = {
   alerts?: [Function, Alert | null][],
   startInteraction?: boolean
 }
+
+export { IS_A_NEWBIE_KEY }
+
+export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
+  + 'Make sure that you are scanning the correct QR code, '
+  + 'for the correct payment request.'
 
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
@@ -69,6 +75,8 @@ export type ActionModel = BasePageModel & {
   type: 'ActionModel',
   action: ActionRecordWithId,
 }
+
+export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
 
 export class AppState {
   private interactionId: number = 0
@@ -186,6 +194,22 @@ export class AppState {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+      ],
+    })
+  }
+
+  initiatePayment(paymentRequestFile: Blob | Promise<Blob>): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const blob = await paymentRequestFile
+      const action = await this.uc.processPaymentRequest(blob)
+      if (this.interactionId === interactionId) {
+        this.showAction(action.actionId)
+      }
+    }, {
+      alerts: [
+        [IvalidPaymentRequest, new Alert(INVALID_REQUEST_MESSAGE)],
+        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
       ],
     })
   }

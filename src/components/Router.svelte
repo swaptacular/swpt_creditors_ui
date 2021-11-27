@@ -1,6 +1,7 @@
 <script lang="ts">
   import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
+  import ActionPage from './ActionPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
 
   export let app: AppState
@@ -15,6 +16,8 @@
   }
   function getPageComponent(pageModelType: string) {
     switch (pageModelType) {
+    case 'ActionModel':
+      return ActionPage
     case 'ActionsModel':
       return ActionsPage
     default:

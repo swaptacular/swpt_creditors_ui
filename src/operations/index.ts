@@ -1,24 +1,33 @@
 import type { PinInfo, Account } from './server'
-import type { WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions } from './db'
+import type {
+  WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId
+} from './db'
 import type { DebtorIdentity } from './canonical-objects'
 
+import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
-  HttpResponse, HttpError,
+  HttpResponse, HttpError
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, putDocumentRecord
 } from './db'
-import { getOrCreateUserId, sync, storeObject, PinNotRequired } from './db-sync'
+import { getOrCreateUserId, sync, storeObject, PinNotRequired, IS_A_NEWBIE_KEY } from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
 import { InvalidDocument, parseDebtorInfoDocument } from '../debtor-info'
 import { calcParallelTimeout, fetchWithTimeout, calcSha256, fetchDebtorInfoDocument } from './utils'
+import {
+  IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
+} from '../payment-requests'
 
 export {
+  IvalidPaymentRequest,
+  IvalidPaymentData,
   AuthenticationError,
   ServerSessionError,
+  IS_A_NEWBIE_KEY,
 }
 
 export type {
@@ -233,6 +242,35 @@ export class UserContext {
       documentUri: document.uri,
       accountUri: account.uri,
     })
+  }
+
+  /* Reads a payment request, and adds and returns a new
+   * create transfer action. May throw `IvalidPaymentRequest`. */
+  async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
+    const request = await parsePaymentRequest(blob)
+    const noteMaxBytes = 500  // TODO: read this from the accounts-facts.
+    const actionRecord = {
+      userId: this.userId,
+      actionType: 'CreateTransfer' as const,
+      createdAt: new Date(),
+      creationRequest: {
+        type: 'TransferCreationRequest' as const,
+        recipient: { uri: request.accountUri },
+        amount: request.amount,
+        transferUuid: uuidv4(),
+        noteFormat: request.amount ? 'PAYMENT0' : 'payment0',
+        note: generatePayment0TransferNote(request, noteMaxBytes),
+      },
+      paymentInfo: {
+        payeeReference: request.payeeReference,
+        payeeName: request.payeeName,
+        description: request.description,
+      },
+      requestedAmount: request.amount,
+      requestedDeadline: request.deadline,
+    }
+    await createActionRecord(actionRecord)  // adds the `actionId` field
+    return actionRecord as CreateTransferActionWithId
   }
 
   async logout(): Promise<never> {
