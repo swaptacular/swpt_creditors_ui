@@ -11,11 +11,17 @@
 
   // QrScanner.WORKER_PATH = 'path/to/qr-scanner-worker.min.js'
 
+  function onScannedValue(value: string): void {
+    if (value !== result) {
+      result = value
+    }
+  }
+
   onMount(async () => {
     let destructor
 
     if (await QrScanner.hasCamera()) {
-      const qrScanner = new QrScanner(videoElement, r => { result = r })
+      const qrScanner = new QrScanner(videoElement, onScannedValue)
       const startedScannerPromise = qrScanner.start()
       const tryTurningFlashOn = async (): Promise<boolean> => {
         let mustTurnFlashOff = false
