@@ -4,7 +4,7 @@ import type {
 import type {
   AccountLedgerRecord, TransferRecord, AccountRecord, AccountConfigRecord, PinInfoRecord,
   AccountDisplayRecord, AccountKnowledgeRecord, AccountExchangeRecord, AccountInfoRecord,
-  CommittedTransferRecord, CreditorRecord, AccountObjectRecord
+  CommittedTransferRecord, CreditorRecord, AccountObjectRecord, BaseObjectRecord
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
@@ -702,11 +702,12 @@ async function deleteLogObjectRecord(objectType: LogObjectType, objectUri: strin
     case 'AccountExchange':
     case 'AccountLedger':
       await deleteAccountObject(objectUri)
+      postAccountMessage(objectUri, objectType, null)
       break
 
     case 'Account':
       await deleteAccount(objectUri)
-      // TODO: emit an account update event here?
+      postAccountMessage(objectUri, objectType, null)
       break
 
     default:
@@ -747,10 +748,12 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
 
     case 'AccountKnowledge':
       await storeAccountKnowledgeRecord(record)
+      postAccountMessage(record.uri, record.type, record)
       break
 
     case 'AccountInfo':
       await storeAccountInfoRecord(record)
+      postAccountMessage(record.uri, record.type, record)
       break
 
     case 'AccountConfig':
@@ -763,6 +766,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.account.uri === record.account.uri)
       }
       await db.accountObjects.put(record)
+      postAccountMessage(record.uri, record.type, record)
       break
 
     case 'Account':
@@ -779,10 +783,20 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.config.uri === record.config.uri)
       }
       await db.accounts.put(record)
-      // TODO: emit an account update event here? Also on account sub-object change?
+      postAccountMessage(record.uri, record.type, record)
       break
 
     default:
       throw new Error('unknown object type')  // This must never happen.
   }
+}
+
+const accountsChannel = new BroadcastChannel('accounts')
+
+function postAccountMessage(
+  objectUri: string,
+  objectType: AccountRecord['type'] | AccountObjectRecord['type'],
+  record: AccountRecord | AccountObjectRecord | null,
+): void {
+  accountsChannel.postMessage([objectUri, objectType, record])
 }

@@ -60,7 +60,7 @@ export type AccountRecord =
     display: ObjectReference,
   }
 
-type BaseObjectRecord =
+export type BaseObjectRecord =
   & ResourceReference
   & UserReference
   & { type: string }
