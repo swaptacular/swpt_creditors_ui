@@ -78,6 +78,8 @@ export type ActionModel = BasePageModel & {
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
 
+export const authenticated = writable(true)
+
 export class AppState {
   private interactionId: number = 0
   readonly successfulPinReset: Writable<boolean>
@@ -111,6 +113,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await this.uc.ensureAuthenticated()
+      authenticated.set(true)
       await executeCallbackAfterUpdate()
     }, {
       alerts: [

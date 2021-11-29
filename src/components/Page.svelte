@@ -19,7 +19,7 @@
 
   const app: AppState = getContext('app')
   const { waitingInteractions, alerts, pageModel } = app
-  const unauthenticated: Writable<boolean> = getContext('unauthenticated')
+  const authenticated: Writable<boolean> = getContext('authenticated')
   let topAppBar: any
 
   function confirmLogout() {
@@ -73,10 +73,10 @@
 
       <Section align="end" toolbar>
         <IconButton class="material-icons" aria-label="Reload" on:click={update}>
-          {#if $unauthenticated}
-            sync_problem
-          {:else}
+          {#if $authenticated}
             sync
+          {:else}
+            sync_problem
           {/if}
         </IconButton>
 
