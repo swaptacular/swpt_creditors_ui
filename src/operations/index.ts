@@ -14,7 +14,10 @@ import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, putDocumentRecord
 } from './db'
-import { getOrCreateUserId, sync, storeObject, PinNotRequired, IS_A_NEWBIE_KEY } from './db-sync'
+import {
+  getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid,
+  IS_A_NEWBIE_KEY
+} from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
 import { InvalidDocument, parseDebtorInfoDocument } from '../debtor-info'
 import { calcParallelTimeout, fetchWithTimeout, calcSha256, fetchDebtorInfoDocument } from './utils'
@@ -158,6 +161,15 @@ export class UserContext {
     this.walletRecord = walletRecord
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
     this.getActionRecords = getActionRecords.bind(undefined, this.userId)
+
+    userResetsChannel.onmessage = async (evt: MessageEvent<[number, string]>) => {
+      if (evt.data[0] === this.userId && evt.data[1] !== currentWindowUuid) {
+        // The user's data has been reset by another app window. This
+        // is likely to disturb the interaction with the UI.
+        alert('Failed to synchronize with the server. The app is being automatically restarted.')
+        location.reload()
+      }
+    }
   }
 
   /* The caller must be prepared this method to throw

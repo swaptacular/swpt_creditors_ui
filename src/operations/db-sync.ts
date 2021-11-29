@@ -10,6 +10,8 @@ import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
   AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
 } from './canonical-objects'
+
+import { v4 as uuidv4 } from 'uuid';
 import { HttpError, AuthenticationError } from './server'
 import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
@@ -35,6 +37,21 @@ export class PinNotRequired extends Error {
 
 export const IS_A_NEWBIE_KEY = 'creditors.IsANewbie'
 
+export const currentWindowUuid = uuidv4()
+
+/* This channel is used to publish all changes to account and account
+ * sub-object records. The message contains an [objectUri, objectType,
+ * objectRecord] tuple.
+ */
+export const accountsChannel = new BroadcastChannel('creditors.accounts')
+
+/* This channel is used to signal that user's data is about to be
+ * reset (deleted and re-created again). The message contains a
+ * [userId, currentWindowUUID] tuple (`currentWindowUuid` is the UUID
+ * of the window that preforms the reset).
+ */
+export const userResetsChannel = new BroadcastChannel('creditors.userResets')
+
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
  * create/reset the user, reading the user's data from the server. */
@@ -58,13 +75,8 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
     await resolveOldNotConfirmedCreateTransferRequests(userId)
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
-      // When log entries has been lost, user's data must be loaded
-      // from the server again. If we do this here, it could disturb
-      // the user interaction with the UI. Instead, we give up on
-      // the update, and invite the user to re-authenticate. (The
-      // user's data will be loaded after the authentication.)
-      await server.forgetCurrentToken()
-      throw new AuthenticationError()
+      alert('Failed to synchronize with the server. The app is being automatically restarted.')
+      location.reload()
     } else throw e
   }
 }
@@ -322,6 +334,8 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         },
       }
       userId = await db.wallets.put({ ...walletRecord, userId })
+      userResetsChannel.postMessage([userId, currentWindowUuid])
+
       await db.walletObjects.put({ ...creditor, userId })
       await db.walletObjects.put({ ...pinInfo, userId })
 
@@ -345,6 +359,7 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
       for (const accountUri of oldAccountUris.keys()) {
         await deleteAccount(accountUri)
       }
+
       setIsANewbieFlag(accounts.length !== 0)
     }
     return userId
@@ -790,8 +805,6 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
       throw new Error('unknown object type')  // This must never happen.
   }
 }
-
-const accountsChannel = new BroadcastChannel('accounts')
 
 function postAccountMessage(
   objectUri: string,
