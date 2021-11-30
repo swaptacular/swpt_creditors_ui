@@ -7,6 +7,7 @@ import type {
 } from './schema'
 import { Dexie } from 'dexie'
 import { db, RecordDoesNotExist } from './schema'
+import { MAX_INT64 } from '../utils'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
@@ -16,14 +17,26 @@ type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts 
  */
 export const accountsChannel = new BroadcastChannel('creditors.accounts')
 
-export type MessageType = AccountRecord['type'] | AccountObjectRecord['type'] | 'Document'
+export type DebtorInfoDocument = DocumentRecord & { type: 'DebtorInfoDocument', latestUpdateId: bigint }
+export type MessageObject = AccountRecord | AccountObjectRecord | DebtorInfoDocument
+export type MessageObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'DebtorInfoDocument'
 
-export type MessageObject = AccountRecord | AccountObjectRecord | DocumentRecord | null
+export type PutObjectMessage = {
+  deleted: false,
+  object: MessageObject,
+}
 
-export type AccountsChannelMessage = [string, MessageType, MessageObject]
+export type DeletedObjectMessage = {
+  deleted: true,
+  objectUri: string,
+  objectType: MessageObjectType,
+  objectUpdateId: bigint,
+}
 
-export function postAccountMessage(objectUri: string, objectType: MessageType, record: MessageObject): void {
-  accountsChannel.postMessage([objectUri, objectType, record])
+export type AccountsChannelMessage = PutObjectMessage | DeletedObjectMessage
+
+export function postAccountsChannelMessage(message: AccountsChannelMessage): void {
+  accountsChannel.postMessage(message)
 }
 
 export class AccountsMap {
@@ -45,21 +58,29 @@ export class AccountsMap {
   async initialize(userId: number): Promise<void> {
     await db.transaction('r', [db.accounts, db.accountObjects, db.documents], async () => {
       for (const obj of await db.accounts.where({ userId }).toArray()) {
-        this.processMessage([obj.uri, obj.type, obj])
+        this.addObject(obj)
       }
       for (const obj of await db.accountObjects.where({ userId }).toArray()) {
-        this.processMessage([obj.uri, obj.type, obj])
+        this.addObject(obj)
         if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
           const documentUri = obj.debtorInfo.iri
           const document = await db.documents.get(documentUri)
           if (document) {
-            this.processMessage([documentUri, 'Document', document])
+            this.addObject({
+              ...document,
+              type: 'DebtorInfoDocument',
+              latestUpdateId: MAX_INT64,
+            })
           }
         }
       }
     })
     this.processMessageQueue()
     this.initialized = true
+  }
+
+  private addObject(obj: MessageObject): void {
+    this.processMessage({ deleted: false, object: obj })
   }
 
   private processMessageQueue(): void {
@@ -69,30 +90,28 @@ export class AccountsMap {
   }
 
   private processMessage(message: AccountsChannelMessage): void {
-    // TODO: Add a correct implementation.
-    const [objectUri, objectType, objectRecord] = message
-    if (objectRecord === null) {
-      // delete the object.
-      switch (objectType) {
-        case 'Account':
-          const account = this.objects.get(objectUri) as AccountRecord | undefined
-          if (account) {
-            this.objects.delete(objectUri)
-            this.accounts.delete(account.debtor.uri)
-          }
-          break
-        default:
-          this.objects.delete(objectUri)
+    if (message.deleted) {
+      // Delete the object if it exists.
+      const { objectUri, objectType, objectUpdateId } = message
+      const existingObject = this.objects.get(objectUri)
+      if (existingObject && existingObject.latestUpdateId < objectUpdateId) {
+        this.objects.delete(objectUri)
+        if (objectType === 'Account') {
+          assert(existingObject.type === objectType)
+          this.accounts.delete(existingObject.debtor.uri)
+        }
       }
     } else {
-      // create or update the object.
-      switch (objectType) {
-        case 'Account':
-          this.objects.set(objectUri, objectRecord)
-          this.accounts.set((objectRecord as AccountRecord).debtor.uri, objectUri)
-          break
-        default:
-          this.objects.set(objectUri, objectRecord)
+      // Create or update the object.
+      const obj = message.object
+      const existingObject = this.objects.get(obj.uri)
+      if (!existingObject || existingObject.latestUpdateId < obj.latestUpdateId) {
+        this.objects.set(obj.uri, obj)
+        if (obj.type === 'Account') {
+          const existingUri = this.accounts.get(obj.debtor.uri)
+          assert(!existingUri || existingUri === obj.uri)
+          this.accounts.set(obj.debtor.uri, obj.uri)
+        }
       }
     }
   }
