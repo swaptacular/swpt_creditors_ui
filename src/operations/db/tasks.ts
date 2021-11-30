@@ -2,6 +2,7 @@ import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './sc
 import { Dexie } from 'dexie'
 import { db } from './schema'
 import { putDocumentRecord } from './users'
+import { postAccountMessage } from './accounts'
 
 export async function getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
   let collection = db.tasks
@@ -21,9 +22,12 @@ export async function settleFetchDebtorInfoTask(
 ): Promise<void> {
   let { taskId, backoffSeconds } = task
   if (debtorInfoDocument) {
-    await putDocumentRecord(debtorInfoDocument)
-    await db.tasks.delete(taskId)
-    // TODO: emit a document update event here?
+    await db.transaction('rw', [db.documents, db.tasks], async () => {
+      if (await putDocumentRecord(debtorInfoDocument)) {
+        postAccountMessage(debtorInfoDocument.uri, 'Document', debtorInfoDocument)
+      }
+      await db.tasks.delete(taskId)
+    })
   } else {
     await db.tasks.where({ taskId }).modify(task => {
       // At the beginning, the back-off time is randomly chosen

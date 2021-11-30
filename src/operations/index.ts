@@ -12,12 +12,9 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, putDocumentRecord
+  createActionRecord, getActionRecord, putDocumentRecord, userResetsChannel, currentWindowUuid
 } from './db'
-import {
-  getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid,
-  IS_A_NEWBIE_KEY
-} from './db-sync'
+import { getOrCreateUserId, sync, storeObject, PinNotRequired, IS_A_NEWBIE_KEY } from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
 import { InvalidDocument, parseDebtorInfoDocument } from '../debtor-info'
 import { calcParallelTimeout, fetchWithTimeout, calcSha256, fetchDebtorInfoDocument } from './utils'

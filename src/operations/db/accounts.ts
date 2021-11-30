@@ -3,12 +3,26 @@ import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
   AccountConfigRecord, AccountDisplayRecord, AccountRecord, EssentialAccountFacts,
-  AccountObjectRecord
+  AccountObjectRecord, DocumentRecord
 } from './schema'
 import { Dexie } from 'dexie'
 import { db, RecordDoesNotExist  } from './schema'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
+
+/* This channel is used to publish all changes to account and account
+ * sub-object records. The message contains an [objectUri, objectType,
+ * objectRecord] tuple.
+ */
+export const accountsChannel = new BroadcastChannel('creditors.accounts')
+
+export function postAccountMessage(
+  objectUri: string,
+  objectType: AccountRecord['type'] | AccountObjectRecord['type'] | 'Document',
+  record: AccountRecord | AccountObjectRecord | DocumentRecord | null,
+): void {
+  accountsChannel.postMessage([objectUri, objectType, record])
+}
 
 // TODO: Is this what we need?
 export class AccountFacts {

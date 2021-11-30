@@ -11,12 +11,12 @@ import type {
   AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
 } from './canonical-objects'
 
-import { v4 as uuidv4 } from 'uuid';
-import { HttpError, AuthenticationError } from './server'
+import { HttpError } from './server'
 import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
-  resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord
+  resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
+  currentWindowUuid, userResetsChannel, postAccountMessage
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -36,21 +36,6 @@ export class PinNotRequired extends Error {
 }
 
 export const IS_A_NEWBIE_KEY = 'creditors.IsANewbie'
-
-export const currentWindowUuid = uuidv4()
-
-/* This channel is used to publish all changes to account and account
- * sub-object records. The message contains an [objectUri, objectType,
- * objectRecord] tuple.
- */
-export const accountsChannel = new BroadcastChannel('creditors.accounts')
-
-/* This channel is used to signal that user's data is about to be
- * reset (deleted and re-created again). The message contains a
- * [userId, currentWindowUUID] tuple (`currentWindowUuid` is the UUID
- * of the window that preforms the reset).
- */
-export const userResetsChannel = new BroadcastChannel('creditors.userResets')
 
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
@@ -804,12 +789,4 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
     default:
       throw new Error('unknown object type')  // This must never happen.
   }
-}
-
-function postAccountMessage(
-  objectUri: string,
-  objectType: AccountRecord['type'] | AccountObjectRecord['type'],
-  record: AccountRecord | AccountObjectRecord | null,
-): void {
-  accountsChannel.postMessage([objectUri, objectType, record])
 }
