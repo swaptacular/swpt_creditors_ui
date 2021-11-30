@@ -6,7 +6,7 @@ import type {
   AccountObjectRecord, DocumentRecord
 } from './schema'
 import { Dexie } from 'dexie'
-import { db, RecordDoesNotExist  } from './schema'
+import { db, RecordDoesNotExist } from './schema'
 
 type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
@@ -16,41 +16,84 @@ type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts 
  */
 export const accountsChannel = new BroadcastChannel('creditors.accounts')
 
-export type AccountMessageObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'Document'
+export type MessageType = AccountRecord['type'] | AccountObjectRecord['type'] | 'Document'
 
-export type AccountMessageObject = AccountRecord | AccountObjectRecord | DocumentRecord
+export type MessageObject = AccountRecord | AccountObjectRecord | DocumentRecord | null
 
-export function postAccountMessage(
-  objectUri: string,
-  objectType: AccountMessageObjectType,
-  record: AccountMessageObject | null,
-): void {
+export type AccountsChannelMessage = [string, MessageType, MessageObject]
+
+export function postAccountMessage(objectUri: string, objectType: MessageType, record: MessageObject): void {
   accountsChannel.postMessage([objectUri, objectType, record])
 }
 
 export class AccountsMap {
-  private objects: Map<string, AccountMessageObject> = new Map()
-  private accounts: Map<string, string> = new Map()
+  private objects = new Map<string, MessageObject>()
+  private accounts = new Map<string, string>()
+  private messageQueue = new Array<AccountsChannelMessage>()
+  private initialized = false
 
-  async init(userId: number): Promise<void> {
-    const accountRecords = await db.accounts.where({ userId }).toArray()
-    for (const obj of accountRecords) {
-      this.objects.set(obj.uri, obj)
-      this.accounts.set(obj.debtor.uri, obj.uri)
-    }
-    const accountObjectRecords = await db.accountObjects.where({ userId }).toArray()
-    for (const obj of accountObjectRecords) {
-      this.objects.set(obj.uri, obj)
-      if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
-        await this.loadDocument(obj.debtorInfo.iri)
+  constructor() {
+    accountsChannel.onmessage = (evt: MessageEvent<AccountsChannelMessage>) => {
+      if (this.initialized) {
+        this.processMessage(evt.data)
+      } else {
+        this.messageQueue.push(evt.data)
       }
     }
   }
 
-  private async loadDocument(documentUri: string): Promise<void> {
-    const document = await db.documents.get(documentUri)
-    if (document) {
-      this.objects.set(documentUri, document)
+  async initialize(userId: number): Promise<void> {
+    await db.transaction('r', [db.accounts, db.accountObjects, db.documents], async () => {
+      for (const obj of await db.accounts.where({ userId }).toArray()) {
+        this.processMessage([obj.uri, obj.type, obj])
+      }
+      for (const obj of await db.accountObjects.where({ userId }).toArray()) {
+        this.processMessage([obj.uri, obj.type, obj])
+        if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
+          const documentUri = obj.debtorInfo.iri
+          const document = await db.documents.get(documentUri)
+          if (document) {
+            this.processMessage([documentUri, 'Document', document])
+          }
+        }
+      }
+    })
+    this.processMessageQueue()
+    this.initialized = true
+  }
+
+  private processMessageQueue(): void {
+    for (const message of this.messageQueue) {
+      this.processMessage(message)
+    }
+  }
+
+  private processMessage(message: AccountsChannelMessage): void {
+    // TODO: Add a correct implementation.
+    const [objectUri, objectType, objectRecord] = message
+    if (objectRecord === null) {
+      // delete the object.
+      switch (objectType) {
+        case 'Account':
+          const account = this.objects.get(objectUri) as AccountRecord | undefined
+          if (account) {
+            this.objects.delete(objectUri)
+            this.accounts.delete(account.debtor.uri)
+          }
+          break
+        default:
+          this.objects.delete(objectUri)
+      }
+    } else {
+      // create or update the object.
+      switch (objectType) {
+        case 'Account':
+          this.objects.set(objectUri, objectRecord)
+          this.accounts.set((objectRecord as AccountRecord).debtor.uri, objectUri)
+          break
+        default:
+          this.objects.set(objectUri, objectRecord)
+      }
     }
   }
 }
