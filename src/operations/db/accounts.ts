@@ -16,12 +16,43 @@ type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts 
  */
 export const accountsChannel = new BroadcastChannel('creditors.accounts')
 
+export type AccountMessageObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'Document'
+
+export type AccountMessageObject = AccountRecord | AccountObjectRecord | DocumentRecord
+
 export function postAccountMessage(
   objectUri: string,
-  objectType: AccountRecord['type'] | AccountObjectRecord['type'] | 'Document',
-  record: AccountRecord | AccountObjectRecord | DocumentRecord | null,
+  objectType: AccountMessageObjectType,
+  record: AccountMessageObject | null,
 ): void {
   accountsChannel.postMessage([objectUri, objectType, record])
+}
+
+export class AccountsMap {
+  private objects: Map<string, AccountMessageObject> = new Map()
+  private accounts: Map<string, string> = new Map()
+
+  async init(userId: number): Promise<void> {
+    const accountRecords = await db.accounts.where({ userId }).toArray()
+    for (const obj of accountRecords) {
+      this.objects.set(obj.uri, obj)
+      this.accounts.set(obj.debtor.uri, obj.uri)
+    }
+    const accountObjectRecords = await db.accountObjects.where({ userId }).toArray()
+    for (const obj of accountObjectRecords) {
+      this.objects.set(obj.uri, obj)
+      if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
+        await this.loadDocument(obj.debtorInfo.iri)
+      }
+    }
+  }
+
+  private async loadDocument(documentUri: string): Promise<void> {
+    const document = await db.documents.get(documentUri)
+    if (document) {
+      this.objects.set(documentUri, document)
+    }
+  }
 }
 
 // TODO: Is this what we need?
