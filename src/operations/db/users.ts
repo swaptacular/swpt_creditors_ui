@@ -1,19 +1,9 @@
 import type { WalletRecordWithId, DocumentRecord } from './schema'
 import { db } from './schema'
-import { v4 as uuidv4 } from 'uuid';
 
 export class UserDoesNotExist extends Error {
   name = 'UserDoesNotExist'
 }
-
-export const currentWindowUuid = uuidv4()
-
-/* This channel is used to signal that user's data is about to be
- * reset (deleted and re-created again). The message contains a
- * [userId, currentWindowUUID] tuple (`currentWindowUuid` is the UUID
- * of the window that preforms the reset).
- */
-export const userResetsChannel = new BroadcastChannel('creditors.userResets')
 
 export async function clearAllTables(): Promise<void> {
   await db.transaction('rw', db.allTables, async () => {

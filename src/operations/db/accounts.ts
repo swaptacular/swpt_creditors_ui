@@ -55,7 +55,7 @@ export class AccountsMap {
     }
   }
 
-  async initialize(userId: number): Promise<void> {
+  async init(userId: number): Promise<void> {
     await db.transaction('r', [db.accounts, db.accountObjects, db.documents], async () => {
       for (const obj of await db.accounts.where({ userId }).toArray()) {
         this.addObject(obj)

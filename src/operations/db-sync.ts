@@ -11,12 +11,13 @@ import type {
   AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
 } from './canonical-objects'
 
+import { v4 as uuidv4 } from 'uuid';
 import { HttpError } from './server'
 import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
   resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
-  currentWindowUuid, userResetsChannel, postAccountsChannelMessage
+  postAccountsChannelMessage
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -36,6 +37,18 @@ export class PinNotRequired extends Error {
 }
 
 export const IS_A_NEWBIE_KEY = 'creditors.IsANewbie'
+
+export const currentWindowUuid = uuidv4()
+
+export type UserResetMessage = {
+  userId: number,
+  windowUuid: string,  // the UUID of the window that preforms the reset
+}
+
+/* This channel is used to signal that user's data is about to be
+ * reset (deleted and re-created again).
+ */
+export const userResetsChannel = new BroadcastChannel('creditors.userResets')
 
 /* Returns the user ID corresponding to the given `entrypoint`. If the
  * user does not exist or some log entries have been lost, tries to
@@ -301,6 +314,11 @@ function setIsANewbieFlag(hasAccounts: boolean): void {
   }
 }
 
+function postUserResetsChannelMessage(userId: number): void {
+  const message: UserResetMessage = { userId, windowUuid: currentWindowUuid }
+  userResetsChannel.postMessage(message)
+}
+
 async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData): Promise<number> {
   // TODO: Delete user's existing actions (excluding
   // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
@@ -319,7 +337,7 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         },
       }
       userId = await db.wallets.put({ ...walletRecord, userId })
-      userResetsChannel.postMessage([userId, currentWindowUuid])
+      postUserResetsChannelMessage(userId)
 
       await db.walletObjects.put({ ...creditor, userId })
       await db.walletObjects.put({ ...pinInfo, userId })

@@ -1,7 +1,8 @@
 import type { PinInfo, Account } from './server'
 import type {
-  WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId
+  WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
 } from './db'
+import type { UserResetMessage } from './db-sync'
 import type { DebtorIdentity } from './canonical-objects'
 
 import { v4 as uuidv4 } from 'uuid';
@@ -12,9 +13,11 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, putDocumentRecord, userResetsChannel, currentWindowUuid
+  createActionRecord, getActionRecord, putDocumentRecord, AccountsMap
 } from './db'
-import { getOrCreateUserId, sync, storeObject, PinNotRequired, IS_A_NEWBIE_KEY } from './db-sync'
+import {
+  getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
+} from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
 import { InvalidDocument, parseDebtorInfoDocument } from '../debtor-info'
 import { calcParallelTimeout, fetchWithTimeout, calcSha256, fetchDebtorInfoDocument } from './utils'
@@ -144,29 +147,23 @@ export class UserContext {
 
   readonly userId: number
   readonly scheduleUpdate: UpdateScheduler['schedule']
+  readonly accountsMap: AccountsMap
   readonly getActionRecords: (options?: ListQueryOptions) => Promise<ActionRecordWithId[]>
   readonly getActionRecord = getActionRecord
 
   constructor(
     server: ServerSession,
     updateScheduler: UpdateScheduler,
+    accountsMap: AccountsMap,
     walletRecord: WalletRecordWithId,
   ) {
     this.server = server
     this.updateScheduler = updateScheduler
+    this.accountsMap = accountsMap
     this.userId = walletRecord.userId
     this.walletRecord = walletRecord
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
     this.getActionRecords = getActionRecords.bind(undefined, this.userId)
-
-    userResetsChannel.onmessage = async (evt: MessageEvent<[number, string]>) => {
-      if (evt.data[0] === this.userId && evt.data[1] !== currentWindowUuid) {
-        // The user's data has been reset by another app window. This
-        // is likely to disturb the interaction with the UI.
-        alert('Failed to synchronize with the server. The app is being automatically restarted.')
-        location.reload()
-      }
-    }
   }
 
   /* The caller must be prepared this method to throw
@@ -299,7 +296,7 @@ export async function obtainUserContext(
   server = defaultServer,
   updateScheduler?: UpdateScheduler,
 ): Promise<UserContext | undefined> {
-  let userId
+  let userId: number
   try {
     const entrypoint = await server.entrypointPromise
     if (entrypoint === undefined) {
@@ -322,9 +319,22 @@ export async function obtainUserContext(
     }
     throw e
   }
+
+  userResetsChannel.onmessage = async (evt: MessageEvent<UserResetMessage>) => {
+    if (evt.data.userId === userId && evt.data.windowUuid !== currentWindowUuid) {
+      // The user's data has been reset by another app window. This
+      // is likely to disturb the interaction with the UI.
+      alert('Failed to synchronize with the server. The app is being automatically restarted.')
+      location.reload()
+    }
+  }
+  const accountsMap = new AccountsMap()
+  await accountsMap.init(userId)
+
   return new UserContext(
     server,
     updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId)),
+    accountsMap,
     await getWalletRecord(userId),
   )
 }
