@@ -2,14 +2,11 @@ import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
-  AccountConfigRecord, AccountDisplayRecord, AccountRecord, EssentialAccountFacts,
-  AccountObjectRecord, DocumentRecord
+  AccountConfigRecord, AccountDisplayRecord, AccountRecord, AccountObjectRecord, DocumentRecord
 } from './schema'
 import { Dexie } from 'dexie'
-import { db, RecordDoesNotExist } from './schema'
+import { db } from './schema'
 import { MAX_INT64 } from '../utils'
-
-type PendingAck = { before: EssentialAccountFacts, after: EssentialAccountFacts }
 
 /* This channel is used to publish all changes to account and account
  * sub-object records. The message contains an [objectUri, objectType,
@@ -114,52 +111,6 @@ export class AccountsMap {
         }
       }
     }
-  }
-}
-
-// TODO: Is this what we need?
-export class AccountFacts {
-  account!: AccountRecord
-  config!: AccountConfigRecord
-  display!: AccountDisplayRecord
-  knowledge!: AccountKnowledgeRecord
-  exchange!: AccountExchangeRecord
-  info!: AccountInfoRecord
-  ledger!: AccountLedgerRecord
-  pendingAck?: PendingAck
-  hasAckAction!: boolean
-
-  static async fromUri(accountUri: string): Promise<AccountFacts> {
-    async function getAccountObject<T extends AccountObjectRecord>(
-      objUri: string,
-      objType: AccountObjectRecord['type'],
-    ): Promise<T> {
-      const obj = await db.accountObjects.get(objUri)
-      assert(obj && obj.type === objType && obj.account.uri === objUri)
-      return obj as T
-    }
-
-    return await db.transaction('rw', [db.accounts, db.accountObjects, db.actions], async () => {
-      const account = await db.accounts.get(accountUri)
-      if (!account) {
-        throw new RecordDoesNotExist()
-      }
-      let facts = new AccountFacts()
-      facts.account = account
-      facts.config = await getAccountObject(account.config.uri, 'AccountConfig')
-      facts.display = await getAccountObject(account.display.uri, 'AccountDisplay')
-      facts.knowledge = await getAccountObject(account.knowledge.uri, 'AccountKnowledge')
-      facts.exchange = await getAccountObject(account.exchange.uri, 'AccountExchange')
-      facts.info = await getAccountObject(account.info.uri, 'AccountInfo')
-      facts.ledger = await getAccountObject(account.ledger.uri, 'AccountLedger')
-      const ackActionsCount = await db.actions
-        .where({ accountUri })
-        .filter(action => action.actionType === 'AckAccountFacts')
-        .count()
-      assert(ackActionsCount === 0 || ackActionsCount === 1)
-      facts.hasAckAction = ackActionsCount === 1
-      return facts
-    })
   }
 }
 

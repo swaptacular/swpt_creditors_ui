@@ -3,7 +3,8 @@ import type { BaseDebtorData, ResourceReference, DocumentWithHash } from '../../
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
-  AccountConfigV0, TransferCreationRequestV0, WebApiError, ObjectReference
+  AccountConfigV0, DebtorInfoV0, TransferCreationRequestV0, WebApiError, ObjectReference,
+  AccountIdentity
 } from '../canonical-objects'
 
 import { Dexie } from 'dexie'
@@ -136,7 +137,7 @@ export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
   | CreateAccountAction
-  | AckAccountFactsAction
+  | AckAccountInfoAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -175,25 +176,28 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
-export type EssentialAccountFacts = {
-  debtorInfo?: BaseDebtorData,
+export type EssentialAccountInfo = {
+  debtorData?: BaseDebtorData,
+  debtorInfo?: DebtorInfoV0,
   interestRate?: number,
   interestRateChangedAt?: string,
+  identity?: AccountIdentity,
+  noteMaxBytes?: bigint,
   configError?: string,
 }
 
-export type AckAccountFactsAction =
+export type AckAccountInfoAction =
   & ActionData
   & {
     actionType: 'AckAccountFacts',
     accountUri: string,
-    before: EssentialAccountFacts,
-    after: EssentialAccountFacts,
+    before: EssentialAccountInfo,
+    after: EssentialAccountInfo,
   }
 
 export type AckAccountFactsActionWithId =
   & ActionRecordWithId
-  & AckAccountFactsAction
+  & AckAccountInfoAction
 
 export type CreateAccountAction =
   & ActionData
