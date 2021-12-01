@@ -2,7 +2,7 @@ import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './sc
 import { Dexie } from 'dexie'
 import { db } from './schema'
 import { putDocumentRecord } from './users'
-import { postAccountsChannelMessage } from './accounts'
+import { postAccountsChannelMessage } from './accounts-map'
 import { MAX_INT64 } from '../utils'
 
 export async function getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
