@@ -17,7 +17,7 @@ import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
   resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
-  postAccountsChannelMessage
+  postAccountsMapMessage
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -724,12 +724,12 @@ async function deleteLogObjectRecord(
     case 'AccountExchange':
     case 'AccountLedger':
       await deleteAccountObject(objectUri)
-      postAccountsChannelMessage({ deleted: true, objectUri, objectType, objectUpdateId })
+      postAccountsMapMessage({ deleted: true, objectUri, objectType, objectUpdateId })
       break
 
     case 'Account':
       await deleteAccount(objectUri)
-      postAccountsChannelMessage({ deleted: true, objectUri, objectType, objectUpdateId })
+      postAccountsMapMessage({ deleted: true, objectUri, objectType, objectUpdateId })
       break
 
     default:
@@ -770,12 +770,12 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
 
     case 'AccountKnowledge':
       await storeAccountKnowledgeRecord(record)
-      postAccountsChannelMessage({ object: record, deleted: false })
+      postAccountsMapMessage({ object: record, deleted: false })
       break
 
     case 'AccountInfo':
       await storeAccountInfoRecord(record)
-      postAccountsChannelMessage({ deleted: false, object: record })
+      postAccountsMapMessage({ deleted: false, object: record })
       break
 
     case 'AccountConfig':
@@ -788,7 +788,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.account.uri === record.account.uri)
       }
       await db.accountObjects.put(record)
-      postAccountsChannelMessage({ deleted: false, object: record })
+      postAccountsMapMessage({ deleted: false, object: record })
       break
 
     case 'Account':
@@ -805,7 +805,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.config.uri === record.config.uri)
       }
       await db.accounts.put(record)
-      postAccountsChannelMessage({ deleted: false, object: record })
+      postAccountsMapMessage({ deleted: false, object: record })
       break
 
     default:

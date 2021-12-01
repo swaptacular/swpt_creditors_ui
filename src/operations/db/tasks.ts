@@ -2,7 +2,7 @@ import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './sc
 import { Dexie } from 'dexie'
 import { db } from './schema'
 import { putDocumentRecord } from './users'
-import { postAccountsChannelMessage } from './accounts-map'
+import { postAccountsMapMessage } from './accounts-map'
 import { MAX_INT64 } from '../utils'
 
 export async function getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
@@ -25,7 +25,7 @@ export async function settleFetchDebtorInfoTask(
   if (debtorInfoDocument) {
     await db.transaction('rw', [db.documents, db.tasks], async () => {
       if (await putDocumentRecord(debtorInfoDocument)) {
-        postAccountsChannelMessage({
+        postAccountsMapMessage({
           deleted: false,
           object: { ...debtorInfoDocument, type: 'DebtorInfoDocument', latestUpdateId: MAX_INT64 },
         })

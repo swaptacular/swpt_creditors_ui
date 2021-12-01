@@ -3,41 +3,41 @@ import { db } from './schema'
 import { MAX_INT64 } from '../utils'
 
 export type DebtorInfoDocument = DocumentRecord & { type: 'DebtorInfoDocument', latestUpdateId: bigint }
-export type MessageObject = AccountRecord | AccountObjectRecord | DebtorInfoDocument
-export type MessageObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'DebtorInfoDocument'
+export type AddedObject = AccountRecord | AccountObjectRecord | DebtorInfoDocument
+export type DeletedObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'DebtorInfoDocument'
 
-export type PutObjectMessage = {
+export type AddedObjectMessage = {
   deleted: false,
-  object: MessageObject,
+  object: AddedObject,
 }
 
 export type DeletedObjectMessage = {
   deleted: true,
   objectUri: string,
-  objectType: MessageObjectType,
+  objectType: DeletedObjectType,
   objectUpdateId: bigint,
 }
 
-export type AccountsChannelMessage = PutObjectMessage | DeletedObjectMessage
+export type AccountsMapMessage = AddedObjectMessage | DeletedObjectMessage
 
 /* This channel is used to publish all changes to account and account
  * sub-object records. The message contains an [objectUri, objectType,
  * objectRecord] tuple.
  */
-export const accountsChannel = new BroadcastChannel('creditors.accounts')
+export const accountsMapChannel = new BroadcastChannel('creditors.accountsMap')
 
-export function postAccountsChannelMessage(message: AccountsChannelMessage): void {
-  accountsChannel.postMessage(message)
+export function postAccountsMapMessage(message: AccountsMapMessage): void {
+  accountsMapChannel.postMessage(message)
 }
 
 export class AccountsMap {
-  private objects = new Map<string, MessageObject>()
+  private objects = new Map<string, AddedObject>()
   private accounts = new Map<string, string>()
-  private messageQueue = new Array<AccountsChannelMessage>()
+  private messageQueue = new Array<AccountsMapMessage>()
   private initialized = false
 
   constructor() {
-    accountsChannel.onmessage = (evt: MessageEvent<AccountsChannelMessage>) => {
+    accountsMapChannel.onmessage = (evt: MessageEvent<AccountsMapMessage>) => {
       if (this.initialized) {
         this.processMessage(evt.data)
       } else {
@@ -70,7 +70,7 @@ export class AccountsMap {
     this.initialized = true
   }
 
-  private addObject(obj: MessageObject): void {
+  private addObject(obj: AddedObject): void {
     this.processMessage({ deleted: false, object: obj })
   }
 
@@ -80,7 +80,7 @@ export class AccountsMap {
     }
   }
 
-  private processMessage(message: AccountsChannelMessage): void {
+  private processMessage(message: AccountsMapMessage): void {
     if (message.deleted) {
       // Delete the object if it exists.
       const { objectUri, objectType, objectUpdateId } = message
