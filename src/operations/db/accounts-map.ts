@@ -41,6 +41,9 @@ export class AccountsMap {
       if (this.initialized) {
         this.processMessage(evt.data)
       } else {
+        // Until the instance gets initialized, the received messages
+        // are stored in `this.messageQueue`. They will be processed
+        // after the instance have been successfully initialized.
         this.messageQueue.push(evt.data)
       }
     }
@@ -49,15 +52,15 @@ export class AccountsMap {
   async init(userId: number): Promise<void> {
     await db.transaction('r', [db.accounts, db.accountObjects, db.documents], async () => {
       for (const obj of await db.accounts.where({ userId }).toArray()) {
-        this.addObject(obj)
+        this.processObject(obj)
       }
       for (const obj of await db.accountObjects.where({ userId }).toArray()) {
-        this.addObject(obj)
+        this.processObject(obj)
         if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
           const documentUri = obj.debtorInfo.iri
           const document = await db.documents.get(documentUri)
           if (document) {
-            this.addObject({
+            this.processObject({
               ...document,
               type: 'DebtorInfoDocument',
               latestUpdateId: MAX_INT64,
@@ -66,12 +69,8 @@ export class AccountsMap {
         }
       }
     })
-    this.processMessageQueue()
     this.initialized = true
-  }
-
-  private addObject(obj: AddedObject): void {
-    this.processMessage({ deleted: false, object: obj })
+    this.processMessageQueue()
   }
 
   private processMessageQueue(): void {
@@ -80,29 +79,40 @@ export class AccountsMap {
     }
   }
 
+  private processObject(obj: AddedObject): void {
+    this.processMessage({ deleted: false, object: obj })
+  }
+
   private processMessage(message: AccountsMapMessage): void {
     if (message.deleted) {
-      // Delete the object if it exists.
-      const { objectUri, objectType, objectUpdateId } = message
-      const existingObject = this.objects.get(objectUri)
-      if (existingObject && existingObject.latestUpdateId < objectUpdateId) {
-        this.objects.delete(objectUri)
-        if (objectType === 'Account') {
-          assert(existingObject.type === objectType)
-          this.accounts.delete(existingObject.debtor.uri)
-        }
-      }
+      this.processObjectDeletion(message.objectUri, message.objectType, message.objectUpdateId)
     } else {
-      // Create or update the object.
-      const obj = message.object
-      const existingObject = this.objects.get(obj.uri)
-      if (!existingObject || existingObject.latestUpdateId < obj.latestUpdateId) {
-        this.objects.set(obj.uri, obj)
-        if (obj.type === 'Account') {
-          const existingUri = this.accounts.get(obj.debtor.uri)
-          assert(!existingUri || existingUri === obj.uri)
-          this.accounts.set(obj.debtor.uri, obj.uri)
-        }
+      this.processObjectAddition(message.object)
+    }
+  }
+
+  private processObjectDeletion(objectUri: string, objectType: DeletedObjectType, objectUpdateId: bigint): void {
+    const existingObject = this.objects.get(objectUri)
+    if (existingObject && existingObject.latestUpdateId < objectUpdateId) {
+      this.objects.delete(objectUri)
+      if (objectType === 'Account') {
+        // Delete the account from the accounts list.
+        assert(existingObject.type === objectType)
+        this.accounts.delete(existingObject.debtor.uri)
+      }
+    }
+  }
+
+  private processObjectAddition(obj: AddedObject): void {
+    const existingObject = this.objects.get(obj.uri)
+    if (!existingObject || existingObject.latestUpdateId < obj.latestUpdateId) {
+      this.objects.set(obj.uri, obj)
+      if (obj.type === 'Account') {
+        // Add the account to accounts list. Note that here we make
+        // sure that every account points to an unique debtor URI.
+        const accountUri = this.accounts.get(obj.debtor.uri)
+        assert(!accountUri || accountUri === obj.uri)
+        this.accounts.set(obj.debtor.uri, obj.uri)
       }
     }
   }
