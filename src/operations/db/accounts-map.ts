@@ -52,15 +52,15 @@ export class AccountsMap {
   async init(userId: number): Promise<void> {
     await db.transaction('r', [db.accounts, db.accountObjects, db.documents], async () => {
       for (const obj of await db.accounts.where({ userId }).toArray()) {
-        this.processObject(obj)
+        this.processObjectAddition(obj)
       }
       for (const obj of await db.accountObjects.where({ userId }).toArray()) {
-        this.processObject(obj)
+        this.processObjectAddition(obj)
         if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
           const documentUri = obj.debtorInfo.iri
           const document = await db.documents.get(documentUri)
           if (document) {
-            this.processObject({
+            this.processObjectAddition({
               ...document,
               type: 'DebtorInfoDocument',
               latestUpdateId: MAX_INT64,
@@ -77,10 +77,6 @@ export class AccountsMap {
     for (const message of this.messageQueue) {
       this.processMessage(message)
     }
-  }
-
-  private processObject(obj: AddedObject): void {
-    this.processMessage({ deleted: false, object: obj })
   }
 
   private processMessage(message: AccountsMapMessage): void {
