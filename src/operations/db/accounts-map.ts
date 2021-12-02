@@ -2,6 +2,12 @@ import type { AccountRecord, AccountObjectRecord, DocumentRecord } from './schem
 import { db } from './schema'
 import { MAX_INT64 } from '../utils'
 
+/* This channel is used to publish all changes to account and account
+ * sub-object records. The message contains an [objectUri, objectType,
+ * objectRecord] tuple.
+ */
+const accountsMapChannel = new BroadcastChannel('creditors.accountsMap')
+
 export type DebtorInfoDocument = DocumentRecord & { type: 'DebtorInfoDocument', latestUpdateId: bigint }
 export type AddedObject = AccountRecord | AccountObjectRecord | DebtorInfoDocument
 export type DeletedObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'DebtorInfoDocument'
@@ -19,12 +25,6 @@ export type DeletedObjectMessage = {
 }
 
 export type AccountsMapMessage = AddedObjectMessage | DeletedObjectMessage
-
-/* This channel is used to publish all changes to account and account
- * sub-object records. The message contains an [objectUri, objectType,
- * objectRecord] tuple.
- */
-export const accountsMapChannel = new BroadcastChannel('creditors.accountsMap')
 
 export function postAccountsMapMessage(message: AccountsMapMessage): void {
   accountsMapChannel.postMessage(message)
