@@ -35,19 +35,20 @@ export function postAccountsMapMessage(message: AccountsMapMessage): void {
  * about user's accounts in memory, so that we can quickly traverse
  * the peg-graph, find an account by name, etc. */
 export class AccountsMap {
-  private objects = new Map<string, AddedObject>()
-  private accounts = new Map<string, string>()
-  private messageQueue = new Array<AccountsMapMessage>()
+  private objects = new Map<string, AddedObject>()  // object URI -> object
+  private accounts = new Map<string, string>()  // debtor URI -> account URI
   private initialized = false
+
+  // Until the instance gets initialized, the received messages are
+  // stored here. They will be processed after the instance have been
+  // successfully initialized.
+  private messageQueue = new Array<AccountsMapMessage>()
 
   constructor() {
     accountsMapChannel.onmessage = (evt: MessageEvent<AccountsMapMessage>) => {
       if (this.initialized) {
         this.processMessage(evt.data)
       } else {
-        // Until the instance gets initialized, the received messages
-        // are stored in `this.messageQueue`. They will be processed
-        // after the instance have been successfully initialized.
         this.messageQueue.push(evt.data)
       }
     }
@@ -108,8 +109,9 @@ export class AccountsMap {
     if (!existingObject || existingObject.latestUpdateId < obj.latestUpdateId) {
       this.objects.set(obj.uri, obj)
       if (obj.type === 'Account') {
-        // Add the account to accounts list. Note that here we make
-        // sure that every account points to an unique debtor URI.
+        // Add the account to accounts list. Note that here we also
+        // make sure that every account points to an unique debtor
+        // URI.
         const accountUri = this.accounts.get(obj.debtor.uri)
         assert(!accountUri || accountUri === obj.uri)
         this.accounts.set(obj.debtor.uri, obj.uri)
