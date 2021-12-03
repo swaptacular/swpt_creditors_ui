@@ -30,6 +30,10 @@ export function postAccountsMapMessage(message: AccountsMapMessage): void {
   accountsMapChannel.postMessage(message)
 }
 
+/** All instances of this class will be automatically updated when the
+ * local database is updated. The idea is to have all the information
+ * about user's accounts in memory, so that we can quickly traverse
+ * the peg-graph, find an account by name, etc. */
 export class AccountsMap {
   private objects = new Map<string, AddedObject>()
   private accounts = new Map<string, string>()
