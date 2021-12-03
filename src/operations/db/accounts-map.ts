@@ -36,7 +36,7 @@ export function postAccountsMapMessage(message: AccountsMapMessage): void {
  * the peg-graph, find an account by name, etc. */
 export class AccountsMap {
   private objects = new Map<string, AddedObject>()  // object URI -> object
-  private accounts = new Map<string, string>()  // debtor URI -> account URI
+  private accounts = new Map<string, string>()  // debtor URI -> account URI (the "accounts list")
   private initialized = false
 
   // Until the instance gets initialized, the received messages are
@@ -97,7 +97,7 @@ export class AccountsMap {
     if (existingObject && existingObject.latestUpdateId < objectUpdateId) {
       this.objects.delete(objectUri)
       if (objectType === 'Account') {
-        // Delete the account from the accounts list.
+        // Delete the account from the "accounts list".
         assert(existingObject.type === objectType)
         this.accounts.delete(existingObject.debtor.uri)
       }
@@ -109,9 +109,9 @@ export class AccountsMap {
     if (!existingObject || existingObject.latestUpdateId < obj.latestUpdateId) {
       this.objects.set(obj.uri, obj)
       if (obj.type === 'Account') {
-        // Add the account to accounts list. Note that here we also
-        // make sure that every account points to an unique debtor
-        // URI.
+        // Add the account to the "accounts list". Note that here we
+        // also make sure that every account points to an unique
+        // debtor URI.
         const accountUri = this.accounts.get(obj.debtor.uri)
         assert(!accountUri || accountUri === obj.uri)
         this.accounts.set(obj.debtor.uri, obj.uri)
