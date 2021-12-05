@@ -213,7 +213,7 @@ export class UserContext {
    * action record, and returns its action ID. The caller must be
    * prepared this method to throw `ServerSessionError` or
    * `InvalidDocument`. */
-  async createAccount(coinUri: string): Promise<number> {
+  async createAccount(coinUri: string, isTrustedCoin: boolean): Promise<number> {
     const document = await fetchDebtorInfoDocument(coinUri)
     const debtorData = await parseDebtorInfoDocument(document)
 
@@ -247,6 +247,7 @@ export class UserContext {
       createdAt: new Date(),
       documentUri: document.uri,
       accountUri: account.uri,
+      knownDebtor: isTrustedCoin,
     })
   }
 
