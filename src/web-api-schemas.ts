@@ -565,6 +565,19 @@ export type AccountKnowledge = {
   /** Optional maximal number of bytes that transfer notes are allowed
    * to contain when UTF-8 encoded, which is known to the creditor. */
   noteMaxBytes?: bigint;
+
+  /** Whether the account's debtor is known to the user. For example,
+   * this will be `false` when the account is being created because
+   * another account declared it as peg-currency, and will be `true`
+   * when the user creates the account by scanning the debtor' digital
+   * coin (a QR code). Defaults to `false`. */
+  knownDebtor?: boolean;
+
+  /** Whether a confirmation has arrived (via a Swaptacular protocol
+   * message) that the information contained in the `debtorInfo`
+   * document is correct (has a matching SHA256 hash). Defaults to
+   * `false`. */
+  confirmedInfo?: boolean;
 }
 
 export type AccountInfo = {
