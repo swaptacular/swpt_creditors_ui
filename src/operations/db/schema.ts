@@ -195,7 +195,7 @@ export type AckAccountInfoAction =
     after: EssentialAccountInfo,
   }
 
-export type AckAccountFactsActionWithId =
+export type AckAccountInfoActionWithId =
   & ActionRecordWithId
   & AckAccountInfoAction
 
