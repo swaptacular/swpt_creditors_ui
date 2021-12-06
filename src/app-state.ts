@@ -186,10 +186,10 @@ export class AppState {
     })
   }
 
-  createAccount(coinUri: string, isTrustedCoin: boolean): Promise<void> {
+  createAccount(coinUri: string): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
-      const actionId = await this.uc.createAccount(coinUri, isTrustedCoin)
+      const actionId = await this.uc.createAccount(coinUri)
       if (this.interactionId === interactionId) {
         this.showAction(actionId)
       }

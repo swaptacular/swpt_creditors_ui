@@ -206,12 +206,6 @@ export type CreateAccountAction =
     documentUri: string,
     accountUri: string,
     editedDebtorName?: string,
-
-    // Will be `false` when the account is being created because
-    // another account declared it as peg-currency. Will be `true`
-    // when the user creates the account by scanning the debtor's
-    // digital coin (a QR code).
-    knownDebtor: boolean,
   }
 
 export type CreateAccountActionWithId =
