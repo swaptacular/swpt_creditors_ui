@@ -202,6 +202,36 @@ export type AckAccountInfoActionWithId =
   & ActionRecordWithId
   & AckAccountInfoAction
 
+// TODO: Here is how this action is supposed to work:
+//
+// 1. If the account (accountUri), or the document (documentUri) do
+//    not exist -- show an error.
+//
+// 2. If confirmed debtor info can be obtained from the account's
+//    AccountInfo, it is used instead of the available document
+//    (documentUri). In that case, the `CONFIRMED_INFO` variable is
+//    set to true.
+//
+// 3. If the account's `AccountDisplay.debtorName` IS NOT undefined,
+//    the following steps are performed:
+//
+//    a) If `AccountKnowledge.confirmedInfo` is false,
+//       `CONFIRMED_INFO` is false, and
+//       `AccountKnowledge.debtorInfo.iri` points to a different coin
+//       URI, then the "coin URI override screen" is shown, and if
+//       accepted, the coin URI gets updated (how???).
+//
+//    b) The "accept debtor screen" is shown. If accepted,
+//       `AccountKnowledge.knownDebtor` is set to true. Also, if the
+//       debtor name has been changed by the user, the
+//       `AccountDisplay.debtorName` field gets updated as well.
+//
+// 4. If the account's `AccountDisplay.debtorName` IS undefined, the
+//    account's AccountKnowledge must be ignored. Then the "accept
+//    debtor screen" is shown, and if accepted, first the account's
+//    AccountKnowledge is updated (including `knownDebtor=true` and
+//    `confirmedInfo=CONFIRMED_INFO` fields), then AccountDisplay is
+//    updated (including the `debtorName` field.)
 export type CreateAccountAction =
   & ActionData
   & {
