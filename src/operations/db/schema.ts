@@ -137,6 +137,9 @@ export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
   | CreateAccountAction
+  | ApprovePegAction
+  | ApproveDisplayAction
+  | ApproveDebtorNameAction
   | AckAccountInfoAction
 
 export type ActionRecordWithId =
@@ -211,6 +214,54 @@ export type CreateAccountAction =
 export type CreateAccountActionWithId =
   & ActionRecordWithId
   & CreateAccountAction
+
+/** If the user accepts the new peg -- create the peg account if it
+ * does not exist, then write the new peg to the account exchange
+ * record. Otherwise, do nothing.
+ */
+export type ApprovePegAction =
+  & ActionData
+  & {
+    // TODO: more fields?
+    actionType: 'ApprovePeg',
+    accountUri: string,
+    editedDebtorName?: string,
+  }
+
+export type ApprovePegActionWithId =
+  & ActionRecordWithId
+  & ApprovePegAction
+
+/** If the user accepts the new account display parameters -- write
+ * them to the account display record. Otherwise, do nothing.
+ */
+export type ApproveDisplayAction =
+  & ActionData
+  & {
+    // TODO: more fields?
+    actionType: 'ApproveDisplay',
+    accountUri: string,
+  }
+
+export type ApproveDisplayActionWithId =
+  & ActionRecordWithId
+  & ApproveDisplayAction
+
+/** If the user accepts the new debtor name (possibly edited) -- write
+ * it to the account display record. Otherwise, do nothing.
+ */
+export type ApproveDebtorNameAction =
+  & ActionData
+  & {
+    // TODO: more fields?
+    actionType: 'ApproveDebtorName',
+    accountUri: string,
+    editedDebtorName?: string,
+  }
+
+export type ApproveDebtorNameActionWithId =
+  & ActionRecordWithId
+  & ApproveDebtorNameAction
 
 type TaskData =
   & UserReference
