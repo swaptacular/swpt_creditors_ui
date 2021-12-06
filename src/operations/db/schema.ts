@@ -219,12 +219,13 @@ export type AckAccountInfoActionWithId =
 //       `CONFIRMED_INFO` is false, and
 //       `AccountKnowledge.debtorInfo.iri` points to a different coin
 //       URI, then the "coin URI override screen" is shown, and if
-//       accepted, the coin URI gets updated (how???).
+//       accepted, the coin URI gets updated
+//       (AccountKnowledge.overriddenCoinUri ???). If the "coin URI
+//       override screen" is rejected, the action is aborted.
 //
-//    b) The "accept debtor screen" is shown. If accepted,
-//       `AccountKnowledge.knownDebtor` is set to true. Also, if the
-//       debtor name has been changed by the user, the
-//       `AccountDisplay.debtorName` field gets updated as well.
+//    b) The "accept debtor screen" is shown. If accepted, first
+//       `AccountDisplay.debtorName` is updated, then
+//       `AccountKnowledge.knownDebtor` is set to true.
 //
 // 4. If the account's `AccountDisplay.debtorName` IS undefined, the
 //    account's AccountKnowledge must be ignored. Then the "accept
