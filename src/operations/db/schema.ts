@@ -267,8 +267,8 @@ export type CreateAccountActionWithId =
 //    `AccountKnowledge.confirmedInfo` is false, `CONFIRMED_INFO` is
 //    false, and `AccountKnowledge.debtorInfo.iri` points to a
 //    different coin URI, then the "coin URI override screen" is
-//    shown, and if accepted, the coin URI gets updated
-//    (AccountKnowledge.overriddenCoinUri ???).
+//    shown, and if accepted, a new AckAccountInfoAction is created
+//    for the document fetched in step 2.
 //
 //  7. Show the "approve peg screen", and if accepted, write the new
 //     peg to the AccountExchange record. If rejected, remove the
