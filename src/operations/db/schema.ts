@@ -189,6 +189,9 @@ export type EssentialAccountInfo = {
   configError?: string,
 }
 
+// NOTE: Probably Should present the option to the user to set
+// `AccountKnowledge.knownDebtor` to false, in case the user suspects
+// that he/she is not dealing with the same debtor anymore.
 export type AckAccountInfoAction =
   & ActionData
   & {
