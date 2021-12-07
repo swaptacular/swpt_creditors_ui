@@ -237,10 +237,39 @@ export type CreateAccountActionWithId =
   & ActionRecordWithId
   & CreateAccountAction
 
-/** If the user accepts the new peg -- create the peg account if it
- * does not exist, then write the new peg to the account exchange
- * record. Otherwise, do nothing.
- */
+// TODO: Here is how this action is supposed to work:
+//
+// 1. If the account (accountUri) does not exist -- show an error.
+//
+// 2. Fetch the debtor's info document for the peg currency. Show
+//    error if for some reason the fetching fails.
+//
+// 3. Make a "create account" HTTP request for the peg currency. Show
+//    error if it fails.
+//
+// 4. If confirmed debtor info can be obtained from the account's
+//    AccountInfo, it is used instead of the available info
+//    document. In that case, the `CONFIRMED_INFO` variable is set to
+//    true.
+//
+// 5. If for the created account `AccountDisplay.debtorName` IS
+//    undefined, the account's AccountKnowledge must be ignored. Then
+//    the "accept debtor screen" is shown, and if accepted, first the
+//    account's AccountKnowledge is updated (including
+//    `knownDebtor=false` and `confirmedInfo=CONFIRMED_INFO` fields),
+//    then AccountDisplay is updated (including the `debtorName`
+//    field.)
+//
+// 6. If the account's `AccountDisplay.debtorName` IS NOT undefined,
+//    `AccountKnowledge.confirmedInfo` is false, `CONFIRMED_INFO` is
+//    false, and `AccountKnowledge.debtorInfo.iri` points to a
+//    different coin URI, then the "coin URI override screen" is
+//    shown, and if accepted, the coin URI gets updated
+//    (AccountKnowledge.overriddenCoinUri ???).
+//
+//  7. Show the "approve peg screen", and if accepted, write the new
+//     peg to the AccountExchange record. If rejected, remove the
+//     current peg from the AccountExchange record.
 export type ApprovePegAction =
   & ActionData
   & {
