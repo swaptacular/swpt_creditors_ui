@@ -212,8 +212,8 @@ export type AckAccountInfoActionWithId =
 //
 // 2. If confirmed debtor info can be obtained from the account's
 //    AccountInfo, it is used instead of the available document
-//    (documentUri). In that case, the `CONFIRMED_INFO` variable is
-//    set to true.
+//    (documentUri). In that case, the `CONFIRMED_DEBTOR_INFO`
+//    variable is set to true.
 //
 // 3. If the account's `AccountDisplay.debtorName` IS NOT undefined,
 //    then the "accept debtor screen" is shown. If accepted, first
@@ -225,8 +225,8 @@ export type AckAccountInfoActionWithId =
 //    account's AccountKnowledge must be ignored. Then the "accept
 //    debtor screen" is shown, and if accepted, first the account's
 //    AccountKnowledge is updated (including `knownDebtor=true` and
-//    `confirmedInfo=CONFIRMED_INFO` fields), then AccountDisplay is
-//    updated (including the `debtorName` field.)
+//    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
+//    AccountDisplay is updated (including the `debtorName` field.)
 export type CreateAccountAction =
   & ActionData
   & {
@@ -259,16 +259,17 @@ export type CreateAccountActionWithId =
 //    undefined, the account's AccountKnowledge must be ignored. Then
 //    the "accept debtor screen" is shown, and if accepted, first the
 //    account's AccountKnowledge is updated (including
-//    `knownDebtor=false` and `confirmedInfo=CONFIRMED_INFO` fields),
-//    then AccountDisplay is updated (including the `debtorName`
-//    field.)
+//    `knownDebtor=false` and
+//    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
+//    AccountDisplay is updated (including the `debtorName` field.)
 //
 // 6. If the account's `AccountDisplay.debtorName` IS NOT undefined,
-//    `AccountKnowledge.confirmedInfo` is false, `CONFIRMED_INFO` is
-//    false, and `AccountKnowledge.debtorInfo.iri` points to a
-//    different coin URI, then the "coin URI override screen" is
-//    shown, and if accepted, a new AckAccountInfoAction is created
-//    for the document fetched in step 2.
+//    `AccountKnowledge.confirmedDebtorInfo` is false,
+//    `CONFIRMED_DEBTOR_INFO` is false, and
+//    `AccountKnowledge.debtorInfo.iri` points to a different coin
+//    URI, then the "coin URI override screen" is shown, and if
+//    accepted, a new AckAccountInfoAction is created for the document
+//    fetched in step 2.
 //
 //  7. Show the "approve peg screen", and if accepted, write the new
 //     peg to the AccountExchange record. If rejected, remove the

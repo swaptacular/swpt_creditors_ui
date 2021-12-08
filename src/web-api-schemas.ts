@@ -577,7 +577,7 @@ export type AccountKnowledge = {
    * message) that the information contained in the `debtorInfo`
    * document is correct (has a matching SHA256 hash). Defaults to
    * `false`. */
-  confirmedInfo?: boolean;
+  confirmedDebtorInfo?: boolean;
 }
 
 export type AccountInfo = {
