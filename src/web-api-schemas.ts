@@ -578,6 +578,16 @@ export type AccountKnowledge = {
    * document is correct (has a matching SHA256 hash). Defaults to
    * `false`. */
   confirmedDebtorInfo?: boolean;
+
+  /** Optional name, used as payee name for the latest payment from
+   * the account. */
+  payeeName?: string;
+
+  /** Optional moment at which the `payeeName` was used. This is
+   * necessary to correctly order the list of recently used payee
+   * names, when making a payment. Note that this is not necessarily
+   * the latest moment of use. */
+  payeeNameUsedAt?: string;
 }
 
 export type AccountInfo = {
