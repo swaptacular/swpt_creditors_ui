@@ -189,6 +189,13 @@ export type EssentialAccountInfo = {
   configError?: string,
 }
 
+// Informs the user about updated account info. After the user
+// acknowledges, updates the account's AccountKnowledge record. Then,
+// if necessary creates ApproveDebtorNameAction, ApproveDisplayAction,
+// ApprovePegAction. When account's peg parameters has been changed --
+// remove the peg from the AccountExchange record (so that not to
+// allow exchanges at non-standard rates).
+//
 // NOTE: Probably Should present the option to the user to set
 // `AccountKnowledge.knownDebtor` to false, in case the user suspects
 // that he/she is not dealing with the same debtor anymore.
@@ -227,6 +234,7 @@ export type AckAccountInfoActionWithId =
 //    AccountKnowledge is updated (including `knownDebtor=true` and
 //    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
 //    AccountDisplay is updated (including the `debtorName` field.)
+//    If the new account declares a peg, create new ApprovePegAction.
 export type CreateAccountAction =
   & ActionData
   & {
@@ -262,6 +270,7 @@ export type CreateAccountActionWithId =
 //    `knownDebtor=false` and
 //    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
 //    AccountDisplay is updated (including the `debtorName` field.)
+//    If the new account declares a peg, create new ApprovePegAction.
 //
 // 6. If the account's `AccountDisplay.debtorName` IS NOT undefined,
 //    `AccountKnowledge.confirmedDebtorInfo` is false,
