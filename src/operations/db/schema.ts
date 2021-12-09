@@ -255,34 +255,34 @@ export type CreateAccountActionWithId =
 // (dialog 1 -- optional)
 //
 // * Ensure that the pegged account (accountUri) exists, and
-//   `peggedAccount.AccountDisplay.debtorName` is not undefined. Then
-//   fetch and parse the debtor info document for the pegged account
-//   (located at `peggedAccount.AccountKnowledge.debtorInfo.iri`).
+//   `peggedAccount.AccountDisplay.debtorName` is not undefined.
 //
-// * If `documentUri` is undefined, fetch the debtor info document for
-//   the peg currency (GET `this.peg.latestDebtorInfo.uri` and expect
-//   redirect). Store the obtained document, and save its URI in
-//   `documentUri`.
+// * Make a "create account" HTTP request for the peg currency
+//   (peg.debtorIdentity.uri).
+//
+// * If `documentUri === undefined`:
+//
+//   - If confirmed debtor info can be obtained from
+//     `pegAccount.AccountInfo.debtorInfo.iri`, set
+//     `confirmedDebtorInfo` to true, and `documentUri` to the
+//     document's IRI.
+//
+//   - Otherwise, fetch the debtor info document for the peg currency
+//     (GET `this.peg.latestDebtorInfo.uri` and expect a
+//     redirect). Store the obtained document, save its URI in
+//     `documentUri`, and set `confirmedDebtorInfo` to false.
 //
 // * Parse the document at `documentUri` as PEG_DOC. Ensure that
 //   `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri &&
 //   `peg.latestDebtorInfo.uri === PEG_DOC.latestDebtorInfo.uri`.
 //
-// * If an account for the peg currency (peg.debtorIdentity.uri) does
-//   not exist, make a "create account" HTTP request for it.
-//
-// * If confirmed debtor info can be obtained from the peg account's
-//   AccountInfo, it is used instead of the available info document
-//   (The value of PEG_DOC gets overridden). In that case, the
-//   `CONFIRMED_PEG_DOC` variable is set to true.
-//
 // (dialog 2 -- optional)
 //
 // 5. If `pegAccount.AccountDisplay.debtorName !== undefined &&
 //    pegAccount.AccountKnowledge.confirmedDebtorInfo === false &&
-//    CONFIRMED_PEG_DOC === false`, fetch and parse the debtor info
+//    confirmedDebtorInfo === false`, fetch and parse the debtor info
 //    document at `pegAccount.AccountKnowledge.debtorInfo.iri` as
-//    OLD_PEG_DOC. Then if `OLD_PEG_DOC.latestDebtorInfo.uri !==
+//    KNOWN_PEG_DOC. Then if `KNOWN_PEG_DOC.latestDebtorInfo.uri !==
 //    peg.latestDebtorInfo.uri`, show the "coin URI override screen",
 //    and if accepted, create a new AckAccountInfoAction for the peg
 //    account.
@@ -291,11 +291,11 @@ export type CreateAccountActionWithId =
 //    account's AccountKnowledge must be ignored. Then the "accept
 //    debtor screen" is shown, and if accepted:
 //
-//    a) If the peg account declares a peg itself, set and save
+//    a) If PEG_DOC declares a peg itself, set and save
 //       `nextApprovePegAction`.
 //
 //    b) Initialize peg account's AccountKnowledge (`knownDebtor =
-//       false`, `confirmedDebtorInfo = CONFIRMED_PEG_DOC`);
+//       false`, `confirmedDebtorInfo = confirmedDebtorInfo`);
 //
 //    c) Initialize peg account's `AccountConfig.negligibleAmount`;
 //
@@ -317,6 +317,7 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
+    confirmedDebtorInfo: boolean
     documentUri?: string,
     nextApprovePegAction?: ApprovePegAction,
     editedDebtorName?: string,
