@@ -305,7 +305,7 @@ export type CreateAccountActionWithId =
 //
 //   NOTE: While initializing, if the `latestUpdateId` happens to be
 //         wrong, `newAccount` should be set to false, an error should
-//         be shown, and the action re-loaded.
+//         be shown, and the user redirected to the "actions" page.
 //
 // * If `newAccount === true` and PEG_DOC declares a peg itself,
 //   create an ApprovePegAction for the next peg. (We may need to
