@@ -303,6 +303,10 @@ export type CreateAccountActionWithId =
 //   d) Initialize peg account's AccountDisplay (including the
 //     `debtorName` field).
 //
+//   NOTE: While initializing, if the `latestUpdateId` happens to be
+//         wrong, `newAccount` should be set to false, an error should
+//         be shown, and the action re-loaded.
+//
 // * If `newAccount === true` and PEG_DOC declares a peg itself,
 //   create an ApprovePegAction for the next peg. (We may need to
 //   ensure that the currency is not pegged to itself.)
