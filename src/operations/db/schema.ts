@@ -225,6 +225,7 @@ export type AckAccountInfoActionWithId =
 // 3. If the account's `AccountDisplay.debtorName` IS NOT undefined,
 //    then the "accept debtor screen" is shown. If accepted, first
 //    `AccountDisplay.debtorName` is updated, then
+//    `AccountConfig.negligibleAmount` is updated, then
 //    `AccountKnowledge.knownDebtor` is set to true. If rejected,
 //    nothing happens.
 //
@@ -233,8 +234,9 @@ export type AckAccountInfoActionWithId =
 //    debtor screen" is shown, and if accepted, first the account's
 //    AccountKnowledge is updated (including `knownDebtor=true` and
 //    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
-//    AccountDisplay is updated (including the `debtorName` field.)
-//    If the new account declares a peg, create new ApprovePegAction.
+//    `AccountConfig.negligibleAmount` is set, then AccountDisplay is
+//    updated (including the `debtorName` field.)  If the new account
+//    declares a peg, create new ApprovePegAction.
 export type CreateAccountAction =
   & ActionData
   & {
@@ -269,8 +271,9 @@ export type CreateAccountActionWithId =
 //    account's AccountKnowledge is updated (including
 //    `knownDebtor=false` and
 //    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
-//    AccountDisplay is updated (including the `debtorName` field.)
-//    If the new account declares a peg, create new ApprovePegAction.
+//    `AccountConfig.negligibleAmount` is set, then AccountDisplay is
+//    updated (including the `debtorName` field.)  If the new account
+//    declares a peg, create new ApprovePegAction.
 //
 // 6. If the account's `AccountDisplay.debtorName` IS NOT undefined,
 //    `AccountKnowledge.confirmedDebtorInfo` is false,
