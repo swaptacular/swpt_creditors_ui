@@ -257,8 +257,8 @@ export type CreateAccountActionWithId =
 //
 // (dialog 1 -- optional)
 //
-// * If `debtorInfoFetchError === true`, show a "retry fetch
-//   screen". If retried, set `debtorInfoFetchError` to false.
+// * If `retryFetch === true`, show a "retry fetch screen". If
+//   retried, set `retryFetch` to false.
 //
 // * Make a "create account" HTTP request for the peg currency
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
@@ -275,8 +275,8 @@ export type CreateAccountActionWithId =
 //     (GET `peg.latestDebtorInfo.uri` and expect a redirect). Store
 //     the obtained document, save its URI in `debtorInfoDocumentUri`,
 //     and set `confirmedDebtorInfo` to false. If the debtor info
-//     document can not be fetched, set `debtorInfoFetchError` to
-//     true, and show an error.
+//     document can not be fetched, set `retryFetch` to true, and show
+//     an error.
 //
 // * Parse the document at `debtorInfoDocumentUri` as PEG_DOC. Ensure
 //   that `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri &&
@@ -286,8 +286,8 @@ export type CreateAccountActionWithId =
 //
 // * If `pegAccount.AccountDisplay.debtorName !== undefined &&
 //   pegAccount.AccountKnowledge.confirmedDebtorInfo === false &&
-//   confirmedDebtorInfo === false`, fetch and parse the debtor info
-//   document at `pegAccount.AccountKnowledge.debtorInfo.iri` as
+//   confirmedDebtorInfo === false`, parse the debtor info document
+//   referenced by `pegAccount.AccountKnowledge.debtorInfo.iri` as
 //   KNOWN_PEG_DOC. Then if `KNOWN_PEG_DOC.latestDebtorInfo.uri !==
 //   peg.latestDebtorInfo.uri`, show the "coin URI override screen",
 //   and if accepted, create a new AckAccountInfoAction for the peg
@@ -326,7 +326,8 @@ export type CreateAccountActionWithId =
 //      (accountUri). This ensures that we have got the most recent
 //      version of the pegged account.
 //
-//   b) Ensure that the pegged account (accountUri) still exists, and
+//   b) Ensure that the pegged account (accountUri) still exists,
+//      `peggedAccount.AccountDisplay.debtorName is not undefined, and
 //      the `peggedAccount.AccountKnowledge.debtorInfo.iri` document
 //      describes the same peg as `peg`.
 //
@@ -338,7 +339,7 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
-    debtorInfoFetchError: boolean,
+    retryFetch: boolean,
     confirmedDebtorInfo: boolean,
     debtorInfoDocumentUri?: string,
     newAccount?: boolean,
