@@ -279,8 +279,7 @@ export type CreateAccountActionWithId =
 //     an error.
 //
 // * Parse the document at `debtorInfoDocumentUri` as PEG_DOC. Ensure
-//   that `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri &&
-//   `peg.latestDebtorInfo.uri === PEG_DOC.latestDebtorInfo.uri`.
+//   that `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri`.
 //
 // (dialog 2 -- optional)
 //
@@ -289,9 +288,9 @@ export type CreateAccountActionWithId =
 //   confirmedDebtorInfo === false`, parse the debtor info document
 //   referenced by `pegAccount.AccountKnowledge.debtorInfo.iri` as
 //   KNOWN_PEG_DOC. Then if `KNOWN_PEG_DOC.latestDebtorInfo.uri !==
-//   peg.latestDebtorInfo.uri`, show the "coin URI override screen",
-//   and if accepted, create a new AckAccountInfoAction for the peg
-//   account.
+//   PEG_DOC.latestDebtorInfo.uri`, show the "coin URI override
+//   screen", and if accepted, create a new AckAccountInfoAction for
+//   the peg account.
 //
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
