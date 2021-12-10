@@ -254,8 +254,14 @@ export type CreateAccountActionWithId =
 //
 // (dialog 1 -- optional)
 //
-// * Ensure that the pegged account (accountUri) exists, and
-//   `peggedAccount.AccountDisplay.debtorName` is not undefined.
+// * Make a "get account" HTTP request for the pegged currency
+//   (accountUri). This ensures that we have got the most recent
+//   version of the pegged account.
+//
+// * Ensure that the pegged account (accountUri) exists,
+//   `peggedAccount.AccountDisplay.debtorName` is not undefined, and
+//   the peg that the `peggedAccount.AccountKnowledge.debtorInfo.iri`
+//   document describes is the same as `peg`.
 //
 // * Make a "create account" HTTP request for the peg currency
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
@@ -297,7 +303,8 @@ export type CreateAccountActionWithId =
 //   b) Initialize peg account's AccountKnowledge (`knownDebtor =
 //      false`, `confirmedDebtorInfo = confirmedDebtorInfo`).
 //
-//   c) Initialize peg account's `AccountConfig.negligibleAmount`.
+//   c) Initialize peg account's `AccountConfig (including
+//      `negligibleAmount` and `scheduledForDeletion` = false).
 //
 //   d) Initialize peg account's AccountDisplay (including the
 //     `debtorName` field).
