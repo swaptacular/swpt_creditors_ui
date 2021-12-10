@@ -289,9 +289,8 @@ export type CreateAccountActionWithId =
 //   account.
 //
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
-//   account's AccountKnowledge must be ignored), set `newAccount` to
-//   false, and then show the "accept debtor screen". If the user have
-//   accepted the debtor:
+//   account's AccountKnowledge must be ignored), show the "accept
+//   debtor screen". If the user have accepted the debtor:
 //
 //   a) Set `newAccount` to true (and commit).
 //
@@ -304,12 +303,14 @@ export type CreateAccountActionWithId =
 //     `debtorName` field).
 //
 //   NOTE: While initializing, if the `latestUpdateId` happens to be
-//         wrong, `newAccount` should be set to false, an error should
-//         be shown, and the user redirected to the "actions" page.
+//         wrong (or some other network failure occurs), an error
+//         should be shown, and the user redirected to the "actions"
+//         page.
 //
 // * If `newAccount === true` and PEG_DOC declares a peg itself,
-//   create an ApprovePegAction for the next peg. (We may need to
-//   ensure that the currency is not pegged to itself.)
+//   create an ApprovePegAction for the next peg, and set `newAccount`
+//   to false. (We may need to ensure that the currency is not pegged
+//   to itself.)
 //
 // (dialog 3)
 //
