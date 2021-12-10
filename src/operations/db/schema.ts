@@ -252,10 +252,13 @@ export type CreateAccountActionWithId =
 
 // TODO: Here is how this action is supposed to work:
 //
-// (dialog 1 -- optional)
-//
 // * Ensure that the pegged account (accountUri) exists, and
 //   `peggedAccount.AccountDisplay.debtorName` is not undefined.
+//
+// (dialog 1 -- optional)
+//
+// * If `debtorInfoFetchError === true`, show a "retry fetch
+//   screen". If retried, set `debtorInfoFetchError` to false.
 //
 // * Make a "create account" HTTP request for the peg currency
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
@@ -271,7 +274,9 @@ export type CreateAccountActionWithId =
 //   - Otherwise, fetch the debtor info document for the peg currency
 //     (GET `peg.latestDebtorInfo.uri` and expect a redirect). Store
 //     the obtained document, save its URI in `debtorInfoDocumentUri`,
-//     and set `confirmedDebtorInfo` to false.
+//     and set `confirmedDebtorInfo` to false. If the debtor info
+//     document can not be fetched, set `debtorInfoFetchError` to
+//     true, and show an error.
 //
 // * Parse the document at `debtorInfoDocumentUri` as PEG_DOC. Ensure
 //   that `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri &&
@@ -333,7 +338,8 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
-    confirmedDebtorInfo: boolean
+    debtorInfoFetchError: boolean,
+    confirmedDebtorInfo: boolean,
     debtorInfoDocumentUri?: string,
     newAccount?: boolean,
     editedDebtorName?: string,
