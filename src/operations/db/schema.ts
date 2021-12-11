@@ -243,14 +243,16 @@ export type AckAccountInfoActionWithId =
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as DOC. If `sha256` and/or `contentType` fields are available,
 //   ensure that their values are correct. Ensure that
-//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If the debtor
-//   info document can not be fetched correctly, set `retryFetch` to
-//   true, and show an error.
+//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If necessary
+//   (downloaded from coin URL), ensure that `latestDebtorInfoUri ===
+//   DOC.latestDebtorInfo.uri`. If the debtor info document can not be
+//   fetched correctly, set `retryFetch` to true, and show an error.
 //
 // (dialog 2)
 //
-// * If `account.AccountDisplay.debtorName !== undefined`, show the
-//   "accept debtor screen". If the user have accepted the debtor:
+// * If `account.AccountDisplay.debtorName !== undefined && newAccount
+//   === false`, show the "accept debtor screen". If the user have
+//   accepted the debtor:
 //
 //   a) Update `AccountDisplay.debtorName`.
 //   
