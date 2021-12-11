@@ -329,7 +329,7 @@ export type CreateAccountActionWithId =
 //      version of the pegged account.
 //
 //   b) Ensure that the pegged account (accountUri) still exists,
-//      `peggedAccount.AccountDisplay.debtorName is not undefined, and
+//      `peggedAccount.AccountDisplay.debtorName` is not undefined, and
 //      the `peggedAccount.AccountKnowledge.debtorInfo.iri` document
 //      describes the same peg as `peg`.
 //
