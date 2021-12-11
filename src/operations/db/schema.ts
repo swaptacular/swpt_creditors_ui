@@ -214,36 +214,85 @@ export type AckAccountInfoActionWithId =
 
 // TODO: Here is how this action is supposed to work:
 //
-// 1. If the account (accountUri), or the debtor info document
-//    (documentUri) do not exist -- show an error.
+// (dialog 1 -- optional)
 //
-// 2. If confirmed debtor info can be obtained from the account's
-//    AccountInfo, it is used instead of the available document
-//    (documentUri). In that case, the `CONFIRMED_DEBTOR_INFO`
-//    variable is set to true.
+// * If `retryFetch === true`, show a "retry fetch screen". If
+//   retried, set `retryFetch` to false.
 //
-// 3. If the account's `AccountDisplay.debtorName` IS NOT undefined,
-//    then the "accept debtor screen" is shown. If accepted, first
-//    `AccountDisplay.debtorName` is updated, then
-//    `AccountConfig.negligibleAmount` is updated, then
-//    `AccountKnowledge.knownDebtor` is set to true. If rejected,
-//    nothing happens.
+// * Make a "create account" HTTP request for the account
+//   (debtorIdentityUri). This ensures that we have got the most
+//   recent version of the account.
 //
-// 4. If the account's `AccountDisplay.debtorName` IS undefined, the
-//    account's AccountKnowledge must be ignored. Then the "accept
-//    debtor screen" is shown, and if accepted, first the account's
-//    AccountKnowledge is updated (including `knownDebtor=true` and
-//    `confirmedDebtorInfo=CONFIRMED_DEBTOR_INFO` fields), then
-//    `AccountConfig.negligibleAmount` is set, then AccountDisplay is
-//    updated (including the `debtorName` field.)  If the new account
-//    declares a peg, create new ApprovePegAction.
+// * If `debtorInfo` is undefined, set it, and set
+//   `confirmedDebtorInfo` accordingly:
+//
+//   - If *confirmed* debtor info can be obtained from
+//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it,
+//     `confirmedDebtorInfo` to true.
+//
+//   - If `account.AccountDisplay.debtorName !== undefined` and
+//     `account.AccountKnowledge.debtorInfo !== undefined`, set
+//     `debtorInfo` to it, and set `confirmedDebtorInfo` according to
+//     the value of `account.AccountKnowledge.confirmedDebtorInfo`.
+//
+//   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
+//     `debtorInfo` to `{ iri: <the redirect location> }`, and
+//     `confirmedDebtorInfo` to false. In case of a network problem,
+//     set `retryFetch` to true, and show an error.
+//
+// * Fetch, store, and parse the document referenced by `debtorInfo`
+//   as DOC. If `sha256` and/or `contentType` fields are available,
+//   ensure that their values are correct. Ensure that
+//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If the debtor
+//   info document can not be fetched correctly, set `retryFetch` to
+//   true, and show an error.
+//
+// (dialog 2)
+//
+// * If `account.AccountDisplay.debtorName !== undefined`, show the
+//   "accept debtor screen". If the user have accepted the debtor:
+//
+//   a) Update `AccountDisplay.debtorName`.
+//   
+//   b) Update `AccountConfig.negligibleAmount`, and set
+//      `AccountConfig.scheduledForDeletion` to false.
+//
+//   c) Set `AccountKnowledge.knownDebtor` to true.
+//
+// * If `account.AccountDisplay.debtorName === undefined` (the
+//   account's AccountKnowledge must be ignored), show the "accept
+//   debtor screen". If the user have accepted the debtor:
+//
+//   a) Set `newAccount` to true (and commit).
+//
+//   b) Initialize account's AccountKnowledge (`knownDebtor = true`,
+//      `confirmedDebtorInfo = confirmedDebtorInfo`).
+//
+//   c) Initialize account's `AccountConfig (including
+//      `negligibleAmount` and `scheduledForDeletion` = false).
+//
+//   d) Initialize account's AccountDisplay (including the
+//     `debtorName` field).
+//
+//   NOTE: While initializing, if the `latestUpdateId` happens to be
+//         wrong (or some other network failure occurs), an error
+//         should be shown, and the user redirected to the "actions"
+//         page.
+//
+// * If `newAccount === true` and DOC declares a peg, create an
+//   ApprovePegAction for the peg, and set `newAccount` to false. (We
+//   may need to ensure that the currency is not pegged to itself.)
 export type CreateAccountAction =
   & ActionData
   & {
     actionType: 'CreateAccount',
-    documentUri: string,
-    accountUri: string,
+    debtorIdentityUri: string,
+    latestDebtorInfoUri: string,
+    confirmedDebtorInfo: boolean,
+    retryFetch: boolean,
+    newAccount: boolean,
     editedDebtorName?: string,
+    editedNegligibleAmount?: number,
   }
 
 export type CreateAccountActionWithId =
@@ -346,8 +395,8 @@ export type ApprovePegAction =
     retryFetch: boolean,
     possibleOverride: boolean,
     confirmedDebtorInfo: boolean,
+    newAccount: boolean,
     debtorInfo?: DebtorInfoV0,
-    newAccount?: boolean,
     editedDebtorName?: string,
     editedNegligibleAmount?: number,
   }
