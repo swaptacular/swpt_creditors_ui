@@ -264,36 +264,38 @@ export type CreateAccountActionWithId =
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
 //   recent version of the peg account.
 //
-// * If `debtorInfoDocumentUri === undefined`:
+// * If `debtorInfo` is undefined, set it, and set
+//   `confirmedDebtorInfo` and `possibleOverride` accordingly:
 //
-//   - If confirmed debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo.iri` or
-//     `pegAccount.AccountKnowledge.debtorInfo.iri` (
-//     `pegAccount.AccountDisplay.debtorName !== undefined &&
-//     pegAccount.AccountKnowledge.confirmedDebtorInfo === true`), set
-//     `confirmedDebtorInfo` to true, and `debtorInfoDocumentUri` to
-//     the document's IRI.
+//   - If *confirmed* debtor info can be obtained from
+//     `pegAccount.AccountInfo.debtorInfo`, set `debtorInfo` to it,
+//     `confirmedDebtorInfo` to true, `possibleOverride` to false.
 //
-//   - Otherwise, fetch the debtor info document for the peg currency
-//     (GET `peg.latestDebtorInfo.uri` and expect a redirect). Store
-//     the obtained document, save its URI in `debtorInfoDocumentUri`,
-//     and set `confirmedDebtorInfo` to false. If the debtor info
-//     document can not be fetched, set `retryFetch` to true, and show
-//     an error.
+//   - If `pegAccount.AccountDisplay.debtorName !== undefined` and
+//     `pegAccount.AccountKnowledge.debtorInfo !== undefined`, set
+//     `debtorInfo` to it, set `confirmedDebtorInfo` according to the
+//     value of `pegAccount.AccountKnowledge.confirmedDebtorInfo`, and
+//     `possibleOverride` to `!confirmedDebtorInfo`.
 //
-// * Parse the document at `debtorInfoDocumentUri` as PEG_DOC. Ensure
-//   that `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri`.
+//   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
+//     redirect. Set `debtorInfo` to `{ iri: <the redirect location>
+//     }`, `confirmedDebtorInfo` to false, `possibleOverride` to
+//     false. In case of a network problem, set `retryFetch` to true,
+//     and show an error.
+//
+// * Fetch, store, and parse the document referenced by `debtorInfo`
+//   as PEG_DOC. If `sha256` and/or `contentType` fields are
+//   available, ensure that their values are correct. Ensure that
+//   `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri`. If the
+//   debtor info document can not be fetched correctly, set
+//   `retryFetch` to true, and show an error.
 //
 // (dialog 2 -- optional)
 //
-// * If `pegAccount.AccountDisplay.debtorName !== undefined &&
-//   pegAccount.AccountKnowledge.confirmedDebtorInfo === false &&
-//   confirmedDebtorInfo === false`, parse the debtor info document
-//   referenced by `pegAccount.AccountKnowledge.debtorInfo.iri` as
-//   KNOWN_PEG_DOC. Then if `KNOWN_PEG_DOC.latestDebtorInfo.uri !==
-//   PEG_DOC.latestDebtorInfo.uri`, show the "coin URI override
-//   screen", and if accepted, create a new AckAccountInfoAction for
-//   the peg account.
+// * If `possibleOverride === true` and `PEG_DOC.latestDebtorInfo.uri
+//   !== peg.latestDebtorInfo.uri`, show the "coin URI override screen",
+//   and if accepted, create a new AckAccountInfoAction for the peg
+//   account.
 //
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
@@ -342,8 +344,9 @@ export type ApprovePegAction =
     accountUri: string,
     peg: Peg,
     retryFetch: boolean,
+    possibleOverride: boolean,
     confirmedDebtorInfo: boolean,
-    debtorInfoDocumentUri?: string,
+    debtorInfo?: DebtorInfoV0,
     newAccount?: boolean,
     editedDebtorName?: string,
     editedNegligibleAmount?: number,
