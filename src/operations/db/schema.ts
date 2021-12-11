@@ -267,7 +267,10 @@ export type CreateAccountActionWithId =
 // * If `debtorInfoDocumentUri === undefined`:
 //
 //   - If confirmed debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo.iri`, set
+//     `pegAccount.AccountInfo.debtorInfo.iri` or
+//     `pegAccount.AccountKnowledge.debtorInfo.iri` (
+//     `pegAccount.AccountDisplay.debtorName !== undefined &&
+//     pegAccount.AccountKnowledge.confirmedDebtorInfo === true`), set
 //     `confirmedDebtorInfo` to true, and `debtorInfoDocumentUri` to
 //     the document's IRI.
 //
