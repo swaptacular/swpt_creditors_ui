@@ -316,18 +316,21 @@ export type CreateAccountActionWithId =
 // * If `debtorInfo` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo`, set `possibleOverride` to
-//     false.
+//     `pegAccount.AccountInfo.debtorInfo`, set `debtorInfo` to it,
+//     set `verifyLatestDebtorInfoUri` to false, and `askForOverride`
+//     to false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined` and
 //     `pegAccount.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it, and set `possibleOverride` to <debtorInfo
-//     IS NOT confirmed>.
+//     `debtorInfo` to it, set `verifyLatestDebtorInfoUri` to
+//     <debtorInfo IS NOT confirmed>, and `askForOverride` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `debtorInfo` to `{ iri: <the redirect location>
-//     }`, and `possibleOverride` to false. In case of a network
-//     problem, set `retryFetch` to true, and show an error.
+//     }`, and `verifyLatestDebtorInfoUri` to false, and
+//     `askForOverride` to `pegAccount.AccountDisplay.debtorName !==
+//     undefined`. In case of a network problem, set `retryFetch` to
+//     true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as PEG_DOC. If `sha256` and/or `contentType` fields are
@@ -338,10 +341,10 @@ export type CreateAccountActionWithId =
 //
 // (dialog 2 -- optional)
 //
-// * If `possibleOverride === true` and `PEG_DOC.latestDebtorInfo.uri
-//   !== peg.latestDebtorInfo.uri`, show the "coin URI override screen",
-//   and if accepted, create a new AckAccountInfoAction for the peg
-//   account.
+// * If `askForOverride === true || verifyLatestDebtorInfoUri === true
+//   && PEG_DOC.latestDebtorInfo.uri !== peg.latestDebtorInfo.uri`,
+//   show the "coin URI override screen", and if accepted, create a
+//   new AckAccountInfoAction for the peg account.
 //
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
@@ -390,7 +393,8 @@ export type ApprovePegAction =
     accountUri: string,
     peg: Peg,
     retryFetch: boolean,
-    possibleOverride: boolean,
+    verifyLatestDebtorInfoUri: boolean,
+    askForOverride: boolean,
     newAccount: boolean,
     debtorInfo?: DebtorInfoV0,
     editedDebtorName?: string,
