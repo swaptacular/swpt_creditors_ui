@@ -254,7 +254,7 @@ export type AckAccountInfoActionWithId =
 //   accepted the debtor:
 //
 //   a) If changed, update `AccountDisplay.debtorName`.
-//   
+//
 //   b) If changed, update `AccountConfig.negligibleAmount`, and if
 //      `AccountConfig.scheduledForDeletion` is true, set it to false.
 //
