@@ -246,6 +246,7 @@ export class UserContext {
       createdAt: new Date(),
       retryFetch: false,
       newAccount: false,
+      verifyLatestDebtorInfoUri: false,
       debtorIdentityUri,
       latestDebtorInfoUri,
     })

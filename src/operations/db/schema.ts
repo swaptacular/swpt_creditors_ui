@@ -226,23 +226,26 @@ export type AckAccountInfoActionWithId =
 // * If `debtorInfo` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it.
+//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it, and
+//     `verifyLatestDebtorInfoUri` to false.
 //
 //   - If `account.AccountDisplay.debtorName !== undefined` and
 //     `account.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it.
+//     `debtorInfo` to it, and `verifyLatestDebtorInfoUri` to false.
 //
 //   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
-//     `debtorInfo` to `{ iri: <the redirect location> }`. In case of
-//     a network problem, set `retryFetch` to true, and show an error.
+//     `debtorInfo` to `{ iri: <the redirect location> }`, and
+//     `verifyLatestDebtorInfoUri` to true. In case of a network
+//     problem, set `retryFetch` to true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as DOC. If `sha256` and/or `contentType` fields are available,
 //   ensure that their values are correct. Ensure that
-//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If necessary
-//   (downloaded from coin URL), ensure that `latestDebtorInfoUri ===
-//   DOC.latestDebtorInfo.uri`. If the debtor info document can not be
-//   fetched correctly, set `retryFetch` to true, and show an error.
+//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If
+//   `verifyLatestDebtorInfoUri === true`, ensure that
+//   `latestDebtorInfoUri === DOC.latestDebtorInfo.uri`. If the debtor
+//   info document can not be fetched correctly, set `retryFetch` to
+//   true, and show an error.
 //
 // (dialog 2)
 //
@@ -287,6 +290,7 @@ export type CreateAccountAction =
     latestDebtorInfoUri: string,
     retryFetch: boolean,
     newAccount: boolean,
+    verifyLatestDebtorInfoUri: boolean,
     editedDebtorName?: string,
     editedNegligibleAmount?: number,
   }
