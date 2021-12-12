@@ -223,22 +223,18 @@ export type AckAccountInfoActionWithId =
 //   (debtorIdentityUri). This ensures that we have got the most
 //   recent version of the account.
 //
-// * If `debtorInfo` is undefined, set it, and set
-//   `confirmedDebtorInfo` accordingly:
+// * If `debtorInfo` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it,
-//     `confirmedDebtorInfo` to true.
+//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it.
 //
 //   - If `account.AccountDisplay.debtorName !== undefined` and
 //     `account.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it, and set `confirmedDebtorInfo` according to
-//     the value of `account.AccountKnowledge.confirmedDebtorInfo`.
+//     `debtorInfo` to it.
 //
 //   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
-//     `debtorInfo` to `{ iri: <the redirect location> }`, and
-//     `confirmedDebtorInfo` to false. In case of a network problem,
-//     set `retryFetch` to true, and show an error.
+//     `debtorInfo` to `{ iri: <the redirect location> }`. In case of
+//     a network problem, set `retryFetch` to true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as DOC. If `sha256` and/or `contentType` fields are available,
@@ -267,8 +263,7 @@ export type AckAccountInfoActionWithId =
 //
 //   a) Set `newAccount` to true (and commit).
 //
-//   b) Initialize account's AccountKnowledge (`knownDebtor = true`,
-//      `confirmedDebtorInfo = confirmedDebtorInfo`).
+//   b) Initialize account's AccountKnowledge (`knownDebtor = true`).
 //
 //   c) Initialize account's `AccountConfig (including
 //      `negligibleAmount` and `scheduledForDeletion` = false).
@@ -290,7 +285,6 @@ export type CreateAccountAction =
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    confirmedDebtorInfo: boolean,
     retryFetch: boolean,
     newAccount: boolean,
     editedDebtorName?: string,
@@ -315,24 +309,21 @@ export type CreateAccountActionWithId =
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
 //   recent version of the peg account.
 //
-// * If `debtorInfo` is undefined, set it, and set
-//   `confirmedDebtorInfo` and `possibleOverride` accordingly:
+// * If `debtorInfo` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo`, set `debtorInfo` to it,
-//     `confirmedDebtorInfo` to true, `possibleOverride` to false.
+//     `pegAccount.AccountInfo.debtorInfo`, set `possibleOverride` to
+//     false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined` and
 //     `pegAccount.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it, set `confirmedDebtorInfo` according to the
-//     value of `pegAccount.AccountKnowledge.confirmedDebtorInfo`, and
-//     `possibleOverride` to `!confirmedDebtorInfo`.
+//     `debtorInfo` to it, and set `possibleOverride` to <debtorInfo
+//     IS NOT confirmed>.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `debtorInfo` to `{ iri: <the redirect location>
-//     }`, `confirmedDebtorInfo` to false, `possibleOverride` to
-//     false. In case of a network problem, set `retryFetch` to true,
-//     and show an error.
+//     }`, and `possibleOverride` to false. In case of a network
+//     problem, set `retryFetch` to true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as PEG_DOC. If `sha256` and/or `contentType` fields are
@@ -355,7 +346,7 @@ export type CreateAccountActionWithId =
 //   a) Set `newAccount` to true (and commit).
 //
 //   b) Initialize peg account's AccountKnowledge (`knownDebtor =
-//      false`, `confirmedDebtorInfo = confirmedDebtorInfo`).
+//      false`).
 //
 //   c) Initialize peg account's `AccountConfig (including
 //      `negligibleAmount` and `scheduledForDeletion` = false).
@@ -396,7 +387,6 @@ export type ApprovePegAction =
     peg: Peg,
     retryFetch: boolean,
     possibleOverride: boolean,
-    confirmedDebtorInfo: boolean,
     newAccount: boolean,
     debtorInfo?: DebtorInfoV0,
     editedDebtorName?: string,

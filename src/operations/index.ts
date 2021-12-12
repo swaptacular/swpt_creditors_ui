@@ -244,7 +244,6 @@ export class UserContext {
       userId: this.userId,
       actionType: 'CreateAccount',
       createdAt: new Date(),
-      confirmedDebtorInfo: false,
       retryFetch: false,
       newAccount: false,
       debtorIdentityUri,

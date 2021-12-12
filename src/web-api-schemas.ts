@@ -573,12 +573,6 @@ export type AccountKnowledge = {
    * coin (a QR code). Defaults to `false`. */
   knownDebtor?: boolean;
 
-  /** Whether a confirmation has arrived (via a Swaptacular protocol
-   * message) that the information contained in the `debtorInfo`
-   * document is correct (has a matching SHA256 hash). Defaults to
-   * `false`. */
-  confirmedDebtorInfo?: boolean;
-
   /** Optional name, used as payee name for the latest payment from
    * the account. */
   payeeName?: string;
