@@ -253,12 +253,16 @@ export type AckAccountInfoActionWithId =
 //   === false`, show the "accept debtor screen". If the user have
 //   accepted the debtor:
 //
-//   a) Update `AccountDisplay.debtorName`.
+//   a) If changed, update `AccountDisplay.debtorName`.
 //   
-//   b) Update `AccountConfig.negligibleAmount`, and set
-//      `AccountConfig.scheduledForDeletion` to false.
+//   b) If changed, update `AccountConfig.negligibleAmount`, and if
+//      `AccountConfig.scheduledForDeletion` is true, set it to false.
 //
-//   c) Set `AccountKnowledge.knownDebtor` to true.
+//   c) If `AccountKnowledge.knownDebtor` is false, set it to true.
+//
+//   NOTE: While updating, if the `latestUpdateId` happens to be wrong
+//         (or some other network failure occurs), an error should be
+//         shown, and the user redirected to the "actions" page.
 //
 // * If `account.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
@@ -280,8 +284,9 @@ export type AckAccountInfoActionWithId =
 //         page.
 //
 // * If `newAccount === true` and DOC declares a peg, create an
-//   ApprovePegAction for the peg, and set `newAccount` to false. (We
-//   may need to ensure that the currency is not pegged to itself.)
+//   ApprovePegAction for the peg, and delete the create account
+//   action. (We may need to ensure that the currency is not pegged to
+//   itself.)
 export type CreateAccountAction =
   & ActionData
   & {
