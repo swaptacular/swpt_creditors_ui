@@ -216,42 +216,45 @@ export type AckAccountInfoActionWithId =
 //
 // (dialog 1 -- optional)
 //
-// * If `retryFetch === true`, show a "retry fetch screen". If
-//   retried, set `retryFetch` to false.
+// * If `showRetryFetchDialog === true`, show a "retry fetch
+//   screen". If retried, set `showRetryFetchDialog` to false.
 //
 // * Make a "create account" HTTP request for the account
 //   (debtorIdentityUri). This ensures that we have got the most
 //   recent version of the account.
 //
-// * If `debtorInfo` is undefined, set it:
+// * If `state` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `debtorInfo` to it, and
-//     `verifyLatestDebtorInfoUri` to false.
+//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
+//     `state.initializationInProgress` to false, and
+//     `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - If `account.AccountDisplay.debtorName !== undefined` and
 //     `account.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it, and `verifyLatestDebtorInfoUri` to false.
+//     `state.debtorInfo` to it, `state.initializationInProgress` to
+//     false, and `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
-//     `debtorInfo` to `{ iri: <the redirect location> }`, and
-//     `verifyLatestDebtorInfoUri` to true. In case of a network
-//     problem, set `retryFetch` to true, and show an error.
+//     `state.debtorInfo` to `{ iri: <the redirect location> }`,
+//     `state.initializationInProgress` to false, and
+//     `state.verifyLatestDebtorInfoUri` to true. In case of a network
+//     problem, set `showRetryFetchDialog` to true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by `debtorInfo`
 //   as DOC. If `sha256` and/or `contentType` fields are available,
 //   ensure that their values are correct. Ensure that
 //   `debtorIdentityUri === DOC.debtorIdentity.uri`. If
-//   `verifyLatestDebtorInfoUri === true`, ensure that
+//   `state.verifyLatestDebtorInfoUri === true`, ensure that
 //   `latestDebtorInfoUri === DOC.latestDebtorInfo.uri`. If the debtor
-//   info document can not be fetched correctly, set `retryFetch` to
-//   true, and show an error.
+//   info document can not be fetched correctly, set
+//   `showRetryFetchDialog` to true, and show an error.
 //
 // (dialog 2)
 //
-// * If `account.AccountDisplay.debtorName !== undefined && newAccount
-//   === false`, show the "accept debtor screen". If the user have
-//   accepted the debtor:
+// * If `state.initializationInProgress === false` and
+//   `account.AccountDisplay.debtorName !== undefined`, show the
+//   "accept debtor screen". If the user have accepted the debtor:
 //
 //   a) If changed, update `AccountDisplay.debtorName`.
 //
@@ -268,7 +271,7 @@ export type AckAccountInfoActionWithId =
 //   account's AccountKnowledge must be ignored), show the "accept
 //   debtor screen". If the user have accepted the debtor:
 //
-//   a) Set `newAccount` to true (and commit).
+//   a) Set `state.initializationInProgress` to true (and commit).
 //
 //   b) Initialize account's AccountKnowledge (`knownDebtor = true`).
 //
@@ -283,21 +286,24 @@ export type AckAccountInfoActionWithId =
 //         should be shown, and the user redirected to the "actions"
 //         page.
 //
-// * If `newAccount === true` and DOC declares a peg, create an
-//   ApprovePegAction for the peg, and delete the create account
-//   action. (We may need to ensure that the currency is not pegged to
-//   itself.)
+// * If `state.initializationInProgress === true` and DOC declares a
+//   peg, create an ApprovePegAction for the peg, and delete the
+//   create account action. (We may need to ensure that the currency
+//   is not pegged to itself.)
 export type CreateAccountAction =
   & ActionData
   & {
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    retryFetch: boolean,
-    newAccount: boolean,
-    verifyLatestDebtorInfoUri: boolean,
-    editedDebtorName?: string,
-    editedNegligibleAmount?: number,
+    showRetryFetchDialog: boolean,
+    state?: {
+      initializationInProgress: boolean,
+      verifyLatestDebtorInfoUri: boolean,
+      debtorInfo?: DebtorInfoV0,
+      editedDebtorName?: string,
+      editedNegligibleAmount?: number,
+    }
   }
 
 export type CreateAccountActionWithId =
@@ -311,51 +317,64 @@ export type CreateAccountActionWithId =
 //
 // (dialog 1 -- optional)
 //
-// * If `retryFetch === true`, show a "retry fetch screen". If
-//   retried, set `retryFetch` to false.
+// * If `showRetryFetchDialog === true`, show a "retry fetch
+//   screen". If retried, set `showRetryFetchDialog` to false.
 //
 // * Make a "create account" HTTP request for the peg currency
 //   (peg.debtorIdentity.uri). This ensures that we have got the most
 //   recent version of the peg account.
 //
-// * If `debtorInfo` is undefined, set it:
+// * If `state` is undefined, set it:
 //
 //   - If *confirmed* debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo`, set `debtorInfo` to it,
-//     set `verifyLatestDebtorInfoUri` to false, and `askForOverride`
-//     to false.
+//     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
+//     it, set `state.verifyLatestDebtorInfoUri` to false,
+//     `state.initializationInProgress` to false, and
+//     `state.askForOverride` to false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined` and
 //     `pegAccount.AccountKnowledge.debtorInfo !== undefined`, set
-//     `debtorInfo` to it, set `verifyLatestDebtorInfoUri` to
-//     <debtorInfo IS NOT confirmed>, and `askForOverride` to false.
+//     `state.debtorInfo` to it, `state.verifyLatestDebtorInfoUri` to
+//     <debtorInfo IS NOT confirmed>, `state.initializationInProgress`
+//     to false, and `state.askForOverride` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
-//     redirect. Set `debtorInfo` to `{ iri: <the redirect location>
-//     }`, and `verifyLatestDebtorInfoUri` to false, and
-//     `askForOverride` to `pegAccount.AccountDisplay.debtorName !==
-//     undefined`. In case of a network problem, set `retryFetch` to
-//     true, and show an error.
+//     redirect. Set `state.debtorInfo` to `{ iri: <the redirect
+//     location> }`, `state.verifyLatestDebtorInfoUri` to false,
+//     `state.initializationInProgress` to false, and
+//     `state.askForOverride` to `pegAccount.AccountDisplay.debtorName
+//     !== undefined`. In case of a network problem, set
+//     `showRetryFetchDialog` to true, and show an error.
 //
-// * Fetch, store, and parse the document referenced by `debtorInfo`
-//   as PEG_DOC. If `sha256` and/or `contentType` fields are
-//   available, ensure that their values are correct. Ensure that
-//   `peg.debtorIdentity.uri === PEG_DOC.debtorIdentity.uri`. If the
-//   debtor info document can not be fetched correctly, set
-//   `retryFetch` to true, and show an error.
+// * Fetch, store, and parse the document referenced by
+//   `state.debtorInfo` as PEG_DOC. If `sha256` and/or `contentType`
+//   fields are available, ensure that their values are
+//   correct. Ensure that `peg.debtorIdentity.uri ===
+//   PEG_DOC.debtorIdentity.uri`. If the debtor info document can not
+//   be fetched correctly, set `showRetryFetchDialog` to true, and show an
+//   error.
 //
 // (dialog 2 -- optional)
 //
-// * If `askForOverride === true || verifyLatestDebtorInfoUri === true
-//   && PEG_DOC.latestDebtorInfo.uri !== peg.latestDebtorInfo.uri`,
-//   show the "coin URI override screen", and if accepted, create a
-//   new AckAccountInfoAction for the peg account.
+// * If `state.askForOverride === true ||
+//   state.verifyLatestDebtorInfoUri === true &&
+//   PEG_DOC.latestDebtorInfo.uri !== peg.latestDebtorInfo.uri`, show
+//   the "coin URI override screen", and if accepted, create a new
+//   AckAccountInfoAction for the peg account.
+//
+// * If `state.initializationInProgress === false`,
+//   `account.AccountDisplay.debtorName !== undefined`, and
+//   `AccountConfig.scheduledForDeletion` is true, set it to false.
+//
+//   NOTE: While updating, if the `latestUpdateId` happens to be wrong
+//         (or some other network failure occurs), an error should be
+//         shown, and the user redirected to the "actions" page.
 //
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
 //   debtor screen". If the user have accepted the debtor:
 //
-//   a) Set `newAccount` to true (and commit).
+//   a) Set `state.initializationInProgress` to true (and commit).
 //
 //   b) Initialize peg account's AccountKnowledge (`knownDebtor =
 //      false`).
@@ -371,10 +390,10 @@ export type CreateAccountActionWithId =
 //         should be shown, and the user redirected to the "actions"
 //         page.
 //
-// * If `newAccount === true` and PEG_DOC declares a peg itself,
-//   create an ApprovePegAction for the next peg, and set `newAccount`
-//   to false. (We may need to ensure that the currency is not pegged
-//   to itself.)
+// * If `state.initializationInProgress === true` and PEG_DOC declares
+//   a peg itself, create an ApprovePegAction for the next peg, and
+//   set `state.initializationInProgress` to false. (We may need to
+//   ensure that the currency is not pegged to itself.)
 //
 // (dialog 3)
 //
@@ -392,18 +411,12 @@ export type CreateAccountActionWithId =
 //   c) Write the new peg to `peggedAccount.AccountExchange` (check
 //      latestUpdateId).
 export type ApprovePegAction =
-  & ActionData
+  & Omit<CreateAccountAction, 'latestDebtorInfoUri' | 'debtorIdentityUri'>
   & {
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
-    retryFetch: boolean,
-    verifyLatestDebtorInfoUri: boolean,
     askForOverride: boolean,
-    newAccount: boolean,
-    debtorInfo?: DebtorInfoV0,
-    editedDebtorName?: string,
-    editedNegligibleAmount?: number,
   }
 
 export type ApprovePegActionWithId =

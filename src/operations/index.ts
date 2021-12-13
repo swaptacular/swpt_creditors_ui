@@ -244,11 +244,9 @@ export class UserContext {
       userId: this.userId,
       actionType: 'CreateAccount',
       createdAt: new Date(),
-      retryFetch: false,
-      newAccount: false,
-      verifyLatestDebtorInfoUri: false,
-      debtorIdentityUri,
+      showRetryFetchDialog: false,
       latestDebtorInfoUri,
+      debtorIdentityUri,
     })
   }
 
