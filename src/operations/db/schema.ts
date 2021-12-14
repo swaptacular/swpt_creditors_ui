@@ -459,9 +459,18 @@ export type ApproveDisplayActionWithId =
 // edited) -- write it to the account display record. Otherwise, do
 // nothing.
 //
-// NOTE: We probably should present the option to the user to set
-// `AccountKnowledge.knownDebtor` to false, in case the user
-//  suspects that he/she is not dealing with the same debtor anymore.
+// Important notes:
+//
+// * We probably should present the option to the user to set
+//   `AccountKnowledge.knownDebtor` to false, in case the user
+//   suspects that he/she is not dealing with the same debtor anymore.
+//
+// * No more that one ApproveDebtorNameAction per account should exist
+//   at a given time. (The same is true for all `ApproveXXXAction`s.)
+//
+// * ApproveDebtorNameAction records must never be created for
+//   accounts that does not have a `debtorName` set. (The same is true
+//   for all `ApproveXXXAction`s.)
 export type ApproveDebtorNameAction =
   & ActionData
   & {
