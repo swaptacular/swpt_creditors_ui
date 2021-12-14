@@ -1,10 +1,9 @@
 import type { PaymentInfo } from '../../payment-requests'
-import type { BaseDebtorData, Peg, ResourceReference, DocumentWithHash } from '../../debtor-info'
+import type { DebtorData, Peg, ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
-  AccountConfigV0, DebtorInfoV0, TransferCreationRequestV0, WebApiError, ObjectReference,
-  AccountIdentity
+  AccountConfigV0, DebtorInfoV0, TransferCreationRequestV0, WebApiError, ObjectReference
 } from '../canonical-objects'
 
 import { Dexie } from 'dexie'
@@ -180,12 +179,10 @@ export type AbortTransferActionWithId =
   & AbortTransferAction
 
 export type EssentialAccountInfo = {
-  debtorData?: BaseDebtorData,
+  debtorData: DebtorData,
   debtorInfo?: DebtorInfoV0,
-  interestRate?: number,
-  interestRateChangedAt?: string,
-  identity?: AccountIdentity,
-  noteMaxBytes?: bigint,
+  interestRate: number,
+  interestRateChangedAt: string,
   configError?: string,
 }
 
