@@ -193,9 +193,34 @@ export type EssentialAccountInfo = {
 // remove the peg from the AccountExchange record (so that not to
 // allow exchanges at non-standard rates).
 //
-// NOTE: Probably Should present the option to the user to set
-// `AccountKnowledge.knownDebtor` to false, in case the user suspects
-// that he/she is not dealing with the same debtor anymore.
+// Important notes:
+//
+// * We probably should present the option to the user to set
+//   `AccountKnowledge.knownDebtor` to false, in case the user
+//   suspects that he/she is not dealing with the same debtor anymore.
+//
+// * When the known debtor info becomes confirmed, this allows the
+//   user to accept payments, and therefore the user should be
+//   informed about it.
+//
+// * The fields: `noteMaxBytes`, `identity`, `debtorData.summary`,
+//   `debtorData.debtorIdentity`, `debtorData.willNotChangeUntil`, and
+//   `debtorData.revision` should be ignored, because they are either
+//   unimportant or never shown to the user.
+//
+// * No more that one AckAccountInfoAction per account should exist at
+//   a given time.
+//
+// * A new AckAccountInfoAction record should be created when it is
+//   known that one or more of the important (tracked) fields has
+//   been updated, and currently there are no `AckAccountInfoAction`s
+//   for the given account. (Therefore, when an AckAccountInfoAction
+//   gets deleted, the `AccountInfo` record should be checked, and if
+//   there has been a change -- another AckAccountInfoAction created.)
+//   
+// * When one or more of the important (tracked) fields in the
+//   account's `AccountKnowledge` record has been changed, and an
+//   AckAccountInfoAction record exists, it should be deleted.
 export type AckAccountInfoAction =
   & ActionData
   & {
