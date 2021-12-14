@@ -362,14 +362,6 @@ export type CreateAccountActionWithId =
 //   the "coin URI override screen", and if accepted, create a new
 //   AckAccountInfoAction for the peg account.
 //
-// * If `state.initializationInProgress === false`,
-//   `account.AccountDisplay.debtorName !== undefined`, and
-//   `AccountConfig.scheduledForDeletion` is true, set it to false.
-//
-//   NOTE: While updating, if the `latestUpdateId` happens to be wrong
-//         (or some other network failure occurs), an error should be
-//         shown, and the user redirected to the "actions" page.
-//
 // * If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //   account's AccountKnowledge must be ignored), show the "accept
 //   debtor screen". If the user have accepted the debtor:
