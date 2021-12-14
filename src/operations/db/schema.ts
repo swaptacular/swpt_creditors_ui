@@ -195,10 +195,6 @@ export type EssentialAccountInfo = {
 //
 // Important notes:
 //
-// * We probably should present the option to the user to set
-//   `AccountKnowledge.knownDebtor` to false, in case the user
-//   suspects that he/she is not dealing with the same debtor anymore.
-//
 // * When the known debtor info becomes confirmed, this allows the
 //   user to accept payments, and therefore the user should be
 //   informed about it.
@@ -456,9 +452,16 @@ export type ApproveDisplayActionWithId =
   & ActionRecordWithId
   & ApproveDisplayAction
 
-/** If the user accepts the new debtor name (possibly edited) -- write
- * it to the account display record. Otherwise, do nothing.
- */
+// TODO: Here is how this action is supposed to work:
+//
+// A dialog is shown asking the user to accept the change in the
+// debtor's name. If the user accepts the new debtor name (possibly
+// edited) -- write it to the account display record. Otherwise, do
+// nothing.
+//
+// NOTE: We probably should present the option to the user to set
+// `AccountKnowledge.knownDebtor` to false, in case the user
+//  suspects that he/she is not dealing with the same debtor anymore.
 export type ApproveDebtorNameAction =
   & ActionData
   & {
