@@ -218,13 +218,13 @@ export type EssentialAccountInfo = {
 //   for the given account. (Therefore, when an AckAccountInfoAction
 //   gets deleted, the `AccountInfo` record should be checked, and if
 //   there has been a change -- another AckAccountInfoAction created.)
-//   
+//
 // * When one or more of the important (tracked) fields in the
 //   account's `AccountKnowledge` record has been changed, and an
 //   AckAccountInfoAction record exists, it should be deleted.
 //
-// * AckAccountInfoAction records never be created for accounts that
-//   does not have a `debtorName` set.
+// * AckAccountInfoAction records must never be created for accounts
+//   that does not have a `debtorName` set.
 export type AckAccountInfoAction =
   & ActionData
   & {
