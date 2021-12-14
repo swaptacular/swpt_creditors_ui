@@ -203,10 +203,11 @@ export type EssentialAccountInfo = {
 //   user to accept payments, and therefore the user should be
 //   informed about it.
 //
-// * The fields: `noteMaxBytes`, `identity`, `debtorData.summary`,
-//   `debtorData.debtorIdentity`, `debtorData.willNotChangeUntil`, and
-//   `debtorData.revision` should be ignored, because they are either
-//   unimportant or never shown to the user.
+// * Changes in the fields `noteMaxBytes`, `identity`,
+//   `debtorData.summary`, `debtorData.debtorIdentity`,
+//   `debtorData.willNotChangeUntil`, and `debtorData.revision` should
+//   be ignored, because they are either unimportant or never shown to
+//   the user.
 //
 // * No more that one AckAccountInfoAction per account should exist at
 //   a given time.
@@ -221,6 +222,9 @@ export type EssentialAccountInfo = {
 // * When one or more of the important (tracked) fields in the
 //   account's `AccountKnowledge` record has been changed, and an
 //   AckAccountInfoAction record exists, it should be deleted.
+//
+// * AckAccountInfoAction records never be created for accounts that
+//   does not have a `debtorName` set.
 export type AckAccountInfoAction =
   & ActionData
   & {
