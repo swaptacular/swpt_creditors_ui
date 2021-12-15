@@ -442,20 +442,22 @@ export type ApprovePegActionWithId =
 
 // TODO: Here is how this action is supposed to work:
 //
-// * Make a "get account" HTTP request for the account
-//   (accountUri). This ensures that we have got the most recent
-//   version of the account.
-//
 // * Ensure that the account (accountUri) exists, and
 //   `account.AccountDisplay.debtorName` is not undefined.
 //
-// * Ensure that the `account.AccountKnowledge.debtorInfo.iri`
-//   document describes the same `amountDivisor`, `decimalPlaces`, and
-//   `unit`.
+// * Show the "approve amount display screen", and if accepted:
 //
-// * Show the "approve amount display screen", and if accepted, write
-//   the amount display parameters to `account.AccountDisplay` (check
-//   latestUpdateId).
+//   a) Make a "get account" HTTP request for the account
+//      (accountUri). This ensures that we have got the most recent
+//      version of the account.
+//
+//   b) Ensure that the account (accountUri) still exists,
+//      `account.AccountDisplay.debtorName` is not undefined, and the
+//      `account.AccountKnowledge.debtorInfo.iri` document describes
+//      the same `amountDivisor`, `decimalPlaces`, and `unit`.
+//
+//   c) Write the amount display parameters to
+//      `account.AccountDisplay` (check latestUpdateId).
 export type ApproveAmountDisplayAction =
   & ActionData
   & {
@@ -472,21 +474,24 @@ export type ApproveAmountDisplayActionWithId =
 
 // TODO: Here is how this action is supposed to work:
 //
-// * Make a "get account" HTTP request for the account
-//   (accountUri). This ensures that we have got the most recent
-//   version of the account.
-//
 // * Ensure that the account (accountUri) exists, and
-//   `account.AccountDisplay.debtorName` is not undefined (this should
+//   `account.AccountDisplay.debtorName` is not undefined (this shall
 //   be used as an initial value for `editedDebtorName`, if it is
 //   undefined).
 //
-// * Ensure that the `account.AccountKnowledge.debtorInfo.iri`
-//   document describes the same `debtorName`.
+// * Show the "approve debtor name screen", and if accepted:
 //
-// * Show the "approve debtor name screen", and if accepted, write the
-//   (possibly edited) debtor name to `account.AccountDisplay` (check
-//   latestUpdateId).
+//   a) Make a "get account" HTTP request for the account
+//      (accountUri). This ensures that we have got the most recent
+//      version of the account.
+//
+//   b) Ensure that the account (accountUri) still exists,
+//      `account.AccountDisplay.debtorName` is not undefined, and the
+//      `account.AccountKnowledge.debtorInfo.iri` document describes
+//      the same `debtorName`.
+//
+//   d) Write the (possibly edited) debtor name to
+//      `account.AccountDisplay` (check latestUpdateId).
 //
 // NOTE: In the "approve debtor name screen" we probably should
 // present the option to the user to set
