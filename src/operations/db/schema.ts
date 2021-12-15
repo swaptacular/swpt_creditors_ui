@@ -252,10 +252,10 @@ export type AckAccountInfoActionWithId =
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
-//   - If `account.AccountDisplay.debtorName !== undefined` and
-//     `account.AccountKnowledge.debtorInfo !== undefined`, set
-//     `state.debtorInfo` to it, `state.initializationInProgress` to
-//     false, and `state.verifyLatestDebtorInfoUri` to false.
+//   - If `account.AccountDisplay.debtorName !== undefined`, set
+//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
+//     `state.initializationInProgress` to false, and
+//     `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
 //     `state.debtorInfo` to `{ iri: <the redirect location> }`,
@@ -263,50 +263,52 @@ export type AckAccountInfoActionWithId =
 //     `state.verifyLatestDebtorInfoUri` to true. In case of a network
 //     problem, set `showRetryFetchDialog` to true, and show an error.
 //
-// * Fetch, store, and parse the document referenced by `debtorInfo`
-//   as DOC. If `sha256` and/or `contentType` fields are available,
-//   ensure that their values are correct. Ensure that
-//   `debtorIdentityUri === DOC.debtorIdentity.uri`. If
-//   `state.verifyLatestDebtorInfoUri === true`, ensure that
-//   `latestDebtorInfoUri === DOC.latestDebtorInfo.uri`. If the debtor
-//   info document can not be fetched correctly, set
-//   `showRetryFetchDialog` to true, and show an error.
+// * Fetch, store, and parse the document referenced by
+//   `state.debtorInfo` as DOC. If `sha256` and/or `contentType`
+//   fields are available, ensure that their values are
+//   correct. Ensure that `debtorIdentityUri ===
+//   DOC.debtorIdentity.uri`. If `state.verifyLatestDebtorInfoUri ===
+//   true`, ensure that `latestDebtorInfoUri ===
+//   DOC.latestDebtorInfo.uri`. If the debtor info document can not be
+//   fetched correctly, set `showRetryFetchDialog` to true, and show
+//   an error. If `state.debtorInfo === undefined`, generate a dummy
+//   debtor info document.
 //
-// (dialog 2)
+// (dialog 2 - optional)
 //
-// * If `state.initializationInProgress === false` and
-//   `account.AccountDisplay.debtorName !== undefined`, show the
-//   "accept debtor screen". If the user have accepted the debtor:
+// * At most one of the following things will happen:
 //
-//   a) If changed, update `AccountDisplay.debtorName`.
+//   - If `state.initializationInProgress === false` and
+//     `account.AccountDisplay.debtorName !== undefined`, show the
+//     "accept debtor screen". If the user have accepted the debtor:
 //
-//   b) If changed, update `AccountConfig.negligibleAmount`, and if
-//      `AccountConfig.scheduledForDeletion` is true, set it to false.
+//     a) If changed, update `AccountDisplay.debtorName`.
 //
-//   c) If `AccountKnowledge.knownDebtor` is false, set it to true.
+//     b) If changed, update `AccountConfig.negligibleAmount`, and if
+//        `AccountConfig.scheduledForDeletion` is true, set it to
+//        false.
 //
-//   NOTE: While updating, if the `latestUpdateId` happens to be wrong
-//         (or some other network failure occurs), an error should be
-//         shown, and the user redirected to the "actions" page.
+//     c) If `AccountKnowledge.knownDebtor` is false, set it to true.
 //
-// * If `account.AccountDisplay.debtorName === undefined` (the
-//   account's AccountKnowledge must be ignored), show the "accept
-//   debtor screen". If the user have accepted the debtor:
+//   - If `account.AccountDisplay.debtorName === undefined` (the
+//     account's AccountKnowledge must be ignored), show the "accept
+//     debtor screen". If the user have accepted the debtor:
 //
-//   a) Set `state.initializationInProgress` to true (and commit).
+//     a) Set `state.initializationInProgress` to true (and commit).
 //
-//   b) Initialize account's AccountKnowledge (`knownDebtor = true`).
+//     b) Initialize account's AccountKnowledge (`knownDebtor =
+//        true`).
 //
-//   c) Initialize account's `AccountConfig (including
-//      `negligibleAmount` and `scheduledForDeletion` = false).
+//     c) Initialize account's `AccountConfig (including
+//        `negligibleAmount` and `scheduledForDeletion` = false).
 //
-//   d) Initialize account's AccountDisplay (including the
-//     `debtorName` field).
+//     d) Initialize account's AccountDisplay (including the
+//        `debtorName` field).
 //
-//   NOTE: While initializing, if the `latestUpdateId` happens to be
-//         wrong (or some other network failure occurs), an error
-//         should be shown, and the user redirected to the "actions"
-//         page.
+//   NOTE: While making updates on the server , if the
+//         `latestUpdateId` happens to be wrong (or some other network
+//         failure occurs), an error should be shown, and the user
+//         redirected to the "actions" page.
 //
 // * If `state.initializationInProgress === true` and DOC declares a
 //   peg, create an ApprovePegAction for the peg, and delete the
@@ -350,59 +352,60 @@ export type CreateAccountActionWithId =
 //
 //   - If *confirmed* debtor info can be obtained from
 //     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
-//     it, set `state.verifyLatestDebtorInfoUri` to false,
-//     `state.initializationInProgress` to false, and
-//     `state.askForOverride` to false.
+//     it, set `state.verifyLatestDebtorInfoUri` to false, and
+//     `state.initializationInProgress` to false.
 //
-//   - If `pegAccount.AccountDisplay.debtorName !== undefined` and
-//     `pegAccount.AccountKnowledge.debtorInfo !== undefined`, set
-//     `state.debtorInfo` to it, `state.verifyLatestDebtorInfoUri` to
-//     <debtorInfo IS NOT confirmed>, `state.initializationInProgress`
-//     to false, and `state.askForOverride` to false.
+//   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
+//     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`,
+//     `state.verifyLatestDebtorInfoUri` to <debtorInfo IS NOT
+//     confirmed>, and `state.initializationInProgress` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `state.debtorInfo` to `{ iri: <the redirect
 //     location> }`, `state.verifyLatestDebtorInfoUri` to false,
-//     `state.initializationInProgress` to false, and
-//     `state.askForOverride` to `pegAccount.AccountDisplay.debtorName
-//     !== undefined`. In case of a network problem, set
-//     `showRetryFetchDialog` to true, and show an error.
+//     `state.initializationInProgress` to false. In case of a network
+//     problem, set `showRetryFetchDialog` to true, and show an error.
 //
 // * Fetch, store, and parse the document referenced by
 //   `state.debtorInfo` as PEG_DOC. If `sha256` and/or `contentType`
 //   fields are available, ensure that their values are
 //   correct. Ensure that `peg.debtorIdentity.uri ===
 //   PEG_DOC.debtorIdentity.uri`. If the debtor info document can not
-//   be fetched correctly, set `showRetryFetchDialog` to true, and show an
-//   error.
+//   be fetched correctly, set `showRetryFetchDialog` to true, and
+//   show an error. If `state.debtorInfo === undefined`, generate a
+//   dummy debtor info document.
 //
 // (dialog 2 -- optional)
 //
-// * If `state.askForOverride === true ||
-//   state.verifyLatestDebtorInfoUri === true &&
-//   PEG_DOC.latestDebtorInfo.uri !== peg.latestDebtorInfo.uri`, show
-//   the "coin URI override screen", and if accepted, create a new
-//   AckAccountInfoAction for the peg account.
+// * At most one of the following things will happen:
 //
-// * If `pegAccount.AccountDisplay.debtorName === undefined` (the
-//   account's AccountKnowledge must be ignored), show the "accept
-//   debtor screen". If the user have accepted the debtor:
+//   - If `state.verifyLatestDebtorInfoUri === true &&
+//     (pegAccount.AccountKnowledge.coinUri ??
+//     PEG_DOC.latestDebtorInfo.uri) !== peg.latestDebtorInfo.uri`,
+//     show the "coin URI override screen", and if accepted, set
+//     `pegAccount.AccountKnowledge.coinUri` to
+//     `peg.latestDebtorInfo.uri`, and trigger debtor info reload; if
+//     rejected, set `state.verifyLatestDebtorInfoUri` to false.
 //
-//   a) Set `state.initializationInProgress` to true (and commit).
+//   - If `pegAccount.AccountDisplay.debtorName === undefined` (the
+//     account's AccountKnowledge must be ignored), show the "accept
+//     debtor screen". If the user have accepted the debtor:
 //
-//   b) Initialize peg account's AccountKnowledge (`knownDebtor =
-//      false`).
+//     a) Set `state.initializationInProgress` to true (and commit).
 //
-//   c) Initialize peg account's `AccountConfig (including
-//      `negligibleAmount` and `scheduledForDeletion` = false).
+//     b) Initialize peg account's AccountKnowledge (`knownDebtor =
+//        false`).
 //
-//   d) Initialize peg account's AccountDisplay (including the
-//     `debtorName` field).
+//     c) Initialize peg account's `AccountConfig (including
+//        `negligibleAmount` and `scheduledForDeletion` = false).
 //
-//   NOTE: While initializing, if the `latestUpdateId` happens to be
-//         wrong (or some other network failure occurs), an error
-//         should be shown, and the user redirected to the "actions"
-//         page.
+//     d) Initialize peg account's AccountDisplay (including the
+//        `debtorName` field).
+//
+//   NOTE: While making updates on the server , if the
+//         `latestUpdateId` happens to be wrong (or some other network
+//         failure occurs), an error should be shown, and the user
+//         redirected to the "actions" page.
 //
 // * If `state.initializationInProgress === true` and PEG_DOC declares
 //   a peg itself, create an ApprovePegAction for the next peg, and
@@ -430,7 +433,6 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
-    askForOverride: boolean,
   }
 
 export type ApprovePegActionWithId =
@@ -464,9 +466,6 @@ export type ApproveDisplayActionWithId =
 // * We probably should present the option to the user to set
 //   `AccountKnowledge.knownDebtor` to false, in case the user
 //   suspects that he/she is not dealing with the same debtor anymore.
-//
-// * No more that one ApproveDebtorNameAction per account should exist
-//   at a given time. (The same is true for all `ApproveXXXAction`s.)
 //
 // * ApproveDebtorNameAction records must never be created for
 //   accounts that does not have a `debtorName` set. (The same is true
