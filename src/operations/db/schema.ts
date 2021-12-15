@@ -137,7 +137,7 @@ export type ActionRecord =
   | AbortTransferAction
   | CreateAccountAction
   | ApprovePegAction
-  | ApproveDisplayAction
+  | ApproveAmountDisplayAction
   | ApproveDebtorNameAction
   | AckAccountInfoAction
 
@@ -188,10 +188,11 @@ export type EssentialAccountInfo = {
 
 // Informs the user about updated account info. After the user
 // acknowledges, updates the account's AccountKnowledge record. Then,
-// if necessary creates ApproveDebtorNameAction, ApproveDisplayAction,
-// ApprovePegAction. When account's peg parameters has been changed --
-// remove the peg from the AccountExchange record (so that not to
-// allow exchanges at non-standard rates).
+// if necessary creates ApproveDebtorNameAction,
+// ApproveAmountDisplayAction, ApprovePegAction. When account's peg
+// parameters has been changed -- remove the peg from the
+// AccountExchange record (so that not to allow exchanges at
+// non-standard rates).
 //
 // Important notes:
 //
@@ -439,43 +440,64 @@ export type ApprovePegActionWithId =
   & ActionRecordWithId
   & ApprovePegAction
 
-/** If the user accepts the new account display parameters -- write
- * them to the account display record. Otherwise, do nothing.
- */
-export type ApproveDisplayAction =
+// TODO: Here is how this action is supposed to work:
+//
+// * Make a "get account" HTTP request for the account
+//   (accountUri). This ensures that we have got the most recent
+//   version of the account.
+//
+// * Ensure that the account (accountUri) exists, and
+//   `account.AccountDisplay.debtorName` is not undefined.
+//
+// * Ensure that the `account.AccountKnowledge.debtorInfo.iri`
+//   document describes the same `amountDivisor`, `decimalPlaces`, and
+//   `unit`.
+//
+// * Show the "approve amount display screen", and if accepted, write
+//   the amount display parameters to `account.AccountDisplay` (check
+//   latestUpdateId).
+export type ApproveAmountDisplayAction =
   & ActionData
   & {
-    // TODO: more fields?
-    actionType: 'ApproveDisplay',
+    actionType: 'ApproveAmountDisplay',
     accountUri: string,
+    amountDivisor: number,
+    decimalPlaces: bigint,
+    unit: string,
   }
 
-export type ApproveDisplayActionWithId =
+export type ApproveAmountDisplayActionWithId =
   & ActionRecordWithId
-  & ApproveDisplayAction
+  & ApproveAmountDisplayAction
 
 // TODO: Here is how this action is supposed to work:
 //
-// A dialog is shown asking the user to accept the change in the
-// debtor's name. If the user accepts the new debtor name (possibly
-// edited) -- write it to the account display record. Otherwise, do
-// nothing.
+// * Make a "get account" HTTP request for the account
+//   (accountUri). This ensures that we have got the most recent
+//   version of the account.
 //
-// Important notes:
+// * Ensure that the account (accountUri) exists, and
+//   `account.AccountDisplay.debtorName` is not undefined (this should
+//   be used as an initial value for `editedDebtorName`, if it is
+//   undefined).
 //
-// * We probably should present the option to the user to set
-//   `AccountKnowledge.knownDebtor` to false, in case the user
-//   suspects that he/she is not dealing with the same debtor anymore.
+// * Ensure that the `account.AccountKnowledge.debtorInfo.iri`
+//   document describes the same `debtorName`.
 //
-// * ApproveDebtorNameAction records must never be created for
-//   accounts that does not have a `debtorName` set. (The same is true
-//   for all `ApproveXXXAction`s.)
+// * Show the "approve debtor name screen", and if accepted, write the
+//   (possibly edited) debtor name to `account.AccountDisplay` (check
+//   latestUpdateId).
+//
+// NOTE: In the "approve debtor name screen" we probably should
+// present the option to the user to set
+// `AccountKnowledge.knownDebtor` to false, in case the user suspects
+// that he/she is not dealing with the same debtor anymore.
 export type ApproveDebtorNameAction =
   & ActionData
   & {
-    // TODO: more fields?
     actionType: 'ApproveDebtorName',
     accountUri: string,
+    debtorName: string;
     editedDebtorName?: string,
   }
 
