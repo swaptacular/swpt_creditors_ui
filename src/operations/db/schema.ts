@@ -440,10 +440,12 @@ export type ApprovePegActionWithId =
   & ActionRecordWithId
   & ApprovePegAction
 
-// TODO: Here is how this action is supposed to work:
+// TODO: Here is how this action should work:
 //
-// * Ensure that the account (accountUri) exists, and
-//   `account.AccountDisplay.debtorName` is not undefined.
+// * Ensure that the account (accountUri) exists,
+//   `account.AccountDisplay.debtorName` is not undefined, and the
+//   `account.AccountKnowledge.debtorInfo.iri` document describes the
+//   same `amountDivisor`, `decimalPlaces`, and `unit`.
 //
 // * Show the "approve amount display screen", and if accepted:
 //
@@ -472,12 +474,13 @@ export type ApproveAmountDisplayActionWithId =
   & ActionRecordWithId
   & ApproveAmountDisplayAction
 
-// TODO: Here is how this action is supposed to work:
+// TODO: Here is how this action should work:
 //
-// * Ensure that the account (accountUri) exists, and
-//   `account.AccountDisplay.debtorName` is not undefined (this shall
-//   be used as an initial value for `editedDebtorName`, if it is
-//   undefined).
+// * Ensure that the account (accountUri) exists,
+//   `account.AccountDisplay.debtorName` is not undefined (it shall be
+//   used as an initial value for `editedDebtorName`), and the
+//   `account.AccountKnowledge.debtorInfo.iri` document describes the
+//   same `debtorName`.
 //
 // * Show the "approve debtor name screen", and if accepted:
 //
@@ -490,13 +493,13 @@ export type ApproveAmountDisplayActionWithId =
 //      `account.AccountKnowledge.debtorInfo.iri` document describes
 //      the same `debtorName`.
 //
+//      NOTE: In the "approve debtor name screen" the option should be
+//      presented to the user to set `AccountKnowledge.knownDebtor` to
+//      false, in case the user suspects that he/she is not dealing
+//      with the same debtor anymore.
+//
 //   d) Write the (possibly edited) debtor name to
 //      `account.AccountDisplay` (check latestUpdateId).
-//
-// NOTE: In the "approve debtor name screen" we probably should
-// present the option to the user to set
-// `AccountKnowledge.knownDebtor` to false, in case the user suspects
-// that he/she is not dealing with the same debtor anymore.
 export type ApproveDebtorNameAction =
   & ActionData
   & {
