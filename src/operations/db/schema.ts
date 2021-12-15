@@ -493,13 +493,16 @@ export type ApproveAmountDisplayActionWithId =
 //      `account.AccountKnowledge.debtorInfo.iri` document describes
 //      the same `debtorName`.
 //
-//      NOTE: In the "approve debtor name screen" the option should be
+//   d) Write the (possibly edited) debtor name to
+//      `account.AccountDisplay` (check latestUpdateId). Optionally,
+//      set `AccountKnowledge.knownDebtor` to false
+//
+//      NOTE: In the "approve debtor name screen" the option is
 //      presented to the user to set `AccountKnowledge.knownDebtor` to
 //      false, in case the user suspects that he/she is not dealing
-//      with the same debtor anymore.
-//
-//   d) Write the (possibly edited) debtor name to
-//      `account.AccountDisplay` (check latestUpdateId).
+//      with the same debtor anymore. That is, the user can select
+//      between: "Use the new name", "Keep the current name", and "I
+//      am confused".
 export type ApproveDebtorNameAction =
   & ActionData
   & {
