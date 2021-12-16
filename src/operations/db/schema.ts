@@ -283,13 +283,12 @@ export type AckAccountInfoActionWithId =
 //     `account.AccountDisplay.debtorName !== undefined`, show the
 //     "accept debtor screen". If the user have accepted the debtor:
 //
-//     a) If changed, update `AccountDisplay.debtorName`.
+//     a) If changed, update `AccountDisplay.debtorName`. If
+//       `AccountDisplay.knownDebtor` is false, set it to true.
 //
-//     b) If changed, update `AccountConfig.negligibleAmount`, and if
+//     b) If changed, update `AccountConfig.negligibleAmount`. If
 //        `AccountConfig.scheduledForDeletion` is true, set it to
 //        false.
-//
-//     c) If `AccountKnowledge.knownDebtor` is false, set it to true.
 //
 //   - If `account.AccountDisplay.debtorName === undefined` (the
 //     account's AccountKnowledge must be ignored), show the "accept
@@ -297,14 +296,13 @@ export type AckAccountInfoActionWithId =
 //
 //     a) Set `state.initializationInProgress` to true (and commit).
 //
-//     b) Initialize account's AccountKnowledge (`knownDebtor =
-//        true`).
+//     b) Initialize account's AccountKnowledge.
 //
 //     c) Initialize account's `AccountConfig (including
 //        `negligibleAmount` and `scheduledForDeletion` = false).
 //
 //     d) Initialize account's AccountDisplay (including the
-//        `debtorName` field).
+//        `debtorName` field, setting `knownDebtor to true).
 //
 //   NOTE: While making updates on the server , if the
 //         `latestUpdateId` happens to be wrong (or some other network
@@ -394,14 +392,13 @@ export type CreateAccountActionWithId =
 //
 //     a) Set `state.initializationInProgress` to true (and commit).
 //
-//     b) Initialize peg account's AccountKnowledge (`knownDebtor =
-//        false`).
+//     b) Initialize peg account's AccountKnowledge.
 //
 //     c) Initialize peg account's `AccountConfig (including
 //        `negligibleAmount` and `scheduledForDeletion` = false).
 //
 //     d) Initialize peg account's AccountDisplay (including the
-//        `debtorName` field).
+//        `debtorName` field, setting `knownDebtor to false).
 //
 //   NOTE: While making updates on the server , if the
 //         `latestUpdateId` happens to be wrong (or some other network
@@ -495,10 +492,10 @@ export type ApproveAmountDisplayActionWithId =
 //
 //   d) Write the (possibly edited) debtor name to
 //      `account.AccountDisplay` (check latestUpdateId). Optionally,
-//      set `AccountKnowledge.knownDebtor` to false
+//      set `AccountDisplay.knownDebtor` to false.
 //
 //      NOTE: In the "approve debtor name screen" the option is
-//      presented to the user to set `AccountKnowledge.knownDebtor` to
+//      presented to the user to set `AccountDisplay.knownDebtor` to
 //      false, in case the user suspects that he/she is not dealing
 //      with the same debtor anymore. That is, the user can select
 //      between: "Use the new name", "Keep the current name", and "I
