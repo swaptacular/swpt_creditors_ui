@@ -566,13 +566,6 @@ export type AccountKnowledge = {
    * to contain when UTF-8 encoded, which is known to the creditor. */
   noteMaxBytes?: bigint;
 
-  /** Whether the account's debtor is known to the user. For example,
-   * this will be `false` when the account is being created because
-   * another account declared it as peg-currency, and will be `true`
-   * when the user creates the account by scanning the debtor' digital
-   * coin (a QR code). Defaults to `false`. */
-  knownDebtor?: boolean;
-
   /** Optional name, used as payee name for the latest payment from
    * the account. */
   payeeName?: string;
@@ -988,10 +981,12 @@ export type AccountDisplay = {
   /** The URI of the corresponding `Account`. */
   account: ObjectReference;
 
-  /** Whether the account should be hidden. That is: not shown when
-   * the user views his accounts list. For new accounts the value of
-   * this field will be `False`. */
-  hide: boolean;
+  /** Whether the account's debtor is known to the creditor. Accepting
+   * payments to accounts with an unknown debtor is of course very
+   * dangerous, but such accounts can still be useful as links in a
+   * chain of currency pegs. For new accounts the value of this field
+   * will be `False`. */
+  knownDebtor: boolean;
 
   /**
    * Before displaying the amount, it should be divided by this
