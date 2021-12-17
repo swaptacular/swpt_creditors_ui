@@ -186,13 +186,40 @@ export type EssentialAccountInfo = {
   configError?: string,
 }
 
-// Informs the user about updated account info. After the user
-// acknowledges, updates the account's AccountKnowledge record. Then,
-// if necessary creates ApproveDebtorNameAction,
-// ApproveAmountDisplayAction, ApprovePegAction. When account's peg
-// parameters has been changed -- remove the peg from the
-// AccountExchange record (so that not to allow exchanges at
-// non-standard rates).
+// TODO: Here is how this action is supposed to work:
+//
+// * Ensure that the account (accountUri) exists, and
+//   `account.AccountDisplay.debtorName` is not undefined.
+//
+// * Ensure that the `account.AccountKnowledge` structure describes
+//   the same settings as `before`, or `saveInProgress === true`.
+//
+// * Show the "acknowledge account changes screen", and when OK-ed:
+//
+//   a) Make a "get account" HTTP request for the account
+//      (accountUri). This ensures that we have got the most recent
+//      version of the account.
+//
+//   b) Ensure that the account (accountUri) still exists, and
+//      `account.AccountDisplay.debtorName` is not undefined.
+//
+//   c) If the `account.AccountKnowledge` structure describes the same
+//      settings as `before`:
+//
+//      - Set `saveInProgress` to true (and commit).
+//
+//      - If the pegs described in `before` and `after` differ, and
+//        the "before" peg is set in the `account.AccountExchange`
+//        record, remove it.
+//
+//      - Write the `after` settings to `account.AccountKnowledge`
+//        (check latestUpdateId).
+//
+// * If the `account.AccountKnowledge` structure describes the same
+//   settings as `after`, create (if necessary) corresponding
+//   `ApproveDebtorNameAction`, `ApproveAmountDisplayAction`,
+//   `ApprovePegAction` actions, and delete the acknowledge account
+//   info action.
 //
 // Important notes:
 //
@@ -229,6 +256,7 @@ export type AckAccountInfoAction =
     accountUri: string,
     before: EssentialAccountInfo,
     after: EssentialAccountInfo,
+    saveInProgress: boolean,
   }
 
 export type AckAccountInfoActionWithId =
