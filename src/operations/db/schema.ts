@@ -188,44 +188,30 @@ export type EssentialAccountInfo = {
 
 // TODO: Here is how this action is supposed to work:
 //
+// * Make a "get account" HTTP request for the account
+//   (accountUri). This ensures that we have got the most recent
+//   version of the account.
+//
 // * Ensure that the account (accountUri) exists, and
 //   `account.AccountDisplay.debtorName` is not undefined.
 //
-// * Ensure that the `account.AccountKnowledge` structure describes
-//   the same settings as `before`, or `saveInProgress === true`.
+// * Ensure that `knowledgeUpdateId ===
+//   account.AccountKnowledge.latestUpdateId`.
 //
-// * Show the "acknowledge account changes screen", and when OK-ed:
+// * Show the "acknowledge account changes screen", and wait for the
+//   user to acknowledge.
 //
-//   a) Make a "get account" HTTP request for the account
-//      (accountUri). This ensures that we have got the most recent
-//      version of the account.
+// * If the pegs described in the
+//   `account.AccountKnowledge.debtorInfo.iri` document, and the
+//   `info` field differ, and the old peg is set in the
+//   `account.AccountExchange` record, remove it.
 //
-//   b) Ensure that the account (accountUri) still exists, and
-//      `account.AccountDisplay.debtorName` is not undefined.
+// * Set `acknowledged` to true (and commit).
 //
-//   c) If the `account.AccountKnowledge` structure describes the same
-//      settings as `before`:
-//
-//      - Set `saveInProgress` to true (and commit).
-//
-//      - If the pegs described in `before` and `after` differ, and
-//        the "before" peg is set in the `account.AccountExchange`
-//        record, remove it.
-//
-//      - Write the `after` settings to `account.AccountKnowledge`
-//        (check latestUpdateId).
-//
-// * If the `account.AccountKnowledge` structure describes the same
-//   settings as `after`, create (if necessary) corresponding
-//   `ApproveDebtorNameAction`, `ApproveAmountDisplayAction`,
-//   `ApprovePegAction` actions, and delete the acknowledge account
-//   info action.
+// * Write the `info` settings to `account.AccountKnowledge` (set
+//   `account.AccountKnowledge.infoUpdateId` to `infoUpdateId`).
 //
 // Important notes:
-//
-// * When the known debtor info becomes confirmed, this allows the
-//   user to accept payments, and therefore the user should be
-//   informed about it.
 //
 // * Changes in the fields `noteMaxBytes`, `identity`,
 //   `debtorData.summary`, `debtorData.debtorIdentity`,
@@ -233,30 +219,36 @@ export type EssentialAccountInfo = {
 //   be ignored, because they are either unimportant or never shown to
 //   the user.
 //
+// * AckAccountInfoAction records must never be created for accounts
+//   that does not have a `debtorName` set.
+//
 // * No more that one AckAccountInfoAction per account should exist at
 //   a given time.
 //
 // * A new AckAccountInfoAction record should be created when it is
-//   known that one or more of the important (tracked) fields has
-//   been updated, and currently there are no `AckAccountInfoAction`s
-//   for the given account. (Therefore, when an AckAccountInfoAction
-//   gets deleted, the `AccountInfo` record should be checked, and if
-//   there has been a change -- another AckAccountInfoAction created.)
+//   known that one or more of the important (tracked) fields has been
+//   updated, and currently there are no `AckAccountInfoAction` for
+//   the given account. (Therefore, when an AckAccountInfoAction gets
+//   deleted, the `AccountKnowledge` and `AccountInfo` records should
+//   be checked, and if there has been a change -- another
+//   AckAccountInfoAction created.)
 //
-// * When one or more of the important (tracked) fields in the
-//   account's `AccountKnowledge` record has been changed, and an
-//   AckAccountInfoAction record exists, it should be deleted.
-//
-// * AckAccountInfoAction records must never be created for accounts
-//   that does not have a `debtorName` set.
+// * If there is a change (any change) in the account's
+//   `AccountKnowledge` record, and an AckAccountInfoAction record for
+//   the account exists, it should be deleted. And if the
+//   AckAccountInfoAction action has its `acknowledged` field set to
+//   true, if necessary, corresponding `ApproveDebtorNameAction`,
+//   `ApproveAmountDisplayAction`, `ApprovePegAction` actions must be
+//   created.
 export type AckAccountInfoAction =
   & ActionData
   & {
     actionType: 'AckAccountFacts',
     accountUri: string,
-    before: EssentialAccountInfo,
-    after: EssentialAccountInfo,
-    saveInProgress: boolean,
+    knowledgeUpdateId: bigint,
+    infoUpdateId: bigint,
+    info: EssentialAccountInfo,
+    acknowledged: boolean,
   }
 
 export type AckAccountInfoActionWithId =
@@ -451,8 +443,7 @@ export type CreateAccountActionWithId =
 //      the `peggedAccount.AccountKnowledge.debtorInfo.iri` document
 //      describes the same peg as `peg`.
 //
-//   c) Write the new peg to `peggedAccount.AccountExchange` (check
-//      latestUpdateId).
+//   c) Write the new peg to `peggedAccount.AccountExchange`.
 export type ApprovePegAction =
   & Omit<CreateAccountAction, 'latestDebtorInfoUri' | 'debtorIdentityUri'>
   & {
@@ -484,7 +475,7 @@ export type ApprovePegActionWithId =
 //      the same `amountDivisor`, `decimalPlaces`, and `unit`.
 //
 //   c) Write the amount display parameters to
-//      `account.AccountDisplay` (check latestUpdateId).
+//      `account.AccountDisplay`.
 export type ApproveAmountDisplayAction =
   & ActionData
   & {
@@ -519,8 +510,8 @@ export type ApproveAmountDisplayActionWithId =
 //      the same `debtorName`.
 //
 //   d) Write the (possibly edited) debtor name to
-//      `account.AccountDisplay` (check latestUpdateId). Optionally,
-//      set `AccountDisplay.knownDebtor` to false.
+//      `account.AccountDisplay`. Optionally, set
+//      `AccountDisplay.knownDebtor` to false.
 //
 //      NOTE: In the "approve debtor name screen" the option is
 //      presented to the user to set `AccountDisplay.knownDebtor` to
