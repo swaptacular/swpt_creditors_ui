@@ -1,9 +1,8 @@
-import type { PinInfo, Account } from './server'
+import type { PinInfo } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
 } from './db'
 import type { UserResetMessage } from './db-sync'
-import type { DebtorIdentity } from './canonical-objects'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -13,14 +12,13 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, putDocumentRecord, AccountsMap
+  createActionRecord, getActionRecord, AccountsMap
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
-import { makePinInfo, makeAccount } from './canonical-objects'
-import { InvalidDocument, parseDebtorInfoDocument } from '../debtor-info'
-import { calcParallelTimeout, fetchWithTimeout, calcSha256, fetchDebtorInfoDocument } from './utils'
+import { makePinInfo } from './canonical-objects'
+import { calcParallelTimeout, fetchWithTimeout, calcSha256, parseCoinUri } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
@@ -209,44 +207,46 @@ export class UserContext {
     }
   }
 
-  /* Tries to parse the document at `coinUri`, then adds a new account
-   * action record, and returns its action ID. The caller must be
-   * prepared this method to throw `ServerSessionError` or
-   * `InvalidDocument`. */
+  /* Add a new create account action record, and returns its action
+   * ID. The caller must be prepared this method to throw
+   * `InvalidCoinUri`. */
   async createAccount(coinUri: string): Promise<number> {
-    const document = await fetchDebtorInfoDocument(coinUri)
-    const debtorData = await parseDebtorInfoDocument(document)
+    const [latestDebtorInfoUri, debtorIdentityUri] = parseCoinUri(coinUri)
 
-    // Before we proceed, we must ensure that: 1) We've got the latest
-    // version of the debtor info document; 2) The identity of the
-    // debtor described in the document is correct.
-    if (`${debtorData.latestDebtorInfo.uri}#${debtorData.debtorIdentity.uri}` !== coinUri) {
-      throw new InvalidDocument()
-    }
-    if (!await putDocumentRecord(document)) {
-      throw new InvalidDocument()
-    }
+    // const document = await fetchDebtorInfoDocument(coinUri)
+    // const debtorData = await parseDebtorInfoDocument(document)
 
-    let response
-    try {
-      const request: DebtorIdentity = {
-        type: 'DebtorIdentity',
-        uri: debtorData.debtorIdentity.uri,
-      }
-      response = await this.server.post(this.walletRecord.createAccount.uri, request) as HttpResponse<Account>
-    } catch (e: unknown) {
-      if (e instanceof HttpError && e.status === 422) throw new InvalidDocument()
-      else throw e
-    }
-    const account = makeAccount(response)
-    await storeObject(this.userId, account)
+    // // Before we proceed, we must ensure that: 1) We've got the latest
+    // // version of the debtor info document; 2) The identity of the
+    // // debtor described in the document is correct.
+    // if (`${debtorData.latestDebtorInfo.uri}#${debtorData.debtorIdentity.uri}` !== coinUri) {
+    //   throw new InvalidDocument()
+    // }
+    // if (!await putDocumentRecord(document)) {
+    //   throw new InvalidDocument()
+    // }
+
+    // let response
+    // try {
+    //   const request: DebtorIdentity = {
+    //     type: 'DebtorIdentity',
+    //     uri: debtorData.debtorIdentity.uri,
+    //   }
+    //   response = await this.server.post(this.walletRecord.createAccount.uri, request) as HttpResponse<Account>
+    // } catch (e: unknown) {
+    //   if (e instanceof HttpError && e.status === 422) throw new InvalidDocument()
+    //   else throw e
+    // }
+    // const account = makeAccount(response)
+    // await storeObject(this.userId, account)
 
     return await createActionRecord({
       userId: this.userId,
       actionType: 'CreateAccount',
       createdAt: new Date(),
-      documentUri: document.uri,
-      accountUri: account.uri,
+      showRetryFetchDialog: false,
+      latestDebtorInfoUri,
+      debtorIdentityUri,
     })
   }
 

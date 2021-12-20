@@ -8,6 +8,10 @@ import {
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
+export class InvalidCoinUri extends Error {
+  name = 'InvalidCoinUri'
+}
+
 export function calcParallelTimeout(numberOfParallelRequests: number): number {
   const n = 6  // a rough guess for the maximum number of parallel connections
   return appConfig.serverApiTimeout * (numberOfParallelRequests + n - 1) / n
@@ -163,4 +167,20 @@ async function* iterPaginatedList<OriginalItem, TransformedItem>(
   const response = await server.get(listUri) as HttpResponse<PaginatedList>
   const list = makeList(response)
   yield* iterPages(server, list.first, transformItem)
+}
+
+export function parseCoinUri(coinUri: string): [string, string] {
+  let latestDebtorInfoUri, debtorIdentityUri
+  try {
+    const url = new URL(coinUri)
+    const { href, hash } = url
+    latestDebtorInfoUri = href.slice(0, href.lastIndexOf(hash))
+    debtorIdentityUri = hash.slice(1)
+  } catch {
+    throw new InvalidCoinUri()
+  }
+  if (`${latestDebtorInfoUri}#${debtorIdentityUri}` !== coinUri) {
+    throw new InvalidCoinUri()
+  }
+  return [latestDebtorInfoUri, debtorIdentityUri]
 }

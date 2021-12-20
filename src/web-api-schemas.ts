@@ -971,10 +971,12 @@ export type AccountDisplay = {
   /** The URI of the corresponding `Account`. */
   account: ObjectReference;
 
-  /** Whether the account should be hidden. That is: not shown when
-   * the user views his accounts list. For new accounts the value of
-   * this field will be `False`. */
-  hide: boolean;
+  /** Whether the account's debtor is known to the creditor. Accepting
+   * payments to accounts with an unknown debtor is of course very
+   * dangerous, but such accounts can still be useful as links in a
+   * chain of currency pegs. For new accounts the value of this field
+   * will be `False`. */
+  knownDebtor: boolean;
 
   /**
    * Before displaying the amount, it should be divided by this
