@@ -371,7 +371,8 @@ export type CreateAccountActionWithId =
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
 //     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`,
-//     `state.verifyLatestDebtorInfoUri` to <debtorInfo IS NOT
+//     `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES NOT have
+//     sha256 and contentType fields> && <debtorInfo IS NOT
 //     confirmed>, and `state.initializationInProgress` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
