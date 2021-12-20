@@ -348,7 +348,7 @@ export type CreateAccountActionWithId =
   & ActionRecordWithId
   & CreateAccountAction
 
-// TODO: Here is how this action is supposed to work:
+// TODO: Here is how this action should work:
 //
 // * Ensure that the pegged account (accountUri) exists, and
 //   `peggedAccount.AccountDisplay.debtorName` is not undefined.
