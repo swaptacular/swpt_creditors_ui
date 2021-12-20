@@ -324,7 +324,6 @@ export type AckAccountInfoActionWithId =
 //     d) Initialize account's AccountDisplay (including the
 //        `debtorName` field, setting `knownDebtor to true).
 //
-//
 // * If `state.initializationInProgress === true` and DOC declares a
 //   peg, create an ApprovePegAction for the peg, and delete the
 //   create account action. (We may need to ensure that the currency
