@@ -186,7 +186,7 @@ export type EssentialAccountInfo = {
   configError?: string,
 }
 
-// TODO: Here is how this action is supposed to work:
+// TODO: Here is how this action should work:
 //
 // * Make a "get account" HTTP request for the account
 //   (accountUri). This ensures that we have got the most recent
@@ -255,7 +255,7 @@ export type AckAccountInfoActionWithId =
   & ActionRecordWithId
   & AckAccountInfoAction
 
-// TODO: Here is how this action is supposed to work:
+// TODO: Here is how this action should work:
 //
 // (dialog 1 -- optional)
 //
