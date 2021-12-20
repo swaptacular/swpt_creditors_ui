@@ -268,7 +268,7 @@ export type AckAccountInfoActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If *confirmed* debtor info can be obtained from
+//   - If debtor info can be obtained from
 //     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
@@ -324,10 +324,6 @@ export type AckAccountInfoActionWithId =
 //     d) Initialize account's AccountDisplay (including the
 //        `debtorName` field, setting `knownDebtor to true).
 //
-//   NOTE: While making updates on the server , if the
-//         `latestUpdateId` happens to be wrong (or some other network
-//         failure occurs), an error should be shown, and the user
-//         redirected to the "actions" page.
 //
 // * If `state.initializationInProgress === true` and DOC declares a
 //   peg, create an ApprovePegAction for the peg, and delete the
@@ -369,7 +365,7 @@ export type CreateAccountActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If *confirmed* debtor info can be obtained from
+//   - If debtor info can be obtained from
 //     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
 //     it, set `state.verifyLatestDebtorInfoUri` to false, and
 //     `state.initializationInProgress` to false.
@@ -419,11 +415,6 @@ export type CreateAccountActionWithId =
 //
 //     d) Initialize peg account's AccountDisplay (including the
 //        `debtorName` field, setting `knownDebtor to false).
-//
-//   NOTE: While making updates on the server , if the
-//         `latestUpdateId` happens to be wrong (or some other network
-//         failure occurs), an error should be shown, and the user
-//         redirected to the "actions" page.
 //
 // * If `state.initializationInProgress === true` and PEG_DOC declares
 //   a peg itself, create an ApprovePegAction for the next peg, and
