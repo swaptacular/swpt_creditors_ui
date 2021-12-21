@@ -1,6 +1,7 @@
 import type { PinInfo } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
+  CreateAccountActionWithId
 } from './db'
 import type { UserResetMessage } from './db-sync'
 
@@ -18,7 +19,7 @@ import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
 import { makePinInfo } from './canonical-objects'
-import { calcParallelTimeout, fetchWithTimeout, calcSha256, parseCoinUri } from './utils'
+import { calcParallelTimeout, fetchWithTimeout, calcSha256, parseCoinUri, InvalidCoinUri } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
@@ -26,6 +27,7 @@ import {
 export {
   IvalidPaymentRequest,
   IvalidPaymentData,
+  InvalidCoinUri,
   AuthenticationError,
   ServerSessionError,
   IS_A_NEWBIE_KEY,
@@ -33,6 +35,7 @@ export {
 
 export type {
   ActionRecordWithId,
+  CreateAccountActionWithId,
 }
 
 /* Logs out the user and redirects to home, never resolves. */

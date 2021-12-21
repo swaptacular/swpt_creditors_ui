@@ -9,10 +9,9 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri
 
 } from './operations'
-import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | null][],
@@ -57,6 +56,7 @@ export type Store<T> = {
 export type PageModel =
   | ActionsModel
   | ActionModel
+  | AccountsModel
 
 type BasePageModel = {
   type: string,
@@ -76,7 +76,12 @@ export type ActionModel = BasePageModel & {
   action: ActionRecordWithId,
 }
 
+export type AccountsModel = BasePageModel & {
+  type: 'AccountsModel',
+}
+
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
+export const HAS_SCANNED_DIGITAL_COIN_KEY = 'creditors.hasScannedDigitalCoin'
 
 export const authenticated = writable(true)
 
@@ -186,6 +191,15 @@ export class AppState {
     })
   }
 
+  showAccounts(): Promise<void> {
+    this.pageModel.set({
+      type: 'AccountsModel',
+      reload: () => { this.showAccounts() },
+      goBack: () => { this.showActions() },
+    })
+    return Promise.resolve()
+  }
+
   createAccount(coinUri: string): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
@@ -196,7 +210,7 @@ export class AppState {
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
       ],
     })
   }

@@ -142,8 +142,8 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab color="primary" on:click={() => alert('not implemented') } >
-        <Icon class="material-icons">qr_code_2</Icon>
+      <Fab on:click={() => app.showAccounts() } >
+        <Icon class="material-icons">account_balance_wallet</Icon>
       </Fab>
     </div>
     <div class="fab-container">
@@ -152,7 +152,7 @@
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => showMakePaymentDialog = true} >
+      <Fab color="primary" on:click={() => showMakePaymentDialog = true} >
         <Icon class="material-icons">local_atm</Icon>
       </Fab>
     </div>

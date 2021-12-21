@@ -3,6 +3,7 @@
   import type { AppState } from '../app-state'
   import ActionPage from './ActionPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
+  import AccountsPage from './AccountsPage.svelte'
 
   export let app: AppState
   export let snackbarBottom: string = '0px'
@@ -20,6 +21,8 @@
       return ActionPage
     case 'ActionsModel':
       return ActionsPage
+    case 'AccountsModel':
+      return AccountsPage
     default:
       throw new Error('unknown page model type')
     }
