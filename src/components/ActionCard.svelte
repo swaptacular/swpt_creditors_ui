@@ -17,6 +17,8 @@
       return 'Make payment'
     case 'AbortTransfer':
       return 'Show the problem'
+    case 'CreateAccount':
+      return 'Confirm'
     default:
       return 'Unknown action type'
     }
@@ -39,6 +41,8 @@
       unitAmount = '0.00'
       unit = '\u00a4'
       return `${title}: ${unitAmount} ${unit} to ${payeeName}.`
+    case 'CreateAccount':
+      return `Create account.`
     default:
       return 'Unknown action type'
     }

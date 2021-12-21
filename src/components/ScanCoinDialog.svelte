@@ -32,7 +32,7 @@
     aria-describedby="scan-coin-dialog-content"
     on:MDCDialog:closed={() => open = false}
     >
-    <Title id="scan-coin-dialog-title">Scan the QR code of the digital coin</Title>
+    <Title id="scan-coin-dialog-title">Scan the digital coin (a QR code)</Title>
     <Content id="scan-coin-dialog-content">
       <QrScanner bind:result={scannedValue}/>
     </Content>

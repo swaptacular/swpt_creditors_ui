@@ -12,7 +12,7 @@
   export let action: CreateAccountActionWithId
   export const snackbarBottom: string = "84px"
 
-  function cancel() {
+  function reject() {
     // TODO: Add real implementation
     app
     action
@@ -35,8 +35,8 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={cancel} extended>
-        <Label>Cancel</Label>
+      <Fab on:click={reject} extended>
+        <Label>Reject</Label>
       </Fab>
     </div>
     <div class="fab-container">
