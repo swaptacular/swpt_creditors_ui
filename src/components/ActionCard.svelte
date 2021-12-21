@@ -25,26 +25,28 @@
   }
 
   function getDescription(action: ActionRecordWithId): string {
-    let payeeName
-    let unitAmount
-    let unit
     switch (action.actionType) {
-    case 'CreateTransfer':
-      payeeName = action.paymentInfo.payeeName
-      unitAmount = '0.00'
-      unit = '\u00a4'
-      return `Send ${unitAmount} ${unit} to ${payeeName}.`
-    case 'AbortTransfer':
-      const transfer = action.transfer
-      const title = transfer.result ? "Failed payment" : "Delayed payment"
-      payeeName = transfer.paymentInfo.payeeName
-      unitAmount = '0.00'
-      unit = '\u00a4'
-      return `${title}: ${unitAmount} ${unit} to ${payeeName}.`
-    case 'CreateAccount':
-      return `Create account.`
-    default:
-      return 'Unknown action type'
+      case "CreateTransfer": {
+        const payeeName = action.paymentInfo.payeeName
+        const unitAmount = "0.00"
+        const unit = "\u00a4"
+        return `Send ${unitAmount} ${unit} to ${payeeName}.`
+      }
+      case "AbortTransfer": {
+        const transfer = action.transfer
+        const title = transfer.result ? "Failed payment" : "Delayed payment"
+        const payeeName = transfer.paymentInfo.payeeName
+        const unitAmount = "0.00"
+        const unit = "\u00a4"
+        return `${title}: ${unitAmount} ${unit} to ${payeeName}.`
+      }
+      case "CreateAccount": {
+        const editedDebtorName = action.state?.editedDebtorName
+        const name = editedDebtorName ? `"${editedDebtorName}"` : "unknown debtor"
+        return `Create account with ${name}.`
+      }
+      default:
+        return "Unknown action type"
     }
   }
 </script>
