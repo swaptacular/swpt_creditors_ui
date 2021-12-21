@@ -117,7 +117,7 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText slot="helper" persistent>
-                  Each account must have a unique debtor name.
+                  Every account must have a unique debtor name.
                 </HelperText>
               </Textfield>
             </Cell>
@@ -144,7 +144,7 @@
                 <HelperText slot="helper" persistent>
                   An amount to be considered negligible. It is used to
                   decide whether the account can be safely deleted,
-                  and whether an incoming transfer should be ignored.
+                  and whether an incoming transfer can be ignored.
                 </HelperText>
               </Textfield>
             </Cell>
