@@ -34,7 +34,7 @@
   }
 </style>
 
-<Page title="Actions">
+<Page title="Accounts">
   <svelte:fragment slot="content">
     <p class="no-accounts">
       Press
