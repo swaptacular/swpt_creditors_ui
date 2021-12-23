@@ -15,7 +15,8 @@ import {
 
 type AttemptOptions = {
   alerts?: [Function, Alert | null][],
-  startInteraction?: boolean
+  startInteraction?: boolean,
+  waitingDelay?: number,
 }
 
 export { IS_A_NEWBIE_KEY }
@@ -237,7 +238,7 @@ export class AppState {
    * hourglass should be shown when the operation had not been
    * completed after some time. */
   private async attempt(func: () => unknown, options: AttemptOptions = {}): Promise<void> {
-    const { alerts = [], startInteraction = true } = options
+    const { alerts = [], startInteraction = true, waitingDelay = 250 } = options
 
     const addWaitingInteraction = () => {
       this.waitingInteractions.update(originalSet => {
@@ -273,7 +274,11 @@ export class AppState {
     let interactionId: number
     if (startInteraction) {
       interactionId = ++this.interactionId
-      timeoutId = setTimeout(addWaitingInteraction, 250)
+      if (waitingDelay > 0) {
+        timeoutId = setTimeout(addWaitingInteraction, waitingDelay)
+      } else {
+        addWaitingInteraction()
+      }
     } else {
       interactionId = this.interactionId
     }
