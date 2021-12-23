@@ -9,8 +9,7 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri
-
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, RecordDoesNotExist
 } from './operations'
 
 type AttemptOptions = {
@@ -25,6 +24,8 @@ export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
   + 'Make sure that you are scanning the correct QR code, '
   + 'for the correct payment request.'
 
+export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
+
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
 
@@ -38,6 +39,13 @@ export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
 export type AlertOptions = {
   continue?: () => void,
+}
+
+export type ActionManager = {
+  markDirty: () => void
+  save: () => Promise<void>,
+  saveAndClose: () => Promise<void>,
+  remove: () => Promise<void>,
 }
 
 let nextAlertId = 1
@@ -230,6 +238,76 @@ export class AppState {
         [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
       ],
     })
+  }
+
+  createActionManager<T extends ActionRecordWithId>(action: T, createValue: () => T): ActionManager {
+    let updatePromise = Promise.resolve()
+    let latestValue = action
+    let isDirty = false
+    let isClosed = false
+
+    const ignoreRecordDoesNotExistErrors = (error: unknown) => {
+      if (error instanceof RecordDoesNotExist) {
+        console.log('A "RecordDoesNotExist" error has occured during saving.')
+        return Promise.resolve()
+      } else {
+        return Promise.reject(error)
+      }
+    }
+    const store = async (value: T): Promise<void> => {
+      await updatePromise
+      if (!equal(action, value)) {
+        assert(action.actionId === value.actionId)
+        assert(action.actionType === value.actionType)
+        await this.uc.replaceActionRecord(action, action = value)
+      }
+    }
+    const markDirty = (): void => {
+      if (!isDirty) {
+        isDirty = true
+        addEventListener('beforeunload', save, { capture: true })
+        setTimeout(save, 5000)
+      }
+    }
+    const save = (): Promise<void> => {
+      if (!isClosed) {
+        latestValue = createValue()
+        updatePromise = store(latestValue).catch(ignoreRecordDoesNotExistErrors)
+        isDirty = false
+      }
+      removeEventListener('beforeunload', save, { capture: true })
+      return updatePromise
+    }
+    const saveAndClose = (): Promise<void> => {
+      const savePromise = save()
+      isClosed = true
+      return savePromise
+    }
+    const remove = async (): Promise<void> => {
+      let interactionId: number
+      const showActions = () => {
+        if (this.interactionId === interactionId) {
+          this.showActions()
+        }
+      }
+      const reloadAction = () => {
+        if (this.interactionId === interactionId) {
+          this.showAction(action.actionId)
+        }
+      }
+      return this.attempt(async () => {
+        interactionId = this.interactionId
+        await store(latestValue)
+        await this.uc.replaceActionRecord(latestValue, null)
+        showActions()
+      }, {
+        alerts: [
+          [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
+        ],
+      })
+    }
+
+    return { markDirty, save, saveAndClose, remove }
   }
 
   /* Awaits `func()`, catching and logging thrown

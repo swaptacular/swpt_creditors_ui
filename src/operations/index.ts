@@ -13,7 +13,7 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, AccountsMap
+  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -25,6 +25,7 @@ import {
 } from '../payment-requests'
 
 export {
+  RecordDoesNotExist,
   IvalidPaymentRequest,
   IvalidPaymentData,
   InvalidCoinUri,
@@ -151,6 +152,7 @@ export class UserContext {
   readonly accountsMap: AccountsMap
   readonly getActionRecords: (options?: ListQueryOptions) => Promise<ActionRecordWithId[]>
   readonly getActionRecord = getActionRecord
+  readonly replaceActionRecord = replaceActionRecord
 
   constructor(
     server: ServerSession,
