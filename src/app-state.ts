@@ -1,8 +1,7 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type {
-  ActionRecordWithId, CreateAccountActionWithId
-} from './operations'
+import type { ActionRecordWithId, CreateAccountActionWithId } from './operations'
+import type { DebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -11,6 +10,7 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, RecordDoesNotExist
 } from './operations'
+import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | null][],
@@ -41,7 +41,8 @@ export type AlertOptions = {
   continue?: () => void,
 }
 
-export type ActionManager = {
+export type ActionManager<T> = {
+  currentValue: T,
   markDirty: () => void
   save: () => Promise<void>,
   saveAndClose: () => Promise<void>,
@@ -83,6 +84,7 @@ export type ActionsModel = BasePageModel & {
 export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
   action: CreateAccountActionWithId,
+  debtorData?: DebtorData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -189,12 +191,7 @@ export class AppState {
         if (action !== undefined) {
           switch (action.actionType) {
             case 'CreateAccount':
-              this.pageModel.set({
-                type: 'CreateAccountActionModel',
-                reload: () => { this.showAction(actionId, back) },
-                goBack: back ?? (() => { this.showActions() }),
-                action,
-              })
+              this.showCreateAccountAction(this.createActionManager(action), back)
               break
             default:
               throw new Error('unknown action type')
@@ -203,6 +200,33 @@ export class AppState {
           this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
         }
       }
+    })
+  }
+
+  showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const save = actionManager.saveAndClose()
+      const action = actionManager.currentValue
+      await save
+      let debtorData
+      if (!action.showRetryFetchDialog) {
+        // TODO: Fetch the debtor data.
+      }
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'CreateAccountActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack: back ?? (() => { this.showActions() }),
+          action,
+          debtorData,
+        })
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+      ],
     })
   }
 
@@ -246,7 +270,12 @@ export class AppState {
     })
   }
 
-  createActionManager<T extends ActionRecordWithId>(action: T, createValue: () => T): ActionManager {
+  /** Create an action manager instance. The action manager queues the
+   * consequent asynchronous updates of the action. This is useful in
+   * forms/dialogs that may modify the action, and then trigger the
+   * execution of the action.
+   */
+  createActionManager<T extends ActionRecordWithId>(action: T, createModifiedValue = () => action): ActionManager<T> {
     let updatePromise = Promise.resolve()
     let latestValue = action
     let isDirty = false
@@ -277,7 +306,7 @@ export class AppState {
     }
     const save = (): Promise<void> => {
       if (!isClosed) {
-        latestValue = createValue()
+        latestValue = createModifiedValue()
         updatePromise = store(latestValue).catch(ignoreRecordDoesNotExistErrors)
         isDirty = false
       }
@@ -313,7 +342,13 @@ export class AppState {
       })
     }
 
-    return { markDirty, save, saveAndClose, remove }
+    return {
+      get currentValue() { return latestValue },
+      markDirty,
+      save,
+      saveAndClose,
+      remove,
+    }
   }
 
   /* Awaits `func()`, catching and logging thrown
