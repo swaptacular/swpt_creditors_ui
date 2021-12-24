@@ -1,7 +1,7 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type {
-  ActionRecordWithId,
+  ActionRecordWithId, CreateAccountActionWithId
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -64,7 +64,7 @@ export type Store<T> = {
 
 export type PageModel =
   | ActionsModel
-  | ActionModel
+  | CreateAccountActionModel
   | AccountsModel
 
 type BasePageModel = {
@@ -80,9 +80,9 @@ export type ActionsModel = BasePageModel & {
   scrollLeft?: number,
 }
 
-export type ActionModel = BasePageModel & {
-  type: 'ActionModel',
-  action: ActionRecordWithId,
+export type CreateAccountActionModel = BasePageModel & {
+  type: 'CreateAccountActionModel',
+  action: CreateAccountActionWithId,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -187,12 +187,18 @@ export class AppState {
       const action = await this.uc.getActionRecord(actionId)
       if (this.interactionId === interactionId) {
         if (action !== undefined) {
-          this.pageModel.set({
-            type: 'ActionModel',
-            reload: () => { this.showAction(actionId, back) },
-            goBack: back ?? (() => { this.showActions() }),
-            action,
-          })
+          switch (action.actionType) {
+            case 'CreateAccount':
+              this.pageModel.set({
+                type: 'CreateAccountActionModel',
+                reload: () => { this.showAction(actionId, back) },
+                goBack: back ?? (() => { this.showActions() }),
+                action,
+              })
+              break
+            default:
+              throw new Error('unknown action type')
+          }
         } else {
           this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
         }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState } from '../app-state'
+  import type { AppState, CreateAccountActionModel } from '../app-state'
   import type { CreateAccountActionWithId } from '../operations'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -13,7 +13,7 @@
   import Page from './Page.svelte'
 
   export let app: AppState
-  export let action: CreateAccountActionWithId
+  export let model: CreateAccountActionModel
   export const snackbarBottom: string = "84px"
 
   let currentAction: CreateAccountActionWithId
@@ -39,7 +39,6 @@
   function reject() {
     // TODO: Add real implementation
     app
-    action
   }
 
   function confirm() {
@@ -55,6 +54,7 @@
     debtorName = ''
     negligibleAmount = 0
   }
+  $: action = model.action
   $: invalid = invalidDebtorName || invalidNegligibleAmount
 </script>
 
