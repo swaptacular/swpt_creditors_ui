@@ -1,6 +1,7 @@
 import type { AccountRecord, AccountObjectRecord, DocumentRecord } from './schema'
 import { db } from './schema'
-import { MAX_INT64 } from '../utils'
+
+const MAX_INT64 = (1n << 63n) - 1n
 
 /* This channel is used to publish all changes to account and account
  * sub-object records. The message contains an [objectUri, objectType,

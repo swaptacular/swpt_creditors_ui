@@ -5,6 +5,8 @@ import { HttpError, ServerSessionError } from './server'
 import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
+import { getDocumentRecord } from './db'
+
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
@@ -110,21 +112,28 @@ export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
   return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }
 
-export async function fetchDebtorInfoDocument(documentUri: string): Promise<DocumentRecord> {
-  let response, content
-  try {
-    response = await fetchWithTimeout(documentUri, { timeout: appConfig.serverApiTimeout })
-    if (!response.ok) throw new Error()
-    content = await response.arrayBuffer()
-  } catch {
-    throw new ServerSessionError()
+export async function fetchDebtorInfoDocument(
+  documentUri: string,
+  timeout: number = appConfig.serverApiTimeout,
+): Promise<DocumentRecord> {
+  let document = await getDocumentRecord(documentUri)
+  if (!document) {
+    let response, content
+    try {
+      response = await fetchWithTimeout(documentUri, { timeout })
+      if (!response.ok) throw new Error()
+      content = await response.arrayBuffer()
+    } catch {
+      throw new ServerSessionError()
+    }
+    document = {
+      content,
+      contentType: response.headers.get('Content-Type') ?? 'text/plain',
+      sha256: await calcSha256(content),
+      uri: response.url,
+    }
   }
-  return {
-    content,
-    contentType: response.headers.get('Content-Type') ?? 'text/plain',
-    sha256: await calcSha256(content),
-    uri: response.url,
-  }
+  return document
 }
 
 type Page<ItemsType> = {

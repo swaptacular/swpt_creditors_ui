@@ -1,9 +1,11 @@
-import type { PinInfo } from './server'
+import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId
+  CreateAccountActionWithId, DocumentRecord
 } from './db'
+import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
+import type { DebtorData } from '../debtor-info'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -12,17 +14,19 @@ import {
   HttpResponse, HttpError
 } from './server'
 import {
-  getWalletRecord, getTasks, removeTask, getActionRecords, getDocumentRecord, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord
+  getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
+  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
+  putDocumentRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
-import { makePinInfo } from './canonical-objects'
-import { calcParallelTimeout, fetchWithTimeout, calcSha256, parseCoinUri, InvalidCoinUri } from './utils'
+import { makePinInfo, makeAccount } from './canonical-objects'
+import { calcParallelTimeout, parseCoinUri, InvalidCoinUri, fetchDebtorInfoDocument } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
+import { parseDebtorInfoDocument, InvalidDocument } from '../debtor-info'
 
 export {
   RecordDoesNotExist,
@@ -106,25 +110,11 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
         }
       case 'FetchDebtorInfo':
         return async (timeout) => {
-          let document = await getDocumentRecord(task.iri)
-          if (!document) {
-            let response, content
-            try {
-              response = await fetchWithTimeout(task.iri, { timeout })
-              if (response.ok) {
-                content = await response.arrayBuffer()
-              }
-            } catch (e: unknown) {
-              console.error(e)  // ignore all errors
-            }
-            if (response && content) {
-              document = {
-                content,
-                contentType: response.headers.get('Content-Type') ?? 'text/plain',
-                sha256: await calcSha256(content),
-                uri: task.iri,
-              }
-            }
+          let document
+          try {
+            document = await fetchDebtorInfoDocument(task.iri, timeout)
+          } catch (e: unknown) {
+            if (!(e instanceof ServerSessionError)) throw e  // Ignore network errors.
           }
           await settleFetchDebtorInfoTask(task, document)
         }
@@ -218,33 +208,6 @@ export class UserContext {
   async createAccount(coinUri: string): Promise<number> {
     const [latestDebtorInfoUri, debtorIdentityUri] = parseCoinUri(coinUri)
 
-    // const document = await fetchDebtorInfoDocument(coinUri)
-    // const debtorData = await parseDebtorInfoDocument(document)
-
-    // // Before we proceed, we must ensure that: 1) We've got the latest
-    // // version of the debtor info document; 2) The identity of the
-    // // debtor described in the document is correct.
-    // if (`${debtorData.latestDebtorInfo.uri}#${debtorData.debtorIdentity.uri}` !== coinUri) {
-    //   throw new InvalidDocument()
-    // }
-    // if (!await putDocumentRecord(document)) {
-    //   throw new InvalidDocument()
-    // }
-
-    // let response
-    // try {
-    //   const request: DebtorIdentity = {
-    //     type: 'DebtorIdentity',
-    //     uri: debtorData.debtorIdentity.uri,
-    //   }
-    //   response = await this.server.post(this.walletRecord.createAccount.uri, request) as HttpResponse<Account>
-    // } catch (e: unknown) {
-    //   if (e instanceof HttpError && e.status === 422) throw new InvalidDocument()
-    //   else throw e
-    // }
-    // const account = makeAccount(response)
-    // await storeObject(this.userId, account)
-
     return await createActionRecord({
       userId: this.userId,
       actionType: 'CreateAccount',
@@ -253,6 +216,77 @@ export class UserContext {
       latestDebtorInfoUri,
       debtorIdentityUri,
     })
+  }
+
+  /* Create an account if necessary, and obtain the debtor's data. The
+   * caller must be prepared this method to throw `InvalidCoinUri`,
+   * `InvalidDocument`, or `ServerSessionError`. */
+  async ensureAccountAndDebtorData(
+    latestDebtorInfoUri: string,
+    debtorIdentityUri: string,
+  ): Promise<[AccountV0, DebtorData]> {
+    let debtorData: DebtorData
+    let debtorInfo: DebtorInfoV0 | undefined
+    let document: DocumentRecord | undefined
+    let verifyLatestDebtorInfoUri = false
+
+    // Ensure that we've got the most recent version of the account.
+    let response
+    try {
+      const request: DebtorIdentity = { type: 'DebtorIdentity', uri: debtorIdentityUri }
+      response = await this.server.post(this.walletRecord.createAccount.uri, request) as HttpResponse<Account>
+    } catch (e: unknown) {
+      if (e instanceof HttpError && e.status === 422) throw new InvalidCoinUri()
+      else throw e
+    }
+    const account = makeAccount(response)
+    await storeObject(this.userId, account)
+
+    // Find the most reliable source of information about the debtor.
+    if (account.info.debtorInfo) {
+      debtorInfo = account.info.debtorInfo
+    } else if (account.display.debtorName !== undefined) {
+      debtorInfo = account.knowledge.debtorInfo
+    } else {
+      verifyLatestDebtorInfoUri = true
+      document = await fetchDebtorInfoDocument(latestDebtorInfoUri)
+      debtorInfo = { type: 'DebtorInfo', iri: document.uri }
+    }
+
+    if (debtorInfo) {
+      // Fetch, store, and parse the debtor info document.
+      document = document ?? await fetchDebtorInfoDocument(debtorInfo.iri)
+      const documentIsStored = await putDocumentRecord(document)
+      assert(documentIsStored)
+      debtorData = await parseDebtorInfoDocument(document)
+      if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
+        throw new InvalidDocument('wrong SHA256 value')
+      }
+      if (debtorInfo.contentType !== undefined && document.contentType !== debtorInfo.contentType) {
+        throw new InvalidDocument('wrong content type')
+      }
+      if (debtorData.debtorIdentity.uri !== debtorIdentityUri) {
+        throw new InvalidDocument('wrong debtor identity')
+      }
+      if (verifyLatestDebtorInfoUri && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+        throw new InvalidDocument('wrong debtor info URI')
+      }
+    } else {
+      // This can happen only when the user knows about the account,
+      // but `account.knowledge.debtorInfo === undefined`. In this
+      // case, we simply generate a dummy debtor data.
+      debtorData = {
+        revision: 0,
+        latestDebtorInfo: { uri: '' },
+        debtorIdentity: { type: 'DebtorIdentity', uri: debtorIdentityUri },
+        debtorName: 'unknown',
+        amountDivisor: 1,
+        decimalPlaces: 0,
+        unit: '\u00A4',
+      }
+    }
+
+    return [account, debtorData]
   }
 
   /* Reads a payment request, and adds and returns a new

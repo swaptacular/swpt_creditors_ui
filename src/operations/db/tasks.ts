@@ -3,7 +3,8 @@ import { Dexie } from 'dexie'
 import { db } from './schema'
 import { putDocumentRecord } from './users'
 import { postAccountsMapMessage } from './accounts-map'
-import { MAX_INT64 } from '../utils'
+
+const MAX_INT64 = (1n << 63n) - 1n
 
 export async function getTasks(userId: number, scheduledFor: Date = new Date(), limit = 1e9): Promise<TaskRecordWithId[]> {
   let collection = db.tasks
