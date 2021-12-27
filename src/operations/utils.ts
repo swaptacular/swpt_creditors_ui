@@ -1,7 +1,7 @@
 import type { DocumentRecord } from './db'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
 import type { TransferV0, LedgerEntryV0, AccountLedgerV0 } from './canonical-objects'
-import { HttpError, ServerSessionError } from './server'
+import { HttpError } from './server'
 import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
@@ -12,6 +12,10 @@ export const MAX_INT64 = (1n << 63n) - 1n
 
 export class InvalidCoinUri extends Error {
   name = 'InvalidCoinUri'
+}
+
+export class DocumentFetchError extends Error {
+  name = 'DocumentFetchError'
 }
 
 export function calcParallelTimeout(numberOfParallelRequests: number): number {
@@ -124,7 +128,7 @@ export async function fetchDebtorInfoDocument(
       if (!response.ok) throw new Error()
       content = await response.arrayBuffer()
     } catch {
-      throw new ServerSessionError()
+      throw new DocumentFetchError()
     }
     document = {
       content,

@@ -22,7 +22,9 @@ import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
-import { calcParallelTimeout, parseCoinUri, InvalidCoinUri, fetchDebtorInfoDocument } from './utils'
+import {
+  calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument
+} from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
@@ -33,6 +35,7 @@ export {
   IvalidPaymentRequest,
   IvalidPaymentData,
   InvalidCoinUri,
+  DocumentFetchError,
   AuthenticationError,
   ServerSessionError,
   IS_A_NEWBIE_KEY,
@@ -41,6 +44,7 @@ export {
 export type {
   ActionRecordWithId,
   CreateAccountActionWithId,
+  AccountV0,
 }
 
 /* Logs out the user and redirects to home, never resolves. */
@@ -114,7 +118,7 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
           try {
             document = await fetchDebtorInfoDocument(task.iri, timeout)
           } catch (e: unknown) {
-            if (!(e instanceof ServerSessionError)) throw e  // Ignore network errors.
+            if (!(e instanceof DocumentFetchError)) throw e  // Ignore network errors.
           }
           await settleFetchDebtorInfoTask(task, document)
         }
@@ -212,7 +216,6 @@ export class UserContext {
       userId: this.userId,
       actionType: 'CreateAccount',
       createdAt: new Date(),
-      showRetryFetchDialog: false,
       latestDebtorInfoUri,
       debtorIdentityUri,
     })
@@ -220,11 +223,9 @@ export class UserContext {
 
   /* Create an account if necessary, and obtain the debtor's data. The
    * caller must be prepared this method to throw `InvalidCoinUri`,
-   * `InvalidDocument`, or `ServerSessionError`. */
-  async ensureAccountAndDebtorData(
-    latestDebtorInfoUri: string,
-    debtorIdentityUri: string,
-  ): Promise<[AccountV0, DebtorData]> {
+   * `InvalidDocument`, `DocumentFetchError`, or
+   * `ServerSessionError`. */
+  async obtainAccountAndDebtorData(latestDebtorInfoUri: string, debtorIdentityUri: string) {
     let debtorData: DebtorData
     let debtorInfo: DebtorInfoV0 | undefined
     let document: DocumentRecord | undefined
@@ -286,7 +287,7 @@ export class UserContext {
       }
     }
 
-    return [account, debtorData]
+    return { account, debtorData }
   }
 
   /* Reads a payment request, and adds and returns a new

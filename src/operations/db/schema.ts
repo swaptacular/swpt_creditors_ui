@@ -334,11 +334,8 @@ export type CreateAccountAction =
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    showRetryFetchDialog: boolean,
     state?: {
       initializationInProgress: boolean,
-      verifyLatestDebtorInfoUri: boolean,
-      debtorInfo?: DebtorInfoV0,
       editedDebtorName?: string,
       editedNegligibleAmount?: number,
     }

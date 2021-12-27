@@ -1,6 +1,6 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type { ActionRecordWithId, CreateAccountActionWithId } from './operations'
+import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0 } from './operations'
 import type { DebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
@@ -8,7 +8,7 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, RecordDoesNotExist
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -84,7 +84,10 @@ export type ActionsModel = BasePageModel & {
 export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
   action: CreateAccountActionWithId,
-  debtorData?: DebtorData,
+  data?: {
+    account: AccountV0,
+    debtorData: DebtorData,
+  }
 }
 
 export type AccountsModel = BasePageModel & {
@@ -204,39 +207,78 @@ export class AppState {
   }
 
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
-    return this.attempt(async () => {
-      const interactionId = this.interactionId
-      const save = actionManager.saveAndClose()
-      const action = actionManager.currentValue
-      await save
-      let debtorData
-      if (!action.showRetryFetchDialog) {
-        // TODO: Fetch the debtor data.
+    const save = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+    let interactionId: number
+    let data: CreateAccountActionModel['data']
+
+    const calcNegligibleAmount = (debtroData: DebtorData): number => {
+      return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor / (1 + Number.EPSILON)
+    }
+    const initActionState = async (): Promise<void> => {
+      if (data && action.state === undefined) {
+        const debtorName = data.account.display.debtorName
+        const editedDebtorName = debtorName ?? data.debtorData.debtorName
+        const neglibibleAmount = debtorName ? data.account.config.negligibleAmount : undefined
+        const editedNeglibibleAmount = neglibibleAmount ?? calcNegligibleAmount(data.debtorData)
+        const state = {
+          editedDebtorName,
+          editedNeglibibleAmount,
+          initializationInProgress: false,
+        }
+        await this.uc.replaceActionRecord(action, action = { ...action, state })
       }
+    }
+    const reloadAction = (): void => {
+      if (this.interactionId === interactionId) {
+        this.showAction(action.actionId)
+      }
+    }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await save
+      try {
+        data = await this.uc.obtainAccountAndDebtorData(action.latestDebtorInfoUri, action.debtorIdentityUri)
+      } catch (e: unknown) {
+        switch (true) {
+          case e instanceof InvalidCoinUri:
+          case e instanceof DocumentFetchError:
+          case e instanceof InvalidDocument:
+            // We can ignore these errors because the action page will
+            // show the appropriate error message.
+            assert(data === undefined)
+            break
+          default:
+            throw e
+        }
+      }
+      await initActionState()
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'CreateAccountActionModel',
           reload: () => { this.showAction(action.actionId, back) },
           goBack: back ?? (() => { this.showActions() }),
           action,
-          debtorData,
+          data,
         })
       }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
       ],
     })
   }
 
   showAccounts(): Promise<void> {
-    this.pageModel.set({
-      type: 'AccountsModel',
-      reload: () => { this.showAccounts() },
-      goBack: () => { this.showActions() },
+    return this.attempt(async () => {
+      this.pageModel.set({
+        type: 'AccountsModel',
+        reload: () => { this.showAccounts() },
+        goBack: () => { this.showActions() },
+      })
     })
-    return Promise.resolve()
   }
 
   createAccount(coinUri: string): Promise<void> {
