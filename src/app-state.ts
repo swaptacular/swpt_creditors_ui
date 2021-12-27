@@ -234,9 +234,15 @@ export class AppState {
         this.showAction(action.actionId, back)
       }
     }
-    const goBack = back ?? (() => {
-      this.showActions()
-    })
+    const showActions = (): void => {
+      if (this.interactionId === interactionId) {
+        if (back) {
+          back()
+        } else {
+          this.showActions()
+        }
+      }
+    }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -268,7 +274,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: goBack })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: showActions })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
       ],
     })
