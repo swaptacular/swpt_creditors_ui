@@ -207,6 +207,7 @@ export class AppState {
   }
 
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
+    const goBack = back ?? (() => { this.showActions() })
     const save = actionManager.saveAndClose()
     let action = actionManager.currentValue
     let interactionId: number
@@ -236,11 +237,7 @@ export class AppState {
     }
     const showActions = (): void => {
       if (this.interactionId === interactionId) {
-        if (back) {
-          back()
-        } else {
-          this.showActions()
-        }
+        goBack()
       }
     }
 
@@ -267,7 +264,7 @@ export class AppState {
         this.pageModel.set({
           type: 'CreateAccountActionModel',
           reload: () => { this.showAction(action.actionId, back) },
-          goBack: back ?? (() => { this.showActions() }),
+          goBack,
           action,
           data,
         })
