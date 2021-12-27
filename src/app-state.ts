@@ -207,7 +207,6 @@ export class AppState {
   }
 
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
-    const goBack = back ?? (() => { this.showActions() })
     const save = actionManager.saveAndClose()
     let action = actionManager.currentValue
     let interactionId: number
@@ -230,15 +229,17 @@ export class AppState {
         await this.uc.replaceActionRecord(action, action = { ...action, state })
       }
     }
-    const reloadAction = (): void => {
-      if (this.interactionId === interactionId) {
-        this.showAction(action.actionId, back)
-      }
+    const goBack = back ?? (() => {
+      this.showActions()
+    })
+    const checkAndGoBack = (): void => {
+      if (this.interactionId === interactionId) goBack()
     }
-    const showActions = (): void => {
-      if (this.interactionId === interactionId) {
-        goBack()
-      }
+    const reload = () => {
+      this.showAction(action.actionId, back)
+    }
+    const checkAndReload = (): void => {
+      if (this.interactionId === interactionId) reload()
     }
 
     return this.attempt(async () => {
@@ -261,18 +262,12 @@ export class AppState {
       }
       await initActionState()
       if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'CreateAccountActionModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          data,
-        })
+        this.pageModel.set({ type: 'CreateAccountActionModel', reload, goBack, action, data })
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: showActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReload })],
       ],
     })
   }
