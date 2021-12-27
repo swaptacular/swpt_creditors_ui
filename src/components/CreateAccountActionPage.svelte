@@ -49,11 +49,6 @@
     }
   }
 
-  function reject() {
-    // TODO: Add real implementation
-    app
-  }
-
   function confirm() {
     if (invalid) {
       shakeForm()
@@ -108,10 +103,10 @@
     <Page title="Create account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
-          <Title>Error:</Title>
+          <Title>Error</Title>
           <Content>
-            Information about the digital currency can not be
-            obtained. This is either a temporary problem, or the
+            Can not obtain information about the digital
+            currency. This is either a temporary problem, or the
             currency is not configured correctly.
           </Content>
         </Paper>
@@ -124,7 +119,7 @@
           </Fab>
         </div>
         <div class="fab-container">
-          <Fab color="primary" on:click={() => app.showCreateAccountAction(actionManager)} extended>
+          <Fab color="primary" on:click={() => model.reload()} extended>
             <Label>Retry</Label>
           </Fab>
         </div>
@@ -198,7 +193,7 @@
 
       <svelte:fragment slot="floating">
         <div class="fab-container">
-          <Fab on:click={reject} extended>
+          <Fab on:click={() => actionManager.remove() } extended>
             <Label>Reject</Label>
           </Fab>
         </div>
