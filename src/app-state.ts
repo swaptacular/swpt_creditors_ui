@@ -231,7 +231,12 @@ export class AppState {
     }
     const reloadAction = (): void => {
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId)
+        this.showAction(action.actionId, back)
+      }
+    }
+    const showActions = () => {
+      if (this.interactionId === interactionId) {
+        this.showActions()
       }
     }
 
@@ -265,7 +270,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: showActions })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
       ],
     })
