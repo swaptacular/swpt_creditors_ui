@@ -207,67 +207,66 @@ export class AppState {
   }
 
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
-    const save = actionManager.saveAndClose()
-    let action = actionManager.currentValue
     let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
     let data: CreateAccountActionModel['data']
 
-    const calcNegligibleAmount = (debtroData: DebtorData): number => {
-      return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor / (1 + Number.EPSILON)
-    }
-    const initActionState = async (): Promise<void> => {
-      if (data && action.state === undefined) {
-        const debtorName = data.account.display.debtorName
-        const editedDebtorName = debtorName ?? data.debtorData.debtorName
-        const neglibibleAmount = debtorName ? data.account.config.negligibleAmount : undefined
-        const editedNeglibibleAmount = neglibibleAmount ?? calcNegligibleAmount(data.debtorData)
+    const storeActionState = async (): Promise<void> => {
+      if (action.state === undefined && data !== undefined) {
+        const { account, debtorData } = data
+        const debtorName = account.display.debtorName
+        const editedDebtorName = debtorName ?? debtorData.debtorName
+        const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
+        const editedNegligibleAmount = neglibibleAmount ?? calcNegligibleAmount(debtorData)
         const state = {
-          editedDebtorName,
-          editedNeglibibleAmount,
           initializationInProgress: false,
+          debtorData,
+          editedDebtorName,
+          editedNegligibleAmount,
         }
         await this.uc.replaceActionRecord(action, action = { ...action, state })
       }
     }
-    const goBack = back ?? (() => {
-      this.showActions()
-    })
-    const checkAndGoBack = (): void => {
-      if (this.interactionId === interactionId) goBack()
-    }
-    const reload = () => {
-      this.showAction(action.actionId, back)
-    }
-    const checkAndReload = (): void => {
-      if (this.interactionId === interactionId) reload()
-    }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      await save
+      await saveActionPromise
       try {
-        data = await this.uc.obtainAccountAndDebtorData(action.latestDebtorInfoUri, action.debtorIdentityUri)
+        const account = await this.uc.ensureAccountExists(action.debtorIdentityUri)
+        const debtorData = action.state?.debtorData
+          ?? await this.uc.obtainDebtorData(action.latestDebtorInfoUri, action.debtorIdentityUri, account)
+        data = { account, debtorData }
       } catch (e: unknown) {
+        // We can ignore some of the possible errors because the
+        // action page will show an appropriate error message.
         switch (true) {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
           case e instanceof InvalidDocument:
-            // We can ignore these errors because the action page will
-            // show the appropriate error message.
             assert(data === undefined)
+            assert(action.state === undefined)
             break
           default:
             throw e
         }
       }
-      await initActionState()
+      await storeActionState()
       if (this.interactionId === interactionId) {
-        this.pageModel.set({ type: 'CreateAccountActionModel', reload, goBack, action, data })
+        this.pageModel.set({
+          type: 'CreateAccountActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          data,
+        })
       }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReload })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -510,4 +509,8 @@ export async function createAppState(): Promise<AppState | undefined> {
     return new AppState(uc, actions)
   }
   return undefined
+}
+
+function calcNegligibleAmount(debtroData: DebtorData): number {
+  return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor / (1 + Number.EPSILON)
 }

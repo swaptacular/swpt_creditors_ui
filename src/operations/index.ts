@@ -221,17 +221,10 @@ export class UserContext {
     })
   }
 
-  /* Create an account if necessary, and obtain the debtor's data. The
-   * caller must be prepared this method to throw `InvalidCoinUri`,
-   * `InvalidDocument`, `DocumentFetchError`, or
-   * `ServerSessionError`. */
-  async obtainAccountAndDebtorData(latestDebtorInfoUri: string, debtorIdentityUri: string) {
-    let debtorData: DebtorData
-    let debtorInfo: DebtorInfoV0 | undefined
-    let document: DocumentRecord | undefined
-    let verifyLatestDebtorInfoUri = false
-
-    // Ensure that we've got the most recent version of the account.
+  /* Create an account if necessary. Return the most recent version of
+   * the account. The caller must be prepared this method to throw
+   * `InvalidCoinUri` or `ServerSessionError`. */
+  async ensureAccountExists(debtorIdentityUri: string): Promise<AccountV0> {
     let response
     try {
       const request: DebtorIdentity = { type: 'DebtorIdentity', uri: debtorIdentityUri }
@@ -242,12 +235,26 @@ export class UserContext {
     }
     const account = makeAccount(response)
     await storeObject(this.userId, account)
+    return account
+  }
+
+  /* Obtain and return debtor's data. The caller must be prepared this
+   * method to throw `InvalidDocument` or `DocumentFetchError` */
+  async obtainDebtorData(
+    latestDebtorInfoUri: string,
+    debtorIdentityUri: string,
+    account?: AccountV0,
+  ): Promise<DebtorData> {
+    let debtorData: DebtorData
+    let debtorInfo: DebtorInfoV0 | undefined
+    let document: DocumentRecord | undefined
+    let verifyLatestDebtorInfoUri = false
 
     // Find the most reliable source of information about the debtor.
-    if (account.info.debtorInfo) {
-      debtorInfo = account.info.debtorInfo
-    } else if (account.display.debtorName !== undefined) {
+    if (account?.display.debtorName !== undefined) {
       debtorInfo = account.knowledge.debtorInfo
+    } else if (account?.info.debtorInfo) {
+      debtorInfo = account.info.debtorInfo
     } else {
       verifyLatestDebtorInfoUri = true
       document = await fetchDebtorInfoDocument(latestDebtorInfoUri)
@@ -257,8 +264,12 @@ export class UserContext {
     if (debtorInfo) {
       // Fetch, store, and parse the debtor info document.
       document = document ?? await fetchDebtorInfoDocument(debtorInfo.iri)
-      const documentIsStored = await putDocumentRecord(document)
-      assert(documentIsStored)
+      if (!await putDocumentRecord(document)) {
+        // This could happen if an extremely unusual (but still
+        // possible) race condition had occurred. In this case the
+        // user will have to simply retry the action.
+        throw new DocumentFetchError()
+      }
       debtorData = await parseDebtorInfoDocument(document)
       if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
         throw new InvalidDocument('wrong SHA256 value')
@@ -287,7 +298,7 @@ export class UserContext {
       }
     }
 
-    return { account, debtorData }
+    return debtorData
   }
 
   /* Reads a payment request, and adds and returns a new

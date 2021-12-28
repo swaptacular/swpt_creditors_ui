@@ -268,13 +268,13 @@ export type AckAccountInfoActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
+//   - If `account.AccountDisplay.debtorName !== undefined`, set
+//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
-//   - If `account.AccountDisplay.debtorName !== undefined`, set
-//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
+//   - If debtor info can be obtained from
+//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
@@ -336,8 +336,9 @@ export type CreateAccountAction =
     latestDebtorInfoUri: string,
     state?: {
       initializationInProgress: boolean,
-      editedDebtorName?: string,
-      editedNegligibleAmount?: number,
+      debtorData: DebtorData,
+      editedDebtorName: string,
+      editedNegligibleAmount: number,
     }
   }
 
@@ -361,16 +362,16 @@ export type CreateAccountActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If debtor info can be obtained from
-//     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
-//     it, set `state.verifyLatestDebtorInfoUri` to false, and
-//     `state.initializationInProgress` to false.
-//
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
 //     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`,
 //     `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES NOT have
 //     sha256 and contentType fields> && <debtorInfo IS NOT
 //     confirmed>, and `state.initializationInProgress` to false.
+//
+//   - If debtor info can be obtained from
+//     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
+//     it, set `state.verifyLatestDebtorInfoUri` to false, and
+//     `state.initializationInProgress` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `state.debtorInfo` to `{ iri: <the redirect
