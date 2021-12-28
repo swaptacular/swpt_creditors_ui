@@ -213,7 +213,7 @@ export class AppState {
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
-    const getData = async (): Promise<CreateAccountActionModel['data']> => {
+    const obtainData = async (): Promise<CreateAccountActionModel['data']> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       const debtorData = action.state?.debtorData
@@ -256,7 +256,7 @@ export class AppState {
       await saveActionPromise
       let data
       try {
-        data = await getData()
+        data = await obtainData()
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
         // action page will show an appropriate error message when
