@@ -219,7 +219,7 @@ export class AppState {
       const debtorData = action.state?.debtorData
         ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri, debtorIdentityUri)
       if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
-        throw new InvalidDocument('wrong or obsolete debtor info URI')
+        throw new InvalidDocument('obsolete debtor info URI')
       }
       return { account, debtorData }
     }
