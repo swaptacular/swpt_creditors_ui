@@ -186,6 +186,8 @@ export type EssentialAccountInfo = {
   configError?: string,
 }
 
+export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
+
 // TODO: Here is how this action should work:
 //
 // * Make a "get account" HTTP request for the account
@@ -268,13 +270,13 @@ export type AckAccountInfoActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If `account.AccountDisplay.debtorName !== undefined`, set
-//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
+//   - If debtor info can be obtained from
+//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
-//   - If debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
+//   - If `account.AccountDisplay.debtorName !== undefined`, set
+//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
@@ -336,7 +338,7 @@ export type CreateAccountAction =
     latestDebtorInfoUri: string,
     state?: {
       initializationInProgress: boolean,
-      debtorData: DebtorData,
+      debtorData: DebtorData & { source: DebtorDataSource },
       editedDebtorName: string,
       editedNegligibleAmount: number,
     }

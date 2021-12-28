@@ -1,7 +1,7 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, DocumentRecord
+  CreateAccountActionWithId, DocumentRecord, DebtorDataSource
 } from './db'
 import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
@@ -45,6 +45,7 @@ export type {
   ActionRecordWithId,
   CreateAccountActionWithId,
   AccountV0,
+  DebtorDataSource,
 }
 
 /* Logs out the user and redirects to home, never resolves. */
@@ -241,22 +242,24 @@ export class UserContext {
   /* Obtain and return debtor's data. The caller must be prepared this
    * method to throw `InvalidDocument` or `DocumentFetchError` */
   async obtainDebtorData(
+    account: AccountV0,
     latestDebtorInfoUri: string,
     debtorIdentityUri: string,
-    account?: AccountV0,
-  ): Promise<DebtorData> {
-    let debtorData: DebtorData
+  ): Promise<DebtorData & { source: DebtorDataSource }> {
+    let debtorData: DebtorData & { source: DebtorDataSource }
     let debtorInfo: DebtorInfoV0 | undefined
     let document: DocumentRecord | undefined
-    let verifyLatestDebtorInfoUri = false
+    let source: DebtorDataSource
 
     // Find the most reliable source of information about the debtor.
-    if (account?.display.debtorName !== undefined) {
-      debtorInfo = account.knowledge.debtorInfo
-    } else if (account?.info.debtorInfo) {
+    if (account.info.debtorInfo) {
+      source = 'info'
       debtorInfo = account.info.debtorInfo
+    } else if (account.display.debtorName !== undefined) {
+      source = 'knowledge'
+      debtorInfo = account.knowledge.debtorInfo
     } else {
-      verifyLatestDebtorInfoUri = true
+      source = 'uri'
       document = await fetchDebtorInfoDocument(latestDebtorInfoUri)
       debtorInfo = { type: 'DebtorInfo', iri: document.uri }
     }
@@ -270,7 +273,7 @@ export class UserContext {
         // user will have to simply retry the action.
         throw new DocumentFetchError()
       }
-      debtorData = await parseDebtorInfoDocument(document)
+      debtorData = { ...await parseDebtorInfoDocument(document), source }
       if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
         throw new InvalidDocument('wrong SHA256 value')
       }
@@ -279,9 +282,6 @@ export class UserContext {
       }
       if (debtorData.debtorIdentity.uri !== debtorIdentityUri) {
         throw new InvalidDocument('wrong debtor identity')
-      }
-      if (verifyLatestDebtorInfoUri && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
-        throw new InvalidDocument('wrong debtor info URI')
       }
     } else {
       // This can happen only when the user knows about the account,
@@ -295,6 +295,7 @@ export class UserContext {
         amountDivisor: 1,
         decimalPlaces: 0,
         unit: '\u00A4',
+        source,
       }
     }
 

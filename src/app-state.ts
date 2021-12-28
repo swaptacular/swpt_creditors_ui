@@ -1,6 +1,6 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0 } from './operations'
+import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
 import type { DebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
@@ -86,7 +86,7 @@ export type CreateAccountActionModel = BasePageModel & {
   action: CreateAccountActionWithId,
   data?: {
     account: AccountV0,
-    debtorData: DebtorData,
+    debtorData: DebtorData & { source: DebtorDataSource },
   }
 }
 
@@ -235,9 +235,13 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       try {
-        const account = await this.uc.ensureAccountExists(action.debtorIdentityUri)
+        const { latestDebtorInfoUri, debtorIdentityUri } = action
+        const account = await this.uc.ensureAccountExists(debtorIdentityUri)
         const debtorData = action.state?.debtorData
-          ?? await this.uc.obtainDebtorData(action.latestDebtorInfoUri, action.debtorIdentityUri, account)
+          ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri, debtorIdentityUri)
+        if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+          throw new InvalidDocument('wrong or obsolete debtor info URI')
+        }
         data = { account, debtorData }
       } catch (e: unknown) {
         // We can ignore some of the possible errors because the
