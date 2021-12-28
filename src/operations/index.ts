@@ -265,7 +265,6 @@ export class UserContext {
     }
 
     if (debtorInfo) {
-      // Fetch, store, and parse the debtor info document.
       document = document ?? await fetchDebtorInfoDocument(debtorInfo.iri)
       if (!await putDocumentRecord(document)) {
         // This could happen if an extremely unusual (but still
