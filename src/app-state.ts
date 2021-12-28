@@ -525,5 +525,5 @@ export async function createAppState(): Promise<AppState | undefined> {
 }
 
 function calcNegligibleAmount(debtroData: DebtorData): number {
-  return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor / (1 + Number.EPSILON)
+  return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor * (1 + Number.EPSILON)
 }
