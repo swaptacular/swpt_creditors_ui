@@ -103,7 +103,7 @@
     <Page title="Create account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
-          <Title>Error</Title>
+          <Title>Unknown debtor</Title>
           <Content>
             Can not obtain information about the digital
             currency. This is either a temporary problem, or the
