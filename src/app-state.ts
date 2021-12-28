@@ -212,9 +212,19 @@ export class AppState {
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
-    let data: CreateAccountActionModel['data']
 
-    const storeActionState = async (): Promise<void> => {
+    const getData = async (): Promise<CreateAccountActionModel['data']> => {
+      const { latestDebtorInfoUri, debtorIdentityUri } = action
+      const account = await this.uc.ensureAccountExists(debtorIdentityUri)
+      const debtorData = action.state?.debtorData
+        ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri, debtorIdentityUri)
+      if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+        throw new InvalidDocument('wrong or obsolete debtor info URI')
+      }
+      return { account, debtorData }
+    }
+
+    const initializeActionStateIfNecessary = async (data: CreateAccountActionModel['data']): Promise<void> => {
       if (action.state === undefined && data !== undefined) {
         const { account, debtorData } = data
         const debtorName = account.display.debtorName
@@ -231,21 +241,26 @@ export class AppState {
       }
     }
 
+    const snowData = (data: CreateAccountActionModel['data']): void => {
+      this.pageModel.set({
+        type: 'CreateAccountActionModel',
+        reload: () => { this.showAction(action.actionId, back) },
+        goBack,
+        action,
+        data,
+      })
+    }
+
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
+      let data
       try {
-        const { latestDebtorInfoUri, debtorIdentityUri } = action
-        const account = await this.uc.ensureAccountExists(debtorIdentityUri)
-        const debtorData = action.state?.debtorData
-          ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri, debtorIdentityUri)
-        if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
-          throw new InvalidDocument('wrong or obsolete debtor info URI')
-        }
-        data = { account, debtorData }
+        data = await getData()
       } catch (e: unknown) {
-        // We can ignore some of the possible errors because the
-        // action page will show an appropriate error message.
+        // We can ignore some of the possible errors, because the
+        // action page will show an appropriate error message when
+        // `data` is undefined.
         switch (true) {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
@@ -257,15 +272,9 @@ export class AppState {
             throw e
         }
       }
-      await storeActionState()
+      await initializeActionStateIfNecessary(data)
       if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'CreateAccountActionModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          data,
-        })
+        snowData(data)
       }
     }, {
       alerts: [
