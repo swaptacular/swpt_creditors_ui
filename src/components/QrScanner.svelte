@@ -17,31 +17,28 @@
     }
   }
 
-  onMount(async () => {
+  onMount(() => {
     let destructor
 
-    if (await QrScanner.hasCamera()) {
-      const qrScanner = new QrScanner(videoElement, onScannedValue)
-      const startedScannerPromise = qrScanner.start()
-      const tryTurningFlashOn = async (): Promise<boolean> => {
-        let mustTurnFlashOff = false
-        await startedScannerPromise
-        if (await qrScanner.hasFlash()) {
-          mustTurnFlashOff = qrScanner.isFlashOn()
-          await qrScanner.turnFlashOn()
-        }
-        return mustTurnFlashOff
+    QrScanner.hasCamera().then(ok => { noCamera = !ok })
+    const qrScanner = new QrScanner(videoElement, onScannedValue)
+    const startedScannerPromise = qrScanner.start()
+    const tryTurningFlashOn = async (): Promise<boolean> => {
+      let mustTurnFlashOff = false
+      await startedScannerPromise
+      if (await qrScanner.hasFlash()) {
+        mustTurnFlashOff = qrScanner.isFlashOn()
+        await qrScanner.turnFlashOn()
       }
-      const flashEffortPromise = tryTurningFlashOn()
+      return mustTurnFlashOff
+    }
+    const flashEffortPromise = tryTurningFlashOn()
 
-      destructor = async () => {
-        if (await flashEffortPromise) {
-          await qrScanner.turnFlashOff()
-        }
-        qrScanner.destroy()
+    destructor = async () => {
+      if (await flashEffortPromise) {
+        await qrScanner.turnFlashOff()
       }
-    } else {
-      noCamera = true
+      qrScanner.destroy()
     }
 
     return destructor
