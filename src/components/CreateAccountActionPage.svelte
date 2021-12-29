@@ -75,7 +75,7 @@
 
 <style>
   ul {
-    list-style: square outside;
+    list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em;
   }
   li {
@@ -169,7 +169,7 @@
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       {/if}
-                      Create account with "{data.debtorData.debtorName}"
+                      Account with "{data.debtorData.debtorName}"
                     </Title>
                     <Content style="clear: both; color: rgb(0 0 0 / 66%)">
                       {#if data.debtorData.summary}
