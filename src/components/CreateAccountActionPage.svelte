@@ -13,6 +13,7 @@
   // import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
   // import Dialog from './Dialog.svelte'
   // import PaymentInfo from './PaymentInfo.svelte'
+  import { amountToString, stringToAmount } from '../format-amounts'
   import Page from './Page.svelte'
 
   export let app: AppState
@@ -24,12 +25,10 @@
   let shakingElement: HTMLElement
 
   let debtorName: string
-  let negligibleAmount: number
+  let negligibleUnitAmount: string | number
 
   let invalidDebtorName: boolean
-  let invalidNegligibleAmount: boolean
-
-  let unit: string = 'EUR'
+  let invalidNegligibleUnitAmount: boolean
 
   function createUpdatedAction(): CreateAccountActionWithId {
     return {
@@ -37,7 +36,7 @@
       state: action.state ? {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: negligibleAmount,
+        editedNegligibleAmount: stringToAmount(negligibleUnitAmount, data?.amountDivisor ?? 1),
       } : undefined,
     }
   }
@@ -63,11 +62,15 @@
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleAmount = model.action.state?.editedNegligibleAmount ?? 0
+    negligibleUnitAmount = data ? amountToString(
+      model.action.state?.editedNegligibleAmount ?? 0n,
+      data.amountDivisor,
+      data.decimalPlaces,
+    ) : '0'
   }
   $: action = model.action
   $: data = model.data
-  $: invalid = invalidDebtorName || invalidNegligibleAmount
+  $: invalid = invalidDebtorName || invalidNegligibleUnitAmount
 </script>
 
 <style>
@@ -176,8 +179,9 @@
                       {/if}
                       <ul>
                         <li>
-                          You have <em class="amount">0.00 EUR</em> deposited in
-                          your account.
+                          You have
+                          <em class="amount">{amountToString(data.account.ledger.principal, data.amountDivisor, data.decimalPlaces)} {data.unit}</em>
+                          deposited in your account.
                         </li>
                         {#if data.account.display.debtorName === undefined && data.debtorData.peg}
                           <li>
@@ -222,14 +226,14 @@
                   input$min="0"
                   input$step="any"
                   style="width: 100%"
-                  withTrailingIcon={invalidNegligibleAmount}
-                  bind:value={negligibleAmount}
-                  bind:invalid={invalidNegligibleAmount}
+                  withTrailingIcon={invalidNegligibleUnitAmount}
+                  bind:value={negligibleUnitAmount}
+                  bind:invalid={invalidNegligibleUnitAmount}
                   label="Negligible amount"
-                  suffix="{unit}"
+                  suffix="{data.unit}"
                   >
                   <svelte:fragment slot="trailingIcon">
-                    {#if invalidNegligibleAmount}
+                    {#if invalidNegligibleUnitAmount}
                       <TextfieldIcon class="material-icons">error</TextfieldIcon>
                     {/if}
                   </svelte:fragment>

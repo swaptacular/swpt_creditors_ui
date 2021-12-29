@@ -89,7 +89,7 @@ export type CreateAccountActionModel = BasePageModel & {
     debtorData: DebtorData & { source: DebtorDataSource },
     unit: string,
     amountDivisor: number,
-    decimalPlaces: bigint,
+    decimalPlaces: number,
   }
 }
 
@@ -230,7 +230,7 @@ export class AppState {
         debtorData,
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
-        decimalPlaces: useDisplay ? account.display.decimalPlaces : BigInt(Math.ceil(debtorData.amountDivisor)),
+        decimalPlaces: useDisplay ? Number(account.display.decimalPlaces) : debtorData.decimalPlaces,
       }
     }
 
@@ -240,7 +240,7 @@ export class AppState {
         const debtorName = account.display.debtorName
         const editedDebtorName = debtorName ?? debtorData.debtorName
         const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
-        const editedNegligibleAmount = neglibibleAmount ?? calcNegligibleAmount(debtorData)
+        const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? calcNegligibleAmount(debtorData)))
         const state = {
           initializationInProgress: false,
           debtorData,

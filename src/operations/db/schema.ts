@@ -340,7 +340,7 @@ export type CreateAccountAction =
       initializationInProgress: boolean,
       debtorData: DebtorData & { source: DebtorDataSource },
       editedDebtorName: string,
-      editedNegligibleAmount: number,
+      editedNegligibleAmount: bigint,
     }
   }
 
