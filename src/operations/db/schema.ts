@@ -270,13 +270,13 @@ export type AckAccountInfoActionWithId =
 //
 // * If `state` is undefined, set it:
 //
-//   - If debtor info can be obtained from
-//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
+//   - If `account.AccountDisplay.debtorName !== undefined`, set
+//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
-//   - If `account.AccountDisplay.debtorName !== undefined`, set
-//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
+//   - If debtor info can be obtained from
+//     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
 //     `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //

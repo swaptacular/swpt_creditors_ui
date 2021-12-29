@@ -87,6 +87,9 @@ export type CreateAccountActionModel = BasePageModel & {
   data?: {
     account: AccountV0,
     debtorData: DebtorData & { source: DebtorDataSource },
+    unit: string,
+    amountDivisor: number,
+    decimalPlaces: bigint,
   }
 }
 
@@ -221,7 +224,14 @@ export class AppState {
       if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
-      return { account, debtorData }
+      const useDisplay = account.display.debtorName !== undefined
+      return {
+        account,
+        debtorData,
+        unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
+        amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
+        decimalPlaces: useDisplay ? account.display.decimalPlaces : BigInt(Math.ceil(debtorData.amountDivisor)),
+      }
     }
 
     const initializeActionStateIfNecessary = async (data: CreateAccountActionModel['data']): Promise<void> => {

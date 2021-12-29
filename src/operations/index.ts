@@ -245,6 +245,7 @@ export class UserContext {
     account: AccountV0,
     latestDebtorInfoUri: string,
     debtorIdentityUri: string,
+    preferInfoOverKnowledge: boolean = false,
   ): Promise<DebtorData & { source: DebtorDataSource }> {
     let debtorData: DebtorData & { source: DebtorDataSource }
     let debtorInfo: DebtorInfoV0 | undefined
@@ -252,12 +253,15 @@ export class UserContext {
     let source: DebtorDataSource
 
     // Find the most reliable source of information about the debtor.
-    if (account.info.debtorInfo) {
+    if (preferInfoOverKnowledge && account.info.debtorInfo) {
       source = 'info'
       debtorInfo = account.info.debtorInfo
     } else if (account.display.debtorName !== undefined) {
       source = 'knowledge'
       debtorInfo = account.knowledge.debtorInfo
+    } else if (!preferInfoOverKnowledge && account.info.debtorInfo) {
+      source = 'info'
+      debtorInfo = account.info.debtorInfo
     } else {
       source = 'uri'
       document = await fetchDebtorInfoDocument(latestDebtorInfoUri)
