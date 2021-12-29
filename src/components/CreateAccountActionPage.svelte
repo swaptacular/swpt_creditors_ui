@@ -86,6 +86,7 @@
     color: #444;
   }
   .summary {
+    color: #888;
     margin-top: 16px;
   }
   .amount {
@@ -171,11 +172,11 @@
                       {/if}
                       Account with "{data.debtorData.debtorName}"
                     </Title>
-                    <Content style="clear: both; color: rgb(0 0 0 / 66%)">
+                    <Content style="clear: both">
                       {#if data.debtorData.summary}
-                        <p class="summary">
+                        <blockquote class="summary">
                           {data.debtorData.summary}
-                        </p>
+                        </blockquote>
                       {/if}
                       <ul>
                         <li>
