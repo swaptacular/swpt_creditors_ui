@@ -158,8 +158,8 @@
             <LayoutGrid>
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <Wrapper>
-                  <Paper style="margin-top: 16px; margin-bottom: 16px" elevation={4}>
-                    <Title style="font-size: 1.2em; font-weight: bold; line-height: 1.3; color: #444">
+                  <Paper style="margin-top: 16px; margin-bottom: 16px; word-wrap: break-word" elevation={4}>
+                    <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
                       {#if data.debtorData.debtorHomepage}
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
                           <Text><a href={data.debtorData.debtorHomepage.uri} target="_blank" style="text-decoration: none">www</a></Text>
@@ -179,11 +179,13 @@
                           You have <em class="amount">0.00 EUR</em> deposited in
                           your account.
                         </li>
-                        <li>
-                          This currency is pegged to another
-                          currency. Later, you will be asked to
-                          approve this currency peg.
-                        </li>
+                        {#if data.account.display.debtorName === undefined && data.debtorData.peg}
+                          <li>
+                            This currency is pegged to another
+                            currency. Later, you will be asked to
+                            approve this currency peg.
+                          </li>
+                        {/if}
                       </ul>
                     </Content>
                   </Paper>
