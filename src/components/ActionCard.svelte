@@ -42,7 +42,7 @@
       }
       case "CreateAccount": {
         const editedDebtorName = action.state?.editedDebtorName
-        const name = editedDebtorName ? `"${editedDebtorName}"` : "an unknown debtor"
+        const name = editedDebtorName !== undefined ? `"${editedDebtorName}"` : "an unknown debtor"
         return `Create account with ${name}.`
       }
       default:

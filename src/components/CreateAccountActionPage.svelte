@@ -7,6 +7,8 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
+  import Chip, { Text } from '@smui/chips'
+  import Tooltip, { Wrapper } from '@smui/tooltip'
   // import Button, { Label as ButtonLabel } from '@smui/button'
   // import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
   // import Dialog from './Dialog.svelte'
@@ -64,15 +66,32 @@
     negligibleAmount = model.action.state?.editedNegligibleAmount ?? 0
   }
   $: action = model.action
-  $: error = model.data === undefined
+  $: data = model.data
   $: invalid = invalidDebtorName || invalidNegligibleAmount
 </script>
 
 <style>
+  ul {
+    list-style: square outside;
+    margin: 0.75em 1.25em;
+  }
+  li {
+    margin: 0.5em 0;
+  }
+  em {
+    font-weight: bold;
+    color: #444;
+  }
+  .summary {
+    margin-top: 16px;
+  }
+  .amount {
+    font-size: 1.1em;
+    white-space: nowrap;
+  }
   .fab-container {
     margin: 16px 16px;
   }
-
   .shaking-container {
     position: relative;
     overflow: hidden;
@@ -99,7 +118,7 @@
 </style>
 
 <div class="shaking-container">
-  {#if error}
+  {#if data === undefined}
     <Page title="Create account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
@@ -115,7 +134,7 @@
       <svelte:fragment slot="floating">
         <div class="fab-container">
           <Fab on:click={() => actionManager.remove()} extended>
-            <Label>Abort</Label>
+            <Label>Reject</Label>
           </Fab>
         </div>
         <div class="fab-container">
@@ -137,6 +156,40 @@
             >
 
             <LayoutGrid>
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <Wrapper>
+                  <Paper style="margin-top: 16px; margin-bottom: 16px" elevation={4}>
+                    <Title style="font-size: 1.2em; font-weight: bold; line-height: 1.3; color: #444">
+                      {#if data.debtorData.debtorHomepage}
+                        <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
+                          <Text><a href={data.debtorData.debtorHomepage.uri} target="_blank" style="text-decoration: none">www</a></Text>
+                        </Chip>
+                        <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
+                      {/if}
+                      Create account with "{data.debtorData.debtorName}"
+                    </Title>
+                    <Content style="clear: both; color: rgb(0 0 0 / 66%)">
+                      {#if data.debtorData.summary}
+                        <p class="summary">
+                          {data.debtorData.summary}
+                        </p>
+                      {/if}
+                      <ul>
+                        <li>
+                          You have <em class="amount">0.00 EUR</em> deposited in
+                          your account.
+                        </li>
+                        <li>
+                          This currency is pegged to another
+                          currency. Later, you will be asked to
+                          approve this currency peg.
+                        </li>
+                      </ul>
+                    </Content>
+                  </Paper>
+                </Wrapper>
+              </Cell>
+
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                 <Textfield
                   required
