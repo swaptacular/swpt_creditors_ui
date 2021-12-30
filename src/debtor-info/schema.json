@@ -1,18 +1,5 @@
 {
   "definitions": {
-    "Link": {
-      "type": "object",
-      "properties": {
-        "uri": {
-          "type": "string",
-          "format": "iri",
-          "maxLength": 10000,
-          "description": "The IRI (Internationalized Resource Identifier) of the referenced resource. Must be an absolute IRI."
-        }
-      },
-      "required": [ "uri" ],
-      "additionalProperties": false
-    },
     "ShortLink": {
       "type": "object",
       "properties": {
@@ -85,7 +72,7 @@
     },
     "summary": {
       "type": "string",
-      "maxLength": 1000,
+      "maxLength": 500,
       "description": "A short description of the currency."
     },
     "debtorIdentity": {
@@ -99,7 +86,7 @@
       "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization."
     },
     "debtorHomepage": {
-      "$ref": "#/definitions/Link",
+      "$ref": "#/definitions/ShortLink",
       "description": "Optional link to the debtor's homepage."
     },
     "amountDivisor": {

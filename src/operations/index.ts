@@ -1,7 +1,7 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, DocumentRecord, DebtorDataSource
+  CreateAccountActionWithId, DebtorDataSource
 } from './db'
 import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
@@ -47,6 +47,8 @@ export type {
   AccountV0,
   DebtorDataSource,
 }
+
+export type DebtorDataWithSource = DebtorData & { source: DebtorDataSource }
 
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
@@ -244,65 +246,63 @@ export class UserContext {
   async obtainDebtorData(
     account: AccountV0,
     latestDebtorInfoUri: string,
-    debtorIdentityUri: string,
     preferInfoOverKnowledge: boolean = false,
-  ): Promise<DebtorData & { source: DebtorDataSource }> {
-    let debtorData: DebtorData & { source: DebtorDataSource }
-    let debtorInfo: DebtorInfoV0 | undefined
-    let document: DocumentRecord | undefined
-    let source: DebtorDataSource
-
-    // Find the most reliable source of information about the debtor.
-    if (preferInfoOverKnowledge && account.info.debtorInfo) {
-      source = 'info'
-      debtorInfo = account.info.debtorInfo
-    } else if (account.display.debtorName !== undefined) {
-      source = 'knowledge'
-      debtorInfo = account.knowledge.debtorInfo
-    } else if (!preferInfoOverKnowledge && account.info.debtorInfo) {
-      source = 'info'
-      debtorInfo = account.info.debtorInfo
-    } else {
-      source = 'uri'
-      document = await fetchDebtorInfoDocument(latestDebtorInfoUri)
-      debtorInfo = { type: 'DebtorInfo', iri: document.uri }
-    }
-
-    if (debtorInfo) {
-      document = document ?? await fetchDebtorInfoDocument(debtorInfo.iri)
+  ): Promise<DebtorDataWithSource> {
+    const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<DebtorData> => {
+      const document = await fetchDebtorInfoDocument(debtorInfo.iri)
       if (!await putDocumentRecord(document)) {
         // This could happen if an extremely unusual (but still
         // possible) race condition had occurred. In this case the
         // user will have to simply retry the action.
         throw new DocumentFetchError()
       }
-      debtorData = { ...await parseDebtorInfoDocument(document), source }
+      const debtorData = { ...await parseDebtorInfoDocument(document) }
       if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
         throw new InvalidDocument('wrong SHA256 value')
       }
       if (debtorInfo.contentType !== undefined && document.contentType !== debtorInfo.contentType) {
         throw new InvalidDocument('wrong content type')
       }
-      if (debtorData.debtorIdentity.uri !== debtorIdentityUri) {
+      if (debtorData.debtorIdentity.uri !== account.debtor.uri) {
         throw new InvalidDocument('wrong debtor identity')
       }
-    } else {
-      // This can happen only when the user knows about the account,
-      // but `account.knowledge.debtorInfo === undefined`. In this
-      // case, we simply generate a dummy debtor data.
-      debtorData = {
-        revision: 0,
+      return debtorData
+    }
+
+    const getFromAccoutKnowledge = async (account: AccountV0): Promise<DebtorData> => {
+      const debtorIdentity = { type: 'DebtorIdentity' as const, uri: account.debtor.uri }
+      return account.knowledge.debtorData ? {
+        ...account.knowledge.debtorData,
+        debtorIdentity,
+      } : {
+        // generate a dummy data
+        revision: -1,
         latestDebtorInfo: { uri: '' },
-        debtorIdentity: { type: 'DebtorIdentity', uri: debtorIdentityUri },
         debtorName: 'unknown',
         amountDivisor: 1,
         decimalPlaces: 0n,
         unit: '\u00A4',
-        source,
+        debtorIdentity,
       }
     }
 
-    return debtorData
+    // Find the most reliable source of information about the debtor.
+    if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
+      return {
+        ...await getFromAccoutKnowledge(account),
+        source: 'knowledge',
+      }
+    } else if (account.info.debtorInfo) {
+      return {
+        ...await getFromDebtorInfo(account.info.debtorInfo),
+        source: 'info',
+      }
+    } else {
+      return {
+        ...await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
+        source: 'uri',
+      }
+    }
   }
 
   /* Reads a payment request, and adds and returns a new

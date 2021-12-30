@@ -114,7 +114,6 @@ export type AccountInfoV0 = AccountInfo & {
 }
 export type AccountKnowledgeV0 = AccountKnowledge & {
   type: 'AccountKnowledge',
-  debtorInfo?: DebtorInfoV0,
 }
 export type AccountExchangeV0 = AccountExchange & {
   type: 'AccountExchange',
@@ -256,16 +255,11 @@ export function makeAccountExchange(data: AccountExchange, baseUri: string): Acc
 
 export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): AccountKnowledgeV0 {
   matchType(ACCOUNT_KNOWLEDGE_TYPE, data.type ?? 'AccountKnowledge')
-  matchType(DEBTOR_INFO_TYPE, data.debtorInfo?.type ?? 'DebtorInfo')
   return {
     ...data,
     type: 'AccountKnowledge',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
-    debtorInfo: data.debtorInfo ? {
-      ...data.debtorInfo,
-      type: 'DebtorInfo',
-    } : undefined,
   }
 }
 

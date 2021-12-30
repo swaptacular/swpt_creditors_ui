@@ -203,15 +203,16 @@ export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 // * Show the "acknowledge account changes screen", and wait for the
 //   user to acknowledge.
 //
-// * If the pegs described in the
-//   `account.AccountKnowledge.debtorInfo.iri` document, and the
-//   `info` field differ, and the old peg is set in the
-//   `account.AccountExchange` record, remove it.
+// * If the pegs described in
+//   `account.AccountKnowledge.debtorData.peg`, and the `info` field
+//   differ, and the old peg is set in the `account.AccountExchange`
+//   record, remove it.
 //
 // * Set `acknowledged` to true (and commit).
 //
 // * Write the `info` settings to `account.AccountKnowledge` (set
-//   `account.AccountKnowledge.infoUpdateId` to `infoUpdateId`).
+//   `account.AccountKnowledge.debtorData.infoUpdateId` to
+//   `infoUpdateId`).
 //
 // Important notes:
 //
@@ -271,8 +272,8 @@ export type AckAccountInfoActionWithId =
 // * If `state` is undefined, set it:
 //
 //   - If `account.AccountDisplay.debtorName !== undefined`, set
-//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`,
-//     `state.initializationInProgress` to false, and
+//     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`
+//     (???), `state.initializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - If debtor info can be obtained from
@@ -370,9 +371,9 @@ export type CreateAccountActionWithId =
 //     `state.initializationInProgress` to false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
-//     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`,
-//     `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES NOT have
-//     sha256 and contentType fields> && <debtorInfo IS NOT
+//     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`
+//     (???), `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES
+//     NOT have sha256 and contentType fields> && <debtorInfo IS NOT
 //     confirmed>, and `state.initializationInProgress` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
@@ -395,12 +396,12 @@ export type CreateAccountActionWithId =
 // * At most one of the following things will happen:
 //
 //   - If `state.verifyLatestDebtorInfoUri === true &&
-//     (pegAccount.AccountKnowledge.coinUri ??
-//     PEG_DOC.latestDebtorInfo.uri) !== peg.latestDebtorInfo.uri`,
-//     show the "coin URI override screen", and if accepted, set
-//     `pegAccount.AccountKnowledge.coinUri` to
-//     `peg.latestDebtorInfo.uri`, and trigger debtor info reload; if
-//     rejected, set `state.verifyLatestDebtorInfoUri` to false.
+//     pegAccount.AccountKnowledge.debtorData.latestDebtorInfo.uri !==
+//     peg.latestDebtorInfo.uri`, show the "coin URI override screen",
+//     and if accepted, set
+//     `pegAccount.AccountKnowledge.debtorData.latestDebtorInfo.uri`
+//     to `peg.latestDebtorInfo.uri`, and trigger debtor info reload;
+//     if rejected, set `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //     account's AccountKnowledge must be ignored), show the "accept
@@ -430,9 +431,9 @@ export type CreateAccountActionWithId =
 //      version of the pegged account.
 //
 //   b) Ensure that the pegged account (accountUri) still exists,
-//      `peggedAccount.AccountDisplay.debtorName` is not undefined, and
-//      the `peggedAccount.AccountKnowledge.debtorInfo.iri` document
-//      describes the same peg as `peg`.
+//      `peggedAccount.AccountDisplay.debtorName` is not undefined,
+//      and `peggedAccount.AccountKnowledge.debtorData.peg` describes
+//      the same peg as `peg`.
 //
 //   c) Write the new peg to `peggedAccount.AccountExchange`.
 export type ApprovePegAction =
@@ -450,9 +451,9 @@ export type ApprovePegActionWithId =
 // TODO: Here is how this action should work:
 //
 // * Ensure that the account (accountUri) exists,
-//   `account.AccountDisplay.debtorName` is not undefined, and the
-//   `account.AccountKnowledge.debtorInfo.iri` document describes the
-//   same `amountDivisor`, `decimalPlaces`, and `unit`.
+//   `account.AccountDisplay.debtorName` is not undefined, and
+//   `account.AccountKnowledge.debtorData` describes the same
+//   `amountDivisor`, `decimalPlaces`, and `unit`.
 //
 // * Show the "approve amount display screen", and if accepted:
 //
@@ -461,9 +462,9 @@ export type ApprovePegActionWithId =
 //      version of the account.
 //
 //   b) Ensure that the account (accountUri) still exists,
-//      `account.AccountDisplay.debtorName` is not undefined, and the
-//      `account.AccountKnowledge.debtorInfo.iri` document describes
-//      the same `amountDivisor`, `decimalPlaces`, and `unit`.
+//      `account.AccountDisplay.debtorName` is not undefined, and
+//      `account.AccountKnowledge.debtorData` describes the same
+//      `amountDivisor`, `decimalPlaces`, and `unit`.
 //
 //   c) Write the amount display parameters to
 //      `account.AccountDisplay`.
@@ -485,9 +486,9 @@ export type ApproveAmountDisplayActionWithId =
 //
 // * Ensure that the account (accountUri) exists,
 //   `account.AccountDisplay.debtorName` is not undefined (it shall be
-//   used as an initial value for `editedDebtorName`), and the
-//   `account.AccountKnowledge.debtorInfo.iri` document describes the
-//   same `debtorName`.
+//   used as an initial value for `editedDebtorName`), and
+//   `account.AccountKnowledge.debtorData` describes the same
+//   `debtorName`.
 //
 // * Show the "approve debtor name screen", and if accepted:
 //
@@ -496,9 +497,9 @@ export type ApproveAmountDisplayActionWithId =
 //      version of the account.
 //
 //   b) Ensure that the account (accountUri) still exists,
-//      `account.AccountDisplay.debtorName` is not undefined, and the
-//      `account.AccountKnowledge.debtorInfo.iri` document describes
-//      the same `debtorName`.
+//      `account.AccountDisplay.debtorName` is not undefined, and
+//      `account.AccountKnowledge.debtorData` describes the same
+//      `debtorName`.
 //
 //   d) Write the (possibly edited) debtor name to
 //      `account.AccountDisplay`. Optionally, set

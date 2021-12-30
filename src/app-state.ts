@@ -219,8 +219,9 @@ export class AppState {
     const obtainData = async (): Promise<CreateAccountActionModel['data']> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
+      assert(account.debtor.uri === debtorIdentityUri)
       const debtorData = action.state?.debtorData
-        ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri, debtorIdentityUri)
+        ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri)
       if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }

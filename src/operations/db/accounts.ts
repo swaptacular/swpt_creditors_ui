@@ -99,14 +99,12 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
   }
 }
 
-export function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
-  return storeKnowledgeOrInfoRecord(record)
-}
-export function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {
-  return storeKnowledgeOrInfoRecord(record)
+export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
+  // TODO: Remove AckAccountInfoActions, may be create new ones.
+  await db.accountObjects.put(record)
 }
 
-async function storeKnowledgeOrInfoRecord(record: AccountKnowledgeRecord | AccountInfoRecord): Promise<void> {
+export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {
   await db.transaction('rw', [db.accountObjects, db.tasks], async () => {
     let newIri = record.debtorInfo?.iri
     const accountUri = record.account.uri

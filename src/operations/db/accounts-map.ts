@@ -62,7 +62,7 @@ export class AccountsMap {
       }
       for (const obj of await db.accountObjects.where({ userId }).toArray()) {
         this.processObjectAddition(obj)
-        if ((obj.type === 'AccountKnowledge' || obj.type === 'AccountInfo') && obj.debtorInfo) {
+        if (obj.type === 'AccountInfo' && obj.debtorInfo) {
           const documentUri = obj.debtorInfo.iri
           const document = await db.documents.get(documentUri)
           if (document) {
