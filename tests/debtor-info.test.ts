@@ -81,7 +81,7 @@ test("Generate and parse CoinInfo document", async () => {
     debtorName: 'USA',
     debtorHomepage: { uri: 'https://example.com/USA' },
     amountDivisor: 100.0,
-    decimalPlaces: 2,
+    decimalPlaces: 2n,
     unit: 'USD',
     peg: {
       type: 'Peg' as const,

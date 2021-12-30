@@ -2,7 +2,10 @@ export function stringToAmount(s: string | number, amountDivisor: number): bigin
   return BigInt(Math.round(Number(s) * amountDivisor))
 }
 
-export function amountToString(value: bigint, amountDivisor: number, decimalPlaces: number): string {
+export function amountToString(value: bigint, amountDivisor: number, decimalPlaces: number | bigint): string {
+  if (typeof decimalPlaces === 'bigint') {
+    decimalPlaces = Number(decimalPlaces)
+  }
   const v = Number(value) / amountDivisor
   const n = Math.min(Math.ceil(decimalPlaces), 20)
   let s

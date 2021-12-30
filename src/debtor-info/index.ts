@@ -57,7 +57,7 @@ export type BaseDebtorData = {
   debtorName: string,
   debtorHomepage?: ResourceReference,
   amountDivisor: number,
-  decimalPlaces: number,
+  decimalPlaces: bigint,
   unit: string,
   peg?: Peg,
 }
@@ -96,6 +96,7 @@ export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<
   const data = {
     ...debtorData,
     type: 'CoinInfo',
+    decimalPlaces: Number(debtorData.decimalPlaces),
     willNotChangeUntil: debtorData.willNotChangeUntil?.toISOString(),
   }
   if (!validate(data)) {
@@ -138,6 +139,7 @@ export async function parseDebtorInfoDocument(document: Document): Promise<Debto
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)
+  data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   delete data.type
   return data
 }

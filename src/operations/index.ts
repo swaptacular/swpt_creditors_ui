@@ -296,7 +296,7 @@ export class UserContext {
         debtorIdentity: { type: 'DebtorIdentity', uri: debtorIdentityUri },
         debtorName: 'unknown',
         amountDivisor: 1,
-        decimalPlaces: 0,
+        decimalPlaces: 0n,
         unit: '\u00A4',
         source,
       }

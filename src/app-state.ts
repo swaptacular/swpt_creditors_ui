@@ -89,7 +89,7 @@ export type CreateAccountActionModel = BasePageModel & {
     debtorData: DebtorData & { source: DebtorDataSource },
     unit: string,
     amountDivisor: number,
-    decimalPlaces: number,
+    decimalPlaces: bigint,
   }
 }
 
@@ -230,7 +230,7 @@ export class AppState {
         debtorData,
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
-        decimalPlaces: useDisplay ? Number(account.display.decimalPlaces) : debtorData.decimalPlaces,
+        decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
       }
     }
 
@@ -535,5 +535,5 @@ export async function createAppState(): Promise<AppState | undefined> {
 }
 
 function calcNegligibleAmount(debtroData: DebtorData): number {
-  return Math.pow(10, -debtroData.decimalPlaces) * debtroData.amountDivisor * (1 + Number.EPSILON)
+  return Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor * (1 + Number.EPSILON)
 }
