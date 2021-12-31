@@ -1,6 +1,6 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, BaseDebtorDataWithSource } from './operations'
+import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
@@ -86,7 +86,8 @@ export type CreateAccountActionModel = BasePageModel & {
   action: CreateAccountActionWithId,
   data?: {
     account: AccountV0,
-    debtorData: BaseDebtorDataWithSource,
+    debtorData: BaseDebtorData,
+    debtorDataSource: DebtorDataSource,
     unit: string,
     amountDivisor: number,
     decimalPlaces: bigint,
@@ -220,15 +221,16 @@ export class AppState {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
-      const debtorData = action.state?.debtorData
-        ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
-      if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+      const { debtorData, debtorDataSource } = action.state?.debtorData ?
+        action.state : await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
+      if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
       const useDisplay = account.display.debtorName !== undefined
       return {
         account,
         debtorData,
+        debtorDataSource,
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
@@ -237,7 +239,7 @@ export class AppState {
 
     const initializeActionStateIfNecessary = async (data: CreateAccountActionModel['data']): Promise<void> => {
       if (action.state === undefined && data !== undefined) {
-        const { account, debtorData } = data
+        const { account, debtorData, debtorDataSource } = data
         const debtorName = account.display.debtorName
         const editedDebtorName = debtorName ?? debtorData.debtorName
         const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
@@ -245,6 +247,7 @@ export class AppState {
         const state = {
           initializationInProgress: false,
           debtorData,
+          debtorDataSource,
           editedDebtorName,
           editedNegligibleAmount,
         }

@@ -1,7 +1,7 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, DebtorDataSource, BaseDebtorDataWithSource
+  CreateAccountActionWithId, DebtorDataSource
 } from './db'
 import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
@@ -47,7 +47,6 @@ export type {
   CreateAccountActionWithId,
   AccountV0,
   DebtorDataSource,
-  BaseDebtorDataWithSource,
 }
 
 /* Logs out the user and redirects to home, never resolves. */
@@ -247,7 +246,7 @@ export class UserContext {
     account: AccountV0,
     latestDebtorInfoUri: string,
     preferInfoOverKnowledge: boolean = false,
-  ): Promise<BaseDebtorDataWithSource> {
+  ): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource }> {
     const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<BaseDebtorData> => {
       const document = await fetchDebtorInfoDocument(debtorInfo.iri)
       if (!await putDocumentRecord(document)) {
@@ -272,18 +271,18 @@ export class UserContext {
     // Find the most reliable source of information about the debtor.
     if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
       return {
-        ...getBaseDebtorDataFromAccoutKnowledge(account),
-        source: 'knowledge',
+        debtorData: getBaseDebtorDataFromAccoutKnowledge(account),
+        debtorDataSource: 'knowledge',
       }
     } else if (account.info.debtorInfo) {
       return {
-        ...await getFromDebtorInfo(account.info.debtorInfo),
-        source: 'info',
+        debtorData: await getFromDebtorInfo(account.info.debtorInfo),
+        debtorDataSource: 'info',
       }
     } else {
       return {
-        ...await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
-        source: 'uri',
+        debtorData: await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
+        debtorDataSource: 'uri',
       }
     }
   }

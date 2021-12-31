@@ -188,8 +188,6 @@ export type EssentialAccountInfo = {
 
 export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 
-export type BaseDebtorDataWithSource = BaseDebtorData & { source: DebtorDataSource }
-
 // TODO: Here is how this action should work:
 //
 // * Make a "get account" HTTP request for the account
@@ -341,7 +339,8 @@ export type CreateAccountAction =
     latestDebtorInfoUri: string,
     state?: {
       initializationInProgress: boolean,
-      debtorData: BaseDebtorDataWithSource,
+      debtorData: BaseDebtorData,
+      debtorDataSource: DebtorDataSource,
       editedDebtorName: string,
       editedNegligibleAmount: bigint,
     }
