@@ -276,7 +276,7 @@ export class UserContext {
         debtorIdentity,
       } : {
         // generate a dummy data
-        revision: -1,
+        revision: -1n,
         latestDebtorInfo: { uri: '' },
         debtorName: 'unknown',
         amountDivisor: 1,

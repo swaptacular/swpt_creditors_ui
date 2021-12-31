@@ -51,7 +51,7 @@ test("Parse CoinInfo document", async () => {
     content: (new TextEncoder()).encode(text),
   }
   const parsed = await parseDebtorInfoDocument(document)
-  expect(parsed.revision).toEqual(0)
+  expect(parsed.revision).toEqual(0n)
   expect(parsed.willNotChangeUntil).toBeUndefined()
 
   // wrong MIME type
@@ -73,7 +73,7 @@ test("Parse CoinInfo document", async () => {
 
 test("Generate and parse CoinInfo document", async () => {
   const debtorData = {
-    revision: 0,
+    revision: 0n,
     willNotChangeUntil: new Date('2021-01-01T10:00:00Z'),
     latestDebtorInfo: { uri: 'http://example.com/' },
     summary: "bla-bla",
@@ -91,7 +91,7 @@ test("Generate and parse CoinInfo document", async () => {
     },
     unknownProp: 1,
   }
-  await expect(generateCoinInfoDocument({ ...debtorData, revision: -1 }))
+  await expect(generateCoinInfoDocument({ ...debtorData, revision: -1n }))
     .rejects.toBeInstanceOf(InvalidDocument)
   await expect(generateCoinInfoDocument({ ...debtorData, willNotChangeUntil: new Date(NaN) }))
     .rejects.toBeInstanceOf(InvalidDocument)
