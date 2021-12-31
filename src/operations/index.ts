@@ -23,7 +23,8 @@ import {
 } from './db-sync'
 import { makePinInfo, makeAccount } from './canonical-objects'
 import {
-  calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument
+  calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
+  getDebtorDataFromAccoutKnowledge
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -269,27 +270,10 @@ export class UserContext {
       return debtorData
     }
 
-    const getFromAccoutKnowledge = async (account: AccountV0): Promise<DebtorData> => {
-      const debtorIdentity = { type: 'DebtorIdentity' as const, uri: account.debtor.uri }
-      return account.knowledge.debtorData ? {
-        ...account.knowledge.debtorData,
-        debtorIdentity,
-      } : {
-        // generate a dummy data
-        revision: -1n,
-        latestDebtorInfo: { uri: '' },
-        debtorName: 'unknown',
-        amountDivisor: 1,
-        decimalPlaces: 0n,
-        unit: '\u00A4',
-        debtorIdentity,
-      }
-    }
-
     // Find the most reliable source of information about the debtor.
     if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
       return {
-        ...await getFromAccoutKnowledge(account),
+        ...getDebtorDataFromAccoutKnowledge(account),
         source: 'knowledge',
       }
     } else if (account.info.debtorInfo) {

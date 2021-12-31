@@ -1,12 +1,13 @@
 import type { DocumentRecord } from './db'
+import type { DebtorData } from '../debtor-info'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
-import type { TransferV0, LedgerEntryV0, AccountLedgerV0 } from './canonical-objects'
+import type { AccountV0, TransferV0, LedgerEntryV0, AccountLedgerV0 } from './canonical-objects'
 import { HttpError } from './server'
 import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
 import { getDocumentRecord } from './db'
-
+import { serializeDebtorData, InvalidDocument } from '../debtor-info'
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
@@ -196,4 +197,30 @@ export function parseCoinUri(coinUri: string): [string, string] {
     throw new InvalidCoinUri()
   }
   return [latestDebtorInfoUri, debtorIdentityUri]
+}
+
+export function getDebtorDataFromAccoutKnowledge(account: AccountV0): DebtorData {
+  const debtorIdentity = { type: 'DebtorIdentity' as const, uri: account.debtor.uri }
+  if (account.knowledge.debtorData) {
+    const debtorData = { ...account.knowledge.debtorData, debtorIdentity }
+    try {
+      // To ensure that the contained data is valid, we try to
+      // serialize it. If an `InvalidDocument` error is thrown, we
+      // return dummy data.
+      serializeDebtorData(debtorData)
+      return debtorData
+    } catch (e: unknown) {
+      if (!(e instanceof InvalidDocument)) throw e
+    }
+  }
+  // Generate a dummy data.
+  return {
+    revision: 0n,
+    latestDebtorInfo: { uri: '' },
+    debtorName: 'unknown',
+    amountDivisor: 1,
+    decimalPlaces: 0n,
+    unit: '\u00A4',
+    debtorIdentity,
+  }
 }

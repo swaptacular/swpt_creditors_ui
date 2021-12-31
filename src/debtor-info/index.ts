@@ -85,13 +85,10 @@ export class InvalidDocument extends Error {
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
 /*
- This function genarates a document in
- "application/vnd.swaptacular.coin-info+json" format. This format is
- defined by a JSON Schema file (see "./schema.json",
- "./schema.md"). An `InvalidDocument` error will be thrown when
- invalid data is passed.
+ This function serializes debtor data to bytes. An `InvalidDocument`
+ error will be thrown when invalid data is passed.
 */
-export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<DocumentWithHash> {
+export function serializeDebtorData(debtorData: DebtorData): Uint8Array {
   validateOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
   const data = {
     ...debtorData,
@@ -104,7 +101,18 @@ export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
-  const content = UTF8_ENCODER.encode(JSON.stringify(data))
+  return UTF8_ENCODER.encode(JSON.stringify(data))
+}
+
+/*
+ This function genarates a document in
+ "application/vnd.swaptacular.coin-info+json" format. This format is
+ defined by a JSON Schema file (see "./schema.json",
+ "./schema.md"). An `InvalidDocument` error will be thrown when
+ invalid data is passed.
+*/
+export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<DocumentWithHash> {
+  const content = serializeDebtorData(debtorData)
   return {
     content,
     contentType: MIME_TYPE_COIN_INFO,
