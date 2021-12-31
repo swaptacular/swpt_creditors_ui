@@ -1,7 +1,7 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
-import type { DebtorData } from './debtor-info'
+import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, BaseDebtorDataWithSource } from './operations'
+import type { BaseDebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -86,7 +86,7 @@ export type CreateAccountActionModel = BasePageModel & {
   action: CreateAccountActionWithId,
   data?: {
     account: AccountV0,
-    debtorData: DebtorData & { source: DebtorDataSource },
+    debtorData: BaseDebtorDataWithSource,
     unit: string,
     amountDivisor: number,
     decimalPlaces: bigint,
@@ -221,7 +221,7 @@ export class AppState {
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
       const debtorData = action.state?.debtorData
-        ?? await this.uc.obtainDebtorData(account, latestDebtorInfoUri)
+        ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
       if (debtorData.source === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
@@ -535,6 +535,6 @@ export async function createAppState(): Promise<AppState | undefined> {
   return undefined
 }
 
-function calcNegligibleAmount(debtroData: DebtorData): number {
+function calcNegligibleAmount(debtroData: BaseDebtorData): number {
   return Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor * (1 + Number.EPSILON)
 }

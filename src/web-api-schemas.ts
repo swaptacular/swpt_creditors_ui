@@ -1,4 +1,4 @@
-import type { DebtorData } from './debtor-info'
+import type { BaseDebtorData } from './debtor-info'
 
 export type CreditorReservationRequest = {
   /** The type of this object. */
@@ -537,7 +537,7 @@ export type AccountKnowledge = {
 
   /** Optional debtor data, which is known to the creditor. (STANDARD
    * EXTENSION) */
-  debtorData?: Omit<DebtorData, 'debtorIdentity'>;
+  debtorData?: BaseDebtorData;
 
   /** Optional `AccountIdentity`, which is known to the creditor. */
   identity?: AccountIdentity;

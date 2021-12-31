@@ -53,6 +53,8 @@ export type Peg = {
 }
 
 export type BaseDebtorData = {
+  latestDebtorInfo: ResourceReference,
+  willNotChangeUntil?: Date,
   summary?: string,
   debtorName: string,
   debtorHomepage?: ResourceReference,
@@ -65,8 +67,6 @@ export type BaseDebtorData = {
 export type DebtorData = BaseDebtorData & {
   debtorIdentity: DebtorIdentity,
   revision: bigint,
-  latestDebtorInfo: ResourceReference,
-  willNotChangeUntil?: Date,
 }
 
 export type Document = {

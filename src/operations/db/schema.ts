@@ -1,5 +1,5 @@
 import type { PaymentInfo } from '../../payment-requests'
-import type { DebtorData, Peg, ResourceReference, DocumentWithHash } from '../../debtor-info'
+import type { BaseDebtorData, Peg, ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
@@ -179,7 +179,7 @@ export type AbortTransferActionWithId =
   & AbortTransferAction
 
 export type EssentialAccountInfo = {
-  debtorData: DebtorData,
+  debtorData: BaseDebtorData,
   debtorInfo?: DebtorInfoV0,
   interestRate: number,
   interestRateChangedAt: string,
@@ -187,6 +187,8 @@ export type EssentialAccountInfo = {
 }
 
 export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
+
+export type BaseDebtorDataWithSource = BaseDebtorData & { source: DebtorDataSource }
 
 // TODO: Here is how this action should work:
 //
@@ -339,7 +341,7 @@ export type CreateAccountAction =
     latestDebtorInfoUri: string,
     state?: {
       initializationInProgress: boolean,
-      debtorData: DebtorData & { source: DebtorDataSource },
+      debtorData: BaseDebtorDataWithSource,
       editedDebtorName: string,
       editedNegligibleAmount: bigint,
     }

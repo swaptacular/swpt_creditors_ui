@@ -1,11 +1,11 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, DebtorDataSource
+  CreateAccountActionWithId, DebtorDataSource, BaseDebtorDataWithSource
 } from './db'
 import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
-import type { DebtorData } from '../debtor-info'
+import type { BaseDebtorData } from '../debtor-info'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -24,7 +24,7 @@ import {
 import { makePinInfo, makeAccount } from './canonical-objects'
 import {
   calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
-  getDebtorDataFromAccoutKnowledge
+  getBaseDebtorDataFromAccoutKnowledge
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -47,9 +47,8 @@ export type {
   CreateAccountActionWithId,
   AccountV0,
   DebtorDataSource,
+  BaseDebtorDataWithSource,
 }
-
-export type DebtorDataWithSource = DebtorData & { source: DebtorDataSource }
 
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
@@ -244,12 +243,12 @@ export class UserContext {
 
   /* Obtain and return debtor's data. The caller must be prepared this
    * method to throw `InvalidDocument` or `DocumentFetchError` */
-  async obtainDebtorData(
+  async obtainBaseDebtorData(
     account: AccountV0,
     latestDebtorInfoUri: string,
     preferInfoOverKnowledge: boolean = false,
-  ): Promise<DebtorDataWithSource> {
-    const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<DebtorData> => {
+  ): Promise<BaseDebtorDataWithSource> {
+    const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<BaseDebtorData> => {
       const document = await fetchDebtorInfoDocument(debtorInfo.iri)
       if (!await putDocumentRecord(document)) {
         // This could happen if an extremely unusual (but still
@@ -273,7 +272,7 @@ export class UserContext {
     // Find the most reliable source of information about the debtor.
     if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
       return {
-        ...getDebtorDataFromAccoutKnowledge(account),
+        ...getBaseDebtorDataFromAccoutKnowledge(account),
         source: 'knowledge',
       }
     } else if (account.info.debtorInfo) {
