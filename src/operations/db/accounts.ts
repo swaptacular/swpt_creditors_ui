@@ -100,7 +100,7 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
 }
 
 export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
-  // TODO: Remove AckAccountInfoActions, may be create new ones.
+  // TODO: Remove AckAccountInfoActions, maybe create new ones.
   await db.accountObjects.put(record)
 }
 

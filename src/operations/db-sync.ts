@@ -99,6 +99,9 @@ export async function storeObject(
       // possible version for the received ledger record.
       records.accountLedgerRecord.latestUpdateId = 1n
 
+      // NOTE: In the following sequence, the `AccountInfo` record
+      // must be revised (updated) before the `AccountKnowledge`
+      // record.
       await reviseLogObjectRecord(records.accountLedgerRecord)
       await reviseLogObjectRecord(records.accountInfoRecord)
       await reviseLogObjectRecord(records.accountDisplayRecord)
@@ -358,6 +361,9 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
           records.accountConfigRecord,
         ])
         oldAccountUris.delete(account.uri)
+
+        // TODO: Do a AccountKnowledge/AccountInfo comparison here,
+        // and create an AckAccountInfoAction if necessary.
       }
       for (const accountUri of oldAccountUris.keys()) {
         await deleteAccount(accountUri)
@@ -439,7 +445,25 @@ function removeRedundantUpdates(updates: UpdateInfo[], pendingUpdates: Map<strin
       updatesMap.set(objectUri, update)
     }
   })
-  return [...updatesMap.values()]
+
+  // NOTE: Here we make sure that all `AccountInfo `updates are sorted
+  // before the other updates. But in fact, the only important thing
+  // is that for each given account, the update of the `AccountInfo`
+  // record is done before the update of the `AccountKnowledge`
+  // record. This (hopefully) guarantees that `AckAccountInfoAction`s
+  // claiming that the account's info has been reverted to its
+  // previous version will never be created.
+  return [...updatesMap.values()].sort(orderAccountInfosBeforeOthers)
+}
+
+function orderAccountInfosBeforeOthers(a: UpdateInfo, b: UpdateInfo): -1 | 0 | 1 {
+  const aa = a.objectType
+  const bb = b.objectType
+  if (aa !== bb) {
+    if (aa === 'AccountInfo') return -1
+    if (bb === 'AccountInfo') return 1
+  }
+  return 0
 }
 
 async function prepareUpdate(
