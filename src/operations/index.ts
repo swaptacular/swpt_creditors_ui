@@ -230,7 +230,11 @@ export class UserContext {
     let response
     try {
       const request: DebtorIdentity = { type: 'DebtorIdentity', uri: debtorIdentityUri }
-      response = await this.server.post(this.walletRecord.createAccount.uri, request) as HttpResponse<Account>
+      response = await this.server.post(
+        this.walletRecord.createAccount.uri,
+        request,
+        { attemptLogin: true },
+      ) as HttpResponse<Account>
     } catch (e: unknown) {
       if (e instanceof HttpError && e.status === 422) throw new InvalidCoinUri()
       else throw e

@@ -213,7 +213,6 @@ export class AppState {
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
@@ -265,10 +264,6 @@ export class AppState {
       })
     }
 
-    const retry = (): void => {
-      this.showAction(action.actionId)
-    }
-
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
@@ -296,9 +291,8 @@ export class AppState {
       }
     }, {
       alerts: [
-        [AuthenticationError, () => this.fetchDataFromServer(retry)],
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
       ],
     })
   }
