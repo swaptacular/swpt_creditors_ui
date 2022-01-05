@@ -13,7 +13,7 @@ import {
 import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
-  alerts?: [Function, Alert | null][],
+  alerts?: [Function, Alert | (() => void)][],
   startInteraction?: boolean,
   waitingDelay?: number,
 }
@@ -140,7 +140,7 @@ export class AppState {
       await executeCallbackAfterUpdate()
     }, {
       alerts: [
-        [AuthenticationError, null],
+        [AuthenticationError, () => {}],
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
       ],
     })
@@ -265,6 +265,10 @@ export class AppState {
       })
     }
 
+    const retry = (): void => {
+      this.showAction(action.actionId)
+    }
+
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
@@ -292,6 +296,7 @@ export class AppState {
       }
     }, {
       alerts: [
+        [AuthenticationError, () => this.fetchDataFromServer(retry)],
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
@@ -448,7 +453,7 @@ export class AppState {
         })
       }
     }
-    const alertFromError = (error: unknown): Alert | null | undefined => {
+    const alertFromError = (error: unknown): Alert | (() => void) | undefined => {
       for (const [errorConstructor, alert] of alerts) {
         if (error instanceof errorConstructor) {
           return alert
@@ -475,16 +480,14 @@ export class AppState {
       await func()
     } catch (e: unknown) {
       const alert = alertFromError(e)
-      switch (alert) {
-        case undefined:
-          console.error(e)
-          this.addAlert(new Alert(UNEXPECTED_ERROR_MESSAGE))
-          throw e
-        case null:
-          // ignore the error
-          break
-        default:
-          this.addAlert(alert)
+      if (alert === undefined) {
+        console.error(e)
+        this.addAlert(new Alert(UNEXPECTED_ERROR_MESSAGE))
+        throw e
+      } else if (typeof alert === 'function') {
+        alert()
+      } else {
+        this.addAlert(alert)
       }
     } finally {
       clearWaitingInteraction()
