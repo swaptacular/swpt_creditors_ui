@@ -15,7 +15,7 @@ test("Validate CoinInfo schema", () => {
   let data = {
     type: 'CoinInfo-v1',
     revision: 0,
-    willNotChangeUntil: '2021-01-01T10:00:00Z',
+    willNotChangeUntil: '2021-01-01T10:00:00.000Z',
     latestDebtorInfo: { uri: 'http://example.com/' },
     summary: "bla-bla",
     debtorIdentity: { type: 'DebtorIdentity', uri: 'swpt:123' },
@@ -74,7 +74,7 @@ test("Parse CoinInfo document", async () => {
 test("Generate and parse CoinInfo document", async () => {
   const debtorData = {
     revision: 0n,
-    willNotChangeUntil: new Date('2021-01-01T10:00:00Z'),
+    willNotChangeUntil: '2021-01-01T10:00:00.000Z',
     latestDebtorInfo: { uri: 'http://example.com/' },
     summary: "bla-bla",
     debtorIdentity: { type: 'DebtorIdentity' as const, uri: 'swpt:123' },
@@ -93,7 +93,7 @@ test("Generate and parse CoinInfo document", async () => {
   }
   await expect(generateCoinInfoDocument({ ...debtorData, revision: -1n }))
     .rejects.toBeInstanceOf(InvalidDocument)
-  await expect(generateCoinInfoDocument({ ...debtorData, willNotChangeUntil: new Date(NaN) }))
+  await expect(generateCoinInfoDocument({ ...debtorData, willNotChangeUntil: 'INVALID' }))
     .rejects.toBeInstanceOf(InvalidDocument)
   const document = await generateCoinInfoDocument(debtorData)
   const { unknownProp, ...noUnknownProps } = debtorData

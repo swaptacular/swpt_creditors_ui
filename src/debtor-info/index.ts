@@ -15,21 +15,18 @@ function buffer2hex(buffer: ArrayBuffer, options = { toUpperCase: true }) {
   return options.toUpperCase ? hex.toUpperCase() : hex
 }
 
-function validateOptionalDate(date: Date | undefined, errorMsg: string): void {
-  if (
-    date !== undefined && (
-      Number.isNaN(date.getTime()) ||
-      date.getFullYear() > 9998 ||
-      date.getFullYear() < 1970
-    )
-  ) throw new InvalidDocument(errorMsg)
-}
-
-function parseOptionalDate(s?: string): Date | undefined {
+function parseOptionalDate(s?: string, errorMsg?: string): Date | undefined {
   let date
   if (s !== undefined) {
     date = new Date(s)
-    if (Number.isNaN(date.getTime())) {
+    if (
+      Number.isNaN(date.getTime()) ||
+      date.getFullYear() > 9998 ||
+      date.getFullYear() < 1970
+    ) {
+      if (errorMsg !== undefined) {
+        throw new InvalidDocument(errorMsg)
+      }
       return undefined
     }
   }
@@ -54,7 +51,7 @@ export type Peg = {
 
 export type BaseDebtorData = {
   latestDebtorInfo: ResourceReference,
-  willNotChangeUntil?: Date,
+  willNotChangeUntil?: string,
   summary?: string,
   debtorName: string,
   debtorHomepage?: ResourceReference,
@@ -89,13 +86,13 @@ export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
  error will be thrown when invalid data is passed.
 */
 export function serializeDebtorData(debtorData: DebtorData): Uint8Array {
-  validateOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
+  const until = parseOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
   const data = {
     ...debtorData,
     type: 'CoinInfo',
     revision: Number(debtorData.revision),
     decimalPlaces: Number(debtorData.decimalPlaces),
-    willNotChangeUntil: debtorData.willNotChangeUntil?.toISOString(),
+    willNotChangeUntil: until?.toISOString(),
   }
   if (!validate(data)) {
     const e = validate.errors[0]
@@ -147,7 +144,7 @@ export async function parseDebtorInfoDocument(document: Document): Promise<Debto
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
-  data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)
+  data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
   delete data.type
