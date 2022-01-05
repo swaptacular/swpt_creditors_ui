@@ -246,7 +246,7 @@ export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 export type AckAccountInfoAction =
   & ActionData
   & {
-    actionType: 'AckAccountFacts',
+    actionType: 'AckAccountInfo',
     accountUri: string,
     knowledgeUpdateId: bigint,
     infoUpdateId: bigint,
