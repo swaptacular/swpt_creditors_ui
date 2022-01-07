@@ -539,8 +539,7 @@ export type AccountKnowledge = {
    * EXTENSION) */
   debtorData?: BaseDebtorData;
 
-  /** Optional configuration error, which is known to the
-   * creditor. (STANDARD EXTENSION) */
+  /** Optional configuration error, which is known to the creditor. */
   configError?: string;
 
   /** Optional `AccountIdentity`, which is known to the creditor. */
