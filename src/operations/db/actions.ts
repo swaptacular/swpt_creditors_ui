@@ -1,9 +1,15 @@
-import type { ActionRecord, ActionRecordWithId, ListQueryOptions } from './schema'
+import type {
+  ActionRecord, ActionRecordWithId, ListQueryOptions, AccountKnowledgeRecord, AccountInfoRecord,
+} from './schema'
+import type { DebtorInfoV0 } from '../canonical-objects'
+import type { DebtorData, BaseDebtorData } from '../../debtor-info'
+
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser } from './users'
+import { UserDoesNotExist, isInstalledUser, getDocumentRecord } from './users'
 import { abortTransfer } from './transfers'
+import { parseDebtorInfoDocument, serializeDebtorData, InvalidDocument } from '../../debtor-info'
 
 export async function getActionRecords(userId: number, options: ListQueryOptions = {}): Promise<ActionRecordWithId[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
@@ -35,13 +41,19 @@ export async function createActionRecord(action: ActionRecord): Promise<number> 
 }
 
 export async function removeActionRecord(actionId: number): Promise<void> {
-  await db.transaction('rw', [db.transfers, db.actions, db.tasks], async () => {
+  await db.transaction('rw', db.allTables, async () => {
     const action = await db.actions.get(actionId)
     if (action) {
       await db.actions.delete(actionId)
       switch (action.actionType) {
         case 'AbortTransfer':
           await abortTransfer(action.userId, action.transferUri)
+          break
+        case 'AckAccountInfo':
+          // TODO: If `action.acknowledged` is `true`, if necessary,
+          // create corresponding `ApproveDebtorNameAction`,
+          // `ApproveAmountDisplayAction`, `ApprovePegAction` actions.
+          verifyAccountKnowledge(action.accountUri)
           break
         default:
         // Do nothing more.
@@ -56,7 +68,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
  * added to the passed `replacement` object if it does not have
  * one. */
 export async function replaceActionRecord(original: ActionRecordWithId, replacement: ActionRecord | null): Promise<void> {
-  await db.transaction('rw', [db.transfers, db.actions, db.tasks], async () => {
+  await db.transaction('rw', db.allTables, async () => {
     const { actionId, userId } = original
     const existing = await db.actions.get(actionId)
     if (!equal(existing, original)) {
@@ -79,4 +91,138 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
       }
     }
   })
+}
+
+export async function verifyAccountKnowledge(accountUri: string, debtorData?: DebtorData): Promise<void> {
+  await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
+    const account = await db.accounts.get(accountUri)
+    if (account) {
+      const display = await db.accountObjects.get(account.display.uri)
+      assert(display && display.type === 'AccountDisplay')
+      if (display.debtorName !== undefined) {
+        const info = await db.accountObjects.get(account.info.uri)
+        const knowledge = await db.accountObjects.get(account.knowledge.uri)
+        assert(info && info.type === 'AccountInfo')
+        assert(knowledge && knowledge.type === 'AccountKnowledge')
+        await addAckAccountInfoActionIfNecessary(info, knowledge, debtorData)
+      }
+    }
+  })
+}
+
+async function addAckAccountInfoActionIfNecessary(
+  info: AccountInfoRecord,
+  knowledge: AccountKnowledgeRecord,
+  debtorData?: DebtorData,
+): Promise<void> {
+  await db.transaction('rw', [db.actions], async () => {
+    assert(info.account.uri === knowledge.account.uri)
+    const accountUri = info.account.uri
+    const hasAckAccountInfoAction = await db.actions
+      .where({ accountUri })
+      .filter(action => action.actionType === 'AckAccountInfo')
+      .count() > 0
+    if (!hasAckAccountInfoAction) {
+      debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData
+      const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+      const changedConfigError = info.configError !== knowledge.configError
+      const changedInterestRate = info.interestRate !== undefined && (
+        info.interestRate !== (knowledge.interestRate ?? 0) || (
+          info.interestRateChangedAt !== undefined &&
+          info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
+        )
+      )
+      const changes = debtorData ? {
+        interestRate: changedInterestRate,
+        configError: changedConfigError,
+        latestDebtorInfo: debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri,
+        willNotChangeUntil: debtorData.willNotChangeUntil !== knownData.willNotChangeUntil,
+        summary: debtorData.summary !== knownData.summary,
+        debtorName: debtorData.debtorName !== knownData.debtorName,
+        debtorHomepage: debtorData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri,
+        amountDivisor: debtorData.amountDivisor !== knownData.amountDivisor,
+        decimalPlaces: debtorData.decimalPlaces !== knownData.decimalPlaces,
+        unit: debtorData.unit !== knownData.unit,
+        peg: debtorData.peg !== knownData.peg,
+      } : {
+        interestRate: changedInterestRate,
+        configError: changedConfigError,
+        latestDebtorInfo: false,
+        willNotChangeUntil: false,
+        summary: false,
+        debtorName: false,
+        debtorHomepage: false,
+        amountDivisor: false,
+        decimalPlaces: false,
+        unit: false,
+        peg: false,
+      }
+      const hasChanges = (
+        changes.interestRate || changes.configError || changes.latestDebtorInfo ||
+        changes.willNotChangeUntil || changes.summary || changes.debtorName ||
+        changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
+        changes.unit || changes.peg
+      )
+      if (hasChanges) {
+        await db.actions.add({
+          userId: info.userId,
+          actionType: 'AckAccountInfo',
+          createdAt: new Date(),
+          knowledgeUpdateId: knowledge.latestUpdateId,
+          debtorData,
+          interestRate: info.interestRate,
+          interestRateChangedAt: info.interestRateChangedAt,
+          configError: info.configError,
+          acknowledged: false,
+          accountUri,
+          changes,
+        })
+      }
+    }
+  })
+}
+
+async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
+  let debtorData
+  const document = await getDocumentRecord(debtorInfo.iri)
+  if (
+    document &&
+    document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
+    document.contentType === (debtorInfo.contentType ?? document.contentType)
+  ) {
+    try {
+      debtorData = await parseDebtorInfoDocument(document)
+    } catch (e: unknown) {
+      if (e instanceof InvalidDocument) { /* ignore */ }
+      else throw e
+    }
+  }
+  return debtorData
+}
+
+function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeRecord): BaseDebtorData {
+  if (knowledge.debtorData) {
+    try {
+      // To ensure that the contained data is valid, we try to
+      // serialize it. If an `InvalidDocument` error is thrown, we
+      // return dummy data.
+      serializeDebtorData({
+        ...knowledge.debtorData,
+        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
+        revision: 0n,
+      })
+      return knowledge.debtorData
+    } catch (e: unknown) {
+      if (e instanceof InvalidDocument) { /* ignore */ }
+      throw e
+    }
+  }
+  // Generate a dummy data.
+  return {
+    latestDebtorInfo: { uri: '' },
+    debtorName: 'unknown',
+    amountDivisor: 1,
+    decimalPlaces: 0n,
+    unit: '\u00A4',
+  }
 }

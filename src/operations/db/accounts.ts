@@ -4,8 +4,10 @@ import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
   AccountConfigRecord, AccountDisplayRecord, AccountRecord
 } from './schema'
+
 import { Dexie } from 'dexie'
 import { db } from './schema'
+import { removeActionRecord } from './actions'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {
@@ -100,8 +102,20 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
 }
 
 export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
-  // TODO: Remove AckAccountInfoActions, maybe create new ones.
-  await db.accountObjects.put(record)
+  await db.transaction('rw', db.allTables, async () => {
+    const ackAccountInfoActions = await db.actions
+      .where({ accountUri: record.account.uri })
+      .filter(action => action.actionType === 'AckAccountInfo')
+      .toArray()
+    if (ackAccountInfoActions.length > 0) {
+      const action = ackAccountInfoActions[0]
+      assert(ackAccountInfoActions.length === 1)
+      assert(action.actionType === 'AckAccountInfo')
+      assert(action.actionId !== undefined)
+      await removeActionRecord(action.actionId)
+    }
+    await db.accountObjects.put(record)
+  })
 }
 
 export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {

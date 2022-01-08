@@ -3,7 +3,7 @@ import type { BaseDebtorData, Peg, ResourceReference, DocumentWithHash } from '.
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
-  AccountConfigV0, DebtorInfoV0, TransferCreationRequestV0, WebApiError, ObjectReference
+  AccountConfigV0, TransferCreationRequestV0, WebApiError, ObjectReference
 } from '../canonical-objects'
 
 import { Dexie } from 'dexie'
@@ -178,14 +178,6 @@ export type AbortTransferActionWithId =
   & ActionRecordWithId
   & AbortTransferAction
 
-export type EssentialAccountInfo = {
-  debtorData: BaseDebtorData,
-  debtorInfo?: DebtorInfoV0,
-  interestRate: number,
-  interestRateChangedAt: string,
-  configError?: string,
-}
-
 export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 
 // TODO: Here is how this action should work:
@@ -204,22 +196,19 @@ export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 //   user to acknowledge.
 //
 // * If the pegs described in
-//   `account.AccountKnowledge.debtorData.peg`, and the `info` field
-//   differ, and the old peg is set in the `account.AccountExchange`
-//   record, remove it.
+//   `account.AccountKnowledge.debtorData.peg`, and the
+//   `debtorData.peg` field differ, and the old peg is set in the
+//   `account.AccountExchange` record, remove it.
 //
 // * Set `acknowledged` to true (and commit).
 //
-// * Write the `info` settings to `account.AccountKnowledge` (set
-//   `account.AccountKnowledge.debtorData.infoUpdateId` to
-//   `infoUpdateId`).
+// * Write the `info` settings to `account.AccountKnowledge`.
 //
 // Important notes:
 //
 // * Changes in the fields `noteMaxBytes`, `identity`,
-//   `debtorData.summary`, `debtorData.debtorIdentity`,
-//   `debtorData.willNotChangeUntil`, and `debtorData.revision` should
-//   be ignored, because they are either unimportant or never shown to
+//   `debtorData.debtorIdentity`, and `debtorData.revision` should be
+//   ignored, because they are either unimportant or never shown to
 //   the user.
 //
 // * AckAccountInfoAction records must never be created for accounts
@@ -249,9 +238,24 @@ export type AckAccountInfoAction =
     actionType: 'AckAccountInfo',
     accountUri: string,
     knowledgeUpdateId: bigint,
-    infoUpdateId: bigint,
-    info: EssentialAccountInfo,
+    interestRate: number,
+    interestRateChangedAt: string,
+    debtorData?: BaseDebtorData,
+    configError?: string,
     acknowledged: boolean,
+    changes: {
+      interestRate: boolean,
+      latestDebtorInfo: boolean,
+      willNotChangeUntil: boolean,
+      debtorName: boolean,
+      debtorHomepage: boolean,
+      summary: boolean,
+      amountDivisor: boolean,
+      decimalPlaces: boolean,
+      unit: boolean,
+      peg: boolean,
+      configError: boolean,
+    },
   }
 
 export type AckAccountInfoActionWithId =
