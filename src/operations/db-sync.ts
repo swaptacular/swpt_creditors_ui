@@ -353,17 +353,17 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
         const records = splitIntoRecords(userId, account)
         await db.accounts.put(records.accountRecord)
         await db.accountObjects.bulkPut([
-          records.accountInfoRecord,
           records.accountDisplayRecord,
           records.accountKnowledgeRecord,
           records.accountExchangeRecord,
           records.accountLedgerRecord,
           records.accountConfigRecord,
         ])
-        oldAccountUris.delete(account.uri)
+        // For the account info records we must ensure that, if it is
+        // needed, a `FetchDebtorInfo` task gets created.
+        await storeAccountInfoRecord(records.accountInfoRecord)
 
-        // TODO: Do a AccountKnowledge/AccountInfo comparison here,
-        // and create an AckAccountInfoAction if necessary.
+        oldAccountUris.delete(account.uri)
       }
       for (const accountUri of oldAccountUris.keys()) {
         await deleteAccount(accountUri)
