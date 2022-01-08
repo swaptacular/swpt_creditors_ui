@@ -98,17 +98,13 @@ export async function verifyAccountKnowledge(accountUri: string, debtorData?: De
     const account = await db.accounts.get(accountUri)
     if (account) {
       const display = await db.accountObjects.get(account.display.uri)
-      if (display) {
-        assert(display.type === 'AccountDisplay')
-        if (display.debtorName !== undefined) {
-          const info = await db.accountObjects.get(account.info.uri)
-          const knowledge = await db.accountObjects.get(account.knowledge.uri)
-          if (info && knowledge) {
-            assert(info.type === 'AccountInfo')
-            assert(knowledge.type === 'AccountKnowledge')
-            await addAckAccountInfoActionIfNecessary(info, knowledge, debtorData)
-          }
-        }
+      assert(display && display.type === 'AccountDisplay')
+      if (display.debtorName !== undefined) {
+        const info = await db.accountObjects.get(account.info.uri)
+        const knowledge = await db.accountObjects.get(account.knowledge.uri)
+        assert(info && info.type === 'AccountInfo')
+        assert(knowledge && knowledge.type === 'AccountKnowledge')
+        await addAckAccountInfoActionIfNecessary(info, knowledge, debtorData)
       }
     }
   })
