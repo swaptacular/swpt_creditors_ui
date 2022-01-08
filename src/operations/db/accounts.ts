@@ -7,7 +7,7 @@ import type {
 
 import { Dexie } from 'dexie'
 import { db } from './schema'
-import { removeActionRecord } from './actions'
+import { removeActionRecord, verifyAccountKnowledge } from './actions'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {
@@ -119,7 +119,7 @@ export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord
 }
 
 export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {
-  await db.transaction('rw', [db.accountObjects, db.tasks], async () => {
+  await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents, db.tasks], async () => {
     let newIri = record.debtorInfo?.iri
     const accountUri = record.account.uri
     const accountObjectUri = record.uri
@@ -149,5 +149,6 @@ export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise
       })
     }
     await db.accountObjects.put(record)
+    await verifyAccountKnowledge(accountUri)
   })
 }

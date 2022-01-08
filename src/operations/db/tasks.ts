@@ -2,6 +2,7 @@ import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './sc
 import { Dexie } from 'dexie'
 import { db } from './schema'
 import { putDocumentRecord } from './users'
+import { verifyAccountKnowledge } from './actions'
 import { postAccountsMapMessage } from './accounts-map'
 
 const MAX_INT64 = (1n << 63n) - 1n
@@ -22,9 +23,9 @@ export async function settleFetchDebtorInfoTask(
   task: FetchDebtorInfoTask & TaskRecordWithId,
   debtorInfoDocument?: DocumentRecord,
 ): Promise<void> {
-  let { taskId, backoffSeconds } = task
+  let { taskId, backoffSeconds, accountUri } = task
   if (debtorInfoDocument) {
-    await db.transaction('rw', [db.documents, db.tasks], async () => {
+    await db.transaction('rw', db.allTables, async () => {
       if (await putDocumentRecord(debtorInfoDocument)) {
         postAccountsMapMessage({
           deleted: false,
@@ -32,6 +33,7 @@ export async function settleFetchDebtorInfoTask(
         })
       }
       await db.tasks.delete(taskId)
+      await verifyAccountKnowledge(accountUri)
     })
   } else {
     await db.tasks.where({ taskId }).modify(task => {
