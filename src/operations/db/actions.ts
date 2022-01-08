@@ -122,59 +122,59 @@ async function addAckAccountInfoActionIfNecessary(
       .where({ accountUri })
       .filter(action => action.actionType === 'AckAccountInfo')
       .count() > 0
-    if (!hasAckAccountInfoAction) {
-      let changes = {
-        configError: info.configError !== knowledge.configError,
-        interestRate: info.interestRate !== undefined && (
-          info.interestRate !== (knowledge.interestRate ?? 0) || (
-            info.interestRateChangedAt !== undefined &&
-            info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
-          )
-        ),
-        latestDebtorInfo: false,
-        willNotChangeUntil: false,
-        summary: false,
-        debtorName: false,
-        debtorHomepage: false,
-        amountDivisor: false,
-        decimalPlaces: false,
-        unit: false,
-        peg: false,
-      }
-      debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData
-      if (debtorData) {
-        const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-        changes.latestDebtorInfo = debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
-        changes.willNotChangeUntil = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
-        changes.summary = debtorData.summary !== knownData.summary
-        changes.debtorName = debtorData.debtorName !== knownData.debtorName
-        changes.debtorHomepage = debtorData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
-        changes.amountDivisor = debtorData.amountDivisor !== knownData.amountDivisor
-        changes.decimalPlaces = debtorData.decimalPlaces !== knownData.decimalPlaces
-        changes.unit = debtorData.unit !== knownData.unit
-        changes.peg = debtorData.peg !== knownData.peg
-      }
-      const hasChanges = (
-        changes.interestRate || changes.configError || changes.latestDebtorInfo ||
-        changes.willNotChangeUntil || changes.summary || changes.debtorName ||
-        changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
-        changes.unit || changes.peg
-      )
-      if (hasChanges) {
-        await db.actions.add({
-          userId: info.userId,
-          actionType: 'AckAccountInfo',
-          createdAt: new Date(),
-          knowledgeUpdateId: knowledge.latestUpdateId,
-          debtorData,
-          interestRate: info.interestRate,
-          interestRateChangedAt: info.interestRateChangedAt,
-          configError: info.configError,
-          acknowledged: false,
-          accountUri,
-          changes,
-        })
-      }
+    if (hasAckAccountInfoAction) {
+      return 
+    }
+    let changes = {
+      configError: info.configError !== knowledge.configError,
+      interestRate: info.interestRate !== undefined && (
+        info.interestRate !== (knowledge.interestRate ?? 0) || (
+          info.interestRateChangedAt !== undefined &&
+          info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
+        )
+      ),
+      latestDebtorInfo: false,
+      willNotChangeUntil: false,
+      summary: false,
+      debtorName: false,
+      debtorHomepage: false,
+      amountDivisor: false,
+      decimalPlaces: false,
+      unit: false,
+      peg: false,
+    }
+    if (debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData) {
+      const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+      changes.latestDebtorInfo = debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
+      changes.willNotChangeUntil = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
+      changes.summary = debtorData.summary !== knownData.summary
+      changes.debtorName = debtorData.debtorName !== knownData.debtorName
+      changes.debtorHomepage = debtorData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
+      changes.amountDivisor = debtorData.amountDivisor !== knownData.amountDivisor
+      changes.decimalPlaces = debtorData.decimalPlaces !== knownData.decimalPlaces
+      changes.unit = debtorData.unit !== knownData.unit
+      changes.peg = debtorData.peg !== knownData.peg
+    }
+    const hasChanges = (
+      changes.interestRate || changes.configError || changes.latestDebtorInfo ||
+      changes.willNotChangeUntil || changes.summary || changes.debtorName ||
+      changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
+      changes.unit || changes.peg
+    )
+    if (hasChanges) {
+      await db.actions.add({
+        userId: info.userId,
+        actionType: 'AckAccountInfo',
+        createdAt: new Date(),
+        knowledgeUpdateId: knowledge.latestUpdateId,
+        debtorData,
+        interestRate: info.interestRate,
+        interestRateChangedAt: info.interestRateChangedAt,
+        configError: info.configError,
+        acknowledged: false,
+        accountUri,
+        changes,
+      })
     }
   })
 }
