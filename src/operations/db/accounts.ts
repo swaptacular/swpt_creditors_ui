@@ -103,6 +103,7 @@ export function splitIntoRecords(userId: number, account: AccountV0): {
 
 export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord): Promise<void> {
   await db.transaction('rw', db.allTables, async () => {
+    await db.accountObjects.put(record)
     const ackAccountInfoActions = await db.actions
       .where({ accountUri: record.account.uri })
       .filter(action => action.actionType === 'AckAccountInfo')
@@ -114,7 +115,6 @@ export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord
       assert(action.actionId !== undefined)
       await removeActionRecord(action.actionId)
     }
-    await db.accountObjects.put(record)
   })
 }
 
