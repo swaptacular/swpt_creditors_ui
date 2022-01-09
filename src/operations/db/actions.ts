@@ -95,36 +95,35 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
 
 export async function verifyAccountKnowledge(accountUri: string, debtorData?: DebtorData): Promise<void> {
   await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
-    const account = await db.accounts.get(accountUri)
-    if (account) {
-      const display = await db.accountObjects.get(account.display.uri)
-      assert(display && display.type === 'AccountDisplay')
-      if (display.debtorName !== undefined) {
-        const info = await db.accountObjects.get(account.info.uri)
-        const knowledge = await db.accountObjects.get(account.knowledge.uri)
-        assert(info && info.type === 'AccountInfo')
-        assert(knowledge && knowledge.type === 'AccountKnowledge')
-        await addAckAccountInfoActionIfNecessary(info, knowledge, debtorData)
+    const hasAckAccountInfoAction = await db.actions
+      .where({ accountUri })
+      .filter(action => action.actionType === 'AckAccountInfo')
+      .count() > 0
+    if (!hasAckAccountInfoAction) {
+      const account = await db.accounts.get(accountUri)
+      if (account) {
+        const display = await db.accountObjects.get(account.display.uri)
+        assert(display && display.type === 'AccountDisplay')
+        if (display.debtorName !== undefined) {
+          const info = await db.accountObjects.get(account.info.uri)
+          const knowledge = await db.accountObjects.get(account.knowledge.uri)
+          assert(info && info.type === 'AccountInfo')
+          assert(knowledge && knowledge.type === 'AccountKnowledge')
+          await addAckAccountInfoActionIfThereAreChanges(info, knowledge, debtorData)
+        }
       }
     }
   })
 }
 
-async function addAckAccountInfoActionIfNecessary(
+async function addAckAccountInfoActionIfThereAreChanges(
   info: AccountInfoRecord,
   knowledge: AccountKnowledgeRecord,
   debtorData?: DebtorData,
 ): Promise<void> {
-  await db.transaction('rw', [db.actions], async () => {
+  await db.transaction('rw', [db.actions, db.documents], async () => {
     assert(info.account.uri === knowledge.account.uri)
     const accountUri = info.account.uri
-    const hasAckAccountInfoAction = await db.actions
-      .where({ accountUri })
-      .filter(action => action.actionType === 'AckAccountInfo')
-      .count() > 0
-    if (hasAckAccountInfoAction) {
-      return 
-    }
     let changes = {
       configError: info.configError !== knowledge.configError,
       interestRate: info.interestRate !== undefined && (
