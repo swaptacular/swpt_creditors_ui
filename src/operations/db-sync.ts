@@ -99,16 +99,18 @@ export async function storeObject(
       // possible version for the received ledger record.
       records.accountLedgerRecord.latestUpdateId = 1n
 
-      // NOTE: In the following sequence, the `AccountInfo` record
-      // must be revised (updated) before the `AccountKnowledge`
-      // record.
-      await reviseLogObjectRecord(records.accountLedgerRecord)
-      await reviseLogObjectRecord(records.accountInfoRecord)
-      await reviseLogObjectRecord(records.accountDisplayRecord)
-      await reviseLogObjectRecord(records.accountKnowledgeRecord)
-      await reviseLogObjectRecord(records.accountExchangeRecord)
-      await reviseLogObjectRecord(records.accountConfigRecord)
-      await reviseLogObjectRecord(records.accountRecord)
+      await db.transaction('rw', db.allTables, async (): Promise<void> => {
+        // NOTE: In the following sequence, the `AccountInfo` record
+        // must be revised (updated) before the `AccountKnowledge`
+        // record.
+        await reviseLogObjectRecord(records.accountLedgerRecord)
+        await reviseLogObjectRecord(records.accountInfoRecord)
+        await reviseLogObjectRecord(records.accountDisplayRecord)
+        await reviseLogObjectRecord(records.accountKnowledgeRecord)
+        await reviseLogObjectRecord(records.accountExchangeRecord)
+        await reviseLogObjectRecord(records.accountConfigRecord)
+        await reviseLogObjectRecord(records.accountRecord)
+      })
       break
     default:
       await reviseLogObjectRecord({ ...obj, userId })
