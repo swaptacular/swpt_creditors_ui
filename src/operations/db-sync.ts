@@ -17,7 +17,7 @@ import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
   resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
-  postAccountsMapMessage
+  postAccountsMapMessage, verifyAccountKnowledge
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -804,8 +804,18 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
       postAccountsMapMessage({ deleted: false, object: record })
       break
 
-    case 'AccountConfig':
     case 'AccountDisplay':
+      if (existingRecord) {
+        assert(existingRecord.type === record.type)
+        assert(existingRecord.userId === record.userId)
+        assert(existingRecord.account.uri === record.account.uri)
+      }
+      await db.accountObjects.put(record)
+      await verifyAccountKnowledge(record.uri)
+      postAccountsMapMessage({ deleted: false, object: record })
+      break
+
+    case 'AccountConfig':
     case 'AccountExchange':
     case 'AccountLedger':
       if (existingRecord) {
@@ -831,6 +841,7 @@ async function storeLogObjectRecord(record: LogObjectRecord, existingRecord?: Lo
         assert(existingRecord.config.uri === record.config.uri)
       }
       await db.accounts.put(record)
+      await verifyAccountKnowledge(record.uri)
       postAccountsMapMessage({ deleted: false, object: record })
       break
 
