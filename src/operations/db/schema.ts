@@ -197,7 +197,9 @@ export type DebtorDataSource = 'info' | 'knowledge' | 'uri'
 //
 // * If the pegs described in
 //   `account.AccountKnowledge.debtorData.peg`, and the
-//   `debtorData.peg` field differ, and the old peg is set in the
+//   `debtorData.peg` field *actually* differ (Note that peg's
+//   latestDebtorInfo.uri field can change without actually changing
+//   the peg.), and the old peg is set in the
 //   `account.AccountExchange` record, remove it.
 //
 // * Set `acknowledged` to true (and commit).
