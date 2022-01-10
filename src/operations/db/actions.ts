@@ -153,7 +153,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
       changes.amountDivisor = newData.amountDivisor !== knownData.amountDivisor
       changes.decimalPlaces = newData.decimalPlaces !== knownData.decimalPlaces
       changes.unit = newData.unit !== knownData.unit
-      changes.peg = newData.peg !== knownData.peg
+      changes.peg = !equal(newData.peg, knownData.peg)
       changes.otherChanges = newData.willNotChangeUntil !== knownData.willNotChangeUntil
     }
     const thereAreChanges = (
