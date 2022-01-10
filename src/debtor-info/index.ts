@@ -122,7 +122,7 @@ export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<
  "application/vnd.swaptacular.coin-info+json". An `InvalidDocument`
  error will be thrown if the document can not be parsed.
 */
-export async function parseDebtorInfoDocument(document: Document): Promise<DebtorData> {
+export function parseDebtorInfoDocument(document: Document): DebtorData {
   if (document.contentType !== MIME_TYPE_COIN_INFO) {
     throw new InvalidDocument('unknown content type')
   }

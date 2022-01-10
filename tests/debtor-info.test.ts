@@ -50,25 +50,25 @@ test("Parse CoinInfo document", async () => {
     contentType: MIME_TYPE_COIN_INFO,
     content: (new TextEncoder()).encode(text),
   }
-  const parsed = await parseDebtorInfoDocument(document)
+  const parsed = parseDebtorInfoDocument(document)
   expect(parsed.revision).toEqual(0n)
   expect(parsed.willNotChangeUntil).toBeUndefined()
 
   // wrong MIME type
-  expect(parseDebtorInfoDocument({ ...document, contentType: 'text/unknown' }))
-    .rejects.toBeInstanceOf(InvalidDocument)
+  expect(() => parseDebtorInfoDocument({ ...document, contentType: 'text/unknown' }))
+    .toThrow(InvalidDocument)
 
   // failed schema validation
-  expect(parseDebtorInfoDocument({ ...document, content: (new TextEncoder()).encode('{}') }))
-    .rejects.toBeInstanceOf(InvalidDocument)
+  expect(() => parseDebtorInfoDocument({ ...document, content: (new TextEncoder()).encode('{}') }))
+    .toThrow(InvalidDocument)
 
   // too big
-  expect(parseDebtorInfoDocument({ ...document, content: (new TextEncoder()).encode(text + ' '.repeat(10_000_000)) }))
-    .rejects.toBeInstanceOf(InvalidDocument)
+  expect(() => parseDebtorInfoDocument({ ...document, content: (new TextEncoder()).encode(text + ' '.repeat(10_000_000)) }))
+    .toThrow(InvalidDocument)
 
   // invalid UTF-8 encoding
-  expect(parseDebtorInfoDocument({ ...document, content: Int8Array.from([200]) }))
-    .rejects.toBeInstanceOf(InvalidDocument)
+  expect(() => parseDebtorInfoDocument({ ...document, content: Int8Array.from([200]) }))
+    .toThrow(InvalidDocument)
 })
 
 test("Generate and parse CoinInfo document", async () => {
@@ -97,5 +97,5 @@ test("Generate and parse CoinInfo document", async () => {
     .rejects.toBeInstanceOf(InvalidDocument)
   const document = await generateCoinInfoDocument(debtorData)
   const { unknownProp, ...noUnknownProps } = debtorData
-  await expect(parseDebtorInfoDocument(document)).resolves.toEqual(noUnknownProps)
+  expect(parseDebtorInfoDocument(document)).toEqual(noUnknownProps)
 })

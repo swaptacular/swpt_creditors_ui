@@ -259,7 +259,7 @@ export class UserContext {
         // user will have to simply retry the action.
         throw new DocumentFetchError()
       }
-      const debtorData = { ...await parseDebtorInfoDocument(document) }
+      const debtorData = { ...parseDebtorInfoDocument(document) }
       if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
         throw new InvalidDocument('wrong SHA256 value')
       }

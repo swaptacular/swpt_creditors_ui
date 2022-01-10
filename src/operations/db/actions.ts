@@ -191,7 +191,7 @@ async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promi
     document.contentType === (debtorInfo.contentType ?? document.contentType)
   ) {
     try {
-      debtorData = await parseDebtorInfoDocument(document)
+      debtorData = parseDebtorInfoDocument(document)
     } catch (e: unknown) {
       if (e instanceof InvalidDocument) { /* ignore */ }
       else throw e
