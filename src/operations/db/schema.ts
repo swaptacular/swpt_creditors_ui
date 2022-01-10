@@ -244,9 +244,9 @@ export type AckAccountInfoAction =
     configError?: string,
     acknowledged: boolean,
     changes: {
+      configError: boolean,
       interestRate: boolean,
       latestDebtorInfo: boolean,
-      willNotChangeUntil: boolean,
       debtorName: boolean,
       debtorHomepage: boolean,
       summary: boolean,
@@ -254,7 +254,7 @@ export type AckAccountInfoAction =
       decimalPlaces: boolean,
       unit: boolean,
       peg: boolean,
-      configError: boolean,
+      otherChanges: boolean,
     },
   }
 

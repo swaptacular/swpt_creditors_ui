@@ -137,7 +137,6 @@ async function addAckAccountInfoActionIfThereAreChanges(
         )
       ),
       latestDebtorInfo: false,
-      willNotChangeUntil: false,
       summary: false,
       debtorName: false,
       debtorHomepage: false,
@@ -145,12 +144,12 @@ async function addAckAccountInfoActionIfThereAreChanges(
       decimalPlaces: false,
       unit: false,
       peg: false,
+      otherChanges: false,
     }
     const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
     let newData: BaseDebtorData
     if (debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData) {
       changes.latestDebtorInfo = debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
-      changes.willNotChangeUntil = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
       changes.summary = debtorData.summary !== knownData.summary
       changes.debtorName = debtorData.debtorName !== knownData.debtorName
       changes.debtorHomepage = debtorData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
@@ -158,15 +157,16 @@ async function addAckAccountInfoActionIfThereAreChanges(
       changes.decimalPlaces = debtorData.decimalPlaces !== knownData.decimalPlaces
       changes.unit = debtorData.unit !== knownData.unit
       changes.peg = debtorData.peg !== knownData.peg
+      changes.otherChanges = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
       newData = debtorData
     } else {
       newData = knownData
     }
     const hasChanges = (
-      changes.interestRate || changes.configError || changes.latestDebtorInfo ||
-      changes.willNotChangeUntil || changes.summary || changes.debtorName ||
+      changes.configError || changes.interestRate ||
+      changes.latestDebtorInfo || changes.summary || changes.debtorName ||
       changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
-      changes.unit || changes.peg
+      changes.unit || changes.peg || changes.otherChanges
     )
     if (hasChanges) {
       await db.actions.add({
