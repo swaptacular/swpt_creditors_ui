@@ -123,19 +123,16 @@ export async function verifyAccountKnowledge(accountUri: string, debtorData?: De
 async function addAckAccountInfoActionIfThereAreChanges(
   info: AccountInfoRecord,
   knowledge: AccountKnowledgeRecord,
-  debtorData?: DebtorData,
+  newData?: DebtorData,
 ): Promise<void> {
   await db.transaction('rw', [db.actions, db.documents], async () => {
     assert(info.account.uri === knowledge.account.uri)
-    const accountUri = info.account.uri
     let changes = {
       configError: info.configError !== knowledge.configError,
-      interestRate: info.interestRate !== undefined && (
-        info.interestRate !== (knowledge.interestRate ?? 0) || (
-          info.interestRateChangedAt !== undefined &&
-          info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
-        )
-      ),
+      interestRate: info.interestRate !== undefined && (info.interestRate !== (knowledge.interestRate ?? 0) || (
+        info.interestRateChangedAt !== undefined &&
+        info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
+      )),
       latestDebtorInfo: false,
       summary: false,
       debtorName: false,
@@ -147,39 +144,36 @@ async function addAckAccountInfoActionIfThereAreChanges(
       otherChanges: false,
     }
     const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    let newData: BaseDebtorData
-    if (debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData) {
-      changes.latestDebtorInfo = debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
-      changes.summary = debtorData.summary !== knownData.summary
-      changes.debtorName = debtorData.debtorName !== knownData.debtorName
-      changes.debtorHomepage = debtorData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
-      changes.amountDivisor = debtorData.amountDivisor !== knownData.amountDivisor
-      changes.decimalPlaces = debtorData.decimalPlaces !== knownData.decimalPlaces
-      changes.unit = debtorData.unit !== knownData.unit
-      changes.peg = debtorData.peg !== knownData.peg
-      changes.otherChanges = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
-      newData = debtorData
-    } else {
-      newData = knownData
+    newData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : newData
+    if (newData) {
+      changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
+      changes.summary = newData.summary !== knownData.summary
+      changes.debtorName = newData.debtorName !== knownData.debtorName
+      changes.debtorHomepage = newData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
+      changes.amountDivisor = newData.amountDivisor !== knownData.amountDivisor
+      changes.decimalPlaces = newData.decimalPlaces !== knownData.decimalPlaces
+      changes.unit = newData.unit !== knownData.unit
+      changes.peg = newData.peg !== knownData.peg
+      changes.otherChanges = newData.willNotChangeUntil !== knownData.willNotChangeUntil
     }
-    const hasChanges = (
+    const thereAreChanges = (
       changes.configError || changes.interestRate ||
       changes.latestDebtorInfo || changes.summary || changes.debtorName ||
       changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
       changes.unit || changes.peg || changes.otherChanges
     )
-    if (hasChanges) {
+    if (thereAreChanges) {
       await db.actions.add({
         userId: info.userId,
         actionType: 'AckAccountInfo',
         createdAt: new Date(),
         knowledgeUpdateId: knowledge.latestUpdateId,
-        debtorData: newData,
+        debtorData: newData ?? knownData,
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,
         acknowledged: false,
-        accountUri,
+        accountUri: info.account.uri,
         changes,
       })
     }
