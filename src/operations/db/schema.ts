@@ -240,7 +240,7 @@ export type AckAccountInfoAction =
     knowledgeUpdateId: bigint,
     interestRate: number,
     interestRateChangedAt: string,
-    debtorData?: BaseDebtorData,
+    debtorData: BaseDebtorData,
     configError?: string,
     acknowledged: boolean,
     changes: {

@@ -146,8 +146,9 @@ async function addAckAccountInfoActionIfThereAreChanges(
       unit: false,
       peg: false,
     }
+    const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+    let newData: BaseDebtorData
     if (debtorData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : debtorData) {
-      const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
       changes.latestDebtorInfo = debtorData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
       changes.willNotChangeUntil = debtorData.willNotChangeUntil !== knownData.willNotChangeUntil
       changes.summary = debtorData.summary !== knownData.summary
@@ -157,6 +158,9 @@ async function addAckAccountInfoActionIfThereAreChanges(
       changes.decimalPlaces = debtorData.decimalPlaces !== knownData.decimalPlaces
       changes.unit = debtorData.unit !== knownData.unit
       changes.peg = debtorData.peg !== knownData.peg
+      newData = debtorData
+    } else {
+      newData = knownData
     }
     const hasChanges = (
       changes.interestRate || changes.configError || changes.latestDebtorInfo ||
@@ -170,7 +174,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         actionType: 'AckAccountInfo',
         createdAt: new Date(),
         knowledgeUpdateId: knowledge.latestUpdateId,
-        debtorData,
+        debtorData: newData,
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,
