@@ -1,7 +1,7 @@
 import type {
   ActionRecord, ActionRecordWithId, ListQueryOptions, AccountKnowledgeRecord, AccountInfoRecord,
 } from './schema'
-import type { DebtorInfoV0 } from '../canonical-objects'
+import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
 import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
 import { Dexie } from 'dexie'
@@ -180,25 +180,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
   })
 }
 
-async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
-  let debtorData
-  const document = await getDocumentRecord(debtorInfo.iri)
-  if (
-    document &&
-    document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
-    document.contentType === (debtorInfo.contentType ?? document.contentType)
-  ) {
-    try {
-      debtorData = parseDebtorInfoDocument(document)
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { /* ignore */ }
-      else throw e
-    }
-  }
-  return debtorData
-}
-
-function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeRecord): BaseDebtorData {
+export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0): BaseDebtorData {
   if (knowledge.debtorData) {
     try {
       // To ensure that the contained data is valid, we try to
@@ -223,4 +205,22 @@ function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeRecord)
     decimalPlaces: 0n,
     unit: '\u00A4',
   }
+}
+
+async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
+  let debtorData
+  const document = await getDocumentRecord(debtorInfo.iri)
+  if (
+    document &&
+    document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
+    document.contentType === (debtorInfo.contentType ?? document.contentType)
+  ) {
+    try {
+      debtorData = parseDebtorInfoDocument(document)
+    } catch (e: unknown) {
+      if (e instanceof InvalidDocument) { /* ignore */ }
+      else throw e
+    }
+  }
+  return debtorData
 }

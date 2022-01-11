@@ -3,9 +3,8 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, DebtorDataSource
 } from './db'
-import type { DebtorInfoV0, AccountV0 } from './canonical-objects'
+import type { AccountV0 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
-import type { BaseDebtorData } from '../debtor-info'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -15,8 +14,7 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
-  putDocumentRecord
+  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -24,12 +22,11 @@ import {
 import { makePinInfo, makeAccount } from './canonical-objects'
 import {
   calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
-  getBaseDebtorDataFromAccoutKnowledge
+  obtainBaseDebtorData
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
-import { parseDebtorInfoDocument, InvalidDocument } from '../debtor-info'
 
 export {
   RecordDoesNotExist,
@@ -39,6 +36,7 @@ export {
   DocumentFetchError,
   AuthenticationError,
   ServerSessionError,
+  obtainBaseDebtorData,
   IS_A_NEWBIE_KEY,
 }
 
@@ -242,53 +240,6 @@ export class UserContext {
     const account = makeAccount(response)
     await storeObject(this.userId, account)
     return account
-  }
-
-  /* Obtain and return debtor's data. The caller must be prepared this
-   * method to throw `InvalidDocument` or `DocumentFetchError` */
-  async obtainBaseDebtorData(
-    account: AccountV0,
-    latestDebtorInfoUri: string,
-    preferInfoOverKnowledge: boolean = false,
-  ): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource }> {
-    const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<BaseDebtorData> => {
-      const document = await fetchDebtorInfoDocument(debtorInfo.iri)
-      if (!await putDocumentRecord(document)) {
-        // This could happen if an extremely unusual (but still
-        // possible) race condition had occurred. In this case the
-        // user will have to simply retry the action.
-        throw new DocumentFetchError()
-      }
-      const debtorData = { ...parseDebtorInfoDocument(document) }
-      if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
-        throw new InvalidDocument('wrong SHA256 value')
-      }
-      if (debtorInfo.contentType !== undefined && document.contentType !== debtorInfo.contentType) {
-        throw new InvalidDocument('wrong content type')
-      }
-      if (debtorData.debtorIdentity.uri !== account.debtor.uri) {
-        throw new InvalidDocument('wrong debtor identity')
-      }
-      return debtorData
-    }
-
-    // Find the most reliable source of information about the debtor.
-    if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
-      return {
-        debtorData: getBaseDebtorDataFromAccoutKnowledge(account),
-        debtorDataSource: 'knowledge',
-      }
-    } else if (account.info.debtorInfo) {
-      return {
-        debtorData: await getFromDebtorInfo(account.info.debtorInfo),
-        debtorDataSource: 'info',
-      }
-    } else {
-      return {
-        debtorData: await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
-        debtorDataSource: 'uri',
-      }
-    }
   }
 
   /* Reads a payment request, and adds and returns a new
