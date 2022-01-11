@@ -8,8 +8,7 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  obtainBaseDebtorData
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -222,7 +221,7 @@ export class AppState {
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
       const { debtorData, debtorDataSource } = action.state?.debtorData ?
-        action.state : await obtainBaseDebtorData(account, latestDebtorInfoUri)
+        action.state : await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
       if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }

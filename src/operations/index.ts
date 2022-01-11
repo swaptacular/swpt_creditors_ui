@@ -36,7 +36,6 @@ export {
   DocumentFetchError,
   AuthenticationError,
   ServerSessionError,
-  obtainBaseDebtorData,
   IS_A_NEWBIE_KEY,
 }
 
@@ -147,6 +146,7 @@ export class UserContext {
   readonly getActionRecords: (options?: ListQueryOptions) => Promise<ActionRecordWithId[]>
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
+  readonly obtainBaseDebtorData = obtainBaseDebtorData
 
   constructor(
     server: ServerSession,
