@@ -8,7 +8,8 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
+  InvalidActionState
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -81,17 +82,19 @@ export type ActionsModel = BasePageModel & {
   scrollLeft?: number,
 }
 
+export type CreateAccountActionData = {
+  account: AccountV0,
+  debtorData: BaseDebtorData,
+  debtorDataSource: DebtorDataSource,
+  unit: string,
+  amountDivisor: number,
+  decimalPlaces: bigint,
+}
+
 export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
   action: CreateAccountActionWithId,
-  data?: {
-    account: AccountV0,
-    debtorData: BaseDebtorData,
-    debtorDataSource: DebtorDataSource,
-    unit: string,
-    amountDivisor: number,
-    decimalPlaces: bigint,
-  }
+  data?: CreateAccountActionData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -140,7 +143,7 @@ export class AppState {
       await executeCallbackAfterUpdate()
     }, {
       alerts: [
-        [AuthenticationError, () => {}],
+        [AuthenticationError, () => { }],
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
       ],
     })
@@ -286,7 +289,14 @@ export class AppState {
         }
       }
       await initializeActionStateIfNecessary(data)
-      if (this.interactionId === interactionId) {
+      if (action.state?.initializationInProgress && data?.account.display.debtorName !== undefined) {
+        // It looks like the procedure to initialize a new account has
+        // been started, the `debtorName` has been set, but then
+        // something went wrong, and the action record has not been
+        // removed. Here we try to automatically recover from the
+        // supposed crash.
+        await this.finishAccountInitialization(action)
+      } else if (this.interactionId === interactionId) {
         snowData(data)
       }
     }, {
@@ -295,6 +305,22 @@ export class AppState {
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
       ],
     })
+  }
+
+  confirmCreateAccountAction(
+    actionManager: ActionManager<CreateAccountActionWithId>,
+    data: CreateAccountActionData,
+  ): Promise<void> {
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+    const isNewAccount = data.account.display.debtorName === undefined
+    if (isNewAccount) {
+      return this.initializeNewAccount(action, data, saveActionPromise)
+    } if (action.state?.initializationInProgress) {
+      return this.finishAccountInitialization(action)  // TODO: Use this.attempt?
+    } else {
+      return this.reviseKnownAccount(action, data, saveActionPromise)
+    }
   }
 
   showAccounts(): Promise<void> {
@@ -488,6 +514,95 @@ export class AppState {
     }
   }
 
+  private reviseKnownAccount(
+    action: CreateAccountActionWithId,
+    data: CreateAccountActionData,
+    prepare: Promise<void> = Promise.resolve(),
+  ): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      assert(action.state)
+      assert(!action.state.initializationInProgress && data.account.display.debtorName !== undefined)
+      await prepare
+
+      // TODO:
+      //
+      // a) If changed, update `AccountDisplay.debtorName`. If
+      //    `AccountDisplay.knownDebtor` is false, set it to true.
+      //
+      // b) If changed, update `AccountConfig.negligibleAmount`. If
+      //    `AccountConfig.scheduledForDeletion` is true, set it to
+      //    false.
+      //
+
+      await this.uc.replaceActionRecord(action, null)
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [InvalidActionState, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)]
+      ],
+    })
+  }
+
+  private initializeNewAccount(
+    action: CreateAccountActionWithId,
+    data: CreateAccountActionData,
+    prepare: Promise<void> = Promise.resolve(),
+  ): Promise<void> {
+    const startAccountInitialization = async () => {
+      assert(action.state)
+      await this.uc.replaceActionRecord(action, action = {
+        ...action,
+        state: {
+          ...action.state,
+          initializationInProgress: true,
+        },
+      })
+    }
+
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      assert(action.state)
+      assert(data.account.display.debtorName === undefined)
+      await prepare
+      await startAccountInitialization()
+
+      // TODO:
+      //
+      // b) Initialize account's AccountKnowledge.
+      //
+      // c) Initialize account's `AccountConfig (including
+      //    `negligibleAmount` and `scheduledForDeletion` = false).
+      //
+      // d) Initialize account's AccountDisplay (including the
+      //   `debtorName` field, setting `knownDebtor to true).
+
+      await this.finishAccountInitialization(action)
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [InvalidActionState, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)]
+      ],
+    })
+  }
+
+  private async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
+    assert(action.state)
+    if (action.state.debtorData.peg) {
+      // TODO: Create an ApprovePegAction for the peg, and delete
+      // the create account action. (We may need to ensure that the
+      // currency is not pegged to itself.)
+    }
+    await this.uc.replaceActionRecord(action, null)
+  }
 }
 
 /* Returns a promise for an object that satisfies Svelte's store

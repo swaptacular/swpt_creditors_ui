@@ -14,7 +14,8 @@ import {
 } from './server'
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
-  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord
+  createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
+  InvalidActionState
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -29,6 +30,7 @@ import {
 } from '../payment-requests'
 
 export {
+  InvalidActionState,
   RecordDoesNotExist,
   IvalidPaymentRequest,
   IvalidPaymentData,

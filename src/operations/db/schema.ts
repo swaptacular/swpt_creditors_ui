@@ -12,6 +12,10 @@ export class RecordDoesNotExist extends Error {
   name = 'RecordDoesNotExist'
 }
 
+export class InvalidActionState extends Error {
+  name = 'InvalidActionState'
+}
+
 export type ListQueryOptions = {
   before?: number,
   after?: number,

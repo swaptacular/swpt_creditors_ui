@@ -54,7 +54,8 @@
     if (invalid) {
       shakeForm()
     } else {
-      // TODO
+      assert(data !== undefined)
+      app.confirmCreateAccountAction(actionManager, data)
     }
   }
 
