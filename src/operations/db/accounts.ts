@@ -7,7 +7,8 @@ import type {
 
 import { Dexie } from 'dexie'
 import { db } from './schema'
-import { removeActionRecord, verifyAccountKnowledge } from './actions'
+import { verifyAccountKnowledge } from './users'
+import { removeActionRecord } from './actions'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {

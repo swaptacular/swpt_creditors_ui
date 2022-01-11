@@ -1,15 +1,10 @@
-import type {
-  ActionRecord, ActionRecordWithId, ListQueryOptions, AccountKnowledgeRecord, AccountInfoRecord,
-} from './schema'
-import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
-import type { DebtorData, BaseDebtorData } from '../../debtor-info'
+import type { ActionRecord, ActionRecordWithId, ListQueryOptions } from './schema'
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser, getDocumentRecord } from './users'
+import { UserDoesNotExist, isInstalledUser, verifyAccountKnowledge } from './users'
 import { abortTransfer } from './transfers'
-import { parseDebtorInfoDocument, serializeDebtorData, InvalidDocument } from '../../debtor-info'
 
 export async function getActionRecords(userId: number, options: ListQueryOptions = {}): Promise<ActionRecordWithId[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
@@ -91,136 +86,4 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
       }
     }
   })
-}
-
-export async function verifyAccountKnowledge(accountUri: string, debtorData?: DebtorData): Promise<void> {
-  await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
-    const hasAckAccountInfoAction = await db.actions
-      .where({ accountUri })
-      .filter(action => action.actionType === 'AckAccountInfo')
-      .count() > 0
-    if (!hasAckAccountInfoAction) {
-      const account = await db.accounts.get(accountUri)
-      if (account) {
-        const display = await db.accountObjects.get(account.display.uri)
-        if (display) {
-          assert(display.type === 'AccountDisplay')
-          if (display.debtorName !== undefined) {
-            const info = await db.accountObjects.get(account.info.uri)
-            const knowledge = await db.accountObjects.get(account.knowledge.uri)
-            if (info && knowledge) {
-              assert(info.type === 'AccountInfo')
-              assert(knowledge.type === 'AccountKnowledge')
-              await addAckAccountInfoActionIfThereAreChanges(info, knowledge, debtorData)
-            }
-          }
-        }
-      }
-    }
-  })
-}
-
-async function addAckAccountInfoActionIfThereAreChanges(
-  info: AccountInfoRecord,
-  knowledge: AccountKnowledgeRecord,
-  newData?: DebtorData,
-): Promise<void> {
-  await db.transaction('rw', [db.actions, db.documents], async () => {
-    assert(info.account.uri === knowledge.account.uri)
-    let changes = {
-      configError: info.configError !== knowledge.configError,
-      interestRate: info.interestRate !== undefined && (info.interestRate !== (knowledge.interestRate ?? 0) || (
-        info.interestRateChangedAt !== undefined &&
-        info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
-      )),
-      latestDebtorInfo: false,
-      summary: false,
-      debtorName: false,
-      debtorHomepage: false,
-      amountDivisor: false,
-      decimalPlaces: false,
-      unit: false,
-      peg: false,
-      otherChanges: false,
-    }
-    const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    newData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : newData
-    if (newData) {
-      changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
-      changes.summary = newData.summary !== knownData.summary
-      changes.debtorName = newData.debtorName !== knownData.debtorName
-      changes.debtorHomepage = newData.debtorHomepage?.uri !== knownData.debtorHomepage?.uri
-      changes.amountDivisor = newData.amountDivisor !== knownData.amountDivisor
-      changes.decimalPlaces = newData.decimalPlaces !== knownData.decimalPlaces
-      changes.unit = newData.unit !== knownData.unit
-      changes.peg = !equal(newData.peg, knownData.peg)
-      changes.otherChanges = newData.willNotChangeUntil !== knownData.willNotChangeUntil
-    }
-    const thereAreChanges = (
-      changes.configError || changes.interestRate ||
-      changes.latestDebtorInfo || changes.summary || changes.debtorName ||
-      changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
-      changes.unit || changes.peg || changes.otherChanges
-    )
-    if (thereAreChanges) {
-      await db.actions.add({
-        userId: info.userId,
-        actionType: 'AckAccountInfo',
-        createdAt: new Date(),
-        knowledgeUpdateId: knowledge.latestUpdateId,
-        debtorData: newData ?? knownData,
-        interestRate: info.interestRate,
-        interestRateChangedAt: info.interestRateChangedAt,
-        configError: info.configError,
-        acknowledged: false,
-        accountUri: info.account.uri,
-        changes,
-      })
-    }
-  })
-}
-
-export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0): BaseDebtorData {
-  if (knowledge.debtorData) {
-    try {
-      // To ensure that the contained data is valid, we try to
-      // serialize it. If an `InvalidDocument` error is thrown, we
-      // return dummy data.
-      serializeDebtorData({
-        ...knowledge.debtorData,
-        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
-        revision: 0n,
-      })
-      return knowledge.debtorData
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { /* ignore */ }
-      throw e
-    }
-  }
-  // Generate a dummy data.
-  return {
-    latestDebtorInfo: { uri: '' },
-    debtorName: 'unknown',
-    amountDivisor: 1,
-    decimalPlaces: 0n,
-    unit: '\u00A4',
-  }
-}
-
-async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
-  let debtorData
-  const document = await getDocumentRecord(debtorInfo.iri)
-  if (
-    document &&
-    document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
-    document.contentType === (debtorInfo.contentType ?? document.contentType)
-  ) {
-    try {
-      debtorData = parseDebtorInfoDocument(document)
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { /* ignore */ }
-      else throw e
-    }
-  }
-  return debtorData
 }

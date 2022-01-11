@@ -1,8 +1,7 @@
 import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './schema'
 import { Dexie } from 'dexie'
 import { db } from './schema'
-import { putDocumentRecord } from './users'
-import { verifyAccountKnowledge } from './actions'
+import { putDocumentRecord, verifyAccountKnowledge } from './users'
 import { postAccountsMapMessage } from './accounts-map'
 
 const MAX_INT64 = (1n << 63n) - 1n
