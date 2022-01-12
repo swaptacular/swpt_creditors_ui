@@ -9,7 +9,8 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
+  WrongPin, ConflictingUpdate
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -26,6 +27,8 @@ export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
   + 'for the correct payment request.'
 
 export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
+
+export const WRONG_PIN_MESSAGE = 'You have entered a wrong PIN.'
 
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
@@ -524,8 +527,11 @@ export class AppState {
     pin: string,
     prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
+    let interactionId: number
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+
     return this.attempt(async () => {
-      const interactionId = this.interactionId
+      interactionId = this.interactionId
       assert(action.state)
       assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
       await prepare
@@ -555,8 +561,10 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -567,6 +575,9 @@ export class AppState {
     pin: string,
     prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
+    let interactionId: number
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+
     const startAccountInitialization = async () => {
       assert(action.state)
       await this.uc.replaceActionRecord(action, action = {
@@ -579,7 +590,7 @@ export class AppState {
     }
 
     return this.attempt(async () => {
-      const interactionId = this.interactionId
+      interactionId = this.interactionId
       const debtorData = data.debtorData
       assert(action.state)
       assert(data.account.display.debtorName === undefined)
@@ -627,8 +638,10 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }
