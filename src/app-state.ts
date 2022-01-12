@@ -8,8 +8,7 @@ import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  InvalidActionState
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -545,7 +544,6 @@ export class AppState {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
-        [InvalidActionState, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)]
       ],
     })
   }
@@ -592,7 +590,6 @@ export class AppState {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
-        [InvalidActionState, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)]
       ],
     })
   }
