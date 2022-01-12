@@ -173,7 +173,7 @@
                     <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
                       {#if data.debtorData.debtorHomepage}
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
-                          <Text><a href={data.debtorData.debtorHomepage.uri} target="_blank" style="text-decoration: none">www</a></Text>
+                          <Text><a href={data.debtorData.debtorHomepage.uri} target="_blank" style="text-decoration: none; color: black">www</a></Text>
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       {/if}
