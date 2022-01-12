@@ -3,7 +3,9 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, DebtorDataSource
 } from './db'
-import type { AccountV0 } from './canonical-objects'
+import type {
+  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
+} from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
 
 import { v4 as uuidv4 } from 'uuid';
@@ -20,7 +22,7 @@ import {
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
-import { makePinInfo, makeAccount } from './canonical-objects'
+import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
   obtainBaseDebtorData
@@ -41,11 +43,21 @@ export {
   IS_A_NEWBIE_KEY,
 }
 
+export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
+
 export type {
   ActionRecordWithId,
   CreateAccountActionWithId,
   AccountV0,
   DebtorDataSource,
+}
+
+export class ConflictingUpdate extends Error {
+  name = 'ConflictingUpdate'
+}
+
+export class WrongPin extends Error {
+  name = 'WrongPin'
 }
 
 /* Logs out the user and redirects to home, never resolves. */
@@ -242,6 +254,24 @@ export class UserContext {
     const account = makeAccount(response)
     await storeObject(this.userId, account)
     return account
+  }
+
+  /* Updates account's config, knowledge, display, or exchange.
+   * Returns the new version. May throw `ConflictingUpdate` or
+   * `WrongPin`. */
+  async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
+    let response
+    try {
+      const { uri, account, latestUpdateAt, ...request } = obj
+      response = await this.server.patch(uri, request, { attemptLogin: true })
+    } catch (e: unknown) {
+      if (e instanceof HttpError && e.status === 409) throw new ConflictingUpdate()
+      else if (e instanceof HttpError && e.status === 403) throw new WrongPin()
+      else throw e
+    }
+    const accountObject = makeLogObject(response) as T
+    await storeObject(this.userId, accountObject)
+    return accountObject
   }
 
   /* Reads a payment request, and adds and returns a new

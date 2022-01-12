@@ -2,6 +2,7 @@ import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
 import type { BaseDebtorData } from './debtor-info'
+import type { AccountDisplayV0, AccountConfigV0, AccountKnowledgeV0 } from './operations/canonical-objects'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -215,6 +216,7 @@ export class AppState {
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
@@ -300,8 +302,8 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -526,15 +528,24 @@ export class AppState {
       assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
       await prepare
 
-      // TODO:
-      //
-      // a) If changed, update `AccountDisplay.debtorName`. If
-      //    `AccountDisplay.knownDebtor` is false, set it to true.
-      //
-      // b) If changed, update `AccountConfig.negligibleAmount`. If
-      //    `AccountConfig.scheduledForDeletion` is true, set it to
-      //    false.
-      //
+      // Update account's display.
+      let display: AccountDisplayV0 = { ...data.account.display, pin }
+      if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
+        display.knownDebtor = true
+        display.debtorName = action.state.editedDebtorName
+        display.latestUpdateId++
+        await this.uc.updateAccountObject(display)
+      }
+
+      // Update account's config.
+      let config: AccountConfigV0 = { ...data.account.config, pin }
+      const negligibleAmount = Number(action.state.editedNegligibleAmount)
+      if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
+        config.negligibleAmount = negligibleAmount
+        config.scheduledForDeletion = false
+        config.latestUpdateId++
+        await this.uc.updateAccountObject(config)
+      }
 
       await this.uc.replaceActionRecord(action, null)
       if (this.interactionId === interactionId) {
@@ -567,20 +578,46 @@ export class AppState {
 
     return this.attempt(async () => {
       const interactionId = this.interactionId
+      const debtorData = data.debtorData
       assert(action.state)
       assert(data.account.display.debtorName === undefined)
       await prepare
       await startAccountInitialization()
 
-      // TODO:
-      //
-      // b) Initialize account's AccountKnowledge.
-      //
-      // c) Initialize account's `AccountConfig (including
-      //    `negligibleAmount` and `scheduledForDeletion` = false).
-      //
-      // d) Initialize account's AccountDisplay (including the
-      //   `debtorName` field, setting `knownDebtor to true).
+      // Initialize account's knowledge.
+      {
+        const { type, uri, account, latestUpdateAt, latestUpdateId } = data.account.knowledge
+        const knowledge: AccountKnowledgeV0 = { type, uri, account, latestUpdateAt, latestUpdateId, debtorData }
+        knowledge.latestUpdateId++
+        await this.uc.updateAccountObject(knowledge)
+      }
+
+      // Initialize account's config.
+      {
+        const config: AccountConfigV0 = {
+          ...data.account.config,
+          negligibleAmount: Number(action.state.editedNegligibleAmount),
+          scheduledForDeletion: false,
+          pin,
+        }
+        config.latestUpdateId++
+        await this.uc.updateAccountObject(config)
+      }
+
+      // Initialize account's display.
+      {
+        const display: AccountDisplayV0 = {
+          ...data.account.display,
+          knownDebtor: true,
+          debtorName: action.state.editedDebtorName,
+          decimalPlaces: debtorData.decimalPlaces,
+          amountDivisor: debtorData.amountDivisor,
+          unit: debtorData.unit,
+          pin,
+        }
+        display.latestUpdateId++
+        await this.uc.updateAccountObject(display)
+      }
 
       await this.finishAccountInitialization(action, { startInteraction: false })
       if (this.interactionId === interactionId) {
