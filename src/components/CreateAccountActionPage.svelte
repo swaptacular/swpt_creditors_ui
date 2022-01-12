@@ -26,6 +26,7 @@
 
   let debtorName: string
   let negligibleUnitAmount: string | number
+  let negligibleUnitAmountStep: string
 
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
@@ -68,6 +69,11 @@
       data.amountDivisor,
       data.decimalPlaces,
     ) : '0'
+    negligibleUnitAmountStep = data ? amountToString(
+      model.action.state?.tinyNegligibleAmount ?? BigInt(Math.ceil(data.amountDivisor)),
+      data.amountDivisor,
+      data.decimalPlaces,
+    ) : 'any'
   }
   $: action = model.action
   $: data = model.data
@@ -226,7 +232,7 @@
                   variant="outlined"
                   type="number"
                   input$min="0"
-                  input$step="any"
+                  input$step={negligibleUnitAmountStep}
                   style="width: 100%"
                   withTrailingIcon={invalidNegligibleUnitAmount}
                   bind:value={negligibleUnitAmount}

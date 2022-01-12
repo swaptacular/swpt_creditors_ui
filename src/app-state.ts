@@ -246,13 +246,15 @@ export class AppState {
         const debtorName = account.display.debtorName
         const editedDebtorName = debtorName ?? debtorData.debtorName
         const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
-        const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? calcNegligibleAmount(debtorData)))
+        const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
+        const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? tinyNegligibleAmount))
         const state = {
           accountInitializationInProgress: false,
           debtorData,
           debtorDataSource,
           editedDebtorName,
           editedNegligibleAmount,
+          tinyNegligibleAmount: BigInt(Math.ceil(tinyNegligibleAmount)),
         }
         await this.uc.replaceActionRecord(action, action = { ...action, state })
       }
@@ -692,6 +694,6 @@ export async function createAppState(): Promise<AppState | undefined> {
   return undefined
 }
 
-function calcNegligibleAmount(debtroData: BaseDebtorData): number {
+function calcTinyNegligibleAmount(debtroData: BaseDebtorData): number {
   return Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor * (1 + Number.EPSILON)
 }

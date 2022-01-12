@@ -353,6 +353,7 @@ export type CreateAccountAction =
       debtorDataSource: DebtorDataSource,
       editedDebtorName: string,
       editedNegligibleAmount: bigint,
+      tinyNegligibleAmount: bigint,
     }
   }
 
