@@ -295,7 +295,7 @@ export class AppState {
         // something went wrong, and the action record has not been
         // removed. Here we try to automatically recover from the
         // supposed crash.
-        await this.finishAccountInitialization(action)
+        await this.finishAccountInitialization(action, { startInteraction: false })
       } else if (this.interactionId === interactionId) {
         snowData(data)
       }
@@ -316,11 +316,11 @@ export class AppState {
     let action = actionManager.currentValue
     const isNewAccount = data.account.display.debtorName === undefined
     if (isNewAccount) {
-      return this.initializeNewAccount(action, data, saveActionPromise)
+      return this.initializeNewAccount(action, data, pin, saveActionPromise)
     } if (action.state?.accountInitializationInProgress) {
-      return this.finishAccountInitialization(action)  // TODO: Use this.attempt?
+      return this.finishAccountInitialization(action)
     } else {
-      return this.reviseKnownAccount(action, data, saveActionPromise)
+      return this.reviseKnownAccount(action, data, pin, saveActionPromise)
     }
   }
 
@@ -518,6 +518,7 @@ export class AppState {
   private reviseKnownAccount(
     action: CreateAccountActionWithId,
     data: CreateAccountActionData,
+    pin: string,
     prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
     return this.attempt(async () => {
@@ -552,6 +553,7 @@ export class AppState {
   private initializeNewAccount(
     action: CreateAccountActionWithId,
     data: CreateAccountActionData,
+    pin: string,
     prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
     const startAccountInitialization = async () => {
@@ -582,7 +584,7 @@ export class AppState {
       // d) Initialize account's AccountDisplay (including the
       //   `debtorName` field, setting `knownDebtor to true).
 
-      await this.finishAccountInitialization(action)
+      await this.finishAccountInitialization(action, { startInteraction: false })
       if (this.interactionId === interactionId) {
         this.showActions()
       }
@@ -595,14 +597,19 @@ export class AppState {
     })
   }
 
-  private async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
-    assert(action.state)
-    if (action.state.debtorData.peg) {
-      // TODO: Create an ApprovePegAction for the peg, and delete
-      // the create account action. (We may need to ensure that the
-      // currency is not pegged to itself.)
-    }
-    await this.uc.replaceActionRecord(action, null)
+  private async finishAccountInitialization(
+    action: CreateAccountActionWithId,
+    options: AttemptOptions = {},
+  ): Promise<void> {
+    return this.attempt(async () => {
+      assert(action.state)
+      if (action.state.debtorData.peg) {
+        // TODO: Create an ApprovePegAction for the peg, and delete
+        // the create account action. (We may need to ensure that the
+        // currency is not pegged to itself.)
+      }
+      await this.uc.replaceActionRecord(action, null)
+    }, options)
   }
 }
 
