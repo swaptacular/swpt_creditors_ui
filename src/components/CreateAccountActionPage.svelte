@@ -55,7 +55,7 @@
       shakeForm()
     } else {
       assert(data !== undefined)
-      app.confirmCreateAccountAction(actionManager, data)
+      app.confirmCreateAccountAction(actionManager, data, '1234')
     }
   }
 

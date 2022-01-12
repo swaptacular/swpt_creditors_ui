@@ -283,17 +283,17 @@ export type AckAccountInfoActionWithId =
 //
 //   - If `account.AccountDisplay.debtorName !== undefined`, set
 //     `state.debtorInfo` to `account.AccountKnowledge.debtorInfo`
-//     (???), `state.initializationInProgress` to false, and
+//     (???), `state.accountInitializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - If debtor info can be obtained from
 //     `account.AccountInfo.debtorInfo`, set `state.debtorInfo` to it,
-//     `state.initializationInProgress` to false, and
+//     `state.accountInitializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to false.
 //
 //   - Otherwise, GET `latestDebtorInfoUri` and expect a redirect. Set
 //     `state.debtorInfo` to `{ iri: <the redirect location> }`,
-//     `state.initializationInProgress` to false, and
+//     `state.accountInitializationInProgress` to false, and
 //     `state.verifyLatestDebtorInfoUri` to true. In case of a network
 //     problem, set `showRetryFetchDialog` to true, and show an error.
 //
@@ -312,7 +312,7 @@ export type AckAccountInfoActionWithId =
 //
 // * At most one of the following things will happen:
 //
-//   - If `state.initializationInProgress === false` and
+//   - If `state.accountInitializationInProgress === false` and
 //     `account.AccountDisplay.debtorName !== undefined`, show the
 //     "accept debtor screen". If the user have accepted the debtor:
 //
@@ -327,7 +327,7 @@ export type AckAccountInfoActionWithId =
 //     account's AccountKnowledge must be ignored), show the "accept
 //     debtor screen". If the user have accepted the debtor:
 //
-//     a) Set `state.initializationInProgress` to true (and commit).
+//     a) Set `state.accountInitializationInProgress` to true (and commit).
 //
 //     b) Initialize account's AccountKnowledge.
 //
@@ -337,10 +337,10 @@ export type AckAccountInfoActionWithId =
 //     d) Initialize account's AccountDisplay (including the
 //        `debtorName` field, setting `knownDebtor to true).
 //
-// * If `state.initializationInProgress === true` and DOC declares a
-//   peg, create an ApprovePegAction for the peg, and delete the
-//   create account action. (We may need to ensure that the currency
-//   is not pegged to itself.)
+// * If `state.accountInitializationInProgress === true` and DOC
+//   declares a peg, create an ApprovePegAction for the peg, and
+//   delete the create account action. (We may need to ensure that the
+//   currency is not pegged to itself.)
 export type CreateAccountAction =
   & ActionData
   & {
@@ -348,7 +348,7 @@ export type CreateAccountAction =
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
     state?: {
-      initializationInProgress: boolean,
+      accountInitializationInProgress: boolean,
       debtorData: BaseDebtorData,
       debtorDataSource: DebtorDataSource,
       editedDebtorName: string,
@@ -379,19 +379,21 @@ export type CreateAccountActionWithId =
 //   - If debtor info can be obtained from
 //     `pegAccount.AccountInfo.debtorInfo`, set `state.debtorInfo` to
 //     it, set `state.verifyLatestDebtorInfoUri` to false, and
-//     `state.initializationInProgress` to false.
+//     `state.accountInitializationInProgress` to false.
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
 //     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`
 //     (???), `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES
 //     NOT have sha256 and contentType fields> && <debtorInfo IS NOT
-//     confirmed>, and `state.initializationInProgress` to false.
+//     confirmed>, and `state.accountInitializationInProgress` to
+//     false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `state.debtorInfo` to `{ iri: <the redirect
 //     location> }`, `state.verifyLatestDebtorInfoUri` to false,
-//     `state.initializationInProgress` to false. In case of a network
-//     problem, set `showRetryFetchDialog` to true, and show an error.
+//     `state.accountInitializationInProgress` to false. In case of a
+//     network problem, set `showRetryFetchDialog` to true, and show
+//     an error.
 //
 // * Fetch, store, and parse the document referenced by
 //   `state.debtorInfo` as PEG_DOC. If `sha256` and/or `contentType`
@@ -418,7 +420,8 @@ export type CreateAccountActionWithId =
 //     account's AccountKnowledge must be ignored), show the "accept
 //     debtor screen". If the user have accepted the debtor:
 //
-//     a) Set `state.initializationInProgress` to true (and commit).
+//     a) Set `state.accountInitializationInProgress` to true (and
+//        commit).
 //
 //     b) Initialize peg account's AccountKnowledge.
 //
@@ -428,9 +431,9 @@ export type CreateAccountActionWithId =
 //     d) Initialize peg account's AccountDisplay (including the
 //        `debtorName` field, setting `knownDebtor to false).
 //
-// * If `state.initializationInProgress === true` and PEG_DOC declares
-//   a peg itself, create an ApprovePegAction for the next peg, and
-//   set `state.initializationInProgress` to false. (We may need to
+// * If `state.accountInitializationInProgress === true` and PEG_DOC
+//   declares a peg itself, create an ApprovePegAction for the next
+//   peg, and set `state.accountInProgress` to false. (We may need to
 //   ensure that the currency is not pegged to itself.)
 //
 // (dialog 3)

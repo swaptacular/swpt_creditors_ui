@@ -247,7 +247,7 @@ export class AppState {
         const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
         const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? calcNegligibleAmount(debtorData)))
         const state = {
-          initializationInProgress: false,
+          accountInitializationInProgress: false,
           debtorData,
           debtorDataSource,
           editedDebtorName,
@@ -289,7 +289,7 @@ export class AppState {
         }
       }
       await initializeActionStateIfNecessary(data)
-      if (action.state?.initializationInProgress && data?.account.display.debtorName !== undefined) {
+      if (action.state?.accountInitializationInProgress && data?.account.display.debtorName !== undefined) {
         // It looks like the procedure to initialize a new account has
         // been started, the `debtorName` has been set, but then
         // something went wrong, and the action record has not been
@@ -310,13 +310,14 @@ export class AppState {
   confirmCreateAccountAction(
     actionManager: ActionManager<CreateAccountActionWithId>,
     data: CreateAccountActionData,
+    pin: string,
   ): Promise<void> {
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
     const isNewAccount = data.account.display.debtorName === undefined
     if (isNewAccount) {
       return this.initializeNewAccount(action, data, saveActionPromise)
-    } if (action.state?.initializationInProgress) {
+    } if (action.state?.accountInitializationInProgress) {
       return this.finishAccountInitialization(action)  // TODO: Use this.attempt?
     } else {
       return this.reviseKnownAccount(action, data, saveActionPromise)
@@ -522,7 +523,7 @@ export class AppState {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       assert(action.state)
-      assert(!action.state.initializationInProgress && data.account.display.debtorName !== undefined)
+      assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
       await prepare
 
       // TODO:
@@ -559,7 +560,7 @@ export class AppState {
         ...action,
         state: {
           ...action.state,
-          initializationInProgress: true,
+          accountInitializationInProgress: true,
         },
       })
     }
