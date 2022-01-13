@@ -309,7 +309,7 @@ export function create_parser(options) {
         // Parse an object value.
 
         var key,
-            object = Object.create(null);
+            object = {};
 
         if (ch === '{') {
           next('{');

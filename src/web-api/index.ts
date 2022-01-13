@@ -68,7 +68,12 @@ export class HttpResponse<T = unknown> {
     this.data = r.data
     this.time = new Date()
     const data = this.data as any
-    if (data && typeof data === 'object' && Object.getPrototypeOf(data) === null && typeof data.uri === 'string') {
+    if (
+      data &&
+      typeof data === 'object' &&
+      Object.getPrototypeOf(data) === Object.prototype &&
+      typeof data.uri === 'string'
+    ) {
       data.uri = this.buildUri(data.uri)
     }
   }
