@@ -301,7 +301,7 @@ export class AppState {
         // something went wrong and the action record has not been
         // removed. Here we try to automatically recover from the
         // crash.
-        await this.finishAccountInitialization(action, { startInteraction: false })
+        await this.finishAccountInitialization(action)
       } else if (this.interactionId === interactionId) {
         snowData(data)
       }
@@ -318,16 +318,30 @@ export class AppState {
     data: CreateAccountActionData,
     pin: string,
   ): Promise<void> {
+    let interactionId: number
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
-    const isNewAccount = data.account.display.debtorName === undefined
-    if (isNewAccount) {
-      return this.initializeNewAccount(action, data, pin, saveActionPromise)
-    } if (action.state?.accountInitializationInProgress) {
-      return this.finishAccountInitialization(action)
-    } else {
-      return this.reviseKnownAccount(action, data, pin, saveActionPromise)
-    }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      if (data.account.display.debtorName === undefined) {
+        await this.initializeNewAccount(action, data, pin)
+      } if (action.state?.accountInitializationInProgress) {
+        await this.finishAccountInitialization(action)
+      } else {
+        await this.reviseKnownAccount(action, data, pin)
+      }
+      checkAndShowActions()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+      ],
+    })
   }
 
   showAccounts(): Promise<void> {
@@ -521,144 +535,95 @@ export class AppState {
     }
   }
 
-  private initializeNewAccount(
+  private async initializeNewAccount(
     action: CreateAccountActionWithId,
     data: CreateAccountActionData,
     pin: string,
-    prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
-    let interactionId: number
-    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+    assert(action.state)
+    assert(data.account.display.debtorName === undefined)
+    const debtorData = data.debtorData
 
-    const startAccountInitialization = async () => {
-      assert(action.state)
-      await this.uc.replaceActionRecord(action, action = {
-        ...action,
-        state: {
-          ...action.state,
-          accountInitializationInProgress: true,
-        },
-      })
+    // Start account initialization.
+    await this.uc.replaceActionRecord(action, action = {
+      ...action,
+      state: {
+        ...action.state,
+        accountInitializationInProgress: true,
+      },
+    })
+    assert(action.state)
+
+    // Initialize account's knowledge.
+    {
+      const { type, uri, account, latestUpdateAt, latestUpdateId } = data.account.knowledge
+      const knowledge: AccountKnowledgeV0 = { type, uri, account, latestUpdateAt, latestUpdateId, debtorData }
+      knowledge.latestUpdateId++
+      await this.uc.updateAccountObject(knowledge)
     }
 
-    return this.attempt(async () => {
-      interactionId = this.interactionId
-      const debtorData = data.debtorData
-      assert(action.state)
-      assert(data.account.display.debtorName === undefined)
-      await prepare
-      await startAccountInitialization()
+    // Initialize account's config.
+    const config: AccountConfigV0 = {
+      ...data.account.config,
+      negligibleAmount: Number(action.state.editedNegligibleAmount),
+      scheduledForDeletion: false,
+      pin,
+    }
+    config.latestUpdateId++
+    await this.uc.updateAccountObject(config)
 
-      // Initialize account's knowledge.
-      {
-        const { type, uri, account, latestUpdateAt, latestUpdateId } = data.account.knowledge
-        const knowledge: AccountKnowledgeV0 = { type, uri, account, latestUpdateAt, latestUpdateId, debtorData }
-        knowledge.latestUpdateId++
-        await this.uc.updateAccountObject(knowledge)
-      }
+    // Initialize account's display.
+    const display: AccountDisplayV0 = {
+      ...data.account.display,
+      knownDebtor: true,
+      debtorName: action.state.editedDebtorName,
+      decimalPlaces: debtorData.decimalPlaces,
+      amountDivisor: debtorData.amountDivisor,
+      unit: debtorData.unit,
+      pin,
+    }
+    display.latestUpdateId++
+    await this.uc.updateAccountObject(display)
 
-      // Initialize account's config.
-      {
-        const config: AccountConfigV0 = {
-          ...data.account.config,
-          negligibleAmount: Number(action.state.editedNegligibleAmount),
-          scheduledForDeletion: false,
-          pin,
-        }
-        config.latestUpdateId++
-        await this.uc.updateAccountObject(config)
-      }
-
-      // Initialize account's display.
-      {
-        const display: AccountDisplayV0 = {
-          ...data.account.display,
-          knownDebtor: true,
-          debtorName: action.state.editedDebtorName,
-          decimalPlaces: debtorData.decimalPlaces,
-          amountDivisor: debtorData.amountDivisor,
-          unit: debtorData.unit,
-          pin,
-        }
-        display.latestUpdateId++
-        await this.uc.updateAccountObject(display)
-      }
-
-      await this.finishAccountInitialization(action, { startInteraction: false })
-      if (this.interactionId === interactionId) {
-        this.showActions()
-      }
-    }, {
-      alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
-      ],
-    })
+    await this.finishAccountInitialization(action)
   }
 
-  private async finishAccountInitialization(
-    action: CreateAccountActionWithId,
-    options: AttemptOptions = {},
-  ): Promise<void> {
-    return this.attempt(async () => {
-      assert(action.state)
-      if (action.state.debtorData.peg) {
-        // TODO: Create an ApprovePegAction for the peg, and delete
-        // the create account action. (We may need to ensure that the
-        // currency is not pegged to itself.)
-      }
-      await this.uc.replaceActionRecord(action, null)
-    }, options)
+  private async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
+    assert(action.state)
+    if (action.state.debtorData.peg) {
+      // TODO: Create an ApprovePegAction for the peg, and delete
+      // the create account action. (We may need to ensure that the
+      // currency is not pegged to itself.)
+    }
+    await this.uc.replaceActionRecord(action, null)
   }
 
-  private reviseKnownAccount(
+  private async reviseKnownAccount(
     action: CreateAccountActionWithId,
     data: CreateAccountActionData,
     pin: string,
-    prepare: Promise<void> = Promise.resolve(),
   ): Promise<void> {
-    let interactionId: number
-    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+    assert(action.state)
+    assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
 
-    return this.attempt(async () => {
-      interactionId = this.interactionId
-      assert(action.state)
-      assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
-      await prepare
+    let display: AccountDisplayV0 = { ...data.account.display, pin }
+    if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
+      display.knownDebtor = true
+      display.debtorName = action.state.editedDebtorName
+      display.latestUpdateId++
+      await this.uc.updateAccountObject(display)
+    }
 
-      // Update account's display.
-      let display: AccountDisplayV0 = { ...data.account.display, pin }
-      if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
-        display.knownDebtor = true
-        display.debtorName = action.state.editedDebtorName
-        display.latestUpdateId++
-        await this.uc.updateAccountObject(display)
-      }
+    let config: AccountConfigV0 = { ...data.account.config, pin }
+    const negligibleAmount = Number(action.state.editedNegligibleAmount)
+    if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
+      config.negligibleAmount = negligibleAmount
+      config.scheduledForDeletion = false
+      config.latestUpdateId++
+      await this.uc.updateAccountObject(config)
+    }
 
-      // Update account's config.
-      let config: AccountConfigV0 = { ...data.account.config, pin }
-      const negligibleAmount = Number(action.state.editedNegligibleAmount)
-      if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
-        config.negligibleAmount = negligibleAmount
-        config.scheduledForDeletion = false
-        config.latestUpdateId++
-        await this.uc.updateAccountObject(config)
-      }
-
-      await this.uc.replaceActionRecord(action, null)
-      if (this.interactionId === interactionId) {
-        this.showActions()
-      }
-    }, {
-      alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
-      ],
-    })
+    await this.uc.replaceActionRecord(action, null)
   }
 }
 
