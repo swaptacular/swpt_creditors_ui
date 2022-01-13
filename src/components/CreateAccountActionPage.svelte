@@ -64,13 +64,13 @@
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = data ? amountToString(
-      model.action.state?.editedNegligibleAmount ?? 0n,
+    negligibleUnitAmount = (data && model.action.state) ? amountToString(
+      model.action.state.editedNegligibleAmount,
       data.amountDivisor,
       data.decimalPlaces,
     ) : '0'
-    negligibleUnitAmountStep = data ? amountToString(
-      model.action.state?.tinyNegligibleAmount ?? BigInt(Math.ceil(data.amountDivisor)),
+    negligibleUnitAmountStep = (data && model.action.state) ? amountToString(
+      model.action.state.tinyNegligibleAmount,
       data.amountDivisor,
       data.decimalPlaces,
     ) : 'any'
@@ -231,7 +231,7 @@
                   required
                   variant="outlined"
                   type="number"
-                  input$min="0"
+                  input$min={negligibleUnitAmountStep}
                   input$step={negligibleUnitAmountStep}
                   style="width: 100%"
                   withTrailingIcon={invalidNegligibleUnitAmount}
