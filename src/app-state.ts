@@ -28,7 +28,7 @@ export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
 
 export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
 
-export const WRONG_PIN_MESSAGE = 'You have entered a wrong PIN.'
+export const WRONG_PIN_MESSAGE = 'A wrong PIN have been entered.'
 
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
@@ -223,7 +223,7 @@ export class AppState {
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
-    const obtainData = async (): Promise<CreateAccountActionModel['data']> => {
+    const obtainData = async (): Promise<CreateAccountActionData> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
@@ -243,7 +243,7 @@ export class AppState {
       }
     }
 
-    const initializeActionStateIfNecessary = async (data: CreateAccountActionModel['data']): Promise<void> => {
+    const initializeActionStateIfNecessary = async (data?: CreateAccountActionData): Promise<void> => {
       if (action.state === undefined && data !== undefined) {
         const { account, debtorData, debtorDataSource } = data
         const debtorName = account.display.debtorName
@@ -263,7 +263,7 @@ export class AppState {
       }
     }
 
-    const snowData = (data: CreateAccountActionModel['data']): void => {
+    const snowData = (data?: CreateAccountActionData): void => {
       this.pageModel.set({
         type: 'CreateAccountActionModel',
         reload: () => { this.showAction(action.actionId, back) },
@@ -298,9 +298,9 @@ export class AppState {
       if (action.state?.accountInitializationInProgress && data?.account.display.debtorName !== undefined) {
         // It looks like the procedure to initialize a new account has
         // been started, the `debtorName` has been set, but then
-        // something went wrong, and the action record has not been
+        // something went wrong and the action record has not been
         // removed. Here we try to automatically recover from the
-        // supposed crash.
+        // crash.
         await this.finishAccountInitialization(action, { startInteraction: false })
       } else if (this.interactionId === interactionId) {
         snowData(data)
@@ -521,54 +521,6 @@ export class AppState {
     }
   }
 
-  private reviseKnownAccount(
-    action: CreateAccountActionWithId,
-    data: CreateAccountActionData,
-    pin: string,
-    prepare: Promise<void> = Promise.resolve(),
-  ): Promise<void> {
-    let interactionId: number
-    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
-
-    return this.attempt(async () => {
-      interactionId = this.interactionId
-      assert(action.state)
-      assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
-      await prepare
-
-      // Update account's display.
-      let display: AccountDisplayV0 = { ...data.account.display, pin }
-      if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
-        display.knownDebtor = true
-        display.debtorName = action.state.editedDebtorName
-        display.latestUpdateId++
-        await this.uc.updateAccountObject(display)
-      }
-
-      // Update account's config.
-      let config: AccountConfigV0 = { ...data.account.config, pin }
-      const negligibleAmount = Number(action.state.editedNegligibleAmount)
-      if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
-        config.negligibleAmount = negligibleAmount
-        config.scheduledForDeletion = false
-        config.latestUpdateId++
-        await this.uc.updateAccountObject(config)
-      }
-
-      await this.uc.replaceActionRecord(action, null)
-      if (this.interactionId === interactionId) {
-        this.showActions()
-      }
-    }, {
-      alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
-      ],
-    })
-  }
-
   private initializeNewAccount(
     action: CreateAccountActionWithId,
     data: CreateAccountActionData,
@@ -659,6 +611,54 @@ export class AppState {
       }
       await this.uc.replaceActionRecord(action, null)
     }, options)
+  }
+
+  private reviseKnownAccount(
+    action: CreateAccountActionWithId,
+    data: CreateAccountActionData,
+    pin: string,
+    prepare: Promise<void> = Promise.resolve(),
+  ): Promise<void> {
+    let interactionId: number
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      assert(action.state)
+      assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
+      await prepare
+
+      // Update account's display.
+      let display: AccountDisplayV0 = { ...data.account.display, pin }
+      if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
+        display.knownDebtor = true
+        display.debtorName = action.state.editedDebtorName
+        display.latestUpdateId++
+        await this.uc.updateAccountObject(display)
+      }
+
+      // Update account's config.
+      let config: AccountConfigV0 = { ...data.account.config, pin }
+      const negligibleAmount = Number(action.state.editedNegligibleAmount)
+      if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
+        config.negligibleAmount = negligibleAmount
+        config.scheduledForDeletion = false
+        config.latestUpdateId++
+        await this.uc.updateAccountObject(config)
+      }
+
+      await this.uc.replaceActionRecord(action, null)
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+      ],
+    })
   }
 }
 
