@@ -83,6 +83,9 @@
   }
   $: action = model.action
   $: data = model.data
+
+  // TODO: Check whether `debtorName` is unique among user's accounts,
+  // and show an error if there is a name collision.
   $: invalid = invalidDebtorName || invalidNegligibleUnitAmount
 </script>
 
