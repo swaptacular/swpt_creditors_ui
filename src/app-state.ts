@@ -326,7 +326,7 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       if (data.account.display.debtorName === undefined) {
-        await this.uc.initializeNewAccount(action, data.account, pin)
+        await this.uc.initializeNewAccount(action, data.account, true, pin)
       } if (action.state?.accountInitializationInProgress) {
         await this.uc.finishAccountInitialization(action)
       } else {

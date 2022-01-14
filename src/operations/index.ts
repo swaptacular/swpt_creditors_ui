@@ -266,7 +266,12 @@ export class UserContext {
    * records. The caller must be prepared this method to throw
    * `RecordDoesNotExist` or `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
-  async initializeNewAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+  async initializeNewAccount(
+    action: CreateAccountActionWithId,
+    account: AccountV0,
+    knownDebtor: boolean,
+    pin: string,
+  ): Promise<void> {
     assert(action.state)
     assert(account.display.debtorName === undefined)
     const debtorData = action.state.debtorData
@@ -307,11 +312,11 @@ export class UserContext {
 
     const display: AccountDisplayV0 = {
       ...account.display,
-      knownDebtor: true,
       debtorName: action.state.editedDebtorName,
       decimalPlaces: debtorData.decimalPlaces,
       amountDivisor: debtorData.amountDivisor,
       unit: debtorData.unit,
+      knownDebtor,
       pin,
     }
     display.latestUpdateId++
