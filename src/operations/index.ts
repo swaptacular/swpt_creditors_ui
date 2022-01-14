@@ -196,6 +196,8 @@ export class UserContext {
     }
   }
 
+  /* Resets users PIN. The caller must be prepared this method to
+   * throw `ServerSessionError`. */
   async resetPin(newPin: string): Promise<void> {
     const pinInfoUri = this.walletRecord.pinInfo.uri
     try {
