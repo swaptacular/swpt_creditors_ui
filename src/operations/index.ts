@@ -260,12 +260,19 @@ export class UserContext {
     return account
   }
 
+  /* Initialize new account's knowledge, config and display
+   * records. The caller must be prepared this method to throw
+   * `RecordDoesNotExist` or `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
   async initializeNewAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
     assert(action.state)
     assert(account.display.debtorName === undefined)
     const debtorData = action.state.debtorData
 
-    // Start account initialization.
+    // Start the process of account initialization. If something goes
+    // wrong, we will use the `accountInitializationInProgress` flag
+    // to detect the problem and try to automatically recover from the
+    // crash.
     await this.replaceActionRecord(action, action = {
       ...action,
       state: {
@@ -275,7 +282,6 @@ export class UserContext {
     })
     assert(action.state)
 
-    // Initialize account's knowledge.
     let knowledge: AccountKnowledgeV0 = account.knowledge
     knowledge = {
       type: knowledge.type,
@@ -288,7 +294,6 @@ export class UserContext {
     knowledge.latestUpdateId++
     await this.updateAccountObject(knowledge)
 
-    // Initialize account's config.
     const config: AccountConfigV0 = {
       ...account.config,
       negligibleAmount: Number(action.state.editedNegligibleAmount),
@@ -298,7 +303,6 @@ export class UserContext {
     config.latestUpdateId++
     await this.updateAccountObject(config)
 
-    // Initialize account's display.
     const display: AccountDisplayV0 = {
       ...account.display,
       knownDebtor: true,
@@ -314,8 +318,12 @@ export class UserContext {
     await this.finishAccountInitialization(action)
   }
 
+  /* Finalize the initialization of a new account. The caller must be
+   * prepared this method to throw `RecordDoesNotExist`.
+   */
   async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
     assert(action.state)
+    assert(action.state.accountInitializationInProgress)
     if (action.state.debtorData.peg) {
       // TODO: Create an ApprovePegAction for the peg, and delete
       // the create account action. (We may need to ensure that the
@@ -324,6 +332,10 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Update the display and config records of an already initialized
+   * (known) account. The caller must be prepared this method to throw
+   * `RecordDoesNotExist` or `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
   async confirmKnownAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
     assert(action.state)
     assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
@@ -383,8 +395,8 @@ export class UserContext {
   }
 
   /* Updates account's config, knowledge, display, or exchange.
-   * Returns the new version. May throw `ConflictingUpdate` or
-   * `WrongPin`. */
+   * Returns the new version. May throw `ConflictingUpdate`,
+   * `WrongPin` or `UnprocessableEntity`. */
   private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
     let response
     try {
