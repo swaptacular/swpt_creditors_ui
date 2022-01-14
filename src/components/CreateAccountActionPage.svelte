@@ -50,7 +50,7 @@
     }
   }
 
-  function confirm() {
+  function confirm(): void {
     assert(data && action.state)
     if (invalid) {
       shakeForm()
@@ -166,6 +166,7 @@
     <Page title="Create account">
       <svelte:fragment slot="content">
         <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
+
         <div bind:this={shakingElement} slot="content">
           <form
             noValidate
@@ -173,7 +174,6 @@
             on:input={() => actionManager.markDirty()}
             on:change={() => actionManager.save()}
             >
-
             <LayoutGrid>
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <Wrapper>
