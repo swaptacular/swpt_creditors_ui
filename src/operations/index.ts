@@ -260,30 +260,93 @@ export class UserContext {
     return account
   }
 
-  /* Updates account's config, knowledge, display, or exchange.
-   * Returns the new version. May throw `ConflictingUpdate` or
-   * `WrongPin`. */
-  async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
-    let response
-    try {
-      const { uri, account, latestUpdateAt, ...request } = obj
-      response = await this.server.patch(uri, request, { attemptLogin: true })
-    } catch (e: unknown) {
-      if (e instanceof HttpError) {
-        switch (e.status) {
-          case 409:
-            throw new ConflictingUpdate()
-          case 403:
-            throw new WrongPin()
-          case 422:
-            throw new UnprocessableEntity()
-        }
-      }
-      throw e
+  async initializeNewAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+    assert(action.state)
+    assert(account.display.debtorName === undefined)
+    const debtorData = action.state.debtorData
+
+    // Start account initialization.
+    await this.replaceActionRecord(action, action = {
+      ...action,
+      state: {
+        ...action.state,
+        accountInitializationInProgress: true,
+      },
+    })
+    assert(action.state)
+
+    // Initialize account's knowledge.
+    let knowledge: AccountKnowledgeV0 = account.knowledge
+    knowledge = {
+      type: knowledge.type,
+      uri: knowledge.uri,
+      latestUpdateAt: knowledge.latestUpdateAt,
+      latestUpdateId: knowledge.latestUpdateId,
+      account: knowledge.account,
+      debtorData,
     }
-    const accountObject = makeLogObject(response) as T
-    await storeObject(this.userId, accountObject)
-    return accountObject
+    knowledge.latestUpdateId++
+    await this.updateAccountObject(knowledge)
+
+    // Initialize account's config.
+    const config: AccountConfigV0 = {
+      ...account.config,
+      negligibleAmount: Number(action.state.editedNegligibleAmount),
+      scheduledForDeletion: false,
+      pin,
+    }
+    config.latestUpdateId++
+    await this.updateAccountObject(config)
+
+    // Initialize account's display.
+    const display: AccountDisplayV0 = {
+      ...account.display,
+      knownDebtor: true,
+      debtorName: action.state.editedDebtorName,
+      decimalPlaces: debtorData.decimalPlaces,
+      amountDivisor: debtorData.amountDivisor,
+      unit: debtorData.unit,
+      pin,
+    }
+    display.latestUpdateId++
+    await this.updateAccountObject(display)
+
+    await this.finishAccountInitialization(action)
+  }
+
+  async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
+    assert(action.state)
+    if (action.state.debtorData.peg) {
+      // TODO: Create an ApprovePegAction for the peg, and delete
+      // the create account action. (We may need to ensure that the
+      // currency is not pegged to itself.)
+    }
+    await this.replaceActionRecord(action, null)
+  }
+
+  async confirmKnownAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+    assert(action.state)
+    assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
+
+    let display: AccountDisplayV0 = {
+      ...account.display,
+      knownDebtor: true,
+      debtorName: action.state.editedDebtorName,
+      pin,
+    }
+    display.latestUpdateId++
+    await this.updateAccountObject(display)
+
+    let config: AccountConfigV0 = {
+      ...account.config,
+      negligibleAmount: Number(action.state.editedNegligibleAmount),
+      scheduledForDeletion: false,
+      pin,
+    }
+    config.latestUpdateId++
+    await this.updateAccountObject(config)
+
+    await this.replaceActionRecord(action, null)
   }
 
   /* Reads a payment request, and adds and returns a new
@@ -317,6 +380,32 @@ export class UserContext {
 
   async logout(): Promise<never> {
     return await this.server.logout()
+  }
+
+  /* Updates account's config, knowledge, display, or exchange.
+   * Returns the new version. May throw `ConflictingUpdate` or
+   * `WrongPin`. */
+  private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
+    let response
+    try {
+      const { uri, account, latestUpdateAt, ...request } = obj
+      response = await this.server.patch(uri, request, { attemptLogin: true })
+    } catch (e: unknown) {
+      if (e instanceof HttpError) {
+        switch (e.status) {
+          case 409:
+            throw new ConflictingUpdate()
+          case 403:
+            throw new WrongPin()
+          case 422:
+            throw new UnprocessableEntity()
+        }
+      }
+      throw e
+    }
+    const accountObject = makeLogObject(response) as T
+    await storeObject(this.userId, accountObject)
+    return accountObject
   }
 
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {

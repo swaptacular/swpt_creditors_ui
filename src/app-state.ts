@@ -2,7 +2,6 @@ import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
 import type { BaseDebtorData } from './debtor-info'
-import type { AccountDisplayV0, AccountConfigV0, AccountKnowledgeV0 } from './operations/canonical-objects'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -301,7 +300,7 @@ export class AppState {
         // something went wrong and the action record has not been
         // removed. Here we try to automatically recover from the
         // crash.
-        await this.finishAccountInitialization(action)
+        await this.uc.finishAccountInitialization(action)
       } else if (this.interactionId === interactionId) {
         snowData(data)
       }
@@ -327,11 +326,11 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       if (data.account.display.debtorName === undefined) {
-        await this.initializeNewAccount(action, data, pin)
+        await this.uc.initializeNewAccount(action, data.account, pin)
       } if (action.state?.accountInitializationInProgress) {
-        await this.finishAccountInitialization(action)
+        await this.uc.finishAccountInitialization(action)
       } else {
-        await this.reviseKnownAccount(action, data, pin)
+        await this.uc.confirmKnownAccount(action, data.account, pin)
       }
       checkAndShowActions()
     }, {
@@ -534,97 +533,6 @@ export class AppState {
     } finally {
       clearWaitingInteraction()
     }
-  }
-
-  private async initializeNewAccount(
-    action: CreateAccountActionWithId,
-    data: CreateAccountActionData,
-    pin: string,
-  ): Promise<void> {
-    assert(action.state)
-    assert(data.account.display.debtorName === undefined)
-    const debtorData = data.debtorData
-
-    // Start account initialization.
-    await this.uc.replaceActionRecord(action, action = {
-      ...action,
-      state: {
-        ...action.state,
-        accountInitializationInProgress: true,
-      },
-    })
-    assert(action.state)
-
-    // Initialize account's knowledge.
-    {
-      const { type, uri, account, latestUpdateAt, latestUpdateId } = data.account.knowledge
-      const knowledge: AccountKnowledgeV0 = { type, uri, account, latestUpdateAt, latestUpdateId, debtorData }
-      knowledge.latestUpdateId++
-      await this.uc.updateAccountObject(knowledge)
-    }
-
-    // Initialize account's config.
-    const config: AccountConfigV0 = {
-      ...data.account.config,
-      negligibleAmount: Number(action.state.editedNegligibleAmount),
-      scheduledForDeletion: false,
-      pin,
-    }
-    config.latestUpdateId++
-    await this.uc.updateAccountObject(config)
-
-    // Initialize account's display.
-    const display: AccountDisplayV0 = {
-      ...data.account.display,
-      knownDebtor: true,
-      debtorName: action.state.editedDebtorName,
-      decimalPlaces: debtorData.decimalPlaces,
-      amountDivisor: debtorData.amountDivisor,
-      unit: debtorData.unit,
-      pin,
-    }
-    display.latestUpdateId++
-    await this.uc.updateAccountObject(display)
-
-    await this.finishAccountInitialization(action)
-  }
-
-  private async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
-    assert(action.state)
-    if (action.state.debtorData.peg) {
-      // TODO: Create an ApprovePegAction for the peg, and delete
-      // the create account action. (We may need to ensure that the
-      // currency is not pegged to itself.)
-    }
-    await this.uc.replaceActionRecord(action, null)
-  }
-
-  private async reviseKnownAccount(
-    action: CreateAccountActionWithId,
-    data: CreateAccountActionData,
-    pin: string,
-  ): Promise<void> {
-    assert(action.state)
-    assert(!action.state.accountInitializationInProgress && data.account.display.debtorName !== undefined)
-
-    let display: AccountDisplayV0 = { ...data.account.display, pin }
-    if (!display.knownDebtor || display.debtorName !== action.state.editedDebtorName) {
-      display.knownDebtor = true
-      display.debtorName = action.state.editedDebtorName
-      display.latestUpdateId++
-      await this.uc.updateAccountObject(display)
-    }
-
-    let config: AccountConfigV0 = { ...data.account.config, pin }
-    const negligibleAmount = Number(action.state.editedNegligibleAmount)
-    if (config.negligibleAmount !== negligibleAmount || config.scheduledForDeletion) {
-      config.negligibleAmount = negligibleAmount
-      config.scheduledForDeletion = false
-      config.latestUpdateId++
-      await this.uc.updateAccountObject(config)
-    }
-
-    await this.uc.replaceActionRecord(action, null)
   }
 }
 
