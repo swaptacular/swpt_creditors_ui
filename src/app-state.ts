@@ -10,7 +10,7 @@ import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  WrongPin, ConflictingUpdate
+  WrongPin, ConflictingUpdate, UnprocessableEntity
 } from './operations'
 import { InvalidDocument } from './debtor-info'
 
@@ -340,6 +340,7 @@ export class AppState {
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }

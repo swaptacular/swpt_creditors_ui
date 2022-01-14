@@ -60,6 +60,10 @@ export class WrongPin extends Error {
   name = 'WrongPin'
 }
 
+export class UnprocessableEntity extends Error {
+  name = 'UnprocessableEntity'
+}
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -265,9 +269,17 @@ export class UserContext {
       const { uri, account, latestUpdateAt, ...request } = obj
       response = await this.server.patch(uri, request, { attemptLogin: true })
     } catch (e: unknown) {
-      if (e instanceof HttpError && e.status === 409) throw new ConflictingUpdate()
-      else if (e instanceof HttpError && e.status === 403) throw new WrongPin()
-      else throw e
+      if (e instanceof HttpError) {
+        switch (e.status) {
+          case 409:
+            throw new ConflictingUpdate()
+          case 403:
+            throw new WrongPin()
+          case 422:
+            throw new UnprocessableEntity()
+        }
+      }
+      throw e
     }
     const accountObject = makeLogObject(response) as T
     await storeObject(this.userId, accountObject)

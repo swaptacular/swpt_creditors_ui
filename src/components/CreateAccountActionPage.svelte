@@ -15,6 +15,7 @@
   // import PaymentInfo from './PaymentInfo.svelte'
   import { amountToString, stringToAmount } from '../format-amounts'
   import Page from './Page.svelte'
+  import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
   export let model: CreateAccountActionModel
@@ -23,6 +24,7 @@
   let currentModel: CreateAccountActionModel
   let actionManager: ActionManager<CreateAccountActionWithId>
   let shakingElement: HTMLElement
+  let openEnterPinDialog: boolean = false
 
   let debtorName: string
   let negligibleUnitAmount: string | number
@@ -55,9 +57,13 @@
     if (invalid) {
       shakeForm()
     } else {
-      assert(data !== undefined)
-      app.confirmCreateAccountAction(actionManager, data, '1234')
+      openEnterPinDialog = true
     }
+  }
+
+  function submit(pin: string): void {
+    assert(data !== undefined)
+    app.confirmCreateAccountAction(actionManager, data, pin)
   }
 
   $: if (currentModel !== model) {
@@ -158,6 +164,7 @@
   {:else}
     <Page title="Create account">
       <svelte:fragment slot="content">
+        <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
         <div bind:this={shakingElement} slot="content">
           <form
             noValidate
