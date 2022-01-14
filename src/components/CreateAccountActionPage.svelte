@@ -136,7 +136,7 @@
 </style>
 
 <div class="shaking-container">
-  {#if data === undefined}
+  {#if !(data && action.state)}
     <Page title="Create account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
