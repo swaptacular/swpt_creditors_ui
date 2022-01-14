@@ -9,10 +9,6 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
-  // import Button, { Label as ButtonLabel } from '@smui/button'
-  // import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
-  // import Dialog from './Dialog.svelte'
-  // import PaymentInfo from './PaymentInfo.svelte'
   import { amountToString, stringToAmount } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -34,13 +30,14 @@
   let invalidNegligibleUnitAmount: boolean
 
   function createUpdatedAction(): CreateAccountActionWithId {
+    assert(data && action.state)
     return {
       ...action,
-      state: action.state ? {
+      state: {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: stringToAmount(negligibleUnitAmount, data?.amountDivisor ?? 1),
-      } : undefined,
+        editedNegligibleAmount: stringToAmount(negligibleUnitAmount, data.amountDivisor),
+      },
     }
   }
 
@@ -54,6 +51,7 @@
   }
 
   function confirm() {
+    assert(data && action.state)
     if (invalid) {
       shakeForm()
     } else {
@@ -62,7 +60,7 @@
   }
 
   function submit(pin: string): void {
-    assert(data !== undefined)
+    assert(data && action.state)
     app.confirmCreateAccountAction(actionManager, data, pin)
   }
 
@@ -70,15 +68,15 @@
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = (data && model.action.state) ? amountToString(
+    negligibleUnitAmount = (model.data && model.action.state) ? amountToString(
       model.action.state.editedNegligibleAmount,
-      data.amountDivisor,
-      data.decimalPlaces,
+      model.data.amountDivisor,
+      model.data.decimalPlaces,
     ) : '0'
-    negligibleUnitAmountStep = (data && model.action.state) ? amountToString(
+    negligibleUnitAmountStep = (model.data && model.action.state) ? amountToString(
       model.action.state.tinyNegligibleAmount,
-      data.amountDivisor,
-      data.decimalPlaces,
+      model.data.amountDivisor,
+      model.data.decimalPlaces,
     ) : 'any'
   }
   $: action = model.action
@@ -183,7 +181,15 @@
                     <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
                       {#if data.debtorData.debtorHomepage}
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
-                          <Text><a href={data.debtorData.debtorHomepage.uri} target="_blank" style="text-decoration: none; color: black">www</a></Text>
+                          <Text>
+                            <a
+                              href={data.debtorData.debtorHomepage.uri}
+                              target="_blank"
+                              style="text-decoration: none; color: black"
+                              >
+                              www
+                            </a>
+                          </Text>
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       {/if}
@@ -191,14 +197,14 @@
                     </Title>
                     <Content style="clear: both">
                       {#if data.debtorData.summary}
-                        <blockquote class="summary">
-                          {data.debtorData.summary}
-                        </blockquote>
+                        <blockquote class="summary">{data.debtorData.summary}</blockquote>
                       {/if}
                       <ul>
                         <li>
                           You have
-                          <em class="amount">{amountToString(data.account.ledger.principal, data.amountDivisor, data.decimalPlaces)} {data.unit}</em>
+                          <em class="amount">
+                            {amountToString(data.account.ledger.principal, data.amountDivisor, data.decimalPlaces)} {data.unit}
+                          </em>
                           deposited in your account.
                         </li>
                         {#if data.account.display.debtorName === undefined && data.debtorData.peg}
