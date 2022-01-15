@@ -8,6 +8,8 @@
   export let performAction: (pin: string) => void
 
   let pin: string = ''
+  let pinInput: HTMLInputElement
+  let pinDisplay: HTMLElement
 
   function ignoreNonNumberKeys(evt: KeyboardEvent){
     if (evt.key.length === 1) {
@@ -15,6 +17,17 @@
       if (charCode < 48 || charCode > 57) {
         evt.preventDefault()
       }
+    }
+  }
+
+  function onPinInputFocus() {
+    pin = ''
+    pinDisplay.className += ' focused'
+  }
+
+  function onPinInputBlur() {
+    if (pinDisplay.className.endsWith(' focused')) {
+      pinDisplay.className = pinDisplay.className.slice(0, -8)
     }
   }
 
@@ -29,11 +42,44 @@
     close()
     performAction(enteredPin)
   }
+
+  $: pinMask = '\u2022'.repeat(pin.length)
 </script>
 
 <style>
   .pin-explain {
     margin-bottom: 1.5em;
+  }
+
+  .pin-hide {
+    position: absolute;
+    height: 1px;
+    top: -1000%;
+  }
+
+  .pin-mask {
+    display: flex;
+    align-items: center;
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 2.3em;
+    padding-bottom:6px;
+    border-bottom: dashed 1px#ddd;
+  }
+
+  .pin-mask .caret {
+    display: block;
+    height: 2ex;
+  }
+
+  :global(.focused) span {
+    border-right: solid 1px black;
+    animation: blinker 1s linear infinite;
+  }
+
+  @keyframes blinker {
+    50% {
+      opacity: 0;
+    }
   }
 </style>
 
@@ -52,17 +98,27 @@
             To guarantee the security of your wallet, you must enter
             your personal identification number.
           </p>
-          <p>
+          <p class="pin-hide">
             <Textfield
               variant="outlined"
               style="width: 100%"
               type="tel"
               input$maxlength={10}
               bind:value={pin}
+              bind:this={pinInput}
               on:keypress={ignoreNonNumberKeys}
+              on:focus={onPinInputFocus}
+              on:blur={onPinInputBlur}
               label="Your PIN"
               >
             </Textfield>
+          </p>
+          <p
+            class="pin-mask"
+            bind:this={pinDisplay}
+            on:click={() => pinInput.focus()}
+            >
+            {pinMask}<span class="caret"></span>
           </p>
         </form>
       </Content>
