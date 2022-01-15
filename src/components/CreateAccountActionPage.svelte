@@ -179,7 +179,7 @@
             <LayoutGrid>
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <Wrapper>
-                  <Paper style="margin-top: 16px; margin-bottom: 16px; word-wrap: break-word" elevation={4}>
+                  <Paper style="margin-top: 10px; margin-bottom: 18px; word-wrap: break-word" elevation={6}>
                     <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
                       {#if data.debtorData.debtorHomepage}
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
