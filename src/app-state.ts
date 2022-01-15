@@ -218,6 +218,21 @@ export class AppState {
     })
   }
 
+  createAccount(coinUri: string): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const actionId = await this.uc.createAccount(coinUri)
+      if (this.interactionId === interactionId) {
+        this.showAction(actionId)
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
+      ],
+    })
+  }
+
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
@@ -354,21 +369,6 @@ export class AppState {
         reload: () => { this.showAccounts() },
         goBack: () => { this.showActions() },
       })
-    })
-  }
-
-  createAccount(coinUri: string): Promise<void> {
-    return this.attempt(async () => {
-      const interactionId = this.interactionId
-      const actionId = await this.uc.createAccount(coinUri)
-      if (this.interactionId === interactionId) {
-        this.showAction(actionId)
-      }
-    }, {
-      alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
-      ],
     })
   }
 
