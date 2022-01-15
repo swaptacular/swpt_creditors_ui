@@ -54,7 +54,7 @@
   .pin-hide {
     position: absolute;
     height: 1px;
-    top: -1000%;
+    top: -10vh;
   }
 
   .pin-mask {
