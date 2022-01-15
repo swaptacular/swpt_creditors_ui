@@ -36,7 +36,11 @@
       state: {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: stringToAmount(negligibleUnitAmount, data.amountDivisor),
+        editedNegligibleAmount: (
+          Number(negligibleUnitAmount) ?
+            stringToAmount(negligibleUnitAmount, data.amountDivisor):
+            action.state.tinyNegligibleAmount
+        ),
       },
     }
   }
@@ -193,7 +197,11 @@
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       {/if}
-                      Account with "{data.debtorData.debtorName}"
+                      {#if data.existingAccount}
+                        Existing account with "{data.debtorData.debtorName}"
+                      {:else}
+                        Account with "{data.debtorData.debtorName}"
+                      {/if}
                     </Title>
                     <Content style="clear: both">
                       {#if data.debtorData.summary}
@@ -201,11 +209,10 @@
                       {/if}
                       <ul>
                         <li>
-                          You have
                           <em class="amount">
                             {amountToString(data.account.ledger.principal, data.amountDivisor, data.decimalPlaces)} {data.unit}
                           </em>
-                          deposited in your account.
+                          are deposited in your account.
                         </li>
                         {#if data.account.display.debtorName === undefined && data.debtorData.peg}
                           <li>
@@ -277,7 +284,7 @@
       <svelte:fragment slot="floating">
         <div class="fab-container">
           <Fab on:click={() => actionManager.remove() } extended>
-            <Label>Reject</Label>
+            <Label>{data.existingAccount ? 'Cancel' : 'Reject'}</Label>
           </Fab>
         </div>
         <div class="fab-container">

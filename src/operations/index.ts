@@ -274,7 +274,6 @@ export class UserContext {
   ): Promise<void> {
     assert(action.state)
     assert(account.display.debtorName === undefined)
-    const debtorData = action.state.debtorData
 
     // Start the process of account initialization. If something goes
     // wrong, we will use the `accountInitializationInProgress` flag
@@ -289,39 +288,35 @@ export class UserContext {
     })
     assert(action.state)
 
-    let knowledge: AccountKnowledgeV0 = account.knowledge
-    knowledge = {
-      type: knowledge.type,
-      uri: knowledge.uri,
-      latestUpdateAt: knowledge.latestUpdateAt,
-      latestUpdateId: knowledge.latestUpdateId,
-      account: knowledge.account,
+    const debtorData = action.state.debtorData
+    const knowledge: AccountKnowledgeV0 = {
+      type: account.knowledge.type,
+      uri: account.knowledge.uri,
+      latestUpdateAt: account.knowledge.latestUpdateAt,
+      latestUpdateId: account.knowledge.latestUpdateId + 1n,
+      account: account.knowledge.account,
       debtorData,
     }
-    knowledge.latestUpdateId++
-    await this.updateAccountObject(knowledge)
-
     const config: AccountConfigV0 = {
       ...account.config,
       negligibleAmount: Number(action.state.editedNegligibleAmount),
+      latestUpdateId: account.config.latestUpdateId + 1n,
       scheduledForDeletion: false,
       pin,
     }
-    config.latestUpdateId++
-    await this.updateAccountObject(config)
-
     const display: AccountDisplayV0 = {
       ...account.display,
       debtorName: action.state.editedDebtorName,
       decimalPlaces: debtorData.decimalPlaces,
       amountDivisor: debtorData.amountDivisor,
       unit: debtorData.unit,
+      latestUpdateId: account.display.latestUpdateId + 1n,
       knownDebtor,
       pin,
     }
-    display.latestUpdateId++
+    await this.updateAccountObject(knowledge)
+    await this.updateAccountObject(config)
     await this.updateAccountObject(display)
-
     await this.finishAccountInitialization(action)
   }
 
@@ -347,24 +342,22 @@ export class UserContext {
     assert(action.state)
     assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
 
-    let display: AccountDisplayV0 = {
+    const display: AccountDisplayV0 = {
       ...account.display,
       knownDebtor: true,
       debtorName: action.state.editedDebtorName,
+      latestUpdateId: account.display.latestUpdateId + 1n,
       pin,
     }
-    display.latestUpdateId++
-    await this.updateAccountObject(display)
-
-    let config: AccountConfigV0 = {
+    const config: AccountConfigV0 = {
       ...account.config,
       negligibleAmount: Number(action.state.editedNegligibleAmount),
       scheduledForDeletion: false,
+      latestUpdateId: account.config.latestUpdateId + 1n,
       pin,
     }
-    config.latestUpdateId++
+    await this.updateAccountObject(display)
     await this.updateAccountObject(config)
-
     await this.replaceActionRecord(action, null)
   }
 

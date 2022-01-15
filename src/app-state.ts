@@ -91,6 +91,7 @@ export type CreateAccountActionData = {
   unit: string,
   amountDivisor: number,
   decimalPlaces: bigint,
+  existingAccount: boolean,
 }
 
 export type CreateAccountActionModel = BasePageModel & {
@@ -226,8 +227,8 @@ export class AppState {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
-      const { debtorData, debtorDataSource } = action.state?.debtorData ?
-        action.state : await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
+      const { debtorData, debtorDataSource } = action.state
+        ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
       if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
@@ -239,6 +240,7 @@ export class AppState {
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
+        existingAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
 
@@ -252,11 +254,11 @@ export class AppState {
         const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? tinyNegligibleAmount))
         const state = {
           accountInitializationInProgress: false,
+          tinyNegligibleAmount: BigInt(Math.ceil(tinyNegligibleAmount)),
           debtorData,
           debtorDataSource,
           editedDebtorName,
           editedNegligibleAmount,
-          tinyNegligibleAmount: BigInt(Math.ceil(tinyNegligibleAmount)),
         }
         await this.uc.replaceActionRecord(action, action = { ...action, state })
       }
@@ -295,11 +297,10 @@ export class AppState {
       }
       await initializeActionStateIfNecessary(data)
       if (action.state?.accountInitializationInProgress && data?.account.display.debtorName !== undefined) {
-        // It looks like the procedure to initialize a new account has
-        // been started, the `debtorName` has been set, but then
-        // something went wrong and the action record has not been
-        // removed. Here we try to automatically recover from the
-        // crash.
+        // It looks like the account initialization procedure has been
+        // started, the `debtorName` has been set, but then something
+        // went wrong and the action record has not been removed. Here
+        // we try to automatically recover from the crash.
         await this.uc.finishAccountInitialization(action)
       } else if (this.interactionId === interactionId) {
         snowData(data)
