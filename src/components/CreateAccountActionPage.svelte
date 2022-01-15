@@ -36,11 +36,7 @@
       state: {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: (
-          Number(negligibleUnitAmount) ?
-            stringToAmount(negligibleUnitAmount, data.amountDivisor):
-            action.state.tinyNegligibleAmount
-        ),
+        editedNegligibleAmount: Number(negligibleUnitAmount) ? stringToAmount(negligibleUnitAmount, data.amountDivisor): 0n,
       },
     }
   }
@@ -72,11 +68,11 @@
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = (model.data && model.action.state) ? amountToString(
+    negligibleUnitAmount = (model.data && model.action.state && model.action.state.editedNegligibleAmount !== 0n) ? amountToString(
       model.action.state.editedNegligibleAmount,
       model.data.amountDivisor,
       model.data.decimalPlaces,
-    ) : '0'
+    ) : ''
     negligibleUnitAmountStep = (model.data && model.action.state) ? amountToString(
       model.action.state.tinyNegligibleAmount,
       model.data.amountDivisor,
