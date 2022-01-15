@@ -73,6 +73,7 @@
 
   :global(.focused) span {
     border-right: solid 1px black;
+    will-change: opacity;
     animation: blinker 1s linear infinite;
   }
 
