@@ -27,7 +27,9 @@ export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
 
 export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
 
-export const WRONG_PIN_MESSAGE = 'A wrong PIN have been entered.'
+export const WRONG_PIN_MESSAGE = 'A wrong PIN have been entered. '
+  + 'Be aware that you have a limited number of attempts to enter '
+  + 'the correct PIN, before it gets blocked.'
 
 export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
   + 'Please check your Internet connection.'
