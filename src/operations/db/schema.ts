@@ -352,8 +352,8 @@ export type CreateAccountAction =
       debtorData: BaseDebtorData,
       debtorDataSource: DebtorDataSource,
       editedDebtorName: string,
-      editedNegligibleAmount: bigint,
-      tinyNegligibleAmount: bigint,
+      editedNegligibleAmount: number,
+      tinyNegligibleAmount: number,
     }
   }
 

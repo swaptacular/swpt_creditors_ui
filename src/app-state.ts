@@ -251,10 +251,10 @@ export class AppState {
         const editedDebtorName = debtorName ?? debtorData.debtorName
         const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
         const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
-        const editedNegligibleAmount = BigInt(Math.ceil(neglibibleAmount ?? tinyNegligibleAmount))
+        const editedNegligibleAmount = neglibibleAmount ?? tinyNegligibleAmount
         const state = {
           accountInitializationInProgress: false,
-          tinyNegligibleAmount: BigInt(Math.ceil(tinyNegligibleAmount)),
+          tinyNegligibleAmount,
           debtorData,
           debtorDataSource,
           editedDebtorName,

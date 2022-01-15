@@ -9,7 +9,7 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
-  import { amountToString, stringToAmount } from '../format-amounts'
+  import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 
@@ -36,7 +36,7 @@
       state: {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: Number(negligibleUnitAmount) ? stringToAmount(negligibleUnitAmount, data.amountDivisor): 0n,
+        editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * data.amountDivisor,
       },
     }
   }
@@ -68,13 +68,13 @@
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = (model.data && model.action.state && model.action.state.editedNegligibleAmount !== 0n) ? amountToString(
-      model.action.state.editedNegligibleAmount,
+    negligibleUnitAmount = (model.data && model.action.state) ? amountToString(
+      BigInt(Math.ceil(model.action.state.editedNegligibleAmount)),
       model.data.amountDivisor,
       model.data.decimalPlaces,
     ) : ''
     negligibleUnitAmountStep = (model.data && model.action.state) ? amountToString(
-      model.action.state.tinyNegligibleAmount,
+      BigInt(Math.ceil(model.action.state.tinyNegligibleAmount)),
       model.data.amountDivisor,
       model.data.decimalPlaces,
     ) : 'any'
@@ -250,7 +250,7 @@
                   required
                   variant="outlined"
                   type="number"
-                  input$min={negligibleUnitAmountStep}
+                  input$min="0"
                   input$step={negligibleUnitAmountStep}
                   style="width: 100%"
                   withTrailingIcon={invalidNegligibleUnitAmount}

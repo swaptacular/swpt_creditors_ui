@@ -299,7 +299,7 @@ export class UserContext {
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: Number(action.state.editedNegligibleAmount),
+      negligibleAmount: action.state.editedNegligibleAmount,
       latestUpdateId: account.config.latestUpdateId + 1n,
       scheduledForDeletion: false,
       pin,
@@ -351,7 +351,7 @@ export class UserContext {
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: Number(action.state.editedNegligibleAmount),
+      negligibleAmount: action.state.editedNegligibleAmount,
       scheduledForDeletion: false,
       latestUpdateId: account.config.latestUpdateId + 1n,
       pin,
