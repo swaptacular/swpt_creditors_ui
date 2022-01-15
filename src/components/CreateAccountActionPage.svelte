@@ -41,7 +41,7 @@
     }
   }
 
-  function formatAsUnitAmount(amount: bigint | number| undefined): string {
+  function formatAsUnitAmount(amount: bigint | number | undefined): string {
     if (amount === undefined) {
       return ''
     }
@@ -62,7 +62,6 @@
   }
 
   function confirm(): void {
-    assert(data && action.state)
     if (invalid) {
       shakeForm()
     } else {
