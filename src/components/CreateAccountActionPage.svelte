@@ -64,20 +64,22 @@
     app.confirmCreateAccountAction(actionManager, data, pin)
   }
 
+  function formatAsUnitAmount(amount: bigint | number| undefined): string {
+    if (amount === undefined) {
+      return ''
+    }
+    if (typeof amount === 'number') {
+      amount = BigInt(Math.ceil(amount))
+    }
+    return amountToString(amount, model.data?.amountDivisor ?? 1, model.data?.decimalPlaces ?? 0n)
+  }
+
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = (model.data && model.action.state) ? amountToString(
-      BigInt(Math.ceil(model.action.state.editedNegligibleAmount)),
-      model.data.amountDivisor,
-      model.data.decimalPlaces,
-    ) : ''
-    negligibleUnitAmountStep = (model.data && model.action.state) ? amountToString(
-      BigInt(Math.ceil(model.action.state.tinyNegligibleAmount)),
-      model.data.amountDivisor,
-      model.data.decimalPlaces,
-    ) : 'any'
+    negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
+    negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
   }
   $: action = model.action
   $: data = model.data
@@ -206,7 +208,7 @@
                       <ul>
                         <li>
                           <em class="amount">
-                            {amountToString(data.account.ledger.principal, data.amountDivisor, data.decimalPlaces)} {data.unit}
+                            {formatAsUnitAmount(data.account.ledger.principal)} {data.unit}
                           </em>
                           are deposited in your account.
                         </li>
