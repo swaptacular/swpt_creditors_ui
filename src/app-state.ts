@@ -227,7 +227,6 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
       ],
     })
