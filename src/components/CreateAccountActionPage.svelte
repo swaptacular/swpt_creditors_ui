@@ -41,6 +41,17 @@
     }
   }
 
+  function formatAsUnitAmount(amount: bigint | number| undefined): string {
+    if (amount === undefined) {
+      return ''
+    }
+    if (typeof amount === 'number') {
+      assert(Number.isFinite(amount))
+      amount = BigInt(Math.ceil(amount))
+    }
+    return amountToString(amount, model.data?.amountDivisor ?? 1, model.data?.decimalPlaces ?? 0n)
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -62,16 +73,6 @@
   function submit(pin: string): void {
     assert(data && action.state)
     app.confirmCreateAccountAction(actionManager, data, pin)
-  }
-
-  function formatAsUnitAmount(amount: bigint | number| undefined): string {
-    if (amount === undefined) {
-      return ''
-    }
-    if (typeof amount === 'number') {
-      amount = BigInt(Math.ceil(amount))
-    }
-    return amountToString(amount, model.data?.amountDivisor ?? 1, model.data?.decimalPlaces ?? 0n)
   }
 
   $: if (currentModel !== model) {
