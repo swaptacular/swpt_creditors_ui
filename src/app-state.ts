@@ -323,6 +323,10 @@ export class AppState {
       }
     }, {
       alerts: [
+        // We want, after the alert has been acknowledged, the user to
+        // continue to a screen that does not require network
+        // connectivity to be shown correctly. (The current "show
+        // create account action" screen is not such place.)
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
