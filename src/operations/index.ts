@@ -320,8 +320,9 @@ export class UserContext {
     await this.finishAccountInitialization(action)
   }
 
-  /* Finalize the initialization of a new account. The caller must be
-   * prepared this method to throw `RecordDoesNotExist`.
+  /* Finalize the initialization of a new account and remove the
+   * corresponding create account action. The caller must be prepared
+   * this method to throw `RecordDoesNotExist`.
    */
   async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
     assert(action.state)

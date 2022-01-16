@@ -235,10 +235,26 @@ export class AppState {
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
+    let data: CreateAccountActionData | undefined
 
+    const checkAndGoBack = () => {
+      if (this.interactionId === interactionId) {
+        goBack()
+      }
+    }
+    const checkAndSnowData = (): void => {
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'CreateAccountActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          data,
+        })
+      }
+    }
     const obtainData = async (): Promise<CreateAccountActionData> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
@@ -259,41 +275,27 @@ export class AppState {
         existingAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
-
-    const initializeActionStateIfNecessary = async (data?: CreateAccountActionData): Promise<void> => {
-      if (action.state === undefined && data !== undefined) {
-        const { account, debtorData, debtorDataSource } = data
-        const debtorName = account.display.debtorName
-        const editedDebtorName = debtorName ?? debtorData.debtorName
-        const neglibibleAmount = debtorName ? account.config.negligibleAmount : undefined
-        const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
-        const editedNegligibleAmount = neglibibleAmount ?? tinyNegligibleAmount
-        const state = {
-          accountInitializationInProgress: false,
-          tinyNegligibleAmount,
-          debtorData,
-          debtorDataSource,
-          editedDebtorName,
-          editedNegligibleAmount,
-        }
-        await this.uc.replaceActionRecord(action, action = { ...action, state })
+    const initializeActionState = async (): Promise<void> => {
+      assert(data !== undefined)
+      const { account, debtorData, debtorDataSource } = data
+      const useDisplay = account.display.debtorName !== undefined
+      const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
+      const editedNegligibleAmount = useDisplay ? account.config.negligibleAmount : tinyNegligibleAmount
+      const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
+      const state = {
+        accountInitializationInProgress: false,
+        debtorData,
+        debtorDataSource,
+        tinyNegligibleAmount,
+        editedDebtorName,
+        editedNegligibleAmount,
       }
-    }
-
-    const snowData = (data?: CreateAccountActionData): void => {
-      this.pageModel.set({
-        type: 'CreateAccountActionModel',
-        reload: () => { this.showAction(action.actionId, back) },
-        goBack,
-        action,
-        data,
-      })
+      await this.uc.replaceActionRecord(action, action = { ...action, state })
     }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      let data
       try {
         data = await obtainData()
       } catch (e: unknown) {
@@ -304,23 +306,25 @@ export class AppState {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
           case e instanceof InvalidDocument:
-            assert(data === undefined)
             assert(action.state === undefined)
             break
           default:
             throw e
         }
       }
-      await initializeActionStateIfNecessary(data)
-      if (action.state?.accountInitializationInProgress && data?.account.display.debtorName !== undefined) {
-        // It looks like the account initialization procedure has been
-        // started, the `debtorName` has been set, but then something
-        // went wrong and the action record has not been removed. Here
-        // we try to automatically recover from the crash.
+      const crash_happened_at_the_end_of_previously_started_account_initialization = (
+        action.state?.accountInitializationInProgress === true &&
+        data?.account.display.debtorName !== undefined
+      )
+      if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
-      } else if (this.interactionId === interactionId) {
-        snowData(data)
+        checkAndGoBack()
+        return
       }
+      if (action.state === undefined && data !== undefined) {
+        await initializeActionState()
+      }
+      checkAndSnowData()
     }, {
       // NOTE: After the alert has been acknowledged, we want to be
       // certain that the user will continue to a screen which does
@@ -343,17 +347,27 @@ export class AppState {
   ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
+
+    const checkAndGoBack = () => {
+      if (this.interactionId === interactionId) {
+        goBack()
+      }
+    }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      if (data.account.display.debtorName === undefined) {
-        await this.uc.initializeNewAccount(action, data.account, true, pin)
-      } if (action.state?.accountInitializationInProgress) {
+      const isNewAccount = data.account.display.debtorName === undefined
+      const crash_happened_at_the_end_of_previously_started_account_initialization = (
+        action.state?.accountInitializationInProgress === true &&
+        !isNewAccount
+      )
+      if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
+      } else if (isNewAccount) {
+        await this.uc.initializeNewAccount(action, data.account, true, pin)
       } else {
         await this.uc.confirmKnownAccount(action, data.account, pin)
       }
