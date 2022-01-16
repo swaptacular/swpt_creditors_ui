@@ -357,11 +357,12 @@ export class AppState {
     }
 
     return this.attempt(async () => {
+      assert(action.state !== undefined)
       interactionId = this.interactionId
       await saveActionPromise
       const isNewAccount = data.account.display.debtorName === undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
-        action.state?.accountInitializationInProgress === true &&
+        action.state.accountInitializationInProgress &&
         !isNewAccount
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
