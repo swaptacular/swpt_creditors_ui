@@ -1,12 +1,16 @@
 /*
  * This module implements functions that read parsed JSON objects,
  * ensure that the application can understand them, and transform them
- * in their canonical form. The transformation does two things:
+ * in their canonical form. The transformation does three things:
  *
  * 1) Sets a well known generic object type, independent from the
  *    version of the actual object, as long as it is compatible.
  *
- * 2) Rewrites relative URIs as absolute URIs.
+ * 2) Ensures float/double fields are converted to
+ *    `number`s. (Currently, if the value does not contain a decimal
+ *    point, our custom JSON-parser will read them as `bigint`s.)
+ *
+ * 3) Rewrites relative URIs as absolute URIs.
  *
  * NOTE: The `uri` field on each object is being rewritten as an
  * absolute URI by the `web-api` module. Therefore we do not need to
