@@ -322,11 +322,13 @@ export class AppState {
         snowData(data)
       }
     }, {
+      // NOTE: After the alert has been acknowledged, we want to be
+      // certain that the user will continue to a screen which does
+      // not require network connectivity to be shown correctly. The
+      // current screen might not be such place. For example, when the
+      // user presses the "reload" button, while reviewing a "create
+      // account action".
       alerts: [
-        // We want, after the alert has been acknowledged, the user to
-        // continue to a screen that does not require network
-        // connectivity to be shown correctly. (The current "show
-        // create account action" screen is not such place.)
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
@@ -337,9 +339,11 @@ export class AppState {
     actionManager: ActionManager<CreateAccountActionWithId>,
     data: CreateAccountActionData,
     pin: string,
+    back?: () => void,
   ): Promise<void> {
     let interactionId: number
-    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
@@ -353,14 +357,14 @@ export class AppState {
       } else {
         await this.uc.confirmKnownAccount(action, data.account, pin)
       }
-      checkAndShowActions()
+      checkAndGoBack()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }

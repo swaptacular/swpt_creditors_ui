@@ -71,7 +71,7 @@
 
   function submit(pin: string): void {
     assert(data && action.state)
-    app.confirmCreateAccountAction(actionManager, data, pin)
+    app.confirmCreateAccountAction(actionManager, data, pin, model.goBack)
   }
 
   $: if (currentModel !== model) {
