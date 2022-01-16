@@ -298,6 +298,9 @@ export class AppState {
       await saveActionPromise
       try {
         data = await obtainData()
+        if (action.state === undefined) {
+          await initializeActionState()
+        }
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
         // action page will show an appropriate error message when
@@ -319,12 +322,9 @@ export class AppState {
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
         checkAndGoBack()
-        return
+      } else {
+        checkAndSnowData()
       }
-      if (action.state === undefined && data !== undefined) {
-        await initializeActionState()
-      }
-      checkAndSnowData()
     }, {
       // NOTE: After the alert has been acknowledged, we want to be
       // certain that the user will continue to a screen which does
