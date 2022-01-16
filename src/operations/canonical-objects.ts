@@ -224,6 +224,7 @@ export function makeAccountDisplay(data: AccountDisplay, baseUri: string): Accou
     type: 'AccountDisplay',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    amountDivisor: Number(data.amountDivisor),
   }
 }
 
@@ -234,6 +235,7 @@ export function makeAccountConfig(data: AccountConfig, baseUri: string): Account
     type: 'AccountConfig',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    negligibleAmount: Number(data.negligibleAmount),
   }
 }
 
@@ -249,6 +251,7 @@ export function makeAccountExchange(data: AccountExchange, baseUri: string): Acc
       ...data.peg,
       type: 'CurrencyPeg',
       account: { uri: new URL(data.peg.account.uri, baseUri).href },
+      exchangeRate: Number(data.peg.exchangeRate),
     } : undefined,
   }
 }
@@ -260,6 +263,7 @@ export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): A
     type: 'AccountKnowledge',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    interestRate: data.interestRate !== undefined ? Number(data.interestRate) : undefined,
   }
 }
 
@@ -271,6 +275,7 @@ export function makeAccountInfo(data: AccountInfo, baseUri: string): AccountInfo
     type: 'AccountInfo',
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
+    interestRate: Number(data.interestRate),
     debtorInfo: data.debtorInfo ? {
       ...data.debtorInfo,
       type: 'DebtorInfo',
@@ -327,6 +332,7 @@ export function makeTransfer(response: HttpResponse<Transfer>): TransferV0 {
     options: {
       ...data.options,
       type: 'TransferOptions',
+      minInterestRate: data.options.minInterestRate !== undefined ? Number(data.options.minInterestRate) : undefined,
     },
     result: data.result ? {
       ...data.result,
