@@ -424,16 +424,16 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       const account = await this.uc.getAccount(action.accountUri)
-      if (!(
+      if (
         account &&
         account.display.debtorName !== undefined &&
         account.knowledge.latestUpdateId === action.knowledgeUpdateId
-      )) {
+      ) {
+        checkAndSnow()
+      } else {
         await this.uc.replaceActionRecord(action, null)
         checkAndGoBack()
-        return
       }
-      checkAndSnow()
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
