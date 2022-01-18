@@ -1,7 +1,7 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, DebtorDataSource
+  CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
@@ -48,6 +48,7 @@ export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | Acco
 export type {
   ActionRecordWithId,
   CreateAccountActionWithId,
+  AckAccountInfoActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
@@ -240,6 +241,22 @@ export class UserContext {
       latestDebtorInfoUri,
       debtorIdentityUri,
     })
+  }
+
+  /* Make an HTTP request to obtain the most recent version of the
+   * account, and return it. The caller must be prepared this method
+   * to throw `ServerSessionError`. */
+  async getAccount(accountUri: string): Promise<AccountV0 | undefined> {
+    let response
+    try {
+      response = await this.server.get(accountUri, { attemptLogin: true }) as HttpResponse<Account>
+    } catch (e: unknown) {
+      if (e instanceof HttpError && e.status === 404) return undefined
+      else throw e
+    }
+    const account = makeAccount(response)
+    await storeObject(this.userId, account)
+    return account
   }
 
   /* Create an account if necessary. Return the most recent version of

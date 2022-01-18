@@ -2,6 +2,7 @@
   import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
   import CreateAccountActionPage from './CreateAccountActionPage.svelte'
+  import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
 
@@ -19,6 +20,8 @@
     switch (pageModelType) {
     case 'CreateAccountActionModel':
       return CreateAccountActionPage
+    case 'AckAccountInfoActionModel':
+      return AckAccountInfoActionPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

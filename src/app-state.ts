@@ -1,7 +1,8 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type {
-  ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap
+  ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
+  AckAccountInfoActionWithId
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -73,6 +74,7 @@ export type Store<T> = {
 export type PageModel =
   | ActionsModel
   | CreateAccountActionModel
+  | AckAccountInfoActionModel
   | AccountsModel
 
 type BasePageModel = {
@@ -102,6 +104,11 @@ export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
   action: CreateAccountActionWithId,
   data?: CreateAccountActionData,
+}
+
+export type AckAccountInfoActionModel = BasePageModel & {
+  type: 'AckAccountInfoActionModel',
+  action: AckAccountInfoActionWithId,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -213,6 +220,9 @@ export class AppState {
           switch (action.actionType) {
             case 'CreateAccount':
               this.showCreateAccountAction(this.createActionManager(action), back)
+              break
+            case 'AckAccountInfo':
+              this.showAckAccountInfoAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -387,6 +397,47 @@ export class AppState {
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  showAckAccountInfoAction(action: AckAccountInfoActionWithId, back?: () => void): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+
+    const checkAndGoBack = () => {
+      if (this.interactionId === interactionId) {
+        goBack()
+      }
+    }
+    const checkAndSnow = (): void => {
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'AckAccountInfoActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+        })
+      }
+    }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const account = await this.uc.getAccount(action.accountUri)
+      if (!(
+        account &&
+        account.display.debtorName !== undefined &&
+        account.knowledge.latestUpdateId === action.knowledgeUpdateId
+      )) {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
+        return
+      }
+      checkAndSnow()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }
