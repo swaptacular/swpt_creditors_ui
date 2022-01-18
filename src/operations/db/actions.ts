@@ -50,9 +50,24 @@ export async function removeActionRecord(actionId: number): Promise<void> {
           await abortTransfer(action.userId, action.transferUri)
           break
         case 'AckAccountInfo':
-          // TODO: If `action.acknowledged` is `true`, if necessary,
-          // create corresponding `ApproveDebtorNameAction`,
-          // `ApproveAmountDisplayAction`, `ApprovePegAction` actions.
+          if (action.acknowledged) {
+            const { userId, accountUri, changes, debtorData } = action
+            const createAction= (actionType: ApproveAction['actionType']) => createApproveAction({
+              actionType,
+              userId,
+              accountUri,
+              createdAt: new Date(),
+            })
+            if (changes.debtorName) {
+              await createAction('ApproveDebtorName')
+            }
+            if (changes.amountDivisor || changes.decimalPlaces || changes.unit) {
+              await createAction('ApproveAmountDisplay')
+            }
+            if (changes.peg && debtorData.peg) {
+              await createAction('ApprovePeg')
+            }
+          }
           verifyAccountKnowledge(action.accountUri)
           break
         default:

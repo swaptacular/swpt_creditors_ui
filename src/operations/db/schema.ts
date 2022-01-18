@@ -1,5 +1,5 @@
 import type { PaymentInfo } from '../../payment-requests'
-import type { BaseDebtorData, Peg, ResourceReference, DocumentWithHash } from '../../debtor-info'
+import type { BaseDebtorData, ResourceReference, DocumentWithHash } from '../../debtor-info'
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
@@ -364,8 +364,11 @@ export type CreateAccountActionWithId =
 
 // TODO: Here is how this action should work:
 //
-// * Ensure that the pegged account (accountUri) exists, and
-//   `peggedAccount.AccountDisplay.debtorName` is not undefined.
+// * Ensure that the pegged account (accountUri) exists,
+//   `peggedAccount.AccountDisplay.debtorName` is not undefined, and
+//   `peggedAccount.AccountKnowledge.debtorData` gives an inital (not
+//   undefined) value for `peg`. (Maybe check for circular pegs as
+//   well.)
 //
 // (dialog 1 -- optional)
 //
@@ -457,7 +460,6 @@ export type ApprovePegAction =
   & {
     actionType: 'ApprovePeg',
     accountUri: string,
-    peg: Peg,
   }
 
 export type ApprovePegActionWithId =
@@ -468,7 +470,7 @@ export type ApprovePegActionWithId =
 //
 // * Ensure that the account (accountUri) exists,
 //   `account.AccountDisplay.debtorName` is not undefined, and
-//   `account.AccountKnowledge.debtorData` describes the same
+//   `account.AccountKnowledge.debtorData` gives initial values for
 //   `amountDivisor`, `decimalPlaces`, and `unit`.
 //
 // * Show the "approve amount display screen", and if accepted:
@@ -489,9 +491,6 @@ export type ApproveAmountDisplayAction =
   & {
     actionType: 'ApproveAmountDisplay',
     accountUri: string,
-    amountDivisor: number,  // TODO: are these needed?
-    decimalPlaces: bigint,
-    unit: string,
   }
 
 export type ApproveAmountDisplayActionWithId =
@@ -503,7 +502,7 @@ export type ApproveAmountDisplayActionWithId =
 // * Ensure that the account (accountUri) exists,
 //   `account.AccountDisplay.debtorName` is not undefined (it shall be
 //   used as an initial value for `editedDebtorName`), and
-//   `account.AccountKnowledge.debtorData` describes the same
+//   `account.AccountKnowledge.debtorData` gives an intial value for
 //   `debtorName`.
 //
 // * Show the "approve debtor name screen", and if accepted:
@@ -532,7 +531,6 @@ export type ApproveDebtorNameAction =
   & {
     actionType: 'ApproveDebtorName',
     accountUri: string,
-    debtorName: string,  // TODO: is this needed?
     editedDebtorName?: string,
   }
 
