@@ -180,6 +180,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,
+        hasPreviousPeg: knownData.peg !== undefined,
         acknowledged: false,
         accountUri: info.account.uri,
         changes,

@@ -109,6 +109,7 @@ export type CreateAccountActionModel = BasePageModel & {
 export type AckAccountInfoActionModel = BasePageModel & {
   type: 'AckAccountInfoActionModel',
   action: AckAccountInfoActionWithId,
+  debtorName: string,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -403,6 +404,7 @@ export class AppState {
 
   showAckAccountInfoAction(action: AckAccountInfoActionWithId, back?: () => void): Promise<void> {
     let interactionId: number
+    let debtorName: string | undefined
     const goBack = back ?? (() => { this.showActions() })
 
     const checkAndGoBack = () => {
@@ -411,12 +413,14 @@ export class AppState {
       }
     }
     const checkAndSnow = (): void => {
+      assert(debtorName !== undefined)
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AckAccountInfoActionModel',
           reload: () => { this.showAction(action.actionId, back) },
           goBack,
           action,
+          debtorName,
         })
       }
     }
@@ -429,6 +433,7 @@ export class AppState {
         account.display.debtorName !== undefined &&
         account.knowledge.latestUpdateId === action.knowledgeUpdateId
       ) {
+        debtorName = account.display.debtorName
         checkAndSnow()
       } else {
         await this.uc.replaceActionRecord(action, null)

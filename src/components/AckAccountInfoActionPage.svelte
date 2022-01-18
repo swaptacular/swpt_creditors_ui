@@ -3,7 +3,6 @@
   // import type { AckAccountInfoActionWithId } from '../operations'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
-  import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Page from './Page.svelte'
 
   export let app: AppState
@@ -22,32 +21,132 @@
     currentModel = model
   }
   $: action = model.action
+  $: debtorName = model.debtorName
+  $: changes = action.changes
+  $: debtorData = action.debtorData
+  $: interestRateChangeDate = new Date(action.interestRateChangedAt).toLocaleDateString()
+  $: interestRate = action.interestRate.toFixed(3)
+  $: configError = action.configError
 </script>
 
 <style>
+  .text-container {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
   .fab-container {
     margin: 16px 16px;
   }
+  ul {
+    list-style: square outside;
+    margin: 0.75em 1.25em;
+  }
+  li {
+    margin: 0.5em 0;
+  }
 </style>
 
-<Page title="Changed currency">
+<Page title="Modified currency">
   <svelte:fragment slot="content">
-    <LayoutGrid>
-      <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-        <Paper style="margin-top: 12px; margin-bottom: 24px; word-wrap: break-word" elevation={6}>
-          <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
-            Account with ...
-          </Title>
-          <Content style="clear: both">
-            <ul>
+    <div class="text-container">
+      <Paper elevation={8} style="margin: 16px; word-break: break-word">
+        <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
+          "{debtorName}" has modified its currency parameters:
+        </Title>
+        <Content>
+          <ul>
+            {#if changes.configError}
               <li>
-                Something have changed...
+                {#if configError === undefined}
+                  The previously experienced account configuration
+                  problem has been resolved. Now your account is
+                  configured correctly.
+                {:else if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                  No connection can be made to the servers that manage
+                  this currency. You will not be able to send or
+                  receive money from this account, but you still can
+                  peg other currencies to it.
+                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                  An account configuration problem has occurred.
+                  Usually this means that temporarily, a connection
+                  can not be made to the servers that manage this
+                  currency.
+                {:else}
+                  An account configuration problem has occurred: {configError}.
+                {/if}
               </li>
-            </ul>
-          </Content>
-        </Paper>
-      </Cell>
-    </LayoutGrid>
+            {/if}
+
+            {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
+              <li>
+                The issuer has declared a new official way to display
+                currency amounts. Later, you will be asked to approve
+                this very important change.
+              </li>
+            {/if}
+
+            {#if changes.interestRate}
+              <li>
+                On {interestRateChangeDate} the annual interest rate
+                on your account was changed to {interestRate}%.
+              </li>
+            {/if}
+
+            {#if changes.peg}
+              <li>
+                {#if debtorData.peg}
+                  {#if action.hasPreviousPeg}
+                    The issuer has declared a new, different currency
+                    peg. Later, you will be asked to approve the new
+                    peg.
+                  {:else}
+                    The currency has been pegged to another
+                    currency. Later, you will be asked to approve this
+                    currency peg.
+                  {/if}
+                {:else}
+                  The previously declared currency peg has been removed.
+                {/if}
+              </li>
+            {/if}
+
+            {#if changes.latestDebtorInfo}
+              <li>
+                The digital coin (the QR code) of the currency has
+                changed. The new digital coin contains a different
+                <a href="{debtorData.latestDebtorInfo.uri}" target="blank">link</a>.
+              </li>
+            {/if}
+
+            {#if changes.debtorName}
+              <li>
+                The official name of the currency has been changed to
+                "{debtorData.debtorName}". Later, you will be asked to
+                approve this change.
+              </li>
+            {/if}
+
+            {#if changes.summary}
+              <li>
+                The official currency summary, stated by the issuer,
+                has been updated.
+              </li>
+            {/if}
+
+            {#if changes.debtorHomepage}
+              <li>
+                {#if debtorData.debtorHomepage}
+                  The official home page of the currency <a href="{debtorData.debtorHomepage.uri}" target="_blank">has been changed</a>.
+                {:else}
+                  The official home page of the currency has been changed.
+                {/if}
+              </li>
+            {/if}
+          </ul>
+        </Content>
+      </Paper>
+    </div>
   </svelte:fragment>
 
   <svelte:fragment slot="floating">

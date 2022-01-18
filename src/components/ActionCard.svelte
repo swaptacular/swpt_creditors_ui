@@ -65,11 +65,11 @@
       }
       case "AckAccountInfo": {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" changed its currency configuration.` : 'Changed currency configuration.'
+        return debtorName ? `"${debtorName}" has modified its currency parameters.` : 'Modified currency parameters.'
       }
       case 'ApprovePeg': {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" announces a currency peg.` : 'Announced currency peg.'
+        return debtorName ? `"${debtorName}" declares a currency peg.` : 'Declared currency peg.'
       }
       default:
         return "Unknown action type"
