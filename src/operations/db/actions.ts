@@ -1,10 +1,15 @@
-import type { ActionRecord, ActionRecordWithId, ListQueryOptions } from './schema'
+import type {
+  ActionRecord, ActionRecordWithId, ListQueryOptions, ApprovePegAction, ApproveAmountDisplayAction,
+  ApproveDebtorNameAction
+} from './schema'
 
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
 import { UserDoesNotExist, isInstalledUser, verifyAccountKnowledge } from './users'
 import { abortTransfer } from './transfers'
+
+export type ApproveAction = ApprovePegAction | ApproveAmountDisplayAction | ApproveDebtorNameAction
 
 export async function getActionRecords(userId: number, options: ListQueryOptions = {}): Promise<ActionRecordWithId[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
@@ -85,5 +90,16 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
         await db.actions.add(replacement)
       }
     }
+  })
+}
+
+export async function createApproveAction(action: ApproveAction): Promise<number> {
+  const { accountUri, actionType } = action
+  return await db.transaction('rw', [db.wallets, db.actions], async () => {
+    await db.actions
+      .where({ accountUri })
+      .filter(action => action.actionType === actionType)
+      .delete()
+    return await createActionRecord(action)
   })
 }

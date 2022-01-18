@@ -17,7 +17,7 @@ import {
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
-  InvalidActionState
+  InvalidActionState, createApproveAction
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -327,10 +327,15 @@ export class UserContext {
   async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
     assert(action.state)
     assert(action.state.accountInitializationInProgress)
-    if (action.state.debtorData.peg) {
-      // TODO: Create an ApprovePegAction for the peg, and delete
-      // the create account action. (We may need to ensure that the
-      // currency is not pegged to itself.)
+    const peg = action.state.debtorData.peg
+    if (peg && peg.debtorIdentity.uri !== action.debtorIdentityUri) {
+      await createApproveAction({
+        actionType: 'ApprovePeg',
+        userId: this.userId,
+        createdAt: new Date(),
+        accountUri: action.state.accountUri,
+        peg,
+      })
     }
     await this.replaceActionRecord(action, null)
   }

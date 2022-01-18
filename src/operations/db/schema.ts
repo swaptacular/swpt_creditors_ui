@@ -348,6 +348,7 @@ export type CreateAccountAction =
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
     state?: {
+      accountUri: string,
       accountInitializationInProgress: boolean,
       debtorData: BaseDebtorData,
       debtorDataSource: DebtorDataSource,

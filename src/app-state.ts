@@ -209,7 +209,7 @@ export class AppState {
               this.showCreateAccountAction(this.createActionManager(action), back)
               break
             default:
-              throw new Error('unknown action type')
+              throw new Error(`Unknown action type: ${action.actionType}`)
           }
         } else {
           this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
@@ -283,6 +283,7 @@ export class AppState {
       const editedNegligibleAmount = useDisplay ? account.config.negligibleAmount : tinyNegligibleAmount
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
       const state = {
+        accountUri: data.account.uri,
         accountInitializationInProgress: false,
         debtorData,
         debtorDataSource,
@@ -607,5 +608,8 @@ export async function createAppState(): Promise<AppState | undefined> {
 }
 
 function calcTinyNegligibleAmount(debtroData: BaseDebtorData): number {
-  return Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor * (1 + Number.EPSILON)
+  const amount = Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor
+  assert(amount >= 0)
+  const isInteger = Math.ceil(amount) === amount
+  return isInteger ? amount : amount * (1 + Number.EPSILON)
 }
