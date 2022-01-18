@@ -1,6 +1,8 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
-import type { ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource } from './operations'
+import type {
+  ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap
+} from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
@@ -128,6 +130,10 @@ export class AppState {
       reload: () => { this.showActions() },
       actions,
     })
+  }
+
+  get accountsMap(): AccountsMap {
+    return this.uc.accountsMap
   }
 
   fetchDataFromServer(callback?: () => void): Promise<void> {

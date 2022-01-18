@@ -79,6 +79,10 @@ export class AccountsMap {
     this.processMessageQueue()
   }
 
+  getObjectByUri(accountUri: string): AddedObject | undefined {
+    return this.objects.get(accountUri)
+  }
+
   private processMessageQueue(): void {
     for (const message of this.messageQueue) {
       this.processMessage(message)

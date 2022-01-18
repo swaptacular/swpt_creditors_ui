@@ -50,6 +50,7 @@ export type {
   CreateAccountActionWithId,
   AccountV0,
   DebtorDataSource,
+  AccountsMap,
 }
 
 export class ConflictingUpdate extends Error {

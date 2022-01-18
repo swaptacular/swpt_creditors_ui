@@ -19,9 +19,27 @@
       return 'Show the problem'
     case 'CreateAccount':
       return 'Confirm'
+    case "AckAccountInfo":
+      return 'Acknowledge'
+    case 'ApprovePeg':
+      return 'Review peg'
     default:
       return 'Unknown action type'
     }
+  }
+
+  function getDebtorName(accountUri: string): string | undefined {
+    let debtorName
+    const account = app.accountsMap.getObjectByUri(accountUri)
+    if (account) {
+      assert(account.type === 'Account')
+      const display = app.accountsMap.getObjectByUri(account.display.uri)
+      if (display) {
+        assert(display.type === 'AccountDisplay')
+        debtorName = display.debtorName
+      }
+    }
+    return debtorName
   }
 
   function getDescription(action: ActionRecordWithId): string {
@@ -44,6 +62,14 @@
         const editedDebtorName = action.state?.editedDebtorName
         const name = editedDebtorName !== undefined ? `"${editedDebtorName}"` : "an unknown debtor"
         return `Create account with ${name}.`
+      }
+      case "AckAccountInfo": {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName ? `"${debtorName}" changed its currency configuration.` : 'Changed currency configuration.'
+      }
+      case 'ApprovePeg': {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName ? `"${debtorName}" announces a currency peg.` : 'Announced currency peg.'
       }
       default:
         return "Unknown action type"
