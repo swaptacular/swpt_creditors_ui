@@ -488,7 +488,7 @@ export type ApproveAmountDisplayAction =
   & {
     actionType: 'ApproveAmountDisplay',
     accountUri: string,
-    amountDivisor: number,
+    amountDivisor: number,  // TODO: are these needed?
     decimalPlaces: bigint,
     unit: string,
   }
@@ -531,7 +531,7 @@ export type ApproveDebtorNameAction =
   & {
     actionType: 'ApproveDebtorName',
     accountUri: string,
-    debtorName: string;
+    debtorName: string,  // TODO: is this needed?
     editedDebtorName?: string,
   }
 
