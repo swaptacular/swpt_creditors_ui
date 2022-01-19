@@ -52,20 +52,34 @@ export async function removeActionRecord(actionId: number): Promise<void> {
         case 'AckAccountInfo':
           if (action.acknowledged) {
             const { userId, accountUri, changes, debtorData } = action
-            const createAction= (actionType: ApproveAction['actionType']) => createApproveAction({
-              actionType,
-              userId,
-              accountUri,
-              createdAt: new Date(),
-            })
             if (changes.debtorName) {
-              await createAction('ApproveDebtorName')
+              await createApproveAction({
+                actionType: 'ApproveDebtorName',
+                createdAt: new Date(),
+                debtorName: debtorData.debtorName,
+                userId,
+                accountUri,
+              })
             }
             if (changes.amountDivisor || changes.decimalPlaces || changes.unit) {
-              await createAction('ApproveAmountDisplay')
+              await createApproveAction({
+                actionType: 'ApproveAmountDisplay',
+                createdAt: new Date(),
+                amountDivisor: debtorData.amountDivisor,
+                decimalPlaces: debtorData.decimalPlaces,
+                unit: debtorData.unit,
+                userId,
+                accountUri,
+              })
             }
             if (changes.peg && debtorData.peg) {
-              await createAction('ApprovePeg')
+              await createApproveAction({
+                actionType: 'ApprovePeg',
+                createdAt: new Date(),
+                peg: debtorData.peg,
+                userId,
+                accountUri,
+              })
             }
           }
           verifyAccountKnowledge(action.accountUri)

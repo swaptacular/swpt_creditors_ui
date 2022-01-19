@@ -16,7 +16,7 @@
     app
     action
   }
-  
+
   $: if (currentModel !== model) {
     currentModel = model
   }
