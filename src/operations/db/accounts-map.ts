@@ -1,4 +1,7 @@
-import type { AccountRecord, AccountObjectRecord, DocumentRecord } from './schema'
+import type { BaseDebtorData } from '../../debtor-info'
+import type { AccountRecord, AccountObjectRecord } from './schema'
+
+import { tryToParseDebtorInfoDocument } from '../../debtor-info'
 import { db } from './schema'
 
 const MAX_INT64 = (1n << 63n) - 1n
@@ -9,9 +12,13 @@ const MAX_INT64 = (1n << 63n) - 1n
  */
 const accountsMapChannel = new BroadcastChannel('creditors.accountsMap')
 
-export type DebtorInfoDocument = DocumentRecord & { type: 'DebtorInfoDocument', latestUpdateId: bigint }
-export type AddedObject = AccountRecord | AccountObjectRecord | DebtorInfoDocument
-export type DeletedObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'DebtorInfoDocument'
+export type ParsedDebtorInfoDocument = BaseDebtorData & {
+  type: 'ParsedDebtorInfoDocument',
+  uri: string,
+  latestUpdateId: bigint,
+}
+export type AddedObject = AccountRecord | AccountObjectRecord | ParsedDebtorInfoDocument
+export type DeletedObjectType = AccountRecord['type'] | AccountObjectRecord['type'] | 'ParsedDebtorInfoDocument'
 
 export type AddedObjectMessage = {
   deleted: false,
@@ -66,11 +73,15 @@ export class AccountsMap {
           const documentUri = obj.debtorInfo.iri
           const document = await db.documents.get(documentUri)
           if (document) {
-            this.processObjectAddition({
-              ...document,
-              type: 'DebtorInfoDocument',
-              latestUpdateId: MAX_INT64,
-            })
+            const debtorData = tryToParseDebtorInfoDocument(document)
+            if (debtorData) {
+              this.processObjectAddition({
+                ...debtorData,
+                type: 'ParsedDebtorInfoDocument',
+                uri: document.uri,
+                latestUpdateId: MAX_INT64,
+              })
+            }
           }
         }
       }

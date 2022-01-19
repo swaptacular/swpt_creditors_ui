@@ -152,6 +152,17 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   return data
 }
 
+export function tryToParseDebtorInfoDocument(document: Document): DebtorData | undefined {
+  let debtorData
+  try {
+    debtorData = parseDebtorInfoDocument(document)
+  } catch (e: unknown) {
+    if (e instanceof InvalidDocument) { /* ignore */ }
+    else throw e
+  }
+  return debtorData
+}
+
 export function sanitizeBaseDebtorData(data: BaseDebtorData): BaseDebtorData {
   const {
     latestDebtorInfo, summary, debtorName, debtorHomepage,

@@ -137,7 +137,7 @@ export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise
       } else {
         await db.tasks
           .where({ accountUri })
-          .filter(task => task.taskType === 'FetchDebtorInfo' && task.accountObjectUri === accountObjectUri)
+          .filter(task => task.taskType === 'FetchDebtorInfo' && task.forAccountInfo)
           .delete()
       }
     }
@@ -148,8 +148,8 @@ export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise
         iri: newIri,
         scheduledFor: new Date(),
         backoffSeconds: 0,
+        forAccountInfo: true,
         accountUri,
-        accountObjectUri,
       })
     }
     await db.accountObjects.put(record)

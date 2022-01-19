@@ -5,7 +5,7 @@ import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 import equal from 'fast-deep-equal'
 import { db } from './schema'
 import {
-  parseDebtorInfoDocument, serializeDebtorData, sanitizeBaseDebtorData, InvalidDocument
+  tryToParseDebtorInfoDocument, serializeDebtorData, sanitizeBaseDebtorData, InvalidDocument
 } from '../../debtor-info'
 
 export class UserDoesNotExist extends Error {
@@ -192,19 +192,13 @@ async function addAckAccountInfoActionIfThereAreChanges(
 }
 
 async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
-  let debtorData
   const document = await getDocumentRecord(debtorInfo.iri)
   if (
     document &&
     document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
     document.contentType === (debtorInfo.contentType ?? document.contentType)
   ) {
-    try {
-      debtorData = parseDebtorInfoDocument(document)
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { /* ignore */ }
-      else throw e
-    }
+    return tryToParseDebtorInfoDocument(document)
   }
-  return debtorData
+  return undefined
 }

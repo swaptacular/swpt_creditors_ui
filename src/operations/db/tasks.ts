@@ -1,6 +1,8 @@
 import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './schema'
+
 import { Dexie } from 'dexie'
 import { db } from './schema'
+import { tryToParseDebtorInfoDocument } from '../../debtor-info'
 import { putDocumentRecord, verifyAccountKnowledge } from './users'
 import { postAccountsMapMessage } from './accounts-map'
 
@@ -25,14 +27,21 @@ export async function settleFetchDebtorInfoTask(
   let { taskId, backoffSeconds, accountUri } = task
   if (debtorInfoDocument) {
     await db.transaction('rw', db.allTables, async () => {
-      if (await putDocumentRecord(debtorInfoDocument)) {
+      const debtorData = tryToParseDebtorInfoDocument(debtorInfoDocument)
+      const saved = await putDocumentRecord(debtorInfoDocument)
+      if (saved && debtorData !== undefined) {
         postAccountsMapMessage({
           deleted: false,
-          object: { ...debtorInfoDocument, type: 'DebtorInfoDocument', latestUpdateId: MAX_INT64 },
+          object: {
+            ...debtorData,
+            type: 'ParsedDebtorInfoDocument',
+            uri: debtorInfoDocument.uri,
+            latestUpdateId: MAX_INT64,
+          },
         })
       }
       await db.tasks.delete(taskId)
-      await verifyAccountKnowledge(accountUri)
+      await verifyAccountKnowledge(accountUri, debtorData)
     })
   } else {
     await db.tasks.where({ taskId }).modify(task => {

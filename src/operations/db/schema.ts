@@ -572,7 +572,7 @@ export type FetchDebtorInfoTask =
     taskType: 'FetchDebtorInfo',
     iri: string,
     accountUri: string,
-    accountObjectUri: string,
+    forAccountInfo: boolean,
     backoffSeconds: number,
   }
 
