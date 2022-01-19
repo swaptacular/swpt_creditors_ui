@@ -142,7 +142,7 @@
     <Page title="Create account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
-          <Title>Unknown debtor</Title>
+          <Title>Unknown currency</Title>
           <Content>
             Can not obtain information about the digital
             currency. This is either a temporary problem, or the
@@ -187,7 +187,7 @@
                             <a
                               href={data.debtorData.debtorHomepage.uri}
                               target="_blank"
-                              style="text-decoration: none; color: black"
+                              style="text-decoration: none; color: #666"
                               >
                               www
                             </a>
@@ -234,7 +234,7 @@
                   input$spellcheck="false"
                   bind:invalid={invalidDebtorName}
                   bind:value={debtorName}
-                  label="Debtor name"
+                  label="Currency name"
                   >
                   <svelte:fragment slot="trailingIcon">
                     {#if invalidDebtorName}
@@ -242,7 +242,7 @@
                     {/if}
                   </svelte:fragment>
                   <HelperText slot="helper" persistent>
-                    Every account must have a unique debtor name.
+                    Every account must have a unique currency name.
                   </HelperText>
                 </Textfield>
               </Cell>

@@ -52,7 +52,7 @@
     <div class="text-container">
       <Paper elevation={8} style="margin: 16px; word-break: break-word">
         <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
-          "{debtorName}" has modified its currency parameters:
+          "{debtorName}" has undergone some changes:
         </Title>
         <Content>
           <ul>
@@ -82,14 +82,15 @@
               <li>
                 The issuer has declared a new official way to display
                 currency amounts. Later, you will be asked to approve
-                this very important change.
+                this change.
               </li>
             {/if}
 
             {#if changes.interestRate}
               <li>
-                On {interestRateChangeDate} the annual interest rate
-                on your account was changed to {interestRate}%.
+                On {interestRateChangeDate} the issuer changed the
+                annual interest rate on your account to
+                {interestRate}%.
               </li>
             {/if}
 
@@ -141,6 +142,13 @@
                 {:else}
                   The official home page of the currency has been changed.
                 {/if}
+              </li>
+            {/if}
+
+            {#if changes.otherChanges}
+              <li>
+                Some unimportant technical details in the description
+                of the currency have been changed.
               </li>
             {/if}
           </ul>

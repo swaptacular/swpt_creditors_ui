@@ -60,12 +60,12 @@
       }
       case "CreateAccount": {
         const editedDebtorName = action.state?.editedDebtorName
-        const name = editedDebtorName !== undefined ? `"${editedDebtorName}"` : "an unknown debtor"
+        const name = editedDebtorName !== undefined ? `"${editedDebtorName}"` : "an unknown currency"
         return `Create account with ${name}.`
       }
       case "AckAccountInfo": {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" has modified its currency parameters.` : 'Modified currency parameters.'
+        return debtorName ? `"${debtorName}" has undergone some changes.` : 'A currency has undergone some changes.'
       }
       case 'ApprovePeg': {
         const debtorName = getDebtorName(action.accountUri)
@@ -78,7 +78,7 @@
 </script>
 
 <Card>
-  <Content>{getDescription(action)}</Content>
+  <Content style="word-break: break-word">{getDescription(action)}</Content>
   <Actions fullBleed>
     <Button {color} on:click={show}>
       <Label>{getButtonLabel(action)}</Label>
