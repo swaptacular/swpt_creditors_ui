@@ -122,13 +122,20 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
   })
 }
 
-export async function createApproveAction(action: ApproveAction): Promise<number> {
+export async function createApproveAction(action: ApproveAction, overrideExisting: boolean = true): Promise<number> {
   const { accountUri, actionType } = action
   return await db.transaction('rw', [db.wallets, db.actions], async () => {
-    await db.actions
-      .where({ accountUri })
-      .filter(action => action.actionType === actionType)
-      .delete()
+    const existingActionsQuery = db.actions
+        .where({ accountUri })
+        .filter(action => action.actionType === actionType)
+    if (overrideExisting) {
+      await existingActionsQuery.delete()
+    } else {
+      const existingAction = await existingActionsQuery.first() as ActionRecordWithId | undefined
+      if (existingAction) {
+        return existingAction.actionId
+      }
+    }
     return await createActionRecord(action)
   })
 }

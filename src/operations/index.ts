@@ -353,7 +353,7 @@ export class UserContext {
         createdAt: new Date(),
         accountUri: action.state.accountUri,
         peg,
-      })
+      }, false)
     }
     await this.replaceActionRecord(action, null)
   }
