@@ -345,12 +345,14 @@ export class UserContext {
   async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
     assert(action.state)
     assert(action.state.accountInitializationInProgress)
-    if (action.state.debtorData.peg) {
+    const peg = action.state.debtorData.peg
+    if (peg) {
       await createApproveAction({
         actionType: 'ApprovePeg',
         userId: this.userId,
         createdAt: new Date(),
         accountUri: action.state.accountUri,
+        peg,
       })
     }
     await this.replaceActionRecord(action, null)
