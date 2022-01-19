@@ -109,7 +109,7 @@ export type CreateAccountActionModel = BasePageModel & {
 export type AckAccountInfoActionModel = BasePageModel & {
   type: 'AckAccountInfoActionModel',
   action: AckAccountInfoActionWithId,
-  debtorName: string,
+  account: AccountV0,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -404,7 +404,7 @@ export class AppState {
 
   showAckAccountInfoAction(action: AckAccountInfoActionWithId, back?: () => void): Promise<void> {
     let interactionId: number
-    let debtorName: string | undefined
+    let account: AccountV0 | undefined
     const goBack = back ?? (() => { this.showActions() })
 
     const checkAndGoBack = () => {
@@ -413,27 +413,26 @@ export class AppState {
       }
     }
     const checkAndSnow = (): void => {
-      assert(debtorName !== undefined)
+      assert(account !== undefined)
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AckAccountInfoActionModel',
           reload: () => { this.showAction(action.actionId, back) },
           goBack,
           action,
-          debtorName,
+          account,
         })
       }
     }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      const account = await this.uc.getAccount(action.accountUri)
+      account = await this.uc.getAccount(action.accountUri)
       if (
         account &&
         account.display.debtorName !== undefined &&
         account.knowledge.latestUpdateId === action.knowledgeUpdateId
       ) {
-        debtorName = account.display.debtorName
         checkAndSnow()
       } else {
         await this.uc.replaceActionRecord(action, null)
@@ -443,6 +442,42 @@ export class AppState {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  acknowlegeAckAccountInfoAction(
+    action: AckAccountInfoActionWithId,
+    account: AccountV0,
+    back?: () => void,
+  ): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+
+    const checkAndGoBack = () => {
+      if (this.interactionId === interactionId) {
+        goBack()
+      }
+    }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
+      const updatedKnowledge = {
+        ...account.knowledge,
+        configError: action.configError,
+        interestRateChangedAt: action.interestRateChangedAt,
+        interestRate: action.interestRate,
+        debtorData: action.debtorData,
+        latestUpdateId: account.knowledge.latestUpdateId + 1n,
+      }
+      await this.uc.updateAccountObject(updatedKnowledge)  // Will automatically delete the action.
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }

@@ -4,7 +4,9 @@ import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
 import equal from 'fast-deep-equal'
 import { db } from './schema'
-import { parseDebtorInfoDocument, serializeDebtorData, InvalidDocument } from '../../debtor-info'
+import {
+  parseDebtorInfoDocument, serializeDebtorData, sanitizeBaseDebtorData, InvalidDocument
+} from '../../debtor-info'
 
 export class UserDoesNotExist extends Error {
   name = 'UserDoesNotExist'
@@ -85,7 +87,7 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
         debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
         revision: 0n,
       })
-      return knowledge.debtorData
+      return sanitizeBaseDebtorData(knowledge.debtorData)
     } catch (e: unknown) {
       if (e instanceof InvalidDocument) { /* ignore */ }
       throw e
@@ -176,7 +178,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         actionType: 'AckAccountInfo',
         createdAt: new Date(),
         knowledgeUpdateId: knowledge.latestUpdateId,
-        debtorData: newData ?? knownData,
+        debtorData: sanitizeBaseDebtorData(newData ?? knownData),
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,

@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { AppState, AckAccountInfoActionModel } from '../app-state'
-  // import type { AckAccountInfoActionWithId } from '../operations'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
@@ -12,16 +11,15 @@
   let currentModel: AckAccountInfoActionModel
 
   function acknowlege(): void {
-    // TODO: implement
-    app
-    action
+    app.acknowlegeAckAccountInfoAction(action, model.account, model.goBack)
   }
 
   $: if (currentModel !== model) {
     currentModel = model
+    assert(model.account.display.debtorName !== undefined)
   }
   $: action = model.action
-  $: debtorName = model.debtorName
+  $: debtorName = model.account.display.debtorName
   $: changes = action.changes
   $: debtorData = action.debtorData
   $: interestRateChangeDate = new Date(action.interestRateChangedAt).toLocaleDateString()

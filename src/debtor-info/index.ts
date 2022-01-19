@@ -152,6 +152,17 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   return data
 }
 
+export function sanitizeBaseDebtorData(data: BaseDebtorData): BaseDebtorData {
+  const {
+    latestDebtorInfo, summary, debtorName, debtorHomepage,
+    amountDivisor, decimalPlaces, unit, peg, willNotChangeUntil,
+  } = data
+  return {
+    latestDebtorInfo, summary, debtorName, debtorHomepage,
+    amountDivisor, decimalPlaces, unit, peg, willNotChangeUntil,
+  }
+}
+
 export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
   return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }

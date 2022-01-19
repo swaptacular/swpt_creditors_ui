@@ -7,7 +7,7 @@ import {
   makeLedgerEntry, makeObjectReference, makeTransfersList, makeAccountsList, makeTransfer
 } from './canonical-objects'
 import { getDocumentRecord, putDocumentRecord, getBaseDebtorDataFromAccoutKnowledge } from './db'
-import { parseDebtorInfoDocument, InvalidDocument } from '../debtor-info'
+import { parseDebtorInfoDocument, sanitizeBaseDebtorData, InvalidDocument } from '../debtor-info'
 
 export const MAX_INT64 = (1n << 63n) - 1n
 
@@ -214,7 +214,7 @@ export async function obtainBaseDebtorData(
       // user will have to simply retry the action.
       throw new DocumentFetchError()
     }
-    const debtorData = { ...parseDebtorInfoDocument(document) }
+    const debtorData = parseDebtorInfoDocument(document)
     if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
       throw new InvalidDocument('wrong SHA256 value')
     }
@@ -224,7 +224,7 @@ export async function obtainBaseDebtorData(
     if (debtorData.debtorIdentity.uri !== account.debtor.uri) {
       throw new InvalidDocument('wrong debtor identity')
     }
-    return debtorData
+    return sanitizeBaseDebtorData(debtorData)
   }
 
   // Find the most reliable source of information about the debtor.

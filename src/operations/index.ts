@@ -421,7 +421,7 @@ export class UserContext {
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ConflictingUpdate`,
    * `WrongPin` or `UnprocessableEntity`. */
-  private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
+  async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
     let response
     try {
       const { uri, account, latestUpdateAt, ...request } = obj
