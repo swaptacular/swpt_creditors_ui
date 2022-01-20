@@ -30,7 +30,7 @@ test("Validate CoinInfo schema", () => {
       debtorIdentity: { type: 'DebtorIdentity', uri: 'swpt:321' },
       latestDebtorInfo: { uri: 'http://example.com/' },
     },
-    unknownProp: 1,
+    unknownProp: 1n,
   }
   expect(validate(data)).toEqual(true)
   expect(validate({ ...data, peg: undefined })).toEqual(true)
