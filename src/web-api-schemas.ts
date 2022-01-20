@@ -535,8 +535,11 @@ export type AccountKnowledge = {
   /** The URI of the corresponding `Account`. */
   account: ObjectReference;
 
-  /** Optional debtor data, which is known to the creditor. (STANDARD
-   * EXTENSION) */
+  /** Optional debtor data, which is known to the creditor. Basically,
+   * this is a "debtor-info" document, from which `type`,
+   * `debtorIdentity`, and `revision` fields have been removed. This
+   * is AN EXTENSION TO THE STANDARD.
+   */
   debtorData?: BaseDebtorData;
 
   /** Optional configuration error, which is known to the creditor. */
