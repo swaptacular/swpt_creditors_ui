@@ -34,6 +34,22 @@ function parseOptionalDate(s?: string, errorMsg?: string): Date | undefined {
   return date
 }
 
+function serializeDebtorData(debtorData: DebtorData): Uint8Array {
+  const until = parseOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
+  const data = {
+    ...debtorData,
+    type: 'CoinInfo',
+    revision: Number(debtorData.revision),
+    decimalPlaces: Number(debtorData.decimalPlaces),
+    willNotChangeUntil: until?.toISOString(),
+  }
+  if (!validate(data)) {
+    const e = validate.errors[0]
+    throw new InvalidDocument(`${e.instancePath} ${e.message}`)
+  }
+  return UTF8_ENCODER.encode(JSON.stringify(data))
+}
+
 export type ResourceReference = {
   uri: string,
 }
@@ -82,26 +98,20 @@ export class InvalidDocument extends Error {
 
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
-/*
- This function serializes debtor data to bytes. The format of the
- serialized bytes output is not guaranteed, and may change without
- notice. An `InvalidDocument` error will be thrown when invalid data
- is passed.
-*/
-export function serializeDebtorData(debtorData: DebtorData): Uint8Array {
-  const until = parseOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
-  const data = {
-    ...debtorData,
-    type: 'CoinInfo',
-    revision: Number(debtorData.revision),
-    decimalPlaces: Number(debtorData.decimalPlaces),
-    willNotChangeUntil: until?.toISOString(),
+export function validateBaseDebtorData(baseDebtorData: BaseDebtorData): boolean {
+  try {
+    serializeDebtorData({
+      ...baseDebtorData,
+      debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
+      revision: 0n,
+    })
+  } catch (e: unknown) {
+    if (e instanceof InvalidDocument) {
+      console.warn(e)
+      return false
+    } else throw e
   }
-  if (!validate(data)) {
-    const e = validate.errors[0]
-    throw new InvalidDocument(`${e.instancePath} ${e.message}`)
-  }
-  return UTF8_ENCODER.encode(JSON.stringify(data))
+  return true
 }
 
 /*

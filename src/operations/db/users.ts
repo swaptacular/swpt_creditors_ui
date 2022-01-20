@@ -6,9 +6,7 @@ import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
 import equal from 'fast-deep-equal'
 import { db } from './schema'
-import {
-  tryToParseDebtorInfoDocument, serializeDebtorData, sanitizeBaseDebtorData, InvalidDocument
-} from '../../debtor-info'
+import { tryToParseDebtorInfoDocument, validateBaseDebtorData, sanitizeBaseDebtorData } from '../../debtor-info'
 
 export class UserDoesNotExist extends Error {
   name = 'UserDoesNotExist'
@@ -79,21 +77,8 @@ export async function putDocumentRecord(document: DocumentRecord): Promise<boole
 }
 
 export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0, sanitize = true): BaseDebtorData {
-  if (knowledge.debtorData) {
-    try {
-      // To ensure that the contained data is valid, we try to
-      // serialize it. If an `InvalidDocument` error is thrown, we
-      // return dummy data.
-      serializeDebtorData({
-        ...knowledge.debtorData,
-        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
-        revision: 0n,
-      })
-      return sanitize ? sanitizeBaseDebtorData(knowledge.debtorData) : knowledge.debtorData
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { console.warn(e) }
-      else throw e
-    }
+  if (knowledge.debtorData && validateBaseDebtorData(knowledge.debtorData)) {
+    return sanitize ? sanitizeBaseDebtorData(knowledge.debtorData) : knowledge.debtorData
   }
   // Generate a dummy data.
   return {
