@@ -385,11 +385,15 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Updates account's knowledge. May throw `ConflictingUpdate`.
+   * (Normally, `WrongPin` and `UnprocessableEntity` should never be
+   * thrown.) */
   async updateAccountKnowledge(account: AccountV0, action: AckAccountInfoActionWithId): Promise<void> {
     const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
+
+    // Update the properties that the app understands and tracks,
+    // but also preserve the unknown properties.
     const updatedKnowledge = {
-      // Update the properties that the app understands and tracks,
-      // but also preserve the unknown properties.
       ...account.knowledge,
       configError: action.configError,
       interestRateChangedAt: action.interestRateChangedAt,
@@ -400,7 +404,9 @@ export class UserContext {
       },
       latestUpdateId: account.knowledge.latestUpdateId + 1n,
     }
-    await this.updateAccountObject(updatedKnowledge)  // This will automatically delete the action.
+
+    // This will automatically delete the action.
+    await this.updateAccountObject(updatedKnowledge)
   }
 
   /* Reads a payment request, and adds and returns a new
