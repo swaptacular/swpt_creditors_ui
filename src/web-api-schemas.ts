@@ -536,9 +536,9 @@ export type AccountKnowledge = {
   account: ObjectReference;
 
   /** Optional debtor data, which is known to the creditor. Basically,
-   * this is a "debtor-info" document, from which `type`,
-   * `debtorIdentity`, and `revision` fields have been removed. This
-   * is AN EXTENSION TO THE STANDARD WEB-API.
+   * this is a "application/vnd.swaptacular.coin-info+json" document,
+   * from which `type`, `debtorIdentity`, and `revision` fields have
+   * been removed. This is AN EXTENSION TO THE STANDARD WEB-API.
    */
   debtorData?: BaseDebtorData;
 
