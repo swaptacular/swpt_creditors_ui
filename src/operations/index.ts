@@ -17,7 +17,7 @@ import {
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
-  InvalidActionState, createApproveAction
+  InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -167,6 +167,7 @@ export class UserContext {
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
   readonly obtainBaseDebtorData = obtainBaseDebtorData
+  readonly getBaseDebtorDataFromAccoutKnowledge = getBaseDebtorDataFromAccoutKnowledge
 
   constructor(
     server: ServerSession,

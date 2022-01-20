@@ -78,7 +78,7 @@ export async function putDocumentRecord(document: DocumentRecord): Promise<boole
   })
 }
 
-export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0): BaseDebtorData {
+export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0, sanitize = true): BaseDebtorData {
   if (knowledge.debtorData) {
     try {
       // To ensure that the contained data is valid, we try to
@@ -89,7 +89,7 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
         debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
         revision: 0n,
       })
-      return sanitizeBaseDebtorData(knowledge.debtorData)
+      return sanitize ? sanitizeBaseDebtorData(knowledge.debtorData) : knowledge.debtorData
     } catch (e: unknown) {
       if (e instanceof InvalidDocument) { console.warn(e) }
       else throw e
