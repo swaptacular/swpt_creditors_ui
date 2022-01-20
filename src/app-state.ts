@@ -464,11 +464,16 @@ export class AppState {
       interactionId = this.interactionId
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
       const updatedKnowledge = {
+        // Update the properties that the app understands and tracks,
+        // but also preserve the unknown properties.
         ...account.knowledge,
         configError: action.configError,
         interestRateChangedAt: action.interestRateChangedAt,
         interestRate: action.interestRate,
-        debtorData: action.debtorData,
+        debtorData: {
+          ...account.knowledge.debtorData,
+          ...action.debtorData,
+        },
         latestUpdateId: account.knowledge.latestUpdateId + 1n,
       }
       await this.uc.updateAccountObject(updatedKnowledge)  // Will automatically delete the action.
