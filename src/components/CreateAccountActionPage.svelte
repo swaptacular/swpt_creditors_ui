@@ -74,6 +74,19 @@
     app.confirmCreateAccountAction(actionManager, data, pin, model.goBack)
   }
 
+  function isUniqueDebtorName(debtorName: string): boolean {
+    const nameRegex = new RegExp(`^${debtorName}$`, 'us')
+    const matchingAccounts = app.accountsMap.getAccountRecordsMatchingDebtorName(nameRegex)
+    switch (matchingAccounts.length) {
+    case 0:
+      return true
+    case 1:
+      return matchingAccounts[0].debtor.uri === action.debtorIdentityUri
+    default:
+      return false
+    }
+  }
+
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
@@ -83,10 +96,8 @@
   }
   $: action = model.action
   $: data = model.data
-
-  // TODO: Check whether `debtorName` is unique among user's accounts,
-  // and show an error if there is a name collision.
-  $: invalid = invalidDebtorName || invalidNegligibleUnitAmount
+  $: uniqueDebtorName = isUniqueDebtorName(debtorName)
+  $: invalid = invalidDebtorName || !uniqueDebtorName || invalidNegligibleUnitAmount
 </script>
 
 <style>
@@ -237,7 +248,7 @@
                   label="Currency name"
                   >
                   <svelte:fragment slot="trailingIcon">
-                    {#if invalidDebtorName}
+                    {#if invalidDebtorName || !uniqueDebtorName}
                       <TextfieldIcon class="material-icons">error</TextfieldIcon>
                     {/if}
                   </svelte:fragment>
