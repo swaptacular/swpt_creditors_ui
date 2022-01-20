@@ -1,14 +1,19 @@
 <script lang="ts">
   import type { AppState, AckAccountInfoActionModel } from '../app-state'
-  import Fab, { Label } from '@smui/fab'
+  import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
+  import Button, { Label } from '@smui/button'
+  import Fab, { Label as FabLabel } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
+  import Dialog from './Dialog.svelte'
 
   export let app: AppState
   export let model: AckAccountInfoActionModel
   export const snackbarBottom: string = "84px"
 
   let currentModel: AckAccountInfoActionModel
+  let showSummary: boolean = false
+  let showLink: boolean = false
 
   function acknowlege(): void {
     app.acknowlegeAckAccountInfoAction(action, model.account, model.goBack)
@@ -47,6 +52,42 @@
 
 <Page title="Modified currency">
   <svelte:fragment slot="content">
+    {#if showSummary}
+      <Dialog
+        open
+        aria-labelledby="show-summary-dialog-title"
+        aria-describedby="show-summary-dialog-content"
+        on:MDCDialog:closed={() => showSummary = false}
+        >
+        <DialogTitle>New currency summary:</DialogTitle>
+        <DialogContent style="word-break: break-word">{debtorData.summary}</DialogContent>
+        <Actions>
+          <Button>
+            <Label>Close</Label>
+          </Button>
+        </Actions>
+      </Dialog>
+    {/if}
+
+    {#if showLink}
+      <Dialog
+        open
+        aria-labelledby="show-link-dialog-title"
+        aria-describedby="show-link-dialog-content"
+        on:MDCDialog:closed={() => showLink = false}
+        >
+        <DialogTitle>New digital coin link:</DialogTitle>
+        <DialogContent style="word-break: break-word">
+          <a href="{debtorData.latestDebtorInfo.uri}" target="_blank">{debtorData.latestDebtorInfo.uri}</a>
+        </DialogContent>
+        <Actions>
+          <Button use={[InitialFocus]}>
+            <Label>Close</Label>
+          </Button>
+        </Actions>
+      </Dialog>
+    {/if}
+
     <div class="text-container">
       <Paper elevation={8} style="margin: 16px; word-break: break-word">
         <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
@@ -97,11 +138,11 @@
                 {#if debtorData.peg}
                   {#if action.hasPreviousPeg}
                     The issuer has declared a new, different currency
-                    peg. Later, you will be asked to approve this change.
+                    peg. Later, you will be asked to approve this peg.
                   {:else}
                     The currency has been pegged to another
                     currency. Later, you will be asked to approve this
-                    change.
+                    peg.
                   {/if}
                 {:else}
                   The previously declared currency peg has been removed.
@@ -121,21 +162,21 @@
               <li>
                 The digital coin (the QR code) of the currency has
                 changed. The new digital coin contains a different
-                <a href="{debtorData.latestDebtorInfo.uri}" target="blank">link</a>.
+                <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
               </li>
             {/if}
 
             {#if changes.summary}
               <li>
                 The official currency summary, stated by the issuer,
-                has been updated.
+                has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
               </li>
             {/if}
 
             {#if changes.debtorHomepage}
               <li>
                 {#if debtorData.debtorHomepage}
-                  The official home page of the currency <a href="{debtorData.debtorHomepage.uri}" target="_blank">has been changed</a>.
+                  The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
                 {:else}
                   The official home page of the currency has been changed.
                 {/if}
@@ -157,7 +198,7 @@
   <svelte:fragment slot="floating">
     <div class="fab-container">
       <Fab color="primary" on:click={acknowlege} extended>
-        <Label>Acknowlege</Label>
+        <FabLabel>Acknowlege</FabLabel>
       </Fab>
     </div>
   </svelte:fragment>
