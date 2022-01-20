@@ -103,6 +103,17 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
   }
 }
 
+/* For the configured account `accountUri`, compares the information
+ * contained in `account.knowledge` and the `account.info`. If it
+ * differs, creates an `AckAccountInfo` action. Does nothing if an
+ * `AckAccountInfo` action for the account already exists, or the
+ * account is not configured yet.
+ *
+ * If `account.info.debtorInfo` is undefined (that is: a disconnected
+ * currency), and `debtorData` is passed, it will be used instead for
+ * the comparison. This is used to decect changes in disconnected
+ * currencies.
+ */
 export async function verifyAccountKnowledge(accountUri: string, debtorData?: DebtorData): Promise<void> {
   await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
     const hasAckAccountInfoAction = await db.actions
