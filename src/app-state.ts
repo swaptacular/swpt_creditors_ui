@@ -255,21 +255,9 @@ export class AppState {
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
     let data: CreateAccountActionData | undefined
-
     const checkAndGoBack = () => {
       if (this.interactionId === interactionId) {
         goBack()
-      }
-    }
-    const checkAndSnowData = (): void => {
-      if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'CreateAccountActionModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          data,
-        })
       }
     }
     const obtainData = async (): Promise<CreateAccountActionData> => {
@@ -341,7 +329,15 @@ export class AppState {
         await this.uc.finishAccountInitialization(action)
         checkAndGoBack()
       } else {
-        checkAndSnowData()
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'CreateAccountActionModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            goBack,
+            action,
+            data,
+          })
+        }
       }
     }, {
       // NOTE: After the alert has been acknowledged, we want to be
@@ -367,7 +363,6 @@ export class AppState {
     const goBack = back ?? (() => { this.showActions() })
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
-
     const checkAndGoBack = () => {
       if (this.interactionId === interactionId) {
         goBack()
@@ -406,22 +401,9 @@ export class AppState {
     let interactionId: number
     let account: AccountV0 | undefined
     const goBack = back ?? (() => { this.showActions() })
-
     const checkAndGoBack = () => {
       if (this.interactionId === interactionId) {
         goBack()
-      }
-    }
-    const checkAndSnow = (): void => {
-      assert(account !== undefined)
-      if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'AckAccountInfoActionModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          account,
-        })
       }
     }
 
@@ -433,7 +415,15 @@ export class AppState {
         account.display.debtorName !== undefined &&
         account.knowledge.latestUpdateId === action.knowledgeUpdateId
       ) {
-        checkAndSnow()
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'AckAccountInfoActionModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            goBack,
+            action,
+            account,
+          })
+        }
       } else {
         await this.uc.replaceActionRecord(action, null)
         checkAndGoBack()
@@ -453,7 +443,6 @@ export class AppState {
   ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-
     const checkAndGoBack = () => {
       if (this.interactionId === interactionId) {
         goBack()
