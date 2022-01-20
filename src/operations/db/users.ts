@@ -1,4 +1,6 @@
-import type { WalletRecordWithId, DocumentRecord, AccountKnowledgeRecord, AccountInfoRecord } from './schema'
+import type {
+  WalletRecordWithId, DocumentRecord, AccountKnowledgeRecord, AccountInfoRecord, AccountRecord
+} from './schema'
 import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
 import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
@@ -132,7 +134,7 @@ export async function verifyAccountKnowledge(accountUri: string, debtorData?: De
             if (info && knowledge) {
               assert(info.type === 'AccountInfo')
               assert(knowledge.type === 'AccountKnowledge')
-              await addAckAccountInfoActionIfThereAreChanges(info, knowledge, debtorData)
+              await addAckAccountInfoActionIfThereAreChanges(account, info, knowledge, debtorData)
             }
           }
         }
@@ -142,6 +144,7 @@ export async function verifyAccountKnowledge(accountUri: string, debtorData?: De
 }
 
 async function addAckAccountInfoActionIfThereAreChanges(
+  account: AccountRecord,
   info: AccountInfoRecord,
   knowledge: AccountKnowledgeRecord,
   newData?: DebtorData,
@@ -165,7 +168,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
       otherChanges: false,
     }
     const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    newData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo) : newData
+    newData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo, account.debtor.uri) : newData
     if (newData) {
       changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
       changes.summary = newData.summary !== knownData.summary
@@ -202,14 +205,20 @@ async function addAckAccountInfoActionIfThereAreChanges(
   })
 }
 
-async function tryToGetDebtorDataFromDebtorInfo(debtorInfo: DebtorInfoV0): Promise<DebtorData | undefined> {
+async function tryToGetDebtorDataFromDebtorInfo(
+  debtorInfo: DebtorInfoV0,
+  debtorIdentityUri: string,
+): Promise<DebtorData | undefined> {
   const document = await getDocumentRecord(debtorInfo.iri)
   if (
     document &&
     document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&
     document.contentType === (debtorInfo.contentType ?? document.contentType)
   ) {
-    return tryToParseDebtorInfoDocument(document)
+    const debtorData = tryToParseDebtorInfoDocument(document)
+    if (debtorData && debtorData.debtorIdentity.uri === debtorIdentityUri) {
+      return debtorData
+    }
   }
   return undefined
 }
