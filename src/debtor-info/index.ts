@@ -190,7 +190,7 @@ export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
   return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }
 
-export function matchDebtorData(a: BaseDebtorData, b: BaseDebtorData): boolean {
+export function matchBaseDebtorData(a: BaseDebtorData, b: BaseDebtorData): boolean {
   return (
     a.latestDebtorInfo.uri === b.latestDebtorInfo.uri &&
     a.summary === b.summary &&
