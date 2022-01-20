@@ -157,7 +157,7 @@ export function tryToParseDebtorInfoDocument(document: Document): DebtorData | u
   try {
     debtorData = parseDebtorInfoDocument(document)
   } catch (e: unknown) {
-    if (e instanceof InvalidDocument) { /* ignore */ }
+    if (e instanceof InvalidDocument) { console.warn(e) }
     else throw e
   }
   return debtorData

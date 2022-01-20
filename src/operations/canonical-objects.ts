@@ -271,6 +271,10 @@ export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): A
     debtorData: data.debtorData ? {
       ...data.debtorData,
       amountDivisor: Number(data.debtorData.amountDivisor),
+      peg: data.debtorData.peg ? {
+        ...data.debtorData.peg,
+        exchangeRate: Number(data.debtorData.peg.exchangeRate),
+      } : undefined,
     }: undefined,
   }
 }
