@@ -538,7 +538,7 @@ export type AccountKnowledge = {
   /** Optional debtor data, which is known to the creditor. Basically,
    * this is a "debtor-info" document, from which `type`,
    * `debtorIdentity`, and `revision` fields have been removed. This
-   * is AN EXTENSION TO THE STANDARD.
+   * is AN EXTENSION TO THE STANDARD WEB-API.
    */
   debtorData?: BaseDebtorData;
 
