@@ -90,7 +90,7 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
       return sanitizeBaseDebtorData(knowledge.debtorData)
     } catch (e: unknown) {
       if (e instanceof InvalidDocument) { /* ignore */ }
-      throw e
+      else throw e
     }
   }
   // Generate a dummy data.

@@ -268,6 +268,10 @@ export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): A
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
     interestRate: data.interestRate !== undefined ? Number(data.interestRate) : undefined,
+    debtorData: data.debtorData ? {
+      ...data.debtorData,
+      amountDivisor: Number(data.debtorData.amountDivisor),
+    }: undefined,
   }
 }
 
