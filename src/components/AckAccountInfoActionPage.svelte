@@ -117,19 +117,19 @@
               </li>
             {/if}
 
-            {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
-              <li>
-                The issuer has declared a new official way to display
-                currency amounts. Later, you will be asked to approve
-                this change.
-              </li>
-            {/if}
-
             {#if changes.debtorName}
               <li>
                 The official name of the currency has been changed to
                 "{debtorData.debtorName}". Later, you will be asked to
                 approve this change.
+              </li>
+            {/if}
+
+            {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
+              <li>
+                The issuer has declared a new official way to display
+                currency amounts. Later, you will be asked to approve
+                this change.
               </li>
             {/if}
 
@@ -158,11 +158,13 @@
               </li>
             {/if}
 
-            {#if changes.latestDebtorInfo}
+            {#if changes.debtorHomepage}
               <li>
-                The digital coin (the QR code) of the currency has
-                changed. The new digital coin contains a different
-                <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
+                {#if debtorData.debtorHomepage}
+                  The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
+                {:else}
+                  The official home page of the currency has been changed.
+                {/if}
               </li>
             {/if}
 
@@ -173,13 +175,11 @@
               </li>
             {/if}
 
-            {#if changes.debtorHomepage}
+            {#if changes.latestDebtorInfo}
               <li>
-                {#if debtorData.debtorHomepage}
-                  The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
-                {:else}
-                  The official home page of the currency has been changed.
-                {/if}
+                The digital coin (the QR code) of the currency has
+                changed. The new digital coin contains a different
+                <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
               </li>
             {/if}
 
