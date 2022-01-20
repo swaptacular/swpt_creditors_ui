@@ -463,21 +463,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
-      const oldDebtorData = this.uc.getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
-      const updatedKnowledge = {
-        // Update the properties that the app understands and tracks,
-        // but also preserve the unknown properties.
-        ...account.knowledge,
-        configError: action.configError,
-        interestRateChangedAt: action.interestRateChangedAt,
-        interestRate: action.interestRate,
-        debtorData: {
-          ...oldDebtorData,
-          ...action.debtorData,
-        },
-        latestUpdateId: account.knowledge.latestUpdateId + 1n,
-      }
-      await this.uc.updateAccountObject(updatedKnowledge)  // Will automatically delete the action.
+      await this.uc.updateAccountKnowledge(account, action)
       checkAndGoBack()
     }, {
       alerts: [

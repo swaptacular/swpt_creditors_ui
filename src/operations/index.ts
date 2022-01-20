@@ -167,7 +167,6 @@ export class UserContext {
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
   readonly obtainBaseDebtorData = obtainBaseDebtorData
-  readonly getBaseDebtorDataFromAccoutKnowledge = getBaseDebtorDataFromAccoutKnowledge
 
   constructor(
     server: ServerSession,
@@ -386,6 +385,24 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  async updateAccountKnowledge(account: AccountV0, action: AckAccountInfoActionWithId): Promise<void> {
+    const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
+    const updatedKnowledge = {
+      // Update the properties that the app understands and tracks,
+      // but also preserve the unknown properties.
+      ...account.knowledge,
+      configError: action.configError,
+      interestRateChangedAt: action.interestRateChangedAt,
+      interestRate: action.interestRate,
+      debtorData: {
+        ...oldDebtorData,
+        ...action.debtorData,
+      },
+      latestUpdateId: account.knowledge.latestUpdateId + 1n,
+    }
+    await this.updateAccountObject(updatedKnowledge)  // This will automatically delete the action.
+  }
+
   /* Reads a payment request, and adds and returns a new
    * create transfer action. May throw `IvalidPaymentRequest`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
@@ -422,7 +439,7 @@ export class UserContext {
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ConflictingUpdate`,
    * `WrongPin` or `UnprocessableEntity`. */
-  async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
+  private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
     let response
     try {
       const { uri, account, latestUpdateAt, ...request } = obj
