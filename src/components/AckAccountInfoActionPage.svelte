@@ -89,7 +89,7 @@
     {/if}
 
     <div class="text-container">
-      <Paper elevation={8} style="margin: 16px; word-break: break-word">
+      <Paper elevation={8} style="margin: 24px 16px; word-break: break-word">
         <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
           "{debtorName}" has undergone some changes:
         </Title>
