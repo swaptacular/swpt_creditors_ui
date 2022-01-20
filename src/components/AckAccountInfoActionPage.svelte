@@ -84,11 +84,11 @@
               </li>
             {/if}
 
-            {#if changes.interestRate}
+            {#if changes.debtorName}
               <li>
-                On {interestRateChangeDate} the issuer changed the
-                annual interest rate on your account to
-                {interestRate}%.
+                The official name of the currency has been changed to
+                "{debtorData.debtorName}". Later, you will be asked to
+                approve this change.
               </li>
             {/if}
 
@@ -97,16 +97,23 @@
                 {#if debtorData.peg}
                   {#if action.hasPreviousPeg}
                     The issuer has declared a new, different currency
-                    peg. Later, you will be asked to approve the new
-                    peg.
+                    peg. Later, you will be asked to approve this change.
                   {:else}
                     The currency has been pegged to another
                     currency. Later, you will be asked to approve this
-                    currency peg.
+                    change.
                   {/if}
                 {:else}
                   The previously declared currency peg has been removed.
                 {/if}
+              </li>
+            {/if}
+
+            {#if changes.interestRate}
+              <li>
+                On {interestRateChangeDate} the issuer changed the
+                annual interest rate on your account to
+                {interestRate}%.
               </li>
             {/if}
 
@@ -115,14 +122,6 @@
                 The digital coin (the QR code) of the currency has
                 changed. The new digital coin contains a different
                 <a href="{debtorData.latestDebtorInfo.uri}" target="blank">link</a>.
-              </li>
-            {/if}
-
-            {#if changes.debtorName}
-              <li>
-                The official name of the currency has been changed to
-                "{debtorData.debtorName}". Later, you will be asked to
-                approve this change.
               </li>
             {/if}
 
