@@ -83,8 +83,10 @@ export class InvalidDocument extends Error {
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
 /*
- This function serializes debtor data to bytes. An `InvalidDocument`
- error will be thrown when invalid data is passed.
+ This function serializes debtor data to bytes. The format of the
+ serialized bytes output is not guaranteed, and may change without
+ notice. An `InvalidDocument` error will be thrown when invalid data
+ is passed.
 */
 export function serializeDebtorData(debtorData: DebtorData): Uint8Array {
   const until = parseOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
