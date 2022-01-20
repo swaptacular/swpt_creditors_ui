@@ -385,9 +385,9 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
-  /* Updates account's knowledge. May throw `ConflictingUpdate`.
-   * (Normally, `WrongPin` and `UnprocessableEntity` should never be
-   * thrown.) */
+  /* Updates account's knowledge. May throw `ConflictingUpdate` or
+   * `ServerSessionError`.  (Normally, `WrongPin` and
+   * `UnprocessableEntity` should never be thrown.) */
   async updateAccountKnowledge(account: AccountV0, action: AckAccountInfoActionWithId): Promise<void> {
     const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
 
@@ -443,8 +443,8 @@ export class UserContext {
   }
 
   /* Updates account's config, knowledge, display, or exchange.
-   * Returns the new version. May throw `ConflictingUpdate`,
-   * `WrongPin` or `UnprocessableEntity`. */
+   * Returns the new version. May throw `ServerSessionError`,
+   * `ConflictingUpdate`, `WrongPin` or `UnprocessableEntity`. */
   private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
     let response
     try {
