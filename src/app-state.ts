@@ -252,14 +252,11 @@ export class AppState {
   showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
     let data: CreateAccountActionData | undefined
-    const checkAndGoBack = () => {
-      if (this.interactionId === interactionId) {
-        goBack()
-      }
-    }
+
     const obtainData = async (): Promise<CreateAccountActionData> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
@@ -361,13 +358,9 @@ export class AppState {
   ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
-    const checkAndGoBack = () => {
-      if (this.interactionId === interactionId) {
-        goBack()
-      }
-    }
 
     return this.attempt(async () => {
       assert(action.state !== undefined)
@@ -401,11 +394,7 @@ export class AppState {
     let interactionId: number
     let account: AccountV0 | undefined
     const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => {
-      if (this.interactionId === interactionId) {
-        goBack()
-      }
-    }
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
