@@ -5,6 +5,11 @@ test("Stringify non-ASCII", () => {
   expect(s).toBe('"Кирилица"')
 })
 
+test("Stringify undefined", () => {
+  const s = stringify({x: undefined})
+  expect(s).toBe('{}')
+})
+
 test("Stringify float, int, bigint", () => {
   const s = stringify({ float: 1, int: 1n, bigint: 123456789012345678901234567890n })
   expect(s).toBe('{\"float":1e+0,"int":1,"bigint":123456789012345678901234567890}')
