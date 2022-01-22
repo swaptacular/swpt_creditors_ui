@@ -442,6 +442,7 @@ export class AppState {
       interactionId = this.interactionId
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
       await this.uc.updateAccountKnowledge(account, action)
+      assert(await this.uc.getActionRecord(action.actionId) === undefined)
       checkAndGoBack()
     }, {
       alerts: [
