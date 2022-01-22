@@ -7,7 +7,7 @@ import type {
 
 import { Dexie } from 'dexie'
 import { db } from './schema'
-import { verifyAccountKnowledge } from './users'
+import { verifyAccountKnowledge } from './common'
 import { removeActionRecord } from './actions'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {

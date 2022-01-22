@@ -6,7 +6,7 @@ import type {
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser, verifyAccountKnowledge } from './users'
+import { UserDoesNotExist, isInstalledUser, verifyAccountKnowledge } from './common'
 import { abortTransfer } from './transfers'
 
 export type ApproveAction = ApprovePegAction | ApproveAmountDisplayAction | ApproveDebtorNameAction

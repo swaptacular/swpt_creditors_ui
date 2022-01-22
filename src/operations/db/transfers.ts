@@ -8,7 +8,7 @@ import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser, getWalletRecord } from './users'
+import { UserDoesNotExist, isInstalledUser, getWalletRecord } from './common'
 
 export const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side
 export const TRANSFER_NORMAL_WAIT_SECONDS = 86400  // 24 hours before the transfer is considered delayed.
