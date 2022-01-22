@@ -10,7 +10,8 @@ const MAX_INT64 = (1n << 63n) - 1n
  * sub-object records. The message contains an [objectUri, objectType,
  * objectRecord] tuple.
  */
-const accountsMapChannel = new BroadcastChannel('creditors.accountsMap')
+const accountsMapChannelName = 'creditors.accountsMap'
+const accountsMapChannel = new BroadcastChannel(accountsMapChannelName)
 
 export type ParsedDebtorInfoDocument = BaseDebtorData & {
   type: 'ParsedDebtorInfoDocument',
@@ -46,6 +47,7 @@ export class AccountsMap {
   private objects = new Map<string, AddedObject>()  // object URI -> object
   private accounts = new Map<string, string>()  // debtor URI -> account URI (the "accounts list")
   private initialized = false
+  private channel = new BroadcastChannel(accountsMapChannelName)
 
   // Until the instance gets initialized, the received messages are
   // stored here. They will be processed after the instance have been
@@ -53,12 +55,15 @@ export class AccountsMap {
   private messageQueue = new Array<AccountsMapMessage>()
 
   constructor() {
-    accountsMapChannel.onmessage = (evt: MessageEvent<AccountsMapMessage>) => {
+    this.channel.onmessage = (evt: MessageEvent<AccountsMapMessage>) => {
       if (this.initialized) {
         this.processMessage(evt.data)
       } else {
         this.messageQueue.push(evt.data)
       }
+    }
+    this.channel.onmessageerror = (evt: unknown) => {
+      console.error('A broadcast channel message error has occured.', evt)
     }
   }
 
