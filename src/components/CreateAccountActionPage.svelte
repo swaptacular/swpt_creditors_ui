@@ -28,9 +28,11 @@
 
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
+  let uniqueDebtorName: boolean
 
   function createUpdatedAction(): CreateAccountActionWithId {
     assert(data && action.state)
+    uniqueDebtorName = isUniqueDebtorName(debtorName, action)
     return {
       ...action,
       state: {
@@ -62,6 +64,7 @@
   }
 
   function confirm(): void {
+    uniqueDebtorName = isUniqueDebtorName(debtorName, action)
     if (invalid) {
       shakeForm()
     } else {
@@ -74,7 +77,7 @@
     app.confirmCreateAccountAction(actionManager, data, pin, model.goBack)
   }
 
-  function isUniqueDebtorName(debtorName: string): boolean {
+  function isUniqueDebtorName(debtorName: string, action: CreateAccountActionWithId): boolean {
     const nameRegex = new RegExp(`^${debtorName}$`, 'us')
     const matchingAccounts = app.accountsMap.getAccountRecordsMatchingDebtorName(nameRegex)
     switch (matchingAccounts.length) {
@@ -93,10 +96,10 @@
     debtorName = model.action.state?.editedDebtorName ?? ''
     negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
     negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
+    uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
   }
   $: action = model.action
   $: data = model.data
-  $: uniqueDebtorName = isUniqueDebtorName(debtorName)
   $: invalid = invalidDebtorName || !uniqueDebtorName || invalidNegligibleUnitAmount
 </script>
 
