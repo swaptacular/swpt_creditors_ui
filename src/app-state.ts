@@ -235,10 +235,10 @@ export class AppState {
     })
   }
 
-  createAccount(coinUri: string): Promise<void> {
+  createCreateAccountAction(coinUri: string): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
-      const actionId = await this.uc.createAccount(coinUri)
+      const actionId = await this.uc.createCreateAccountAction(coinUri)
       if (this.interactionId === interactionId) {
         this.showAction(actionId)
       }
@@ -441,7 +441,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
-      await this.uc.updateAccountKnowledge(account, action)
+      await this.uc.updateAccountKnowledge(action, account)
       assert(await this.uc.getActionRecord(action.actionId) === undefined)
       checkAndGoBack()
     }, {

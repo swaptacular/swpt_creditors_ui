@@ -231,7 +231,7 @@ export class UserContext {
   /* Add a new create account action record, and returns its action
    * ID. The caller must be prepared this method to throw
    * `InvalidCoinUri`. */
-  async createAccount(coinUri: string): Promise<number> {
+  async createCreateAccountAction(coinUri: string): Promise<number> {
     const [latestDebtorInfoUri, debtorIdentityUri] = parseCoinUri(coinUri)
 
     return await createActionRecord({
@@ -388,7 +388,7 @@ export class UserContext {
   /* Updates account's knowledge. May throw `ConflictingUpdate` or
    * `ServerSessionError`.  (Normally, `WrongPin` and
    * `UnprocessableEntity` should never be thrown.) */
-  async updateAccountKnowledge(account: AccountV0, action: AckAccountInfoActionWithId): Promise<void> {
+  async updateAccountKnowledge(action: AckAccountInfoActionWithId, account: AccountV0): Promise<void> {
     const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
 
     // Update the properties that the app understands and tracks,

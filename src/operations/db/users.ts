@@ -177,7 +177,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         actionType: 'AckAccountInfo',
         createdAt: new Date(),
         knowledgeUpdateId: knowledge.latestUpdateId,
-        debtorData: sanitizeBaseDebtorData(newData ?? knownData),
+        debtorData: newData ? sanitizeBaseDebtorData(newData) : knownData,
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,

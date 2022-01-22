@@ -17,7 +17,7 @@
   }
 
   $: if (scannedValue) {
-    app.createAccount(scannedValue)
+    app.createCreateAccountAction(scannedValue)
     open = false
     scannedValue = undefined
     markDone()
