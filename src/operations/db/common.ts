@@ -136,12 +136,14 @@ async function addAckAccountInfoActionIfThereAreChanges(
 ): Promise<void> {
   await db.transaction('rw', [db.actions, db.documents], async () => {
     assert(info.account.uri === knowledge.account.uri)
+    assert(info.interestRate !== undefined)
+    assert(info.interestRateChangedAt !== undefined)
     let changes = {
       configError: info.configError !== knowledge.configError,
-      interestRate: info.interestRate !== undefined && (info.interestRate !== (knowledge.interestRate ?? 0) || (
-        info.interestRateChangedAt !== undefined &&
+      interestRate: (
+        info.interestRate !== (knowledge.interestRate ?? 0) ||
         info.interestRateChangedAt !== (knowledge.interestRateChangedAt ?? info.interestRateChangedAt)
-      )),
+      ),
       latestDebtorInfo: false,
       summary: false,
       debtorName: false,
