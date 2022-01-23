@@ -128,7 +128,8 @@ export async function fetchDebtorInfoDocument(
       response = await fetchWithTimeout(documentUri, { timeout })
       if (!response.ok) throw new Error()
       content = await response.arrayBuffer()
-    } catch {
+    } catch (e:unknown) {
+      console.warn(e)
       throw new DocumentFetchError()
     }
     document = {
