@@ -51,10 +51,10 @@ export async function triggerOutdatedDebtorInfoUpdate(accountUri: string): Promi
     const newIri = knowledge.debtorData.latestDebtorInfo.uri
     const tasks = await db.tasks
       .where({ accountUri })
-      .filter(task => task.taskType === 'FetchDebtorInfo' && !task.forAccountInfo)
+      .filter(task => task.taskType === 'FetchDebtorInfo')
       .toArray() as (FetchDebtorInfoTask & TaskRecordWithId)[]
     for (const task of tasks) {
-      if (task.iri === newIri) return
+      if (task.forAccountInfo || task.iri === newIri) return
       await db.tasks.delete(task.taskId)
     }
     await db.tasks.add({
