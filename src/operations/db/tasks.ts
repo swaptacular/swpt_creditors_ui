@@ -20,6 +20,55 @@ export async function removeTask(taskId: number): Promise<void> {
   await db.tasks.delete(taskId)
 }
 
+export async function reviseOutdatedDebtorInfos(userId: number): Promise<void> {
+  const accountUris = await db.accounts.where({ userId }).primaryKeys()
+  for (const accountUri of accountUris) {
+    await triggerOutdatedDebtorInfoUpdate(accountUri)
+  }
+}
+
+export async function triggerOutdatedDebtorInfoUpdate(accountUri: string): Promise<void> {
+  await db.transaction('rw', [db.accounts, db.accountObjects, db.tasks], async () => {
+    const account = await db.accounts.get(accountUri)
+    if (!account) return
+
+    const display = await db.accountObjects.get(account.display.uri)
+    assert(display && display.type === 'AccountDisplay')
+    if (display.debtorName === undefined) return
+
+    const knowledge = await db.accountObjects.get(account.knowledge.uri)
+    assert(knowledge && knowledge.type === 'AccountKnowledge')
+    if (!knowledge.debtorData) return
+
+    const info = await db.accountObjects.get(account.info.uri)
+    assert(info && info.type === 'AccountInfo')
+    if (info.debtorInfo) return
+
+    const now = new Date()
+    const willNotChangeUntil = knowledge.debtorData.willNotChangeUntil
+    if (willNotChangeUntil && new Date(willNotChangeUntil) > now) return
+
+    const newIri = knowledge.debtorData.latestDebtorInfo.uri
+    const tasks = await db.tasks
+      .where({ accountUri })
+      .filter(task => task.taskType === 'FetchDebtorInfo' && !task.forAccountInfo)
+      .toArray() as (FetchDebtorInfoTask & TaskRecordWithId)[]
+    for (const task of tasks) {
+      if (task.iri === newIri) return
+      await db.tasks.delete(task.taskId)
+    }
+    await db.tasks.add({
+      taskType: 'FetchDebtorInfo',
+      userId: account.userId,
+      iri: newIri,
+      scheduledFor: new Date(),
+      backoffSeconds: 0,
+      forAccountInfo: false,
+      accountUri,
+    })
+  })
+}
+
 export async function settleFetchDebtorInfoTask(
   task: FetchDebtorInfoTask & TaskRecordWithId,
   debtorInfoDocument?: DocumentRecord,

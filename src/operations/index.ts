@@ -17,7 +17,7 @@ import {
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
-  InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge
+  InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -93,6 +93,7 @@ export async function authorizePinReset(): Promise<void> {
 export async function update(server: ServerSession, userId: number): Promise<void> {
   try {
     await sync(server, userId)
+    await reviseOutdatedDebtorInfosIfNecessary(userId)
     await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
@@ -117,6 +118,19 @@ export async function update(server: ServerSession, userId: number): Promise<voi
       console.error(error)
     }
   }
+}
+
+async function reviseOutdatedDebtorInfosIfNecessary(userId: number): Promise<void> {
+  const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
+  const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
+  const latestRevisionTime = new Date(storage_value).getTime()
+  const intervalSeconds = 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
+  const now = new Date()
+  if (latestRevisionTime + intervalSeconds < now.getTime()) {
+    await reviseOutdatedDebtorInfos(userId)
+    console.log('Created update tasks for outdated debtor infos.')
+  }
+  localStorage.setItem(storage_key, now.toISOString())
 }
 
 async function executeReadyTasks(server: ServerSession, userId: number): Promise<void> {

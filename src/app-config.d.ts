@@ -8,7 +8,8 @@ declare var appConfig: {
     clientId: string,
     redirectUrl: string,
   },
-  TransferDeletionDelaySeconds: number,
+  transferDeletionDelaySeconds: number,
+  outdatedDebtorInfosRevisionIntervalDays: number,
 }
 
 declare function assert(condition: any, msg?: string): asserts condition

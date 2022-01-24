@@ -7,7 +7,8 @@ window.appConfig = {
     clientId: '${CLIENT_ID}',
     redirectUrl: '${REDIRECT_URL}',
   },
-  TransferDeletionDelaySeconds: ${TRANSFER_DELETION_DELAY_SECONDS},
+  transferDeletionDelaySeconds: ${TRANSFER_DELETION_DELAY_SECONDS},
+  outdatedDebtorInfosRevisionIntervalDays: ${OUTDATED_DEBTOR_INFOS_REVISION_INTERVAL_DAYS},
 }
 
 window.assert = function assert(condition, msg) {
