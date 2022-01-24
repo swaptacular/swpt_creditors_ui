@@ -3,7 +3,7 @@ import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './sc
 import { Dexie } from 'dexie'
 import { db } from './schema'
 import { tryToParseDebtorInfoDocument } from '../../debtor-info'
-import { putDocumentRecord, verifyAccountKnowledge } from './common'
+import { putDocumentRecord, verifyAccountKnowledge, getBaseDebtorDataFromAccoutKnowledge } from './common'
 import { postAccountsMapMessage } from './accounts-map'
 
 const MAX_INT64 = (1n << 63n) - 1n
@@ -32,23 +32,23 @@ export async function triggerOutdatedDebtorInfoUpdate(accountUri: string): Promi
     const account = await db.accounts.get(accountUri)
     if (!account) return
 
+    const info = await db.accountObjects.get(account.info.uri)
+    assert(info && info.type === 'AccountInfo')
+    if (info.debtorInfo) return
+
     const display = await db.accountObjects.get(account.display.uri)
     assert(display && display.type === 'AccountDisplay')
     if (display.debtorName === undefined) return
 
     const knowledge = await db.accountObjects.get(account.knowledge.uri)
     assert(knowledge && knowledge.type === 'AccountKnowledge')
-    if (!knowledge.debtorData) return
-
-    const info = await db.accountObjects.get(account.info.uri)
-    assert(info && info.type === 'AccountInfo')
-    if (info.debtorInfo) return
+    const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
 
     const now = new Date()
-    const willNotChangeUntil = knowledge.debtorData.willNotChangeUntil
+    const willNotChangeUntil = debtorData.willNotChangeUntil
     if (willNotChangeUntil && new Date(willNotChangeUntil) > now) return
 
-    const newIri = knowledge.debtorData.latestDebtorInfo.uri
+    const newIri = debtorData.latestDebtorInfo.uri
     const tasks = await db.tasks
       .where({ accountUri })
       .filter(task => task.taskType === 'FetchDebtorInfo')
