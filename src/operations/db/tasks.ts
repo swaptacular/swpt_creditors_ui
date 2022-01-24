@@ -42,7 +42,7 @@ export async function triggerOutdatedDebtorInfoUpdate(accountUri: string): Promi
 
     const knowledge = await db.accountObjects.get(account.knowledge.uri)
     assert(knowledge && knowledge.type === 'AccountKnowledge')
-    const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+    const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge, false)
     if (debtorData.willNotChangeUntil && new Date(debtorData.willNotChangeUntil) > new Date()) return
 
     const newIri = debtorData.latestDebtorInfo.uri
