@@ -124,33 +124,30 @@ export async function storeAccountKnowledgeRecord(record: AccountKnowledgeRecord
 
 export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise<void> {
   await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents, db.tasks], async () => {
-    let newIri = record.debtorInfo?.iri
+    const newIri = record.debtorInfo?.iri
     const accountUri = record.account.uri
-    const accountObjectUri = record.uri
-    const existingRecord = await db.accountObjects.get(accountObjectUri)
-    if (existingRecord) {
-      assert(existingRecord.type === record.type)
-      assert(existingRecord.userId === record.userId)
-      assert(existingRecord.account.uri === accountUri)
-      if (newIri === existingRecord.debtorInfo?.iri) {
-        newIri = undefined  // The IRI has not changed.
-      } else {
+    const existingRecord = await db.accountObjects.get(record.uri) as AccountInfoRecord | undefined
+    if (!(existingRecord && existingRecord.debtorInfo?.iri === newIri)) {
+      if (newIri === undefined) {
         await db.tasks
           .where({ accountUri })
           .filter(task => task.taskType === 'FetchDebtorInfo' && task.forAccountInfo)
           .delete()
+      } else {
+        await db.tasks
+          .where({ accountUri })
+          .filter(task => task.taskType === 'FetchDebtorInfo')
+          .delete()
+        await db.tasks.add({
+          taskType: 'FetchDebtorInfo',
+          userId: record.userId,
+          iri: newIri,
+          scheduledFor: new Date(),
+          backoffSeconds: 0,
+          forAccountInfo: true,
+          accountUri,
+        })
       }
-    }
-    if (newIri !== undefined) {
-      await db.tasks.add({
-        taskType: 'FetchDebtorInfo',
-        userId: record.userId,
-        iri: newIri,
-        scheduledFor: new Date(),
-        backoffSeconds: 0,
-        forAccountInfo: true,
-        accountUri,
-      })
     }
     await db.accountObjects.put(record)
     await verifyAccountKnowledge(accountUri)
