@@ -428,6 +428,7 @@ export class AppState {
   acknowlegeAckAccountInfoAction(
     action: AckAccountInfoActionWithId,
     account: AccountV0,
+    pinForPegRemoval: string | undefined,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number
@@ -440,6 +441,9 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
+      if (pinForPegRemoval !== undefined) {
+        await this.uc.removePeg(account, pinForPegRemoval)
+      }
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
       await this.uc.updateAccountKnowledge(action, account)
       assert(await this.uc.getActionRecord(action.actionId) === undefined)
@@ -449,6 +453,8 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }

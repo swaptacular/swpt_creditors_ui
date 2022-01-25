@@ -65,7 +65,7 @@
       }
       case "AckAccountInfo": {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" has undergone some changes.` : 'A currency has undergone some changes.'
+        return debtorName ? `There are some changes in the "${debtorName}" currency.` : 'A currency has been changed.'
       }
       case 'ApprovePeg': {
         const debtorName = getDebtorName(action.accountUri)

@@ -6,6 +6,7 @@
   import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
   import Dialog from './Dialog.svelte'
+  import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
   export let model: AckAccountInfoActionModel
@@ -14,9 +15,25 @@
   let currentModel: AckAccountInfoActionModel
   let showSummary: boolean = false
   let showLink: boolean = false
+  let openEnterPinDialog: boolean = false
 
   function acknowlege(): void {
-    app.acknowlegeAckAccountInfoAction(action, model.account, model.goBack)
+    const newPeg = action.debtorData.peg
+    const previousPeg = action.previousPeg
+    const previousPegMustBeRemoved = previousPeg !== undefined && (
+      newPeg === undefined ||
+      previousPeg.exchangeRate !== newPeg.exchangeRate ||
+      previousPeg.debtorIdentity.uri !== newPeg.debtorIdentity.uri
+    )
+    if (previousPegMustBeRemoved) {
+      openEnterPinDialog = true
+    } else {
+      submit()
+    }
+  }
+
+  function submit(pinForPegRemoval?: string): void {
+    app.acknowlegeAckAccountInfoAction(action, model.account, pinForPegRemoval, model.goBack)
   }
 
   $: if (currentModel !== model) {
@@ -50,8 +67,10 @@
   }
 </style>
 
-<Page title="Modified currency">
+<Page title="Currency changes">
   <svelte:fragment slot="content">
+    <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
+
     {#if showSummary}
       <Dialog
         open
@@ -91,7 +110,7 @@
     <div class="text-container">
       <Paper elevation={8} style="margin: 24px 16px; word-break: break-word">
         <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
-          "{debtorName}" has undergone some changes:
+          There are some changes in the "{debtorName}" currency:
         </Title>
         <Content>
           <ul>
@@ -149,6 +168,12 @@
                 {/if}
               </li>
             {/if}
+
+            <!-- TODO: If the peg or the display settings have been
+            changed, and there are other currencies, directly or
+            indirectly pegged to this currency, tell the users that "N
+            other currency that are pegged to this currency may also
+            be affected". -->
 
             {#if changes.interestRate}
               <li>

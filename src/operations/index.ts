@@ -423,6 +423,18 @@ export class UserContext {
     await this.updateAccountObject(updatedKnowledge)
   }
 
+  /* Remove account's exchange peg. May throw `ConflictingUpdate`,
+   * `WrongPin`, `UnprocessableEntity`, or `ServerSessionError`. */
+  async removePeg(account: AccountV0, pin: string): Promise<void> {
+    const updatedExchange = {
+      ...account.exchange,
+      peg: undefined,
+      latestUpdateId: account.exchange.latestUpdateId + 1n,
+      pin,
+    }
+    await this.updateAccountObject(updatedExchange)
+  }
+
   /* Reads a payment request, and adds and returns a new
    * create transfer action. May throw `IvalidPaymentRequest`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
