@@ -169,12 +169,6 @@
               </li>
             {/if}
 
-            <!-- TODO: If the peg or the display settings have been
-            changed, and there are other currencies, directly or
-            indirectly pegged to this currency, tell the users that "N
-            other currency that are pegged to this currency may also
-            be affected". -->
-
             {#if changes.interestRate}
               <li>
                 On {interestRateChangeDate} the issuer changed the
