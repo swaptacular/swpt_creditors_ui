@@ -136,7 +136,7 @@
             {#if changes.peg}
               <li>
                 {#if debtorData.peg}
-                  {#if action.hasPreviousPeg}
+                  {#if action.previousPeg}
                     The issuer has declared a new, different currency
                     peg. Later, you will be asked to approve this peg.
                   {:else}

@@ -249,7 +249,7 @@ export type AckAccountInfoAction =
     debtorData: BaseDebtorData,
     configError?: string,
     acknowledged: boolean,
-    hasPreviousPeg: boolean,
+    previousPeg?: Peg,
     changes: {
       configError: boolean,
       interestRate: boolean,
