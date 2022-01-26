@@ -282,7 +282,7 @@ export class AppState {
       const { account, debtorData, debtorDataSource } = data
       const useDisplay = account.display.debtorName !== undefined
       const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
-      const editedNegligibleAmount = useDisplay ? account.config.negligibleAmount : tinyNegligibleAmount
+      const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
       const state = {
         accountUri: data.account.uri,
@@ -685,5 +685,5 @@ function calcTinyNegligibleAmount(debtroData: BaseDebtorData): number {
   const amount = Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor
   assert(amount >= 0)
   const isInteger = Math.ceil(amount) === amount
-  return isInteger ? amount : amount * (1 + Number.EPSILON)
+  return Math.min(isInteger ? amount : amount * (1 + Number.EPSILON), 1e30)
 }

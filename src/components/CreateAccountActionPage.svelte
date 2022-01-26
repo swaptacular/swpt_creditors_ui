@@ -266,7 +266,7 @@
                   required
                   variant="outlined"
                   type="number"
-                  input$min="0"
+                  input$min={negligibleUnitAmountStep}
                   input$step={negligibleUnitAmountStep}
                   style="width: 100%"
                   withTrailingIcon={invalidNegligibleUnitAmount}
@@ -280,11 +280,12 @@
                       <TextfieldIcon class="material-icons">error</TextfieldIcon>
                     {/if}
                   </svelte:fragment>
-                  <HelperText slot="helper" persistent>
+                  <HelperText style="word-break: break-word" slot="helper" persistent>
                     An amount to be considered negligible. It will be
                     used to decide whether the account can be safely
                     deleted, and whether an incoming transfer can be
-                    ignored.
+                    ignored. Can not be smaller than
+                    {negligibleUnitAmountStep} {data.unit}
                   </HelperText>
                 </Textfield>
               </Cell>

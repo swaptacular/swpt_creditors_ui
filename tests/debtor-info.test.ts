@@ -34,6 +34,8 @@ test("Validate CoinInfo schema", () => {
   }
   expect(validate(data)).toEqual(true)
   expect(validate({ ...data, peg: undefined })).toEqual(true)
+  expect(validate({ ...data, amountDivisor: 0 })).toEqual(false)
+  expect(validate({ ...data, amountDivisor: 1e800 })).toEqual(false)
   expect(validate({ ...data, type: 'INVALID' })).toEqual(false)
   expect(validate.errors).toEqual([{
     "instancePath": "/type",
@@ -94,6 +96,10 @@ test("Generate and parse CoinInfo document", async () => {
   await expect(generateCoinInfoDocument({ ...debtorData, revision: -1n }))
     .rejects.toBeInstanceOf(InvalidDocument)
   await expect(generateCoinInfoDocument({ ...debtorData, willNotChangeUntil: 'INVALID' }))
+    .rejects.toBeInstanceOf(InvalidDocument)
+  await expect(generateCoinInfoDocument({ ...debtorData, amountDivisor: 0 }))
+    .rejects.toBeInstanceOf(InvalidDocument)
+  await expect(generateCoinInfoDocument({ ...debtorData, amountDivisor: 1e800 }))
     .rejects.toBeInstanceOf(InvalidDocument)
   const document = await generateCoinInfoDocument(debtorData)
   const { unknownProp, ...noUnknownProps } = debtorData

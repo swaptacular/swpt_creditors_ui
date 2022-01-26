@@ -1,8 +1,19 @@
+const MAX_INT64 = (1n << 63n) - 1n
+const MIN_INT64 = -MAX_INT64 - 1n
+const MIN_AMOUNT_DIVISOR = 1e-99
+
 export function stringToAmount(s: string | number, amountDivisor: number): bigint {
-  return BigInt(Math.round(Number(s) * amountDivisor))
+  assert(amountDivisor >= 0)
+  amountDivisor = Math.max(amountDivisor, MIN_AMOUNT_DIVISOR)
+  const amount = BigInt(Math.round(Number(s) * amountDivisor))
+  if (amount <= MIN_INT64) return MIN_INT64
+  if (amount >= MAX_INT64) return MAX_INT64
+  return amount
 }
 
 export function amountToString(value: bigint, amountDivisor: number, decimalPlaces: number | bigint): string {
+  assert(amountDivisor >= 0)
+  amountDivisor = Math.max(amountDivisor, MIN_AMOUNT_DIVISOR)
   if (typeof decimalPlaces === 'bigint') {
     decimalPlaces = Number(decimalPlaces)
   }
