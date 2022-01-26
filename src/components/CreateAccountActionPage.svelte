@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState, CreateAccountActionModel, ActionManager } from '../app-state'
   import type { CreateAccountActionWithId } from '../operations'
+  import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -38,7 +39,7 @@
       state: {
         ...action.state,
         editedDebtorName: debtorName,
-        editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * data.amountDivisor,
+        editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * limitAmountDivisor(data.amountDivisor),
       },
     }
   }

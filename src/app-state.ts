@@ -14,6 +14,7 @@ import {
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity
 } from './operations'
+import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
@@ -281,7 +282,7 @@ export class AppState {
       assert(data !== undefined)
       const { account, debtorData, debtorDataSource } = data
       const useDisplay = account.display.debtorName !== undefined
-      const tinyNegligibleAmount = calcTinyNegligibleAmount(debtorData)
+      const tinyNegligibleAmount = calcSmallestDisplayableNumber(debtorData.amountDivisor, debtorData.decimalPlaces)
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
       const state = {
@@ -679,11 +680,4 @@ export async function createAppState(): Promise<AppState | undefined> {
     return new AppState(uc, actions)
   }
   return undefined
-}
-
-function calcTinyNegligibleAmount(debtroData: BaseDebtorData): number {
-  const amount = Math.pow(10, -Number(debtroData.decimalPlaces)) * debtroData.amountDivisor
-  assert(amount >= 0)
-  const isInteger = Math.ceil(amount) === amount
-  return Math.min(isInteger ? amount : amount * (1 + Number.EPSILON), 1e30)
 }

@@ -1,10 +1,22 @@
 const MAX_INT64 = (1n << 63n) - 1n
 const MIN_INT64 = -MAX_INT64 - 1n
 const MIN_AMOUNT_DIVISOR = 1e-99
+const MAX_AMOUNT_DIVISOR = 1e99
+
+export function limitAmountDivisor(amountDivisor: number): number {
+  assert(amountDivisor >= 0)
+  if (amountDivisor <= MIN_AMOUNT_DIVISOR) return MIN_AMOUNT_DIVISOR
+  if (amountDivisor >= MAX_AMOUNT_DIVISOR) return MAX_AMOUNT_DIVISOR
+  return amountDivisor
+}
+
+export function calcSmallestDisplayableNumber(amountDivisor: number, decimalPlaces: number | bigint): number {
+  amountDivisor = limitAmountDivisor(amountDivisor)
+  return Math.pow(10, -Number(decimalPlaces)) * amountDivisor
+}
 
 export function stringToAmount(s: string | number, amountDivisor: number): bigint {
-  assert(amountDivisor >= 0)
-  amountDivisor = Math.max(amountDivisor, MIN_AMOUNT_DIVISOR)
+  amountDivisor = limitAmountDivisor(amountDivisor)
   const amount = BigInt(Math.round(Number(s) * amountDivisor))
   if (amount <= MIN_INT64) return MIN_INT64
   if (amount >= MAX_INT64) return MAX_INT64
@@ -12,8 +24,7 @@ export function stringToAmount(s: string | number, amountDivisor: number): bigin
 }
 
 export function amountToString(value: bigint, amountDivisor: number, decimalPlaces: number | bigint): string {
-  assert(amountDivisor >= 0)
-  amountDivisor = Math.max(amountDivisor, MIN_AMOUNT_DIVISOR)
+  amountDivisor = limitAmountDivisor(amountDivisor)
   if (typeof decimalPlaces === 'bigint') {
     decimalPlaces = Number(decimalPlaces)
   }
