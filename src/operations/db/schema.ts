@@ -485,7 +485,9 @@ export type ApprovePegActionWithId =
 //      `account.AccountKnowledge.debtorData` describes the same
 //      `amountDivisor`, `decimalPlaces`, and `unit`.
 //
-//   c) Write the amount display parameters to
+//   c) If changed, update `account.AccountConfig.negligibleAmount`.
+//
+//   d) Write the amount display parameters to
 //      `account.AccountDisplay`.
 export type ApproveAmountDisplayAction =
   & ActionData
