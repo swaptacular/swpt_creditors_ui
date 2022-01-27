@@ -155,7 +155,11 @@ async function addAckAccountInfoActionIfThereAreChanges(
       otherChanges: false,
     }
     const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    newData = info.debtorInfo ? await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo, account.debtor.uri) : newData
+    if (info.debtorInfo) {
+      newData = await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo, account.debtor.uri)
+    } else {
+      newData = newData && newData.debtorIdentity.uri === account.debtor.uri ? newData : undefined
+    }
     if (newData) {
       changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
       changes.summary = newData.summary !== knownData.summary
