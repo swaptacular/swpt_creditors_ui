@@ -388,10 +388,8 @@ export type CreateAccountActionWithId =
 //
 //   - If `pegAccount.AccountDisplay.debtorName !== undefined`, set
 //     `state.debtorInfo` to `pegAccount.AccountKnowledge.debtorInfo`
-//     (???), `state.verifyLatestDebtorInfoUri` to `<debtorInfo DOES
-//     NOT have sha256 and contentType fields> && <debtorInfo IS NOT
-//     confirmed>, and `state.accountInitializationInProgress` to
-//     false.
+//     (???), `state.verifyLatestDebtorInfoUri` to true, and
+//     `state.accountInitializationInProgress` to false.
 //
 //   - Otherwise, GET `peg.latestDebtorInfo.uri` and expect a
 //     redirect. Set `state.debtorInfo` to `{ iri: <the redirect
@@ -416,10 +414,11 @@ export type CreateAccountActionWithId =
 //   - If `state.verifyLatestDebtorInfoUri === true &&
 //     pegAccount.AccountKnowledge.debtorData.latestDebtorInfo.uri !==
 //     peg.latestDebtorInfo.uri`, show the "coin URI override screen",
-//     and if accepted, set
-//     `pegAccount.AccountKnowledge.debtorData.latestDebtorInfo.uri`
-//     to `peg.latestDebtorInfo.uri`, and trigger debtor info reload;
-//     if rejected, set `state.verifyLatestDebtorInfoUri` to false.
+//     and if accepted, fetch the document from
+//     `peg.latestDebtorInfo.uri` as NEW_PEG_INFO, delete all existing
+//     AckAccountInfo actions for the peg account, and call
+//     `verifyAccountKnowledge(pegAccount.uri, NEW_PEG_INFO)`; if
+//     rejected, delete the action as unsuccessful.
 //
 //   - If `pegAccount.AccountDisplay.debtorName === undefined` (the
 //     account's AccountKnowledge must be ignored), show the "accept
@@ -485,9 +484,12 @@ export type ApprovePegActionWithId =
 //      `account.AccountKnowledge.debtorData` describes the same
 //      `amountDivisor`, `decimalPlaces`, and `unit`.
 //
-//   c) If changed, update `account.AccountConfig.negligibleAmount`.
+//   c) For all accounts pegged to `account`, remove the peg from
+//      their `AccountExchange` records.
 //
-//   d) Write the amount display parameters to
+//   d) If changed, update `account.AccountConfig.negligibleAmount`.
+//
+//   e) Write the amount display parameters to
 //      `account.AccountDisplay`.
 export type ApproveAmountDisplayAction =
   & ActionData
