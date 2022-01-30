@@ -27,6 +27,33 @@
       "required": [ "type", "uri" ],
       "additionalProperties": true
     },
+    "PegDisplay": {
+      "type": "object",
+      "properties": {
+        "type":  { "type": "string", "pattern": "^PegDisplay(-v[1-9][0-9]{0,5})?$" },
+        "amountDivisor": {
+          "type": "number",
+          "format": "double",
+          "exclusiveMinimum": 0.0,
+          "description": "The peg currency's `amountDivisor`."
+        },
+        "decimalPlaces": {
+          "type": "integer",
+          "format": "int32",
+          "minimum": -20,
+          "maximum": 20,
+          "description": "The peg currency's `decimalPlaces`."
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "The peg currency's `unit`."
+        }
+      },
+      "required": [ "type", "amountDivisor", "decimalPlaces", "unit" ],
+      "additionalProperties": true
+    },
     "Peg": {
       "type": "object",
       "properties": {
@@ -37,6 +64,10 @@
           "minimum": 0.0,
           "description": "The exchange rate between the pegged currency and the peg currency. For example, `2.0` would mean that pegged currency's tokens are twice as valuable as peg currency's tokens."
         },
+        "display": {
+          "$ref": "#/definitions/PegDisplay",
+          "description": "Specifies peg currency's display parameters."
+        },
         "debtorIdentity": {
           "$ref": "#/definitions/DebtorIdentity",
           "description": "Uniquely identifies the peg currency."
@@ -46,7 +77,7 @@
           "description": "A link to the newest revision of the peg currency's debtor info document (a `CoinInfo` document, for example)."
         }
       },
-      "required": [ "type", "exchangeRate", "debtorIdentity", "latestDebtorInfo" ],
+      "required": [ "type", "exchangeRate", "display", "debtorIdentity", "latestDebtorInfo" ],
       "additionalProperties": true
     }
   },  
@@ -93,20 +124,20 @@
       "type": "number",
       "format": "double",
       "exclusiveMinimum": 0.0,
-      "description": "Before displaying the amount, it should be divided by this number. This value should be used for display purposes only. Notably, the value of this field must be ignored when the exchange rate between pegged currencies is calculated."
+      "description": "Before displaying the amount, it should be divided by this number. This value should be used for display purposes only. Notably, the value of this field must be ignored when the exchange rate between pegged currencies is calculated. This field SHOULD NOT change in newer revisions of the document."
 },
     "decimalPlaces": {
       "type": "integer",
       "format": "int32",
       "minimum": -20,
       "maximum": 20,
-      "description": "The number of digits to show after the decimal point, when displaying the amount. A negative number signifies the number of insignificant digits at the end of the integer number."
+      "description": "The number of digits to show after the decimal point, when displaying the amount. A negative number signifies the number of insignificant digits at the end of the integer number. This field SHOULD NOT change in newer revisions of the document."
     },
     "unit": {
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "description": "The value measurement unit. It should be shown right after the displayed amount, \"500.00 USD\" for example."
+      "description": "The value measurement unit. It should be shown right after the displayed amount, \"500.00 USD\" for example. This field SHOULD NOT change in newer revisions of the document."
     },
     "peg":  {
       "$ref": "#/definitions/Peg",

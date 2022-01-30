@@ -36,7 +36,7 @@ This schema accepts additional properties.
 	 - _A short description of the currency._
 	 - Type: `string`
 	 - <i id="#/properties/summary">path: #/properties/summary</i>
-	 - Length:  &le; 1000
+	 - Length:  &le; 500
  - <b id="#/properties/debtorIdentity">debtorIdentity</b> `required`
 	 - _Uniquely identifies the debtor (and the currency). Note that in Swaptacular's terminology, the word "debtor" means a Swaptacular currency with its respective issuer. Therefore, if single issuer (a person or organization) issues multiple currencies, he/she will represent multiple different "debtors"._
 	 - <i id="#/properties/debtorIdentity">path: #/properties/debtorIdentity</i>
@@ -49,19 +49,19 @@ This schema accepts additional properties.
  - <b id="#/properties/debtorHomepage">debtorHomepage</b>
 	 - _Optional link to the debtor's homepage._
 	 - <i id="#/properties/debtorHomepage">path: #/properties/debtorHomepage</i>
-	 - &#36;ref: [#/definitions/Link](#/definitions/Link)
+	 - &#36;ref: [#/definitions/ShortLink](#/definitions/ShortLink)
  - <b id="#/properties/amountDivisor">amountDivisor</b> `required`
-	 - _Before displaying the amount, it should be divided by this number. This value should be used for display purposes only. Notably, the value of this field must be ignored when the exchange rate between pegged currencies is calculated._
+	 - _Before displaying the amount, it should be divided by this number. This value should be used for display purposes only. Notably, the value of this field must be ignored when the exchange rate between pegged currencies is calculated. This field SHOULD NOT change in newer revisions of the document._
 	 - Type: `number`
 	 - <i id="#/properties/amountDivisor">path: #/properties/amountDivisor</i>
-	 - Exlusive Range:  > 0
+	 - Exclusive Range:  > 0
  - <b id="#/properties/decimalPlaces">decimalPlaces</b> `required`
-	 - _The number of digits to show after the decimal point, when displaying the amount. A negative number signifies the number of insignificant digits at the end of the integer number._
+	 - _The number of digits to show after the decimal point, when displaying the amount. A negative number signifies the number of insignificant digits at the end of the integer number. This field SHOULD NOT change in newer revisions of the document._
 	 - Type: `integer`
 	 - <i id="#/properties/decimalPlaces">path: #/properties/decimalPlaces</i>
 	 - Range: between -20 and 20
  - <b id="#/properties/unit">unit</b> `required`
-	 - _The value measurement unit. It should be shown right after the displayed amount, "500.00 USD" for example._
+	 - _The value measurement unit. It should be shown right after the displayed amount, "500.00 USD" for example. This field SHOULD NOT change in newer revisions of the document._
 	 - Type: `string`
 	 - <i id="#/properties/unit">path: #/properties/unit</i>
 	 - Length: between 1 and 40
@@ -70,20 +70,6 @@ This schema accepts additional properties.
 	 - <i id="#/properties/peg">path: #/properties/peg</i>
 	 - &#36;ref: [#/definitions/Peg](#/definitions/Peg)
 # definitions
-
-**_Link_**
-
- - Type: `object`
- - <i id="#/definitions/Link">path: #/definitions/Link</i>
- - This schema <u>does not</u> accept additional properties.
- - **_Properties_**
-	 - <b id="#/definitions/Link/properties/uri">uri</b> `required`
-		 - _The IRI (Internationalized Resource Identifier) of the referenced resource. Must be an absolute IRI._
-		 - Type: `string`
-		 - <i id="#/definitions/Link/properties/uri">path: #/definitions/Link/properties/uri</i>
-		 - String format must be a "iri"
-		 - Length:  &le; 10000
-
 
 **_ShortLink_**
 
@@ -117,6 +103,33 @@ This schema accepts additional properties.
 		 - Length:  &le; 100
 
 
+**_PegDisplay_**
+
+ - Type: `object`
+ - <i id="#/definitions/PegDisplay">path: #/definitions/PegDisplay</i>
+ - This schema accepts additional properties.
+ - **_Properties_**
+	 - <b id="#/definitions/PegDisplay/properties/type">type</b> `required`
+		 - Type: `string`
+		 - <i id="#/definitions/PegDisplay/properties/type">path: #/definitions/PegDisplay/properties/type</i>
+		 - The value must match this pattern: `^PegDisplay(-v[1-9][0-9]{0,5})?$`
+	 - <b id="#/definitions/PegDisplay/properties/amountDivisor">amountDivisor</b> `required`
+		 - _The peg currency's `amountDivisor`._
+		 - Type: `number`
+		 - <i id="#/definitions/PegDisplay/properties/amountDivisor">path: #/definitions/PegDisplay/properties/amountDivisor</i>
+		 - Exclusive Range:  > 0
+	 - <b id="#/definitions/PegDisplay/properties/decimalPlaces">decimalPlaces</b> `required`
+		 - _The peg currency's `decimalPlaces`._
+		 - Type: `integer`
+		 - <i id="#/definitions/PegDisplay/properties/decimalPlaces">path: #/definitions/PegDisplay/properties/decimalPlaces</i>
+		 - Range: between -20 and 20
+	 - <b id="#/definitions/PegDisplay/properties/unit">unit</b> `required`
+		 - _The peg currency's `unit`._
+		 - Type: `string`
+		 - <i id="#/definitions/PegDisplay/properties/unit">path: #/definitions/PegDisplay/properties/unit</i>
+		 - Length: between 1 and 40
+
+
 **_Peg_**
 
  - Type: `object`
@@ -132,6 +145,10 @@ This schema accepts additional properties.
 		 - Type: `number`
 		 - <i id="#/definitions/Peg/properties/exchangeRate">path: #/definitions/Peg/properties/exchangeRate</i>
 		 - Range:  &ge; 0
+	 - <b id="#/definitions/Peg/properties/display">display</b> `required`
+		 - _Specifies peg currency's display parameters._
+		 - <i id="#/definitions/Peg/properties/display">path: #/definitions/Peg/properties/display</i>
+		 - &#36;ref: [#/definitions/PegDisplay](#/definitions/PegDisplay)
 	 - <b id="#/definitions/Peg/properties/debtorIdentity">debtorIdentity</b> `required`
 		 - _Uniquely identifies the peg currency._
 		 - <i id="#/definitions/Peg/properties/debtorIdentity">path: #/definitions/Peg/properties/debtorIdentity</i>

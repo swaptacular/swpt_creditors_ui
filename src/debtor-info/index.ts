@@ -16,10 +16,10 @@ function buffer2hex(buffer: ArrayBuffer, options = { toUpperCase: true }) {
   return options.toUpperCase ? hex.toUpperCase() : hex
 }
 
-function parseOptionalDate(s?: string, errorMsg?: string): Date | undefined {
+function parseOptionalDate(value: unknown, errorMsg?: string): Date | undefined {
   let date
-  if (s !== undefined) {
-    date = new Date(s)
+  if (value !== undefined) {
+    date = typeof value === 'string' ? new Date(value) : new Date(NaN)
     if (
       Number.isNaN(date.getTime()) ||
       date.getFullYear() > 9998 ||
@@ -34,15 +34,51 @@ function parseOptionalDate(s?: string, errorMsg?: string): Date | undefined {
   return date
 }
 
-function serializeDebtorData(debtorData: DebtorData): Uint8Array {
-  const until = parseOptionalDate(debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')
+function serializeDebtorData(debtorData: any): Uint8Array {
+  if (debtorData === null || typeof debtorData !== 'object') {
+    throw new InvalidDocument(`the value is not an object`)
+  }
+
+  // Ensure `willNotChangeUntil` is a valid ISO datetime.
+  const willNotChangeUntil = parseOptionalDate(
+    debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')?.toISOString()
+
+  // The following ugly logic is needed only to change `bigint`s into
+  // `number`s, before passing the data to `validate()`.
+  if (typeof debtorData.revision !== 'bigint') {
+    throw new InvalidDocument('/revision must must be a bigint')
+  }
+  if (typeof debtorData.decimalPlaces !== 'bigint') {
+    throw new InvalidDocument('/decimalPlaces must be a bigint')
+  }
+  let peg
+  if (debtorData.peg !== undefined) {
+    if (debtorData.peg === null || typeof debtorData.peg !== 'object') {
+      throw new InvalidDocument('/peg must be an object')
+    }
+    if (debtorData.peg.display === null || typeof debtorData.peg.display !== 'object') {
+      throw new InvalidDocument('/peg/display must be an object')
+    }
+    if (typeof debtorData.peg.display.decimalPlaces !== 'bigint') {
+      throw new InvalidDocument('/peg/display/decimalPlaces must be a bigint')
+    }
+    peg = {
+      ...debtorData.peg,
+      display: {
+        ...debtorData.peg.display,
+        decimalPlaces: Number(debtorData.peg.display.decimalPlaces),
+      }
+    }
+  }
   const data = {
     ...debtorData,
     type: 'CoinInfo',
     revision: Number(debtorData.revision),
     decimalPlaces: Number(debtorData.decimalPlaces),
-    willNotChangeUntil: until?.toISOString(),
+    willNotChangeUntil,
+    peg,
   }
+
   if (!validate(data)) {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
@@ -64,6 +100,14 @@ export type Peg = {
   exchangeRate: number,
   debtorIdentity: DebtorIdentity,
   latestDebtorInfo: ResourceReference,
+  display: PegDisplay,
+}
+
+export type PegDisplay = {
+  type: 'PegDisplay',
+  amountDivisor: number,
+  decimalPlaces: bigint,
+  unit: string,
 }
 
 export type BaseDebtorData = {
@@ -98,7 +142,10 @@ export class InvalidDocument extends Error {
 
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
-export function validateBaseDebtorData(baseDebtorData: BaseDebtorData): boolean {
+export function validateBaseDebtorData(baseDebtorData: unknown): boolean {
+  if (typeof baseDebtorData !== 'object') {
+    return false
+  }
   try {
     serializeDebtorData({
       ...baseDebtorData,
@@ -160,6 +207,9 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
+  if (data.peg?.display.decimalPlaces) {
+    data.peg.display.decimalPlaces = BigInt(Math.ceil(data.peg.display.decimalPlaces))
+  }
   delete data.type
   return data
 }

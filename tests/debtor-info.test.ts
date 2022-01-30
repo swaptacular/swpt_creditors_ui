@@ -29,6 +29,12 @@ test("Validate CoinInfo schema", () => {
       exchangeRate: 1.0,
       debtorIdentity: { type: 'DebtorIdentity', uri: 'swpt:321' },
       latestDebtorInfo: { uri: 'http://example.com/' },
+      display: {
+        type: 'PegDisplay',
+        amountDivisor: 100.0,
+        decimalPlaces: 2,
+        unit: 'USD',
+      },
     },
     unknownProp: 1n,
   }
@@ -47,7 +53,7 @@ test("Validate CoinInfo schema", () => {
 })
 
 test("Parse CoinInfo document", async () => {
-  const text = `{"revision":0,"willNotChangeUntil":"INVALID","latestDebtorInfo":{"uri":"http://example.com/"},"summary":"bla-bla","debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:123"},"debtorName":"USA","debtorHomepage":{"uri":"https://example.com/USA"},"amountDivisor":100,"decimalPlaces":2,"unit":"USD","peg":{"type":"Peg","exchangeRate":1,"debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:321"},"latestDebtorInfo":{"uri":"http://example.com/"}},"type":"CoinInfo"} `
+  const text = `{"revision":0,"willNotChangeUntil":"INVALID","latestDebtorInfo":{"uri":"http://example.com/"},"summary":"bla-bla","debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:123"},"debtorName":"USA","debtorHomepage":{"uri":"https://example.com/USA"},"amountDivisor":100,"decimalPlaces":2,"unit":"USD","peg":{"type":"Peg","exchangeRate":1,"display":{"type":"PegDisplay","amountDivisor":100,"decimalPlaces":2,"unit":"USD"},"debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:321"},"latestDebtorInfo":{"uri":"http://example.com/"}},"type":"CoinInfo"} `
   const document = {
     contentType: MIME_TYPE_COIN_INFO,
     content: (new TextEncoder()).encode(text),
@@ -90,6 +96,12 @@ test("Generate and parse CoinInfo document", async () => {
       exchangeRate: 1.0,
       debtorIdentity: { type: 'DebtorIdentity' as const, uri: 'swpt:321' },
       latestDebtorInfo: { uri: 'http://example.com/' },
+      display: {
+        type: 'PegDisplay' as const,
+        amountDivisor: 100.0,
+        decimalPlaces: 2n,
+        unit: 'USD',
+      },
     },
     unknownProp: 1,
   }
