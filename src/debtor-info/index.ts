@@ -228,11 +228,26 @@ export function tryToParseDebtorInfoDocument(document: Document): DebtorData | u
 export function sanitizeBaseDebtorData(data: BaseDebtorData): BaseDebtorData {
   const {
     latestDebtorInfo, summary, debtorName, debtorHomepage,
-    amountDivisor, decimalPlaces, unit, peg, willNotChangeUntil,
+    amountDivisor, decimalPlaces, unit, willNotChangeUntil,
+    peg,
   } = data
+
+  let sanitizedPeg
+  if (peg) {
+    const { exchangeRate, debtorIdentity, latestDebtorInfo, display } = peg
+    const { amountDivisor, decimalPlaces, unit } = display
+    sanitizedPeg = {
+      type: peg.type,
+      exchangeRate,
+      debtorIdentity,
+      latestDebtorInfo,
+      display: { type: display.type, amountDivisor, decimalPlaces, unit },
+    }
+  }
   return {
     latestDebtorInfo, summary, debtorName, debtorHomepage,
-    amountDivisor, decimalPlaces, unit, peg, willNotChangeUntil,
+    amountDivisor, decimalPlaces, unit, willNotChangeUntil,
+    peg: sanitizedPeg,
   }
 }
 
