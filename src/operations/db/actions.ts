@@ -73,6 +73,10 @@ export async function removeActionRecord(actionId: number): Promise<void> {
               })
             }
             if ((changes.pegParams || changes.pegDebtorInfoUri) && debtorData.peg) {
+              // TODO: If `changes.pegParams` is false, and the
+              // `latestDebtorInfo` for the peg account is the same as
+              // the acknowledged `latestDebtorInfo`, consider not
+              // creating an approve peg action here.
               await createApproveAction({
                 actionType: 'ApprovePeg',
                 createdAt: new Date(),
