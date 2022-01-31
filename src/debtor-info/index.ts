@@ -38,13 +38,9 @@ function serializeDebtorData(obj: unknown): Uint8Array {
   if (typeof obj !== 'object' || obj === null) {
     throw new InvalidDocument(`the value is not an object`)
   }
-  const debtorData = obj as {[prop: string]: unknown}
+  const debtorData = obj as { [prop: string]: unknown }
 
-  // Ensure `willNotChangeUntil` is a valid ISO datetime.
-  const willNotChangeUntil = parseOptionalDate(
-    debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')?.toISOString()
-
-  // The following ugly logic is needed only to transform `bigint`s
+  // The following ugly logic is only needed to transform `bigint`s
   // into `number`s, before passing the data to `validate()`.
   if (typeof debtorData.revision !== 'bigint') {
     throw new InvalidDocument('/revision must must be a bigint')
@@ -63,7 +59,7 @@ function serializeDebtorData(obj: unknown): Uint8Array {
     if (typeof debtorData.peg !== 'object' || debtorData.peg === null) {
       throw new InvalidDocument('/peg must be an object')
     }
-    const peg = debtorData.peg as {[prop: string]: unknown}
+    const peg = debtorData.peg as { [prop: string]: unknown }
     if (
       typeof peg.exchangeRate !== 'number' &&
       typeof peg.exchangeRate !== 'bigint'
@@ -73,7 +69,7 @@ function serializeDebtorData(obj: unknown): Uint8Array {
     if (typeof peg.display !== 'object' || peg.display === null) {
       throw new InvalidDocument('/peg/display must be an object')
     }
-    const pegDisplay = peg.display as {[prop: string]: unknown}
+    const pegDisplay = peg.display as { [prop: string]: unknown }
     if (typeof pegDisplay.decimalPlaces !== 'bigint') {
       throw new InvalidDocument('/peg/display/decimalPlaces must be a bigint')
     }
@@ -101,7 +97,8 @@ function serializeDebtorData(obj: unknown): Uint8Array {
     amountDivisor: Number(debtorData.amountDivisor),
     decimalPlaces: Number(debtorData.decimalPlaces),
     peg: transformedPeg,
-    willNotChangeUntil,
+    willNotChangeUntil: parseOptionalDate(
+      debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')?.toISOString(),
   }
   if (!validate(transformedDebtorData)) {
     const e = validate.errors[0]
