@@ -34,6 +34,69 @@ function parseOptionalDate(value: unknown, errorMsg?: string): Date | undefined 
   return date
 }
 
+export type ResourceReference = {
+  uri: string,
+}
+
+export type DebtorIdentity = {
+  type: 'DebtorIdentity',
+  uri: string,
+}
+
+export type Peg = {
+  type: 'Peg',
+  exchangeRate: number,
+  debtorIdentity: DebtorIdentity,
+  latestDebtorInfo: ResourceReference,
+  display: PegDisplay,
+}
+
+export type PegDisplay = {
+  type: 'PegDisplay',
+  amountDivisor: number,
+  decimalPlaces: bigint,
+  unit: string,
+}
+
+export type BaseDebtorData = {
+  latestDebtorInfo: ResourceReference,
+  willNotChangeUntil?: string,
+  summary?: string,
+  debtorName: string,
+  debtorHomepage?: ResourceReference,
+  amountDivisor: number,
+  decimalPlaces: bigint,
+  unit: string,
+  peg?: Peg,
+}
+
+export type DebtorData = BaseDebtorData & {
+  debtorIdentity: DebtorIdentity,
+  revision: bigint,
+}
+
+export type Document = {
+  contentType: string,
+  content: ArrayBuffer,
+}
+
+export type DocumentWithHash = Document & {
+  sha256: string,
+}
+
+export class InvalidDocument extends Error {
+  name = 'InvalidDocument'
+}
+
+export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
+
+/*
+ Given a proper `DebtorData` object, this function generates a
+ document in the default debtor info document format (the default
+ format may change from one version to another). An `InvalidDocument`
+ error will be thrown when an invalid debtor data object has been
+ passed.
+*/
 export function serializeDebtorData(obj: unknown): Document {
   if (typeof obj !== 'object' || obj === null) {
     throw new InvalidDocument(`the value is not an object`)
@@ -110,68 +173,12 @@ export function serializeDebtorData(obj: unknown): Document {
   }
 }
 
-export type ResourceReference = {
-  uri: string,
-}
-
-export type DebtorIdentity = {
-  type: 'DebtorIdentity',
-  uri: string,
-}
-
-export type Peg = {
-  type: 'Peg',
-  exchangeRate: number,
-  debtorIdentity: DebtorIdentity,
-  latestDebtorInfo: ResourceReference,
-  display: PegDisplay,
-}
-
-export type PegDisplay = {
-  type: 'PegDisplay',
-  amountDivisor: number,
-  decimalPlaces: bigint,
-  unit: string,
-}
-
-export type BaseDebtorData = {
-  latestDebtorInfo: ResourceReference,
-  willNotChangeUntil?: string,
-  summary?: string,
-  debtorName: string,
-  debtorHomepage?: ResourceReference,
-  amountDivisor: number,
-  decimalPlaces: bigint,
-  unit: string,
-  peg?: Peg,
-}
-
-export type DebtorData = BaseDebtorData & {
-  debtorIdentity: DebtorIdentity,
-  revision: bigint,
-}
-
-export type Document = {
-  contentType: string,
-  content: ArrayBuffer,
-}
-
-export type DocumentWithHash = Document & {
-  sha256: string,
-}
-
-export class InvalidDocument extends Error {
-  name = 'InvalidDocument'
-}
-
-export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
-
 /*
  This function genarates a document in
- "application/vnd.swaptacular.coin-info+json" format. This format is
- defined by a JSON Schema file (see "./schema.json",
- "./schema.md"). An `InvalidDocument` error will be thrown when
- invalid data is passed.
+ "application/vnd.swaptacular.coin-info+json" format, and calculates
+ the SHA256 hash value for it. The format is defined by a JSON Schema
+ file (see "./schema.json", "./schema.md"). An `InvalidDocument` error
+ will be thrown when invalid data is passed.
 */
 export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<DocumentWithHash> {
   const { content, contentType } = serializeDebtorData(debtorData)
