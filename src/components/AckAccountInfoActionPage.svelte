@@ -23,7 +23,10 @@
     const previousPegMustBeRemoved = previousPeg !== undefined && (
       newPeg === undefined ||
       previousPeg.exchangeRate !== newPeg.exchangeRate ||
-      previousPeg.debtorIdentity.uri !== newPeg.debtorIdentity.uri
+      previousPeg.debtorIdentity.uri !== newPeg.debtorIdentity.uri ||
+      previousPeg.display.amountDivisor !== previousPeg.display.amountDivisor ||
+      previousPeg.display.decimalPlaces !== previousPeg.display.decimalPlaces ||
+      previousPeg.display.unit !== previousPeg.display.unit
     )
     if (previousPegMustBeRemoved) {
       openEnterPinDialog = true
@@ -47,6 +50,14 @@
   $: interestRateChangeDate = new Date(action.interestRateChangedAt).toLocaleDateString()
   $: interestRate = action.interestRate.toFixed(3)
   $: configError = action.configError
+  $: only_the_peg_digital_coin_has_changed = (
+    debtorData.peg?.exchangeRate === action.previousPeg?.exchangeRate &&
+    debtorData.peg?.debtorIdentity.uri === action.previousPeg?.debtorIdentity.uri &&
+    debtorData.peg?.display.amountDivisor === action.previousPeg?.display.amountDivisor &&
+    debtorData.peg?.display.decimalPlaces === action.previousPeg?.display.decimalPlaces &&
+    debtorData.peg?.display.unit === action.previousPeg?.display.unit &&
+    debtorData.peg?.latestDebtorInfo.uri !== action.previousPeg?.latestDebtorInfo.uri
+  )
 </script>
 
 <style>
@@ -78,7 +89,7 @@
         aria-describedby="show-summary-dialog-content"
         on:MDCDialog:closed={() => showSummary = false}
         >
-        <DialogTitle>New currency summary:</DialogTitle>
+        <DialogTitle>The new currency summary:</DialogTitle>
         <DialogContent style="word-break: break-word">{debtorData.summary}</DialogContent>
         <Actions>
           <Button>
@@ -146,9 +157,9 @@
 
             {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
               <li>
-                The issuer has declared a new official way to display
+                The issuer declared a new official way to display
                 currency amounts. Later, you will be asked to approve
-                this change.
+                this important change.
               </li>
             {/if}
 
@@ -156,12 +167,20 @@
               <li>
                 {#if debtorData.peg}
                   {#if action.previousPeg}
-                    The issuer has declared a new, different currency
-                    peg. Later, you will be asked to approve this peg.
+                    {#if only_the_peg_digital_coin_has_changed}
+                      The issuer specified a different digital coin (a
+                      QR code) for the already declared peg
+                      currency. Later, you will be asked to approve
+                      this change.
+                    {:else}
+                      The issuer declared a new, different currency
+                      peg. Later, you will be asked to approve the new
+                      peg.
+                    {/if}
                   {:else}
-                    The currency has been pegged to another
-                    currency. Later, you will be asked to approve this
-                    peg.
+                    The issuer declared a fixed exchange rate between
+                    this currency and some other currency. Later, you
+                    will be asked to approve this currency peg.
                   {/if}
                 {:else}
                   The previously declared currency peg has been removed.
@@ -190,7 +209,7 @@
             {#if changes.summary}
               {#if debtorData.summary}
                 <li>
-                  The official currency summary, stated by the issuer,
+                  The official currency summary, as stated by the issuer,
                   has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
                 </li>
               {:else}
