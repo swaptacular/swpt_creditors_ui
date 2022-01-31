@@ -34,18 +34,18 @@ function parseOptionalDate(value: unknown, errorMsg?: string): Date | undefined 
   return date
 }
 
-function serializeDebtorData(value: unknown): Uint8Array {
-  if (typeof value !== 'object' || value === null) {
+function serializeDebtorData(obj: unknown): Uint8Array {
+  if (typeof obj !== 'object' || obj === null) {
     throw new InvalidDocument(`the value is not an object`)
   }
-  const debtorData = value as {[prop: string]: unknown}
+  const debtorData = obj as {[prop: string]: unknown}
 
   // Ensure `willNotChangeUntil` is a valid ISO datetime.
   const willNotChangeUntil = parseOptionalDate(
     debtorData.willNotChangeUntil, '/willNotChangeUntil must be a valid Date')?.toISOString()
 
-  // The following ugly logic is needed only to change `bigint`s into
-  // `number`s, before passing the data to `validate()`.
+  // The following ugly logic is needed only to transform `bigint`s
+  // into `number`s, before passing the data to `validate()`.
   if (typeof debtorData.revision !== 'bigint') {
     throw new InvalidDocument('/revision must must be a bigint')
   }
