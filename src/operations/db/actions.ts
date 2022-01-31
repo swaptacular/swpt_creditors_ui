@@ -72,7 +72,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
                 accountUri,
               })
             }
-            if (changes.peg && debtorData.peg) {
+            if ((changes.pegParams || changes.pegDebtorInfoUri) && debtorData.peg) {
               await createApproveAction({
                 actionType: 'ApprovePeg',
                 createdAt: new Date(),

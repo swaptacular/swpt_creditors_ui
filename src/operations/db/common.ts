@@ -4,7 +4,6 @@ import type {
 import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
 import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
-import equal from 'fast-deep-equal'
 import { db } from './schema'
 import { tryToParseDebtorInfoDocument, validateBaseDebtorData, sanitizeBaseDebtorData } from '../../debtor-info'
 
@@ -152,16 +151,36 @@ async function addAckAccountInfoActionIfThereAreChanges(
       amountDivisor: false,
       decimalPlaces: false,
       unit: false,
-      peg: false,
+      pegParams: false,
+      pegDebtorInfoUri: false,
       otherChanges: false,
     }
     const knownData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+    const previousPeg = knownData.peg
     if (info.debtorInfo) {
       newData = await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo, account.debtor.uri)
     } else {
       newData = newData && newData.debtorIdentity.uri === account.debtor.uri ? newData : undefined
     }
     if (newData) {
+      const newPeg = newData.peg
+      const hasPeg = previousPeg !== undefined || newPeg !== undefined
+      const hasSamePegParams = (
+        previousPeg !== undefined &&
+        newPeg !== undefined &&
+        newPeg.debtorIdentity.uri === previousPeg.debtorIdentity.uri &&
+        newPeg.exchangeRate === previousPeg.exchangeRate &&
+        newPeg.display.amountDivisor === previousPeg.display.amountDivisor &&
+        newPeg.display.decimalPlaces === previousPeg.display.decimalPlaces &&
+        newPeg.display.unit === previousPeg.display.unit
+      )
+      const hasSamePegDebtorInfoUri = (
+        previousPeg !== undefined &&
+        newPeg !== undefined &&
+        newPeg.latestDebtorInfo.uri === previousPeg.latestDebtorInfo.uri
+      )
+      changes.pegParams = hasPeg && !hasSamePegParams
+      changes.pegDebtorInfoUri = hasPeg && !hasSamePegDebtorInfoUri
       changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
       changes.summary = newData.summary !== knownData.summary
       changes.debtorName = newData.debtorName !== knownData.debtorName
@@ -169,14 +188,13 @@ async function addAckAccountInfoActionIfThereAreChanges(
       changes.amountDivisor = newData.amountDivisor !== knownData.amountDivisor
       changes.decimalPlaces = newData.decimalPlaces !== knownData.decimalPlaces
       changes.unit = newData.unit !== knownData.unit
-      changes.peg = !equal(newData.peg, knownData.peg)
       changes.otherChanges = newData.willNotChangeUntil !== knownData.willNotChangeUntil
     }
     const thereAreChanges = (
       changes.configError || changes.interestRate ||
       changes.latestDebtorInfo || changes.summary || changes.debtorName ||
       changes.debtorHomepage || changes.amountDivisor || changes.decimalPlaces ||
-      changes.unit || changes.peg || changes.otherChanges
+      changes.unit || changes.pegParams || changes.pegDebtorInfoUri || changes.otherChanges
     )
     if (thereAreChanges) {
       await db.actions.add({
@@ -188,9 +206,9 @@ async function addAckAccountInfoActionIfThereAreChanges(
         interestRate: info.interestRate,
         interestRateChangedAt: info.interestRateChangedAt,
         configError: info.configError,
-        previousPeg: knownData.peg,
         acknowledged: false,
         accountUri: info.account.uri,
+        previousPeg,
         changes,
       })
     }

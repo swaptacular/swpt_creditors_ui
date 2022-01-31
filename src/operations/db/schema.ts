@@ -260,7 +260,8 @@ export type AckAccountInfoAction =
       amountDivisor: boolean,
       decimalPlaces: boolean,
       unit: boolean,
-      peg: boolean,
+      pegParams: boolean,
+      pegDebtorInfoUri: boolean,
       otherChanges: boolean,
     },
   }

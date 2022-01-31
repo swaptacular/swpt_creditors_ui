@@ -50,14 +50,6 @@
   $: interestRateChangeDate = new Date(action.interestRateChangedAt).toLocaleDateString()
   $: interestRate = action.interestRate.toFixed(3)
   $: configError = action.configError
-  $: only_the_peg_digital_coin_has_changed = (
-    debtorData.peg?.exchangeRate === action.previousPeg?.exchangeRate &&
-    debtorData.peg?.debtorIdentity.uri === action.previousPeg?.debtorIdentity.uri &&
-    debtorData.peg?.display.amountDivisor === action.previousPeg?.display.amountDivisor &&
-    debtorData.peg?.display.decimalPlaces === action.previousPeg?.display.decimalPlaces &&
-    debtorData.peg?.display.unit === action.previousPeg?.display.unit &&
-    debtorData.peg?.latestDebtorInfo.uri !== action.previousPeg?.latestDebtorInfo.uri
-  )
 </script>
 
 <style>
@@ -163,14 +155,14 @@
               </li>
             {/if}
 
-            {#if changes.peg}
+            {#if changes.pegParams || changes.pegDebtorInfoUri}
               <li>
                 {#if debtorData.peg}
                   {#if action.previousPeg}
-                    {#if only_the_peg_digital_coin_has_changed}
+                    {#if !changes.pegParams}
                       The issuer specified a different digital coin (a
                       QR code) for the already declared peg
-                      currency. Later, you will be asked to approve
+                      currency. Later, you may be asked to approve
                       this change.
                     {:else}
                       The issuer declared a new, different currency
