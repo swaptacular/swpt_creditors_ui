@@ -93,16 +93,16 @@ function serializeDebtorData(obj: unknown): Uint8Array {
       }
     }
   }
+
   const transformedDebtorData = {
     ...debtorData,
     type: 'CoinInfo',
     revision: Number(debtorData.revision),
     amountDivisor: Number(debtorData.amountDivisor),
     decimalPlaces: Number(debtorData.decimalPlaces),
-    willNotChangeUntil,
     peg: transformedPeg,
+    willNotChangeUntil,
   }
-
   if (!validate(transformedDebtorData)) {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
