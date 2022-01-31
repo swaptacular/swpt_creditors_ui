@@ -34,10 +34,11 @@ function parseOptionalDate(value: unknown, errorMsg?: string): Date | undefined 
   return date
 }
 
-function serializeDebtorData(debtorData: any): Uint8Array {
-  if (debtorData === null || typeof debtorData !== 'object') {
+function serializeDebtorData(value: unknown): Uint8Array {
+  if (typeof value !== 'object' || value === null) {
     throw new InvalidDocument(`the value is not an object`)
   }
+  const debtorData = value as {[prop: string]: unknown}
 
   // Ensure `willNotChangeUntil` is a valid ISO datetime.
   const willNotChangeUntil = parseOptionalDate(
@@ -57,54 +58,56 @@ function serializeDebtorData(debtorData: any): Uint8Array {
   ) {
     throw new InvalidDocument('/amountDivisor must be a number')
   }
-  let peg
+  let transformedPeg
   if (debtorData.peg !== undefined) {
-    if (debtorData.peg === null || typeof debtorData.peg !== 'object') {
+    if (typeof debtorData.peg !== 'object' || debtorData.peg === null) {
       throw new InvalidDocument('/peg must be an object')
     }
+    const peg = debtorData.peg as {[prop: string]: unknown}
     if (
-      typeof debtorData.peg.exchangeRate !== 'number' &&
-      typeof debtorData.peg.exchangeRate !== 'bigint'
+      typeof peg.exchangeRate !== 'number' &&
+      typeof peg.exchangeRate !== 'bigint'
     ) {
       throw new InvalidDocument('/peg/exchangeRate must be a number')
     }
-    if (debtorData.peg.display === null || typeof debtorData.peg.display !== 'object') {
+    if (typeof peg.display !== 'object' || peg.display === null) {
       throw new InvalidDocument('/peg/display must be an object')
     }
-    if (typeof debtorData.peg.display.decimalPlaces !== 'bigint') {
+    const pegDisplay = peg.display as {[prop: string]: unknown}
+    if (typeof pegDisplay.decimalPlaces !== 'bigint') {
       throw new InvalidDocument('/peg/display/decimalPlaces must be a bigint')
     }
     if (
-      typeof debtorData.peg.display.amountDivisor !== 'number' &&
-      typeof debtorData.peg.display.amountDivisor !== 'bigint'
+      typeof pegDisplay.amountDivisor !== 'number' &&
+      typeof pegDisplay.amountDivisor !== 'bigint'
     ) {
       throw new InvalidDocument('/peg/display/amountDivisor must be a number')
     }
-    peg = {
+    transformedPeg = {
       ...debtorData.peg,
-      exchangeRate: Number(debtorData.peg.exchangeRate),
+      exchangeRate: Number(peg.exchangeRate),
       display: {
-        ...debtorData.peg.display,
-        amountDivisor: Number(debtorData.peg.display.amountDivisor),
-        decimalPlaces: Number(debtorData.peg.display.decimalPlaces),
+        ...pegDisplay,
+        amountDivisor: Number(pegDisplay.amountDivisor),
+        decimalPlaces: Number(pegDisplay.decimalPlaces),
       }
     }
   }
-  const data = {
+  const transformedDebtorData = {
     ...debtorData,
     type: 'CoinInfo',
     revision: Number(debtorData.revision),
     amountDivisor: Number(debtorData.amountDivisor),
     decimalPlaces: Number(debtorData.decimalPlaces),
     willNotChangeUntil,
-    peg,
+    peg: transformedPeg,
   }
 
-  if (!validate(data)) {
+  if (!validate(transformedDebtorData)) {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
-  return UTF8_ENCODER.encode(JSON.stringify(data))
+  return UTF8_ENCODER.encode(JSON.stringify(transformedDebtorData))
 }
 
 export type ResourceReference = {
