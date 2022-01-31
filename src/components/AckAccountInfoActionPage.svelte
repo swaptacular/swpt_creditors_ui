@@ -106,7 +106,7 @@
         aria-describedby="show-link-dialog-content"
         on:MDCDialog:closed={() => showLink = false}
         >
-        <DialogTitle>New digital coin link:</DialogTitle>
+        <DialogTitle>The new digital coin link:</DialogTitle>
         <DialogContent style="word-break: break-word">
           <a href="{debtorData.latestDebtorInfo.uri}" target="_blank">{debtorData.latestDebtorInfo.uri}</a>
         </DialogContent>
