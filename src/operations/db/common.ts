@@ -5,7 +5,10 @@ import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
 import type { DebtorData, BaseDebtorData } from '../../debtor-info'
 
 import { db } from './schema'
-import { tryToParseDebtorInfoDocument, validateBaseDebtorData, sanitizeBaseDebtorData } from '../../debtor-info'
+import {
+  tryToParseDebtorInfoDocument, serializeDebtorData, sanitizeBaseDebtorData, parseDebtorInfoDocument,
+  InvalidDocument
+} from '../../debtor-info'
 
 export class UserDoesNotExist extends Error {
   name = 'UserDoesNotExist'
@@ -76,9 +79,26 @@ export async function putDocumentRecord(document: DocumentRecord): Promise<boole
 }
 
 export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0, sanitize = true): BaseDebtorData {
-  let debtorData
-  if (debtorData = validateBaseDebtorData(knowledge.debtorData)) {
-    return sanitize ? sanitizeBaseDebtorData(debtorData) : debtorData
+  if (typeof knowledge.debtorData === 'object' && knowledge.debtorData !== null) {
+    // To validate the debtor data obtained from the account knowledge
+    // object, we try to serialize it to a debtor info document
+    // (adding some dummy required values), an then we parse it back
+    // to debtor data, which we know will be in a canonical form.
+    let document
+    try {
+      document = serializeDebtorData({
+        ...knowledge.debtorData,
+        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
+        revision: 0n,
+      })
+    } catch (e: unknown) {
+      if (e instanceof InvalidDocument) { console.warn(e) }
+      else throw e
+    }
+    if (document) {
+      const debtorData = parseDebtorInfoDocument(document)
+      return sanitize ? sanitizeBaseDebtorData(debtorData) : debtorData
+    }
   }
   // Generate a dummy data.
   return {

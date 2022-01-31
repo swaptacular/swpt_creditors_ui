@@ -34,7 +34,7 @@ function parseOptionalDate(value: unknown, errorMsg?: string): Date | undefined 
   return date
 }
 
-function serializeDebtorData(obj: unknown): Uint8Array {
+export function serializeDebtorData(obj: unknown): Document {
   if (typeof obj !== 'object' || obj === null) {
     throw new InvalidDocument(`the value is not an object`)
   }
@@ -104,7 +104,10 @@ function serializeDebtorData(obj: unknown): Uint8Array {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
-  return UTF8_ENCODER.encode(JSON.stringify(transformedDebtorData))
+  return {
+    content: UTF8_ENCODER.encode(JSON.stringify(transformedDebtorData)),
+    contentType: MIME_TYPE_COIN_INFO,
+  }
 }
 
 export type ResourceReference = {
@@ -163,27 +166,6 @@ export class InvalidDocument extends Error {
 
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
-export function validateBaseDebtorData(baseDebtorData: BaseDebtorData | unknown): DebtorData | undefined {
-  let debtorData
-  if (typeof baseDebtorData === 'object') {
-    let content
-    try {
-      content = serializeDebtorData({
-        ...baseDebtorData,
-        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
-        revision: 0n,
-      })
-    } catch (e: unknown) {
-      if (e instanceof InvalidDocument) { console.warn(e) }
-      else throw e
-    }
-    if (content) {
-      debtorData = parseDebtorInfoDocument({ content, contentType: MIME_TYPE_COIN_INFO })
-    }
-  }
-  return debtorData
-}
-
 /*
  This function genarates a document in
  "application/vnd.swaptacular.coin-info+json" format. This format is
@@ -192,10 +174,10 @@ export function validateBaseDebtorData(baseDebtorData: BaseDebtorData | unknown)
  invalid data is passed.
 */
 export async function generateCoinInfoDocument(debtorData: DebtorData): Promise<DocumentWithHash> {
-  const content = serializeDebtorData(debtorData)
+  const { content, contentType } = serializeDebtorData(debtorData)
   return {
     content,
-    contentType: MIME_TYPE_COIN_INFO,
+    contentType,
     sha256: await calcSha256(content),
   }
 }
@@ -250,7 +232,7 @@ export function tryToParseDebtorInfoDocument(document: Document): DebtorData | u
   return debtorData
 }
 
-export function sanitizeBaseDebtorData(data: BaseDebtorData): BaseDebtorData {
+export function sanitizeBaseDebtorData<T extends BaseDebtorData>(data: T): BaseDebtorData {
   const {
     latestDebtorInfo, summary, debtorName, debtorHomepage,
     amountDivisor, decimalPlaces, unit, willNotChangeUntil,
