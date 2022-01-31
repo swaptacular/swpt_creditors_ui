@@ -77,8 +77,9 @@ export async function putDocumentRecord(document: DocumentRecord): Promise<boole
 }
 
 export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledgeV0, sanitize = true): BaseDebtorData {
-  if (knowledge.debtorData && validateBaseDebtorData(knowledge.debtorData)) {
-    return sanitize ? sanitizeBaseDebtorData(knowledge.debtorData) : knowledge.debtorData
+  let debtorData
+  if (debtorData = validateBaseDebtorData(knowledge.debtorData)) {
+    return sanitize ? sanitizeBaseDebtorData(debtorData) : debtorData
   }
   // Generate a dummy data.
   return {

@@ -268,18 +268,6 @@ export function makeAccountKnowledge(data: AccountKnowledge, baseUri: string): A
     uri: new URL(data.uri, baseUri).href,
     account: { uri: new URL(data.account.uri, baseUri).href },
     interestRate: data.interestRate !== undefined ? Number(data.interestRate) : undefined,
-    debtorData: data.debtorData ? {
-      ...data.debtorData,
-      amountDivisor: Number(data.debtorData.amountDivisor),
-      peg: data.debtorData.peg ? {
-        ...data.debtorData.peg,
-        exchangeRate: Number(data.debtorData.peg.exchangeRate),
-        display: {
-          ...data.debtorData.peg.display,
-          amountDivisor: Number(data.debtorData.peg.display.amountDivisor),
-        },
-      } : undefined,
-    }: undefined,
   }
 }
 

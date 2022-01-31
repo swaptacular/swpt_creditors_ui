@@ -1,5 +1,3 @@
-import type { BaseDebtorData } from './debtor-info'
-
 export type CreditorReservationRequest = {
   /** The type of this object. */
   type?: string;
@@ -540,7 +538,7 @@ export type AccountKnowledge = {
    * from which `type`, `debtorIdentity`, and `revision` fields have
    * been removed. This is AN EXTENSION TO THE STANDARD WEB-API.
    */
-  debtorData?: BaseDebtorData;
+  debtorData?: unknown;  // BaseDebtorData
 
   /** Optional configuration error, which is known to the creditor. */
   configError?: string;

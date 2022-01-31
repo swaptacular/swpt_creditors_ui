@@ -51,10 +51,22 @@ function serializeDebtorData(debtorData: any): Uint8Array {
   if (typeof debtorData.decimalPlaces !== 'bigint') {
     throw new InvalidDocument('/decimalPlaces must be a bigint')
   }
+  if (
+    typeof debtorData.amountDivisor !== 'number' &&
+    typeof debtorData.amountDivisor !== 'bigint'
+  ) {
+    throw new InvalidDocument('/amountDivisor must be a number')
+  }
   let peg
   if (debtorData.peg !== undefined) {
     if (debtorData.peg === null || typeof debtorData.peg !== 'object') {
       throw new InvalidDocument('/peg must be an object')
+    }
+    if (
+      typeof debtorData.peg.exchangeRate !== 'number' &&
+      typeof debtorData.peg.exchangeRate !== 'bigint'
+    ) {
+      throw new InvalidDocument('/peg/exchangeRate must be a number')
     }
     if (debtorData.peg.display === null || typeof debtorData.peg.display !== 'object') {
       throw new InvalidDocument('/peg/display must be an object')
@@ -62,10 +74,18 @@ function serializeDebtorData(debtorData: any): Uint8Array {
     if (typeof debtorData.peg.display.decimalPlaces !== 'bigint') {
       throw new InvalidDocument('/peg/display/decimalPlaces must be a bigint')
     }
+    if (
+      typeof debtorData.peg.display.amountDivisor !== 'number' &&
+      typeof debtorData.peg.display.amountDivisor !== 'bigint'
+    ) {
+      throw new InvalidDocument('/peg/display/amountDivisor must be a number')
+    }
     peg = {
       ...debtorData.peg,
+      exchangeRate: Number(debtorData.peg.exchangeRate),
       display: {
         ...debtorData.peg.display,
+        amountDivisor: Number(debtorData.peg.display.amountDivisor),
         decimalPlaces: Number(debtorData.peg.display.decimalPlaces),
       }
     }
@@ -74,6 +94,7 @@ function serializeDebtorData(debtorData: any): Uint8Array {
     ...debtorData,
     type: 'CoinInfo',
     revision: Number(debtorData.revision),
+    amountDivisor: Number(debtorData.amountDivisor),
     decimalPlaces: Number(debtorData.decimalPlaces),
     willNotChangeUntil,
     peg,
@@ -142,23 +163,25 @@ export class InvalidDocument extends Error {
 
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
-export function validateBaseDebtorData(baseDebtorData: unknown): boolean {
-  if (typeof baseDebtorData !== 'object') {
-    return false
+export function validateBaseDebtorData(baseDebtorData: unknown): DebtorData | undefined {
+  let debtorData
+  if (typeof baseDebtorData === 'object') {
+    let content
+    try {
+      content = serializeDebtorData({
+        ...baseDebtorData,
+        debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
+        revision: 0n,
+      })
+    } catch (e: unknown) {
+      if (e instanceof InvalidDocument) { console.warn(e) }
+      else throw e
+    }
+    if (content) {
+      debtorData = parseDebtorInfoDocument({ content, contentType: MIME_TYPE_COIN_INFO })
+    }
   }
-  try {
-    serializeDebtorData({
-      ...baseDebtorData,
-      debtorIdentity: { type: 'DebtorIdentity' as const, uri: '' },
-      revision: 0n,
-    })
-  } catch (e: unknown) {
-    if (e instanceof InvalidDocument) {
-      console.warn(e)
-      return false
-    } else throw e
-  }
-  return true
+  return debtorData
 }
 
 /*
@@ -207,7 +230,9 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
-  if (data.peg?.display.decimalPlaces) {
+  if (data.peg) {
+    data.peg.type = 'Peg'
+    data.peg.display.type = 'PegDisplay'
     data.peg.display.decimalPlaces = BigInt(Math.ceil(data.peg.display.decimalPlaces))
   }
   delete data.type
