@@ -163,7 +163,7 @@ export class InvalidDocument extends Error {
 
 export const MIME_TYPE_COIN_INFO = 'application/vnd.swaptacular.coin-info+json'
 
-export function validateBaseDebtorData(baseDebtorData: unknown): DebtorData | undefined {
+export function validateBaseDebtorData(baseDebtorData: BaseDebtorData | unknown): DebtorData | undefined {
   let debtorData
   if (typeof baseDebtorData === 'object') {
     let content
