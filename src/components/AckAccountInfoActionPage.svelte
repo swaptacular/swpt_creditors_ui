@@ -18,16 +18,7 @@
   let openEnterPinDialog: boolean = false
 
   function acknowlege(): void {
-    const newPeg = action.debtorData.peg
-    const previousPeg = action.previousPeg
-    const previousPegMustBeRemoved = previousPeg !== undefined && (
-      newPeg === undefined ||
-      previousPeg.exchangeRate !== newPeg.exchangeRate ||
-      previousPeg.debtorIdentity.uri !== newPeg.debtorIdentity.uri ||
-      previousPeg.display.amountDivisor !== previousPeg.display.amountDivisor ||
-      previousPeg.display.decimalPlaces !== previousPeg.display.decimalPlaces ||
-      previousPeg.display.unit !== previousPeg.display.unit
-    )
+    const previousPegMustBeRemoved = action.previousPeg !== undefined && action.changes.pegParams
     if (previousPegMustBeRemoved) {
       openEnterPinDialog = true
     } else {
