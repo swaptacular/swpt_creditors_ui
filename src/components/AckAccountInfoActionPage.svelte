@@ -147,19 +147,19 @@
               </li>
             {/if}
 
-            {#if changes.debtorName}
-              <li>
-                The official name of the currency has been changed to
-                "{debtorData.debtorName}". Later, you will be asked to
-                approve this change.
-              </li>
-            {/if}
-
             {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
               <li>
                 The issuer declared a new official way to display
                 currency amounts. Later, you will be asked to approve
                 this important change.
+              </li>
+            {/if}
+
+            {#if changes.debtorName}
+              <li>
+                The official name of the currency has been changed to
+                "{debtorData.debtorName}". Later, you will be asked to
+                approve this change.
               </li>
             {/if}
 
