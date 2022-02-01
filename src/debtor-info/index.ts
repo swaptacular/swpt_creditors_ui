@@ -44,7 +44,7 @@ export type DebtorIdentity = {
 }
 
 export type Peg = {
-  type: string,  // 'Peg'
+  type: 'Peg',
   exchangeRate: number,
   debtorIdentity: DebtorIdentity,
   latestDebtorInfo: ResourceReference,
@@ -52,7 +52,7 @@ export type Peg = {
 }
 
 export type PegDisplay = {
-  type: string,  // 'PegDisplay'
+  type: 'PegDisplay',
   amountDivisor: number,
   decimalPlaces: bigint,
   unit: string,
@@ -223,6 +223,8 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
   if (data.peg) {
+    data.peg.type = 'Peg'
+    data.peg.display.type = 'PegDisplay'
     data.peg.display.decimalPlaces = BigInt(Math.ceil(data.peg.display.decimalPlaces))
   }
   delete data.type
