@@ -60,14 +60,14 @@ export type PegDisplay = {
 
 export type BaseDebtorData = {
   latestDebtorInfo: ResourceReference,
-  willNotChangeUntil?: string,
-  summary?: string,
+  willNotChangeUntil: string | undefined,
+  summary: string | undefined,
   debtorName: string,
   debtorHomepage?: ResourceReference,
   amountDivisor: number,
   decimalPlaces: bigint,
   unit: string,
-  peg?: Peg,
+  peg: Peg | undefined,
 }
 
 export type DebtorData = BaseDebtorData & {
@@ -216,6 +216,9 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
+  data.peg = data.peg ?? undefined
+  data.summary = data.summary ?? undefined
+  data.debtorHomepage = data.debtorHomepage ?? undefined
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))

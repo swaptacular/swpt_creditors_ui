@@ -96,17 +96,20 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
       else throw e
     }
     if (document) {
-      const debtorData = parseDebtorInfoDocument(document)
-      return sanitize ? sanitizeBaseDebtorData(debtorData) : debtorData
+      const debtorData = sanitizeBaseDebtorData(parseDebtorInfoDocument(document))
+      return sanitize ? debtorData : { ...knowledge.debtorData, ...debtorData }
     }
   }
   // Generate a dummy data.
   return {
     latestDebtorInfo: { uri: '' },
     debtorName: 'unknown',
+    summary: undefined,
     amountDivisor: 1,
     decimalPlaces: 0n,
     unit: '\u00A4',
+    peg: undefined,
+    willNotChangeUntil: undefined,
   }
 }
 
