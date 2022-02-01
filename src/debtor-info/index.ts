@@ -267,10 +267,6 @@ export function sanitizeBaseDebtorData<T extends BaseDebtorData>(data: T): BaseD
   }
 }
 
-export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
-  return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
-}
-
 export function matchBaseDebtorData<T1 extends BaseDebtorData, T2 extends BaseDebtorData>(a: T1, b: T2): boolean {
   return (
     a.latestDebtorInfo.uri === b.latestDebtorInfo.uri &&
@@ -288,4 +284,8 @@ export function matchBaseDebtorData<T1 extends BaseDebtorData, T2 extends BaseDe
     a.peg?.display.decimalPlaces === a.peg?.display.decimalPlaces &&
     a.peg?.display.unit === a.peg?.display.unit
   )
+}
+
+export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
+  return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }
