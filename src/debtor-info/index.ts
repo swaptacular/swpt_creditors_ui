@@ -62,7 +62,7 @@ export type BaseDebtorData = {
   willNotChangeUntil: string | undefined,
   summary: string | undefined,
   debtorName: string,
-  debtorHomepage?: ResourceReference,
+  debtorHomepage: ResourceReference | undefined,
   amountDivisor: number,
   decimalPlaces: bigint,
   unit: string,

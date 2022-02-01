@@ -104,6 +104,7 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
   return {
     latestDebtorInfo: { uri: '' },
     debtorName: 'unknown',
+    debtorHomepage: undefined,
     summary: undefined,
     amountDivisor: 1,
     decimalPlaces: 0n,
