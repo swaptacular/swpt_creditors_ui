@@ -4,7 +4,6 @@
  * $ npx ajv compile -s schema.json -o validate-schema.js --strict=true --remove-additional=all --validate-formats=false
  */
 import validate from './validate-schema.js'
-import equal from 'fast-deep-equal'
 
 const UTF8_ENCODER = new TextEncoder()
 const UTF8_DECODER = new TextDecoder()
@@ -272,7 +271,7 @@ export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
   return buffer2hex(await crypto.subtle.digest('SHA-256', buffer))
 }
 
-export function matchBaseDebtorData(a: BaseDebtorData, b: BaseDebtorData): boolean {
+export function matchBaseDebtorData<T1 extends BaseDebtorData, T2 extends BaseDebtorData>(a: T1, b: T2): boolean {
   return (
     a.latestDebtorInfo.uri === b.latestDebtorInfo.uri &&
     a.summary === b.summary &&
@@ -281,7 +280,12 @@ export function matchBaseDebtorData(a: BaseDebtorData, b: BaseDebtorData): boole
     a.amountDivisor === b.amountDivisor &&
     a.decimalPlaces === b.decimalPlaces &&
     a.unit === b.unit &&
-    equal(a.peg, b.peg) &&
-    a.willNotChangeUntil === b.willNotChangeUntil
+    a.willNotChangeUntil === b.willNotChangeUntil &&
+    a.peg?.debtorIdentity.uri === a.peg?.debtorIdentity.uri &&
+    a.peg?.latestDebtorInfo.uri === a.peg?.latestDebtorInfo.uri &&
+    a.peg?.exchangeRate === a.peg?.exchangeRate &&
+    a.peg?.display.amountDivisor === a.peg?.display.amountDivisor &&
+    a.peg?.display.decimalPlaces === a.peg?.display.decimalPlaces &&
+    a.peg?.display.unit === a.peg?.display.unit
   )
 }
