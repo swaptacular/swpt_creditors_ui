@@ -184,6 +184,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
     if (info.debtorInfo) {
       newData = await tryToGetDebtorDataFromDebtorInfo(info.debtorInfo, account.debtor.uri)
     } else {
+      // Ensure `newData.debtorIdentity` is correct.
       newData = newData && newData.debtorIdentity.uri === account.debtor.uri ? newData : undefined
     }
     if (newData) {
