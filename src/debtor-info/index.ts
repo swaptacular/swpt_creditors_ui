@@ -215,9 +215,9 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
     const e = validate.errors[0]
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
-  data.peg = data.peg ?? undefined
-  data.summary = data.summary ?? undefined
-  data.debtorHomepage = data.debtorHomepage ?? undefined
+  data.peg = data.peg  // Ensure the `peg` property exists on the object.
+  data.summary = data.summary
+  data.debtorHomepage = data.debtorHomepage
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
