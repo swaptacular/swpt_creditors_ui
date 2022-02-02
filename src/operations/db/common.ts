@@ -188,23 +188,16 @@ async function addAckAccountInfoActionIfThereAreChanges(
     }
     if (newData) {
       const newPeg = newData.peg
-      const hasPeg = previousPeg !== undefined || newPeg !== undefined
-      const hasSamePegParams = (
-        previousPeg !== undefined &&
-        newPeg !== undefined &&
-        newPeg.debtorIdentity.uri === previousPeg.debtorIdentity.uri &&
-        newPeg.exchangeRate === previousPeg.exchangeRate &&
-        newPeg.display.amountDivisor === previousPeg.display.amountDivisor &&
-        newPeg.display.decimalPlaces === previousPeg.display.decimalPlaces &&
-        newPeg.display.unit === previousPeg.display.unit
+      changes.pegParams = !(
+        newPeg?.debtorIdentity.uri === previousPeg?.debtorIdentity.uri &&
+        newPeg?.exchangeRate === previousPeg?.exchangeRate &&
+        newPeg?.display.amountDivisor === previousPeg?.display.amountDivisor &&
+        newPeg?.display.decimalPlaces === previousPeg?.display.decimalPlaces &&
+        newPeg?.display.unit === previousPeg?.display.unit
       )
-      const hasSamePegDebtorInfoUri = (
-        previousPeg !== undefined &&
-        newPeg !== undefined &&
-        newPeg.latestDebtorInfo.uri === previousPeg.latestDebtorInfo.uri
+      changes.pegDebtorInfoUri = !(
+        newPeg?.latestDebtorInfo.uri === previousPeg?.latestDebtorInfo.uri
       )
-      changes.pegParams = hasPeg && !hasSamePegParams
-      changes.pegDebtorInfoUri = hasPeg && !hasSamePegDebtorInfoUri
       changes.latestDebtorInfo = newData.latestDebtorInfo.uri !== knownData.latestDebtorInfo.uri
       changes.summary = newData.summary !== knownData.summary
       changes.debtorName = newData.debtorName !== knownData.debtorName
