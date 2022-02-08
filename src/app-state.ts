@@ -2,9 +2,9 @@ import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
-  AckAccountInfoActionWithId
+  AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord
 } from './operations'
-import type { BaseDebtorData, DebtorData } from './debtor-info'
+import type { BaseDebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -16,7 +16,6 @@ import {
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
-import type { ApproveDebtorNameActionWithId } from './operations/db'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | (() => void)][],
@@ -118,7 +117,8 @@ export type AckAccountInfoActionModel = BasePageModel & {
 export type ApproveDebtorNameActionModel = BasePageModel & {
   type: 'ApproveDebtorNameModel',
   action: ApproveDebtorNameActionWithId,
-  debtorData: DebtorData,
+  account: AccountRecord,
+  debtorData: BaseDebtorData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -492,6 +492,7 @@ export class AppState {
           this.pageModel.set({
             type: 'ApproveDebtorNameModel',
             reload: () => { this.showAction(action.actionId, back) },
+            account: data.account,
             debtorData: data.debtorData,
             goBack,
             action,

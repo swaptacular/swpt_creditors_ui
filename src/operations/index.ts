@@ -2,13 +2,13 @@ import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
-  AccountKnowledgeRecord, ApproveDebtorNameActionWithId
+  AccountKnowledgeRecord, ApproveDebtorNameActionWithId, AccountRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
-import type { DebtorData } from '../debtor-info'
+import type { BaseDebtorData } from '../debtor-info'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -49,8 +49,10 @@ export {
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
 
 export type KnownAccountData = {
-  debtorData: DebtorData,
+  account: AccountRecord,
+  knowledge: AccountKnowledgeRecord,
   display: AccountDisplayRecord,
+  debtorData: BaseDebtorData,
 }
 
 export type {
@@ -61,6 +63,7 @@ export type {
   AccountV0,
   DebtorDataSource,
   AccountsMap,
+  AccountRecord,
 }
 
 export class ConflictingUpdate extends Error {
@@ -301,13 +304,8 @@ export class UserContext {
     if (knowledge === undefined) {
       return undefined
     }
-    const baseDebtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    const debtorData = {
-      ...baseDebtorData,
-      debtorIdentity: { type: 'DebtorIdentity' as const, uri: account.debtor.uri },
-      revision: 0n,
-    }
-    return { debtorData, display }
+    const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+    return { account, display, knowledge, debtorData }
   }
 
   /* Create an account if necessary. Return the most recent version of
