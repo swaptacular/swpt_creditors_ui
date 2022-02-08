@@ -22,7 +22,11 @@
     case "AckAccountInfo":
       return 'Acknowledge'
     case 'ApprovePeg':
-      return 'Review peg'
+      return 'Approve peg'
+    case 'ApproveAmountDisplay':
+      return 'Approve display'
+    case 'ApproveDebtorName':
+      return 'Approve name'
     default:
       return 'Unknown action type'
     }
@@ -69,7 +73,17 @@
       }
       case 'ApprovePeg': {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" declares a currency peg.` : 'Declared currency peg.'
+        return debtorName ? `"${debtorName}" has declared a currency peg.` : 'Declared currency peg.'
+      }
+      case 'ApproveAmountDisplay': {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName ?
+          `"${debtorName}" has changed the way currency amounts are displayed.` :
+          'Changed way to display currency amounts.'
+      }
+      case 'ApproveDebtorName': {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName ? `"${debtorName}" has changed name.` : 'Changed currency name.'
       }
       default:
         return "Unknown action type"
