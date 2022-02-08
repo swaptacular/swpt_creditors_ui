@@ -2,7 +2,7 @@ import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
-  AccountConfigRecord, AccountDisplayRecord, AccountRecord
+  AccountConfigRecord, AccountDisplayRecord, AccountRecord, AccountObjectRecord
 } from './schema'
 
 import { Dexie } from 'dexie'
@@ -23,6 +23,14 @@ export async function storeCommittedTransferRecord(record: CommittedTransferReco
       )
     }
   })
+}
+
+export async function getAccountRecord(accountUri: string): Promise<AccountRecord | undefined> {
+  return await db.accounts.get(accountUri)
+}
+
+export async function getAccountObjectRecord(objectUri: string): Promise<AccountObjectRecord | undefined> {
+  return await db.accountObjects.get(objectUri)
 }
 
 export async function deleteAccount(accountUri: string): Promise<void> {

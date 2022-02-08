@@ -3,6 +3,7 @@
   import type { AppState } from '../app-state'
   import CreateAccountActionPage from './CreateAccountActionPage.svelte'
   import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
+  import ApproveDebtorNameActionPage from './ApproveDebtorNameActionPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
 
@@ -22,6 +23,8 @@
       return CreateAccountActionPage
     case 'AckAccountInfoActionModel':
       return AckAccountInfoActionPage
+    case 'ApproveDebtorNameModel':
+      return ApproveDebtorNameActionPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

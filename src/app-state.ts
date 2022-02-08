@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId
 } from './operations'
-import type { BaseDebtorData } from './debtor-info'
+import type { BaseDebtorData, DebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -16,6 +16,7 @@ import {
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
+import type { ApproveDebtorNameActionWithId } from './operations/db'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | (() => void)][],
@@ -76,6 +77,7 @@ export type PageModel =
   | ActionsModel
   | CreateAccountActionModel
   | AckAccountInfoActionModel
+  | ApproveDebtorNameActionModel
   | AccountsModel
 
 type BasePageModel = {
@@ -111,6 +113,12 @@ export type AckAccountInfoActionModel = BasePageModel & {
   type: 'AckAccountInfoActionModel',
   action: AckAccountInfoActionWithId,
   account: AccountV0,
+}
+
+export type ApproveDebtorNameActionModel = BasePageModel & {
+  type: 'ApproveDebtorNameModel',
+  action: ApproveDebtorNameActionWithId,
+  debtorData: DebtorData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -225,6 +233,9 @@ export class AppState {
               break
             case 'AckAccountInfo':
               this.showAckAccountInfoAction(action, back)
+              break
+            case 'ApproveDebtorName':
+              this.showApproveDebtorNameAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -456,6 +467,43 @@ export class AppState {
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  showApproveDebtorNameAction(action: ApproveDebtorNameActionWithId, back?: () => void): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const data = await this.uc.getKnownAccountData(action.accountUri)
+      if (
+        data &&
+        data.display.debtorName !== undefined &&
+        data.debtorData.debtorName === action.debtorName
+      ) {
+        if (action.editedDebtorName === undefined) {
+          const editedDebtorName = data.display.debtorName
+          await this.uc.replaceActionRecord(action, action = { ...action, editedDebtorName })
+        }
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'ApproveDebtorNameModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            debtorData: data.debtorData,
+            goBack,
+            action,
+          })
+        }
+      } else {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
+      }
+    }, {
+      alerts: [
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
       ],
     })
   }

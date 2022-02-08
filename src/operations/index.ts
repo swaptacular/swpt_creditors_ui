@@ -1,12 +1,14 @@
 import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
-  CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource
+  CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
+  AccountKnowledgeRecord, ApproveDebtorNameActionWithId
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
+import type { DebtorData } from '../debtor-info'
 
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
@@ -17,7 +19,8 @@ import {
 import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
-  InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos
+  InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
+  getAccountRecord, getAccountObjectRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -45,10 +48,16 @@ export {
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
 
+export type KnownAccountData = {
+  debtorData: DebtorData,
+  display: AccountDisplayRecord,
+}
+
 export type {
   ActionRecordWithId,
   CreateAccountActionWithId,
   AckAccountInfoActionWithId,
+  ApproveDebtorNameActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
@@ -271,6 +280,34 @@ export class UserContext {
     const account = makeAccount(response)
     await storeObject(this.userId, account)
     return account
+  }
+
+  /* Ensures that the account (accountUri) exists,
+   * `account.display.debtorName` is not undefined, and
+   * `account.knowledge.debtorData` matches `debtorName`. Returns
+   * account's `account.display.debtorName` on success, or `undefined`
+   * on failure.
+   */
+  async getKnownAccountData(accountUri: string): Promise<KnownAccountData | undefined> {
+    const account = await getAccountRecord(accountUri)
+    if (account === undefined) {
+      return undefined
+    }
+    const display = await getAccountObjectRecord(account.display.uri) as AccountDisplayRecord | undefined
+    if (display?.debtorName === undefined) {
+      return undefined
+    }
+    const knowledge = await getAccountObjectRecord(account.knowledge.uri) as AccountKnowledgeRecord | undefined
+    if (knowledge === undefined) {
+      return undefined
+    }
+    const baseDebtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+    const debtorData = {
+      ...baseDebtorData,
+      debtorIdentity: { type: 'DebtorIdentity' as const, uri: account.debtor.uri },
+      revision: 0n,
+    }
+    return { debtorData, display }
   }
 
   /* Create an account if necessary. Return the most recent version of
