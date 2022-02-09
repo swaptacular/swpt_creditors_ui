@@ -542,7 +542,7 @@ export type ApproveDebtorNameAction =
     actionType: 'ApproveDebtorName',
     accountUri: string,
     debtorName: string,
-    editedDebtorName?: string,
+    editedDebtorName: string,
   }
 
 export type ApproveDebtorNameActionWithId =

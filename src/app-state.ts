@@ -119,6 +119,8 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
   action: ApproveDebtorNameActionWithId,
   account: AccountRecord,
   debtorData: BaseDebtorData,
+  oldDebtorName: string,
+  knownDebtor: boolean,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -484,16 +486,14 @@ export class AppState {
         data.display.debtorName !== undefined &&
         data.debtorData.debtorName === action.debtorName
       ) {
-        if (action.editedDebtorName === undefined) {
-          const editedDebtorName = data.display.debtorName
-          await this.uc.replaceActionRecord(action, action = { ...action, editedDebtorName })
-        }
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'ApproveDebtorNameModel',
             reload: () => { this.showAction(action.actionId, back) },
             account: data.account,
             debtorData: data.debtorData,
+            oldDebtorName: data.display.debtorName,
+            knownDebtor: data.display.knownDebtor,
             goBack,
             action,
           })

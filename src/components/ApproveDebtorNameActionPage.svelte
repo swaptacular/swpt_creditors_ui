@@ -1,14 +1,17 @@
 <script lang="ts">
   import type { AppState, ApproveDebtorNameActionModel, ActionManager } from '../app-state'
   import type { ApproveDebtorNameActionWithId } from '../operations'
+  import { tick } from 'svelte'
   import Fab, { Label } from '@smui/fab'
-  // import Paper, { Title, Content } from '@smui/paper'
-  // import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Textfield from '@smui/textfield'
-  // import TextfieldIcon from '@smui/textfield/icon'
-  // import HelperText from '@smui/textfield/helper-text/index'
-  // import Chip, { Text } from '@smui/chips'
-  // import Tooltip, { Wrapper } from '@smui/tooltip'
+  import Paper, { Title, Content } from '@smui/paper'
+  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import Textfield from '@smui/textfield'
+  import TextfieldIcon from '@smui/textfield/icon'
+  import HelperText from '@smui/textfield/helper-text/index'
+  import Radio from '@smui/radio'
+  import FormField from '@smui/form-field'
+  import Checkbox from '@smui/checkbox'
+
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 
@@ -23,8 +26,9 @@
 
   let debtorName: string
 
-  let invalidDebtorName: boolean
+  let invalidDebtorName: boolean | undefined
   let uniqueDebtorName: boolean
+  let setDebtorAsUnknown: boolean = false
 
   function createUpdatedAction(): ApproveDebtorNameActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
@@ -41,6 +45,12 @@
       shakingElement.className += shakingSuffix
       setTimeout(() => { shakingElement.className = origClassName }, 1000)
     }
+  }
+
+  async function setDebtorName(name: string): Promise<void> {
+    debtorName = name
+    await tick()
+    invalidDebtorName = undefined
   }
 
   function confirm(): void {
@@ -77,6 +87,9 @@
     uniqueDebtorName = isUniqueDebtorName(debtorName)
   }
   $: action = model.action
+  $: oldName = model.oldDebtorName
+  $: newName = action.debtorName
+  $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
   $: invalid = invalidDebtorName || !uniqueDebtorName
 </script>
 
@@ -87,6 +100,9 @@
   .shaking-container {
     position: relative;
     overflow: hidden;
+  }
+  .radio-group > :global(*) {
+    margin: 0 0.2em;
   }
 
   @keyframes shake {
@@ -121,6 +137,69 @@
           on:input={() => actionManager.markDirty()}
           on:change={() => actionManager.save()}
           >
+          <LayoutGrid>
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
+                <Title style="display: flex; justify-content: space-between; align-items: center">
+                  Changed currency name
+                </Title>
+                <Content>
+                  "{oldName}" has changed the currency's official name to "{newName}".
+                </Content>
+              </Paper>
+            </Cell>
+
+            <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+              <Textfield
+                required
+                variant="outlined"
+                style="width: 100%"
+                input$maxlength="40"
+                input$spellcheck="false"
+                bind:invalid={invalidDebtorName}
+                bind:value={debtorName}
+                label="Currency name"
+                >
+                <svelte:fragment slot="trailingIcon">
+                  {#if invalidDebtorName || !uniqueDebtorName}
+                    <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                  {/if}
+                </svelte:fragment>
+                <HelperText slot="helper" persistent>
+                  Every account must have a unique currency name.
+                </HelperText>
+              </Textfield>
+            </Cell>
+
+            {#if newName !== oldName}
+              <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+                <div class="radio-group">
+                  <FormField>
+                    <Radio bind:group={useName} value="new" touch on:click={() => setDebtorName(newName)} />
+                      <span slot="label">Use the new name</span>
+                  </FormField>
+                  <FormField>
+                    <Radio bind:group={useName} value="old" touch on:click={() => setDebtorName(oldName)} />
+                      <span slot="label">Use the old name</span>
+                  </FormField>
+                </div>
+              </Cell>
+            {/if}
+
+            {#if model.knownDebtor}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <FormField style="margin-top: 1em">
+                  <Checkbox bind:checked={setDebtorAsUnknown} />
+                  <span slot="label">
+                    This change is confusing. I am not sure about the
+                    real identity of the issuer of this currency
+                    anymore, and do not want to receive payments in
+                    it.
+                  </span>
+                </FormField>
+              </Cell>
+            {/if}
+          </LayoutGrid>
         </form>
       </div>
     </svelte:fragment>
