@@ -58,8 +58,9 @@
     uniqueDebtorName = isUniqueDebtorName(debtorName)
     if (invalid) {
       shakeForm()
+    } else if (debtorName === oldName && !unsetKnownDebtor) {
+      actionManager.remove()
     } else {
-      // TODO: do not ask for PIN if the old name is used.
       openEnterPinDialog = true
     }
   }
