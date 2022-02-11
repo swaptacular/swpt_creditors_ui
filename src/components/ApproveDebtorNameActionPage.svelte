@@ -204,7 +204,7 @@
               </Cell>
 
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-                <FormField style="margin-top: 1em">
+                <FormField style="margin-top: 0.6em">
                   <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
                   <span slot="label">
                     This change is confusing. I am not sure about the
