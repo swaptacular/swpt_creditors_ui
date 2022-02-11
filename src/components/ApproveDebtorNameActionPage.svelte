@@ -28,7 +28,7 @@
 
   let invalidDebtorName: boolean | undefined
   let uniqueDebtorName: boolean
-  let unsetKnownDebtor: boolean = false
+  let unsetKnownDebtor: boolean
 
   function createUpdatedAction(): ApproveDebtorNameActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
@@ -87,7 +87,7 @@
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.editedDebtorName ?? ''
     uniqueDebtorName = isUniqueDebtorName(debtorName)
-    unsetKnownDebtor = model.action.unsetKnownDebtor
+    unsetKnownDebtor = action.debtorName !== model.oldDebtorName && model.knownDebtor && model.action.unsetKnownDebtor
   }
   $: action = model.action
   $: oldName = model.oldDebtorName
