@@ -28,7 +28,7 @@
 
   let invalidDebtorName: boolean | undefined
   let uniqueDebtorName: boolean
-  let setDebtorAsUnknown: boolean = false
+  let unsetUnknownDebtor: boolean = false
 
   function createUpdatedAction(): ApproveDebtorNameActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
@@ -47,8 +47,8 @@
     }
   }
 
-  async function setDebtorName(name: string): Promise<void> {
-    debtorName = name
+  async function setDebtorName(s: string): Promise<void> {
+    debtorName = s
     await tick()
     invalidDebtorName = undefined
   }
@@ -89,8 +89,13 @@
   $: action = model.action
   $: oldName = model.oldDebtorName
   $: newName = action.debtorName
+  $: changedName = newName !== oldName
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
   $: invalid = invalidDebtorName || !uniqueDebtorName
+  $: if (unsetUnknownDebtor) {
+    setDebtorName(newName)
+    debtorName = debtorName
+  }
 </script>
 
 <style>
@@ -138,16 +143,18 @@
           on:change={() => actionManager.save()}
           >
           <LayoutGrid>
-            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
-                <Title style="display: flex; justify-content: space-between; align-items: center">
-                  Changed currency name
-                </Title>
-                <Content>
-                  "{oldName}" has changed the currency's official name to "{newName}".
-                </Content>
-              </Paper>
-            </Cell>
+            {#if changedName}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
+                  <Title style="display: flex; justify-content: space-between; align-items: center">
+                    Changed currency name
+                  </Title>
+                  <Content>
+                    "{oldName}" has changed the currency's official name to "{newName}".
+                  </Content>
+                </Paper>
+              </Cell>
+            {/if}
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
@@ -171,25 +178,35 @@
               </Textfield>
             </Cell>
 
-            {#if newName !== oldName}
+            {#if changedName && model.knownDebtor}
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                 <div class="radio-group">
                   <FormField>
-                    <Radio bind:group={useName} value="new" touch on:click={() => setDebtorName(newName)} />
+                    <Radio
+                      bind:group={useName}
+                      value="new"
+                      touch
+                      disabled={unsetUnknownDebtor}
+                      on:click={() => setDebtorName(newName)}
+                      />
                       <span slot="label">Use the new name</span>
                   </FormField>
                   <FormField>
-                    <Radio bind:group={useName} value="old" touch on:click={() => setDebtorName(oldName)} />
+                    <Radio
+                      bind:group={useName}
+                      value="old"
+                      touch
+                      disabled={unsetUnknownDebtor}
+                      on:click={() => setDebtorName(oldName)}
+                      />
                       <span slot="label">Use the old name</span>
                   </FormField>
                 </div>
               </Cell>
-            {/if}
 
-            {#if model.knownDebtor}
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <FormField style="margin-top: 1em">
-                  <Checkbox bind:checked={setDebtorAsUnknown} />
+                  <Checkbox bind:checked={unsetUnknownDebtor} />
                   <span slot="label">
                     This change is confusing. I am not sure about the
                     real identity of the issuer of this currency
@@ -207,7 +224,7 @@
     <svelte:fragment slot="floating">
       <div class="fab-container">
         <Fab color="primary" on:click={confirm} extended>
-          <Label>Submit</Label>
+          <Label>Save</Label>
         </Fab>
       </div>
     </svelte:fragment>
