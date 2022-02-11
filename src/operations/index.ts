@@ -136,9 +136,9 @@ async function reviseOutdatedDebtorInfosIfNecessary(userId: number): Promise<voi
   const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
   const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
   const latestRevisionTime = new Date(storage_value).getTime()
-  const intervalSeconds = 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
+  const intervalMilliseconds = 1000 * 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
   const now = new Date()
-  if (latestRevisionTime + intervalSeconds < now.getTime()) {
+  if (latestRevisionTime + intervalMilliseconds < now.getTime()) {
     await reviseOutdatedDebtorInfos(userId)
     console.log('Created update tasks for outdated debtor infos.')
   }
