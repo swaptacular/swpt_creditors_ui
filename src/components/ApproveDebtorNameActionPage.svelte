@@ -28,13 +28,14 @@
 
   let invalidDebtorName: boolean | undefined
   let uniqueDebtorName: boolean
-  let unsetUnknownDebtor: boolean = false
+  let unsetKnownDebtor: boolean = false
 
   function createUpdatedAction(): ApproveDebtorNameActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
     return {
       ...action,
       editedDebtorName: debtorName,
+      unsetKnownDebtor: unsetKnownDebtor,
     }
   }
 
@@ -58,6 +59,7 @@
     if (invalid) {
       shakeForm()
     } else {
+      // TODO: do not ask for PIN if the old name is used.
       openEnterPinDialog = true
     }
   }
@@ -85,6 +87,7 @@
     actionManager = app.createActionManager(model.action, createUpdatedAction)
     debtorName = model.action.editedDebtorName ?? ''
     uniqueDebtorName = isUniqueDebtorName(debtorName)
+    unsetKnownDebtor = model.action.unsetKnownDebtor
   }
   $: action = model.action
   $: oldName = model.oldDebtorName
@@ -92,10 +95,6 @@
   $: changedName = newName !== oldName
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
   $: invalid = invalidDebtorName || !uniqueDebtorName
-  $: if (unsetUnknownDebtor) {
-    setDebtorName(newName)
-    debtorName = debtorName
-  }
 </script>
 
 <style>
@@ -186,7 +185,7 @@
                       bind:group={useName}
                       value="new"
                       touch
-                      disabled={unsetUnknownDebtor}
+                      disabled={unsetKnownDebtor}
                       on:click={() => setDebtorName(newName)}
                       />
                       <span slot="label">Use the new name</span>
@@ -196,7 +195,7 @@
                       bind:group={useName}
                       value="old"
                       touch
-                      disabled={unsetUnknownDebtor}
+                      disabled={unsetKnownDebtor}
                       on:click={() => setDebtorName(oldName)}
                       />
                       <span slot="label">Use the old name</span>
@@ -206,12 +205,12 @@
 
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <FormField style="margin-top: 1em">
-                  <Checkbox bind:checked={unsetUnknownDebtor} />
+                  <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
                   <span slot="label">
                     This change is confusing. I am not sure about the
                     real identity of the issuer of this currency
                     anymore, and do not want to receive payments in
-                    it.
+                    this currency.
                   </span>
                 </FormField>
               </Cell>
