@@ -83,7 +83,7 @@
       }
       case 'ApproveDebtorName': {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `Approve new name for "${debtorName}".` : 'Approve new name.'
+        return debtorName ? `Approve a new name for "${debtorName}".` : 'Approve a new name.'
       }
       default:
         return "Unknown action type"

@@ -2,7 +2,7 @@ import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
-  AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord
+  AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -119,8 +119,7 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
   action: ApproveDebtorNameActionWithId,
   account: AccountRecord,
   debtorData: BaseDebtorData,
-  oldDebtorName: string,
-  knownDebtor: boolean,
+  display: AccountDisplayRecord,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -492,8 +491,7 @@ export class AppState {
             reload: () => { this.showAction(action.actionId, back) },
             account: data.account,
             debtorData: data.debtorData,
-            oldDebtorName: data.display.debtorName,
-            knownDebtor: data.display.knownDebtor,
+            display :data.display,
             goBack,
             action,
           })

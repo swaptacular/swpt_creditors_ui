@@ -64,6 +64,7 @@ export type {
   DebtorDataSource,
   AccountsMap,
   AccountRecord,
+  AccountDisplayRecord,
 }
 
 export class ConflictingUpdate extends Error {

@@ -83,15 +83,21 @@
     }
   }
 
+  assert(model.display.debtorName !== undefined)
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
-    debtorName = model.action.editedDebtorName ?? ''
+    debtorName = model.action.editedDebtorName
     uniqueDebtorName = isUniqueDebtorName(debtorName)
-    unsetKnownDebtor = action.debtorName !== model.oldDebtorName && model.knownDebtor && model.action.unsetKnownDebtor
+    unsetKnownDebtor = (
+      model.action.debtorName !== model.display.debtorName &&
+      model.display.knownDebtor &&
+      model.action.unsetKnownDebtor
+    )
   }
   $: action = model.action
-  $: oldName = model.oldDebtorName
+  $: knownDebtor = model.display.knownDebtor
+  $: oldName = model.display.debtorName ?? ''
   $: newName = action.debtorName
   $: changedName = newName !== oldName
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
@@ -178,7 +184,7 @@
               </Textfield>
             </Cell>
 
-            {#if changedName && model.knownDebtor}
+            {#if knownDebtor && changedName }
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                 <div class="radio-group">
                   <FormField>
