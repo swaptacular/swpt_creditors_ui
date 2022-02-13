@@ -142,7 +142,7 @@
               <li>
                 The official name of the currency has been changed to
                 "{debtorData.debtorName}". Later, you will be asked to
-                approve this change.
+                approve this important change.
               </li>
             {/if}
 

@@ -42,7 +42,7 @@ This schema accepts additional properties.
 	 - <i id="#/properties/debtorIdentity">path: #/properties/debtorIdentity</i>
 	 - &#36;ref: [#/definitions/DebtorIdentity](#/definitions/DebtorIdentity)
  - <b id="#/properties/debtorName">debtorName</b> `required`
-	 - _The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization._
+	 - _The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization._This field SHOULD NOT change in newer revisions of the document._
 	 - Type: `string`
 	 - <i id="#/properties/debtorName">path: #/properties/debtorName</i>
 	 - Length: between 1 and 40

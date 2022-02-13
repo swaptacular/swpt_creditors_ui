@@ -114,7 +114,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization."
+      "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization. This field SHOULD NOT change in newer revisions of the document."
     },
     "debtorHomepage": {
       "$ref": "#/definitions/ShortLink",

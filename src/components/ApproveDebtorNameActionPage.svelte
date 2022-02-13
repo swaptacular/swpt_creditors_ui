@@ -148,18 +148,24 @@
           on:change={() => actionManager.save()}
           >
           <LayoutGrid>
-            {#if changedName}
-              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-                <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
-                  <Title style="display: flex; justify-content: space-between; align-items: center">
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
+                <Title style="display: flex; justify-content: space-between; align-items: center">
+                  {#if changedName}
                     Changed currency name
-                  </Title>
-                  <Content>
+                  {:else}
+                    Currency name
+                  {/if}
+                </Title>
+                <Content>
+                  {#if changedName}
                     "{oldName}" has changed the currency's official name to "{newName}".
-                  </Content>
-                </Paper>
-              </Cell>
-            {/if}
+                  {:else}
+                    The official name of the currency is "{newName}".
+                  {/if}
+                </Content>
+              </Paper>
+            </Cell>
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
@@ -229,7 +235,7 @@
     <svelte:fragment slot="floating">
       <div class="fab-container">
         <Fab color="primary" on:click={confirm} extended>
-          <Label>Save</Label>
+          <Label>Approve</Label>
         </Fab>
       </div>
     </svelte:fragment>

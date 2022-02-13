@@ -58,7 +58,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
                 createdAt: new Date(),
                 debtorName: debtorData.debtorName,
                 editedDebtorName: debtorData.debtorName,
-                unsetKnownDebtor: false,
+                unsetKnownDebtor: true,
                 userId,
                 accountUri,
               })
