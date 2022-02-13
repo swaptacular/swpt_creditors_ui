@@ -66,8 +66,7 @@
   }
 
   function submit(pin: string): void {
-    console.log(`submitted ${pin}`)
-    //app.confirmCreateAccountAction(actionManager, data, pin, model.goBack)
+    app.resolveApproveDebtorNameAction(actionManager, pin, model.goBack)
   }
 
   function isUniqueDebtorName(debtorName: string): boolean {

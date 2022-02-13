@@ -309,6 +309,29 @@ export class UserContext {
     return { account, display, knowledge, debtorData }
   }
 
+  /* Changes the display name (and possibly clears `knownDebtor`) as
+   * the given action states. The caller must be prepared this method
+   * to throw `RecordDoesNotExist` or `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+  async resolveApproveDebtorNameAction(action: ApproveDebtorNameActionWithId, pin: string): Promise<void> {
+    const account = await this.getAccount(action.accountUri)
+    if (
+      account &&
+      account.display.debtorName !== undefined &&
+      getBaseDebtorDataFromAccoutKnowledge(account.knowledge).debtorName === action.debtorName
+    ) {
+      const display: AccountDisplayV0 = {
+        ...account.display,
+        debtorName: action.editedDebtorName,
+        knownDebtor: account.display.knownDebtor && !action.unsetKnownDebtor,
+        latestUpdateId: account.display.latestUpdateId + 1n,
+        pin,
+      }
+      await this.updateAccountObject(display)
+    }
+    await this.replaceActionRecord(action, null)
+  }
+
   /* Create an account if necessary. Return the most recent version of
    * the account. The caller must be prepared this method to throw
    * `InvalidCoinUri` or `ServerSessionError`. */
