@@ -509,6 +509,7 @@ export class AppState {
 
   resolveApproveDebtorNameAction(
     actionManager: ActionManager<ApproveDebtorNameActionWithId>,
+    displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
   ) {
@@ -521,14 +522,14 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.resolveApproveDebtorNameAction(action, pin)
+      await this.uc.resolveApproveDebtorNameAction(action, displayLatestUpdateId, pin)
       checkAndGoBack()
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })

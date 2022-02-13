@@ -66,7 +66,7 @@
   }
 
   function submit(pin: string): void {
-    app.resolveApproveDebtorNameAction(actionManager, pin, model.goBack)
+    app.resolveApproveDebtorNameAction(actionManager, model.display.latestUpdateId, pin, model.goBack)
   }
 
   function isUniqueDebtorName(debtorName: string): boolean {
@@ -136,7 +136,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Approve name">
+  <Page title="Currency name">
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -149,19 +149,15 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
+              <Paper style="margin-top: 16px; margin-bottom: 28px; word-break: break-word" elevation={4}>
                 <Title style="display: flex; justify-content: space-between; align-items: center">
-                  {#if changedName}
-                    Changed currency name
-                  {:else}
-                    Currency name
-                  {/if}
+                  Approve a new name
                 </Title>
                 <Content>
                   {#if changedName}
                     "{oldName}" has changed the currency's official name to "{newName}".
                   {:else}
-                    The official name of the currency is "{newName}".
+                    Now the official name of the currency is: "{newName}".
                   {/if}
                 </Content>
               </Paper>

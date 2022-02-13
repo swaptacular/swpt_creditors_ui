@@ -313,7 +313,11 @@ export class UserContext {
    * the given action states. The caller must be prepared this method
    * to throw `RecordDoesNotExist` or `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
-  async resolveApproveDebtorNameAction(action: ApproveDebtorNameActionWithId, pin: string): Promise<void> {
+  async resolveApproveDebtorNameAction(
+    action: ApproveDebtorNameActionWithId,
+    displayLatestUpdateId: bigint,
+    pin: string,
+  ): Promise<void> {
     const account = await this.getAccount(action.accountUri)
     if (
       account &&
@@ -324,7 +328,7 @@ export class UserContext {
         ...account.display,
         debtorName: action.editedDebtorName,
         knownDebtor: account.display.knownDebtor && !action.unsetKnownDebtor,
-        latestUpdateId: account.display.latestUpdateId + 1n,
+        latestUpdateId: displayLatestUpdateId + 1n,
         pin,
       }
       await this.updateAccountObject(display)
