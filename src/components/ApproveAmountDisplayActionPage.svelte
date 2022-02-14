@@ -87,10 +87,18 @@
     negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
   }
   $: action = model.action
+  $: debtorName = model.display.debtorName ?? ''
   $: invalid = approved === 'yes' && invalidNegligibleUnitAmount
+  $: oldUnitAmount = amountToString(1000n, model.display.amountDivisor, model.display.decimalPlaces)
+  $: oldUnit = model.display.unit
+  $: newUnitAmount = amountToString(1000n, action.amountDivisor, action.decimalPlaces)
+  $: newUnit = model.action.unit
 </script>
 
 <style>
+  .amount {
+    white-space: nowrap;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -141,20 +149,24 @@
                   Approve a new way amounts are displayed
                 </Title>
                 <Content>
-                  blah-blah
+                  "{debtorName}" has changed the way currency amounts
+                  are displayed. If you choose to use the new way to
+                  display amounts, the {oldUnitAmount} {oldUnit} that
+                  you have in your account, in the future will be
+                  shown as {newUnitAmount} {newUnit}.
                 </Content>
               </Paper>
             </Cell>
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-              <div class="radio-group" style="margin-bottom: 16px">
+              <div class="radio-group" style="margin-bottom: 16px; word-break: break-word">
                 <FormField>
                   <Radio bind:group={approved} value="yes" touch />
-                    <span slot="label">Use the new display</span>
+                    <span slot="label">Use the new way <em class="amount">({newUnitAmount} {newUnit})</em></span>
                 </FormField>
                 <FormField>
                   <Radio bind:group={approved} value="no" touch />
-                    <span slot="label">Use the old display</span>
+                    <span slot="label">Use the old way <em class="amount">({oldUnitAmount} {oldUnit})</em></span>
                 </FormField>
               </div>
             </Cell>

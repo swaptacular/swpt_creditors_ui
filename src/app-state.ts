@@ -504,7 +504,7 @@ export class AppState {
             reload: () => { this.showAction(action.actionId, back) },
             account: data.account,
             debtorData: data.debtorData,
-            display :data.display,
+            display: data.display,
             goBack,
             action,
           })
@@ -582,7 +582,7 @@ export class AppState {
             reload: () => { this.showAction(action.actionId, back) },
             account: data.account,
             debtorData: data.debtorData,
-            display :data.display,
+            display: data.display,
             goBack,
             action,
           })
