@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { AppState, ApproveAmountDisplayActionModel, ActionManager } from '../app-state'
   import type { ApproveAmountDisplayActionWithId } from '../operations'
+  import { amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
-  // import Paper, { Title, Content } from '@smui/paper'
+  import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Textfield from '@smui/textfield'
-  // import TextfieldIcon from '@smui/textfield/icon'
-  // import HelperText from '@smui/textfield/helper-text/index'
+  import Textfield from '@smui/textfield'
+  import TextfieldIcon from '@smui/textfield/icon'
+  import HelperText from '@smui/textfield/helper-text/index'
   import Radio from '@smui/radio'
   import FormField from '@smui/form-field'
 
@@ -22,12 +23,27 @@
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
 
-  let useNew: 'yes' | 'no'
+  let negligibleUnitAmount: string | number
+  let negligibleUnitAmountStep: string
+  let useNewDisplay: 'yes' | 'no'
   
+  let invalidNegligibleUnitAmount: boolean
+
   function createUpdatedAction(): ApproveAmountDisplayActionWithId {
     return {
       ...action,
     }
+  }
+
+  function formatAsUnitAmount(amount: bigint | number | undefined): string {
+    if (amount === undefined) {
+      return ''
+    }
+    if (typeof amount === 'number') {
+      assert(Number.isFinite(amount))
+      amount = BigInt(Math.ceil(amount))
+    }
+    return amountToString(amount, model.action.amountDivisor, model.action.decimalPlaces)
   }
 
   function shakeForm(): void {
@@ -42,8 +58,9 @@
   function confirm(): void {
     if (invalid) {
       shakeForm()
-    } else if (useNew === 'no') {
-      actionManager.remove()
+    } else if (useNewDisplay === 'no') {
+      console.log('removing')
+      // actionManager.remove()
     } else {
       openEnterPinDialog = true
     }
@@ -58,10 +75,12 @@
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
-    useNew = 'yes'
+    useNewDisplay = 'yes'
+    negligibleUnitAmount = formatAsUnitAmount(0)
+    negligibleUnitAmountStep = formatAsUnitAmount(0)
   }
   $: action = model.action
-  $: invalid = false
+  $: invalid = invalidNegligibleUnitAmount
 </script>
 
 <style>
@@ -109,17 +128,57 @@
           on:change={() => actionManager.save()}
           >
           <LayoutGrid>
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Paper style="margin-top: 16px; margin-bottom: 16px; word-break: break-word" elevation={4}>
+                <Title>
+                  Approve a new way amounts are displayed
+                </Title>
+                <Content>
+                  blah-blah
+                </Content>
+              </Paper>
+            </Cell>
+
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-              <div class="radio-group">
+              <div class="radio-group" style="margin-bottom: 16px">
                 <FormField>
-                  <Radio bind:group={useNew} value="yes" touch />
+                  <Radio bind:group={useNewDisplay} value="yes" touch />
                     <span slot="label">Use the new display</span>
                 </FormField>
                 <FormField>
-                  <Radio bind:group={useNew} value="no" touch />
+                  <Radio bind:group={useNewDisplay} value="no" touch />
                     <span slot="label">Use the old display</span>
                 </FormField>
               </div>
+            </Cell>
+
+            <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+              <Textfield
+                required
+                variant="outlined"
+                type="number"
+                input$min={negligibleUnitAmountStep}
+                input$step={negligibleUnitAmountStep}
+                style="width: 100%"
+                withTrailingIcon={invalidNegligibleUnitAmount}
+                bind:value={negligibleUnitAmount}
+                bind:invalid={invalidNegligibleUnitAmount}
+                label="Negligible amount"
+                suffix="{action.unit}"
+                >
+                <svelte:fragment slot="trailingIcon">
+                  {#if invalidNegligibleUnitAmount}
+                    <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                  {/if}
+                </svelte:fragment>
+                <HelperText style="word-break: break-word" slot="helper" persistent>
+                  An amount to be considered negligible. It will be
+                  used to decide whether the account can be safely
+                  deleted, and whether an incoming transfer can be
+                  ignored. Can not be smaller than
+                  {negligibleUnitAmountStep} {action.unit}
+                </HelperText>
+              </Textfield>
             </Cell>
           </LayoutGrid>
         </form>
