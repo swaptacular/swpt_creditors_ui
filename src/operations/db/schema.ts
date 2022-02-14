@@ -501,6 +501,11 @@ export type ApproveAmountDisplayAction =
     amountDivisor: number,
     decimalPlaces: bigint,
     unit: string,
+    state?: {
+      editedNegligibleAmount: number,
+      tinyNegligibleAmount: number,
+      approved: 'yes' | 'no'
+    },
   }
 
 export type ApproveAmountDisplayActionWithId =

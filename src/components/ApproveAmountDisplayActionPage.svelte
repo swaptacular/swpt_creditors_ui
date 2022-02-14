@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState, ApproveAmountDisplayActionModel, ActionManager } from '../app-state'
   import type { ApproveAmountDisplayActionWithId } from '../operations'
+  import { limitAmountDivisor } from '../format-amounts'
   import { amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -25,13 +26,19 @@
 
   let negligibleUnitAmount: string | number
   let negligibleUnitAmountStep: string
-  let useNewDisplay: 'yes' | 'no'
-  
+  let approved: 'yes' | 'no'
+
   let invalidNegligibleUnitAmount: boolean
 
   function createUpdatedAction(): ApproveAmountDisplayActionWithId {
+    assert(action.state)
     return {
       ...action,
+      state: {
+        ...action.state,
+        editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * limitAmountDivisor(action.amountDivisor),
+        approved,
+      },
     }
   }
 
@@ -58,7 +65,7 @@
   function confirm(): void {
     if (invalid) {
       shakeForm()
-    } else if (useNewDisplay === 'no') {
+    } else if (approved === 'no') {
       console.log('removing')
       // actionManager.remove()
     } else {
@@ -75,12 +82,12 @@
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
-    useNewDisplay = 'yes'
-    negligibleUnitAmount = formatAsUnitAmount(0)
-    negligibleUnitAmountStep = formatAsUnitAmount(0)
+    approved = model.action.state?.approved ?? 'no'
+    negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
+    negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
   }
   $: action = model.action
-  $: invalid = invalidNegligibleUnitAmount
+  $: invalid = approved === 'yes' && invalidNegligibleUnitAmount
 </script>
 
 <style>
@@ -129,7 +136,7 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 16px; margin-bottom: 16px; word-break: break-word" elevation={4}>
+              <Paper style="margin-top: 16px; margin-bottom: 24px; word-break: break-word" elevation={4}>
                 <Title>
                   Approve a new way amounts are displayed
                 </Title>
@@ -142,11 +149,11 @@
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <div class="radio-group" style="margin-bottom: 16px">
                 <FormField>
-                  <Radio bind:group={useNewDisplay} value="yes" touch />
+                  <Radio bind:group={approved} value="yes" touch />
                     <span slot="label">Use the new display</span>
                 </FormField>
                 <FormField>
-                  <Radio bind:group={useNewDisplay} value="no" touch />
+                  <Radio bind:group={approved} value="no" touch />
                     <span slot="label">Use the old display</span>
                 </FormField>
               </div>
@@ -165,6 +172,7 @@
                 bind:invalid={invalidNegligibleUnitAmount}
                 label="Negligible amount"
                 suffix="{action.unit}"
+                disabled={approved === 'no'}
                 >
                 <svelte:fragment slot="trailingIcon">
                   {#if invalidNegligibleUnitAmount}

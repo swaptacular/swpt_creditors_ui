@@ -553,6 +553,16 @@ export class AppState {
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
+    const initializeActionState = async (): Promise<void> => {
+      const tinyNegligibleAmount = calcSmallestDisplayableNumber(action.amountDivisor, action.decimalPlaces)
+      const state = {
+        approved: 'yes' as const,
+        editedNegligibleAmount: tinyNegligibleAmount,
+        tinyNegligibleAmount,
+      }
+      await this.uc.replaceActionRecord(action, action = { ...action, state })
+    }
+
     return this.attempt(async () => {
       interactionId = this.interactionId
       const data = await this.uc.getKnownAccountData(action.accountUri)
@@ -563,6 +573,9 @@ export class AppState {
         data.debtorData.decimalPlaces === action.decimalPlaces &&
         data.debtorData.unit === action.unit
       ) {
+        if (action.state === undefined) {
+          await initializeActionState()
+        }
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'ApproveAmountDisplayModel',
