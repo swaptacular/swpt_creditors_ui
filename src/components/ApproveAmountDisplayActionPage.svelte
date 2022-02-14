@@ -178,7 +178,7 @@
                 bind:value={negligibleUnitAmount}
                 bind:invalid={invalidNegligibleUnitAmount}
                 label="Negligible amount"
-                suffix="{action.unit}"
+                suffix="{action.unit.slice(0, 10)}"
                 disabled={approved === 'no'}
                 >
                 <svelte:fragment slot="trailingIcon">

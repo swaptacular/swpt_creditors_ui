@@ -273,7 +273,7 @@
                   bind:value={negligibleUnitAmount}
                   bind:invalid={invalidNegligibleUnitAmount}
                   label="Negligible amount"
-                  suffix="{data.unit}"
+                  suffix="{data.unit.slice(0, 10)}"
                   >
                   <svelte:fragment slot="trailingIcon">
                     {#if invalidNegligibleUnitAmount}
