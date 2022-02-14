@@ -2,7 +2,7 @@ import type { PinInfo, Account, DebtorIdentity } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
-  AccountKnowledgeRecord, ApproveDebtorNameActionWithId, AccountRecord
+  AccountKnowledgeRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId, AccountRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
@@ -60,6 +60,7 @@ export type {
   CreateAccountActionWithId,
   AckAccountInfoActionWithId,
   ApproveDebtorNameActionWithId,
+  ApproveAmountDisplayActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
