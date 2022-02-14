@@ -150,7 +150,7 @@
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
               <Paper style="margin-top: 16px; margin-bottom: 28px; word-break: break-word" elevation={4}>
-                <Title style="display: flex; justify-content: space-between; align-items: center">
+                <Title>
                   Approve a new name
                 </Title>
                 <Content>
