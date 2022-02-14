@@ -94,9 +94,6 @@
 </script>
 
 <style>
-  .amount {
-    white-space: nowrap;
-  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -160,11 +157,11 @@
               <div class="radio-group" style="margin-bottom: 16px; word-break: break-word">
                 <FormField>
                   <Radio bind:group={approved} value="yes" touch />
-                    <span slot="label">Use the new way <em class="amount">({newUnitAmount})</em></span>
+                    <span slot="label">Use the new way ({newUnitAmount})</span>
                 </FormField>
                 <FormField>
                   <Radio bind:group={approved} value="no" touch />
-                    <span slot="label">Use the old way <em class="amount">({oldUnitAmount})</em></span>
+                    <span slot="label">Use the old way (1111{oldUnitAmount})</span>
                 </FormField>
               </div>
             </Cell>
