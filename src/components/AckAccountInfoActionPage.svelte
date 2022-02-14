@@ -190,17 +190,18 @@
             {/if}
 
             {#if changes.summary}
-              {#if debtorData.summary}
-                <li>
+              <li>
+                {#if debtorData.summary}
                   The official currency summary, as stated by the issuer,
                   has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
-                </li>
-              {:else}
-                <li>
+                {:else}
                   The official currency summary, stated by the issuer,
                   has been removed.
-                </li>
-              {/if}
+                {/if}
+                {#if debtorData.debtorHomepage}
+                  You may find more information on the <a href="{debtorData.debtorHomepage.uri}" target="_blank">homepage</a>.
+                {/if}
+              </li>
             {/if}
 
             {#if changes.latestDebtorInfo}
