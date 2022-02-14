@@ -89,10 +89,8 @@
   $: action = model.action
   $: debtorName = model.display.debtorName ?? ''
   $: invalid = approved === 'yes' && invalidNegligibleUnitAmount
-  $: oldUnitAmount = amountToString(1000n, model.display.amountDivisor, model.display.decimalPlaces)
-  $: oldUnit = model.display.unit
-  $: newUnitAmount = amountToString(1000n, action.amountDivisor, action.decimalPlaces)
-  $: newUnit = model.action.unit
+  $: oldUnitAmount = amountToString(1000n, model.display.amountDivisor, model.display.decimalPlaces) + ' ' + model.display.unit
+  $: newUnitAmount = amountToString(1000n, action.amountDivisor, action.decimalPlaces) + ' ' + action.unit
 </script>
 
 <style>
@@ -151,9 +149,9 @@
                 <Content>
                   "{debtorName}" has changed the way currency amounts
                   are displayed. If you choose to use the new way to
-                  display amounts, the {oldUnitAmount} {oldUnit} that
-                  you have in your account, in the future will be
-                  shown as {newUnitAmount} {newUnit}.
+                  display amounts, the {oldUnitAmount} that you have
+                  in your account, in the future will be shown as
+                  {newUnitAmount}.
                 </Content>
               </Paper>
             </Cell>
@@ -162,11 +160,11 @@
               <div class="radio-group" style="margin-bottom: 16px; word-break: break-word">
                 <FormField>
                   <Radio bind:group={approved} value="yes" touch />
-                    <span slot="label">Use the new way <em class="amount">({newUnitAmount} {newUnit})</em></span>
+                    <span slot="label">Use the new way <em class="amount">({newUnitAmount})</em></span>
                 </FormField>
                 <FormField>
                   <Radio bind:group={approved} value="no" touch />
-                    <span slot="label">Use the old way <em class="amount">({oldUnitAmount} {oldUnit})</em></span>
+                    <span slot="label">Use the old way <em class="amount">({oldUnitAmount})</em></span>
                 </FormField>
               </div>
             </Cell>
