@@ -161,7 +161,7 @@
                 </FormField>
                 <FormField>
                   <Radio bind:group={approved} value="no" touch />
-                    <span slot="label">Use the old way (1111{oldUnitAmount})</span>
+                    <span slot="label">Use the old way ({oldUnitAmount})</span>
                 </FormField>
               </div>
             </Cell>
