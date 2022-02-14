@@ -122,7 +122,6 @@
   }
   .amount {
     font-size: 1.1em;
-    white-space: nowrap;
   }
   .fab-container {
     margin: 16px 16px;
@@ -223,7 +222,7 @@
                       <ul>
                         <li>
                           <em class="amount">
-                            {formatAsUnitAmount(data.account.ledger.principal)} {data.unit}
+                            {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
                           </em>
                           are deposited in your account.
                         </li>
