@@ -571,7 +571,12 @@ export class AppState {
         data.display.debtorName !== undefined &&
         data.debtorData.amountDivisor === action.amountDivisor &&
         data.debtorData.decimalPlaces === action.decimalPlaces &&
-        data.debtorData.unit === action.unit
+        data.debtorData.unit === action.unit &&
+        !(
+          action.amountDivisor === data.display.amountDivisor &&
+          action.decimalPlaces === data.display.decimalPlaces &&
+          action.unit === data.display.unit
+        )
       ) {
         if (action.state === undefined) {
           await initializeActionState()
