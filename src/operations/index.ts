@@ -362,8 +362,7 @@ export class UserContext {
       if (account.display.latestUpdateId !== displayLatestUpdateId) {
         throw new RecordDoesNotExist()
       }
-      await sync(this.server, action.userId)
-      await this.removeExistingPegs(action.accountUri)
+      await this.removeExistingPegs(action.accountUri, pin)
       const config: AccountConfigV0 = {
         ...account.config,
         negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
@@ -582,7 +581,9 @@ export class UserContext {
     return await this.server.logout()
   }
 
-  private async removeExistingPegs(accountUri: string): Promise<void> {
+  private async removeExistingPegs(accountUri: string, pin: string): Promise<void> {
+    await sync(this.server, this.userId)
+
     // TODO: For all accounts pegged to `account`, remove the peg
     //       from their `AccountExchange` records.
   }
