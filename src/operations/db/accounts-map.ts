@@ -1,5 +1,5 @@
 import type { BaseDebtorData } from '../../debtor-info'
-import type { AccountRecord, AccountObjectRecord } from './schema'
+import type { AccountRecord, AccountObjectRecord, AccountExchangeRecord } from './schema'
 
 import { tryToParseDebtorInfoDocument } from '../../debtor-info'
 import { db } from './schema'
@@ -119,6 +119,11 @@ export class AccountsMap {
       }
     }
     return matchingAccountRecords
+  }
+
+  getPeggedAccountExchangeRecords(accountUri: string): AccountExchangeRecord[] {
+    // TODO: add a real implementation.
+    return []
   }
 
   private processMessageQueue(): void {

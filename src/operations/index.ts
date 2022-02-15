@@ -538,11 +538,11 @@ export class UserContext {
 
   /* Remove account's exchange peg. May throw `ConflictingUpdate`,
    * `WrongPin`, `UnprocessableEntity`, or `ServerSessionError`. */
-  async removePeg(account: AccountV0, pin: string): Promise<void> {
-    const updatedExchange = {
-      ...account.exchange,
+  async removePeg(exchange: AccountExchangeV0, pin: string): Promise<void> {
+    const updatedExchange: AccountExchangeV0 = {
+      ...exchange,
       peg: undefined,
-      latestUpdateId: account.exchange.latestUpdateId + 1n,
+      latestUpdateId: exchange.latestUpdateId + 1n,
       pin,
     }
     await this.updateAccountObject(updatedExchange)
@@ -584,8 +584,10 @@ export class UserContext {
   private async removeExistingPegs(accountUri: string, pin: string): Promise<void> {
     await sync(this.server, this.userId)
 
-    // TODO: For all accounts pegged to `account`, remove the peg
-    //       from their `AccountExchange` records.
+    // TODO: Execute these in parallel?
+    for (const { userId, ...exchange } of this.accountsMap.getPeggedAccountExchangeRecords(accountUri)) {
+      await this.removePeg(exchange, pin)
+    }
   }
 
   /* Updates account's config, knowledge, display, or exchange.

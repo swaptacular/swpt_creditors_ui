@@ -76,7 +76,7 @@
     case 0:
       return true
     case 1:
-      return matchingAccounts[0].debtor.uri === model.account.debtor.uri
+      return matchingAccounts[0].debtor.uri === model.accountRecord.debtor.uri
     default:
       return false
     }

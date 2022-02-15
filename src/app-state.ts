@@ -119,7 +119,7 @@ export type AckAccountInfoActionModel = BasePageModel & {
 export type ApproveDebtorNameActionModel = BasePageModel & {
   type: 'ApproveDebtorNameModel',
   action: ApproveDebtorNameActionWithId,
-  account: AccountRecord,
+  accountRecord: AccountRecord,
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
 }
@@ -127,7 +127,7 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
 export type ApproveAmountDisplayActionModel = BasePageModel & {
   type: 'ApproveAmountDisplayModel',
   action: ApproveAmountDisplayActionWithId,
-  account: AccountRecord,
+  accountRecord: AccountRecord,
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
 }
@@ -468,7 +468,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       if (pinForPegRemoval !== undefined) {
-        await this.uc.removePeg(account, pinForPegRemoval)
+        await this.uc.removePeg(account.exchange, pinForPegRemoval)
       }
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
       await this.uc.updateAccountKnowledge(action, account)
@@ -502,7 +502,7 @@ export class AppState {
           this.pageModel.set({
             type: 'ApproveDebtorNameModel',
             reload: () => { this.showAction(action.actionId, back) },
-            account: data.account,
+            accountRecord: data.account,
             debtorData: data.debtorData,
             display: data.display,
             goBack,
@@ -585,7 +585,7 @@ export class AppState {
           this.pageModel.set({
             type: 'ApproveAmountDisplayModel',
             reload: () => { this.showAction(action.actionId, back) },
-            account: data.account,
+            accountRecord: data.account,
             debtorData: data.debtorData,
             display: data.display,
             goBack,
