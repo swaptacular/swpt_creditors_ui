@@ -520,7 +520,7 @@ export class UserContext {
 
     // Update the properties that the app understands and tracks,
     // but also preserve the unknown properties.
-    const updatedKnowledge = {
+    const updatedKnowledge: AccountKnowledgeV0 = {
       ...account.knowledge,
       configError: action.configError,
       interestRateChangedAt: action.interestRateChangedAt,
