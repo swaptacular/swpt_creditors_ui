@@ -538,14 +538,15 @@ export class UserContext {
 
   /* Remove account's exchange peg. May throw `ConflictingUpdate`,
    * `WrongPin`, `UnprocessableEntity`, or `ServerSessionError`. */
-  async removePeg(exchange: AccountExchangeV0, pin: string): Promise<void> {
+  async removePeg(exchange: AccountExchangeV0, pin: string, timeout?: number): Promise<void> {
     const updatedExchange: AccountExchangeV0 = {
       ...exchange,
       peg: undefined,
       latestUpdateId: exchange.latestUpdateId + 1n,
       pin,
     }
-    await this.updateAccountObject(updatedExchange)
+    await this.updateAccountObject(updatedExchange, { timeout, ignore404: true })
+    console.log(`Removed exchange peg for account ${exchange.account.uri}`)
   }
 
   /* Reads a payment request, and adds and returns a new
@@ -581,26 +582,37 @@ export class UserContext {
     return await this.server.logout()
   }
 
-  private async removeExistingPegs(accountUri: string, pin: string): Promise<void> {
+  private async removeExistingPegs(pegAccountUri: string, pin: string): Promise<void> {
     await sync(this.server, this.userId)
 
-    // TODO: Execute these in parallel?
-    for (const { userId, ...exchange } of this.accountsMap.getPeggedAccountExchangeRecords(accountUri)) {
-      await this.removePeg(exchange, pin)
-    }
+    const exchanges = this.accountsMap
+      .getPeggedAccountExchangeRecords(pegAccountUri)
+      .map(accountExchangeRecord => {
+        const { userId, ...exchange } = accountExchangeRecord
+        return exchange
+      })
+    const timeout = calcParallelTimeout(exchanges.length)
+    await Promise.all(exchanges.map(exchange => this.removePeg(exchange, pin, timeout)))
   }
 
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ServerSessionError`,
    * `ConflictingUpdate`, `WrongPin` or `UnprocessableEntity`. */
-  private async updateAccountObject<T extends UpdatableAccountObject>(obj: T): Promise<T> {
+  private async updateAccountObject<T extends UpdatableAccountObject>(
+    obj: T,
+    options: { timeout?: number, ignore404?: boolean } = {},
+  ): Promise<void> {
+    const { timeout, ignore404 = false } = options
     let response
     try {
       const { uri, account, latestUpdateAt, ...request } = obj
-      response = await this.server.patch(uri, request, { attemptLogin: true })
+      response = await this.server.patch(uri, request, { timeout, attemptLogin: true })
     } catch (e: unknown) {
       if (e instanceof HttpError) {
         switch (e.status) {
+          case 404:
+            if (ignore404) return
+            break
           case 409:
             throw new ConflictingUpdate()
           case 403:
@@ -613,7 +625,6 @@ export class UserContext {
     }
     const accountObject = makeLogObject(response) as T
     await storeObject(this.userId, accountObject)
-    return accountObject
   }
 
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {

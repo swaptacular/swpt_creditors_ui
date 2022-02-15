@@ -66,8 +66,7 @@
     if (invalid) {
       shakeForm()
     } else if (approved === 'no') {
-      console.log('removing')
-      // actionManager.remove()
+      actionManager.remove()
     } else {
       openEnterPinDialog = true
     }

@@ -121,9 +121,20 @@ export class AccountsMap {
     return matchingAccountRecords
   }
 
-  getPeggedAccountExchangeRecords(accountUri: string): AccountExchangeRecord[] {
-    // TODO: add a real implementation.
-    return []
+  getPeggedAccountExchangeRecords(pegAccountUri: string): AccountExchangeRecord[] {
+    let result: AccountExchangeRecord[] = []
+    for (const accountUri of this.accounts.values()) {
+      const accountRecord = this.getObjectByUri(accountUri)
+      assert(accountRecord && accountRecord.type === 'Account')
+      const accountExchangeRecord = this.getObjectByUri(accountRecord.exchange.uri)
+      if (accountExchangeRecord) {
+        assert(accountExchangeRecord.type === 'AccountExchange')
+        if (accountExchangeRecord.peg?.account.uri === pegAccountUri) {
+          result.push(accountExchangeRecord)
+        }
+      }
+    }
+    return result
   }
 
   private processMessageQueue(): void {
