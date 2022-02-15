@@ -319,6 +319,7 @@ export class UserContext {
     displayLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
+    assert(action.userId === this.userId)
     const account = await this.getAccount(action.accountUri)
     if (
       account &&
@@ -346,6 +347,7 @@ export class UserContext {
     displayLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
+    assert(action.userId === this.userId)
     assert(action.state !== undefined)
     const account = await this.getAccount(action.accountUri)
     let debtorData: BaseDebtorData
@@ -361,9 +363,7 @@ export class UserContext {
         throw new RecordDoesNotExist()
       }
       await sync(this.server, action.userId)
-      // TODO: For all accounts pegged to `account`, remove the peg
-      //       from their `AccountExchange` records.
-
+      await this.removeExistingPegs(action.accountUri)
       const config: AccountConfigV0 = {
         ...account.config,
         negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
@@ -415,6 +415,7 @@ export class UserContext {
     knownDebtor: boolean,
     pin: string,
   ): Promise<void> {
+    assert(action.userId === this.userId)
     assert(action.state)
     assert(account.display.debtorName === undefined)
 
@@ -488,6 +489,7 @@ export class UserContext {
    * `RecordDoesNotExist` or `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
   async confirmKnownAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+    assert(action.userId === this.userId)
     assert(action.state)
     assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
 
@@ -514,6 +516,7 @@ export class UserContext {
    * `ServerSessionError`.  (Normally, `WrongPin` and
    * `UnprocessableEntity` should never be thrown.) */
   async updateAccountKnowledge(action: AckAccountInfoActionWithId, account: AccountV0): Promise<void> {
+    assert(action.userId === this.userId)
     const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
 
     // Update the properties that the app understands and tracks,
@@ -577,6 +580,11 @@ export class UserContext {
 
   async logout(): Promise<never> {
     return await this.server.logout()
+  }
+
+  private async removeExistingPegs(accountUri: string): Promise<void> {
+    // TODO: For all accounts pegged to `account`, remove the peg
+    //       from their `AccountExchange` records.
   }
 
   /* Updates account's config, knowledge, display, or exchange.
