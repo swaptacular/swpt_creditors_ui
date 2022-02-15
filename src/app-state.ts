@@ -603,6 +603,34 @@ export class AppState {
     })
   }
 
+  resolveApproveAmountDisplayAction(
+    actionManager: ActionManager<ApproveAmountDisplayActionWithId>,
+    displayLatestUpdateId: bigint,
+    pin: string,
+    back?: () => void,
+  ) {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      await this.uc.resolveApproveAmountDisplayAction(action, displayLatestUpdateId, pin)
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
       this.pageModel.set({

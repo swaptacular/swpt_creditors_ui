@@ -337,6 +337,53 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Changes the amount display settings as the given action
+   * states. The caller must be prepared this method to throw
+   * `RecordDoesNotExist` or `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+  async resolveApproveAmountDisplayAction(
+    action: ApproveAmountDisplayActionWithId,
+    displayLatestUpdateId: bigint,
+    pin: string,
+  ): Promise<void> {
+    assert(action.state !== undefined)
+    const account = await this.getAccount(action.accountUri)
+    let debtorData: BaseDebtorData
+    if (
+      account &&
+      account.display.debtorName !== undefined &&
+      (debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)) &&
+      debtorData.amountDivisor === action.amountDivisor &&
+      debtorData.decimalPlaces === action.decimalPlaces &&
+      debtorData.unit === action.unit
+    ) {
+      if (account.display.latestUpdateId !== displayLatestUpdateId) {
+        throw new RecordDoesNotExist()
+      }
+      await sync(this.server, action.userId)
+      // TODO: For all accounts pegged to `account`, remove the peg
+      //       from their `AccountExchange` records.
+
+      const config: AccountConfigV0 = {
+        ...account.config,
+        negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
+        latestUpdateId: account.config.latestUpdateId + 1n,
+        pin,
+      }
+      const display: AccountDisplayV0 = {
+        ...account.display,
+        amountDivisor: action.amountDivisor,
+        decimalPlaces: action.decimalPlaces,
+        unit: action.unit,
+        latestUpdateId: account.display.latestUpdateId + 1n,
+        pin,
+      }
+      await this.updateAccountObject(config)
+      await this.updateAccountObject(display)
+    }
+    await this.replaceActionRecord(action, null)
+  }
+
   /* Create an account if necessary. Return the most recent version of
    * the account. The caller must be prepared this method to throw
    * `InvalidCoinUri` or `ServerSessionError`. */

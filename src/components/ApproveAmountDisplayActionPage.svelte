@@ -74,8 +74,7 @@
   }
 
   function submit(pin: string): void {
-    console.log(`Submitting ${pin}`)
-    // app.resolveApproveDebtorNameAction(actionManager, model.display.latestUpdateId, pin, model.goBack)
+    app.resolveApproveAmountDisplayAction(actionManager, model.display.latestUpdateId, pin, model.goBack)
   }
 
   assert(model.display.debtorName !== undefined)
