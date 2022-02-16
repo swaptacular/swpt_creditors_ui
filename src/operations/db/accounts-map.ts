@@ -99,16 +99,6 @@ export class AccountsMap {
     return this.objects.get(accountUri)
   }
 
-  getAccountUrisMatchingDebtorName(regex: RegExp): string[] {
-    let matchingAccountUris: string[] = []
-    for (const [_, obj] of this.objects) {
-      if (obj.type === 'AccountDisplay' && obj.debtorName?.match(regex)) {
-        matchingAccountUris.push(obj.account.uri)
-      }
-    }
-    return matchingAccountUris
-  }
-
   getAccountRecordsMatchingDebtorName(regex: RegExp): AccountRecord[] {
     let matchingAccountRecords: AccountRecord[] = []
     for (const accountUri of this.getAccountUrisMatchingDebtorName(regex)) {
@@ -135,6 +125,16 @@ export class AccountsMap {
       }
     }
     return result
+  }
+
+  private getAccountUrisMatchingDebtorName(regex: RegExp): string[] {
+    let matchingAccountUris: string[] = []
+    for (const [_, obj] of this.objects) {
+      if (obj.type === 'AccountDisplay' && obj.debtorName?.match(regex)) {
+        matchingAccountUris.push(obj.account.uri)
+      }
+    }
+    return matchingAccountUris
   }
 
   private processMessageQueue(): void {
