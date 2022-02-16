@@ -21,6 +21,11 @@ export async function removeTask(taskId: number): Promise<void> {
 }
 
 export async function reviseOutdatedDebtorInfos(userId: number): Promise<void> {
+  // TODO: As an optimization here, consider not triggering updates
+  // for currencies that do not have any other currencies pegged to
+  // them. Such currencies are probably useless, and the user should
+  // not be interested in knowing their latest settings.
+
   const accountUris = await db.accounts.where({ userId }).primaryKeys()
   for (const accountUri of accountUris) {
     await triggerOutdatedDebtorInfoUpdate(accountUri)

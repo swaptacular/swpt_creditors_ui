@@ -122,6 +122,7 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
   accountRecord: AccountRecord,
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
+  availableAmount: bigint,
 }
 
 export type ApproveAmountDisplayActionModel = BasePageModel & {
@@ -130,6 +131,7 @@ export type ApproveAmountDisplayActionModel = BasePageModel & {
   accountRecord: AccountRecord,
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
+  availableAmount: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -505,6 +507,7 @@ export class AppState {
             accountRecord: data.account,
             debtorData: data.debtorData,
             display: data.display,
+            availableAmount: data.ledger.principal,
             goBack,
             action,
           })
@@ -588,6 +591,7 @@ export class AppState {
             accountRecord: data.account,
             debtorData: data.debtorData,
             display: data.display,
+            availableAmount: data.ledger.principal,
             goBack,
             action,
           })

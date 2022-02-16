@@ -86,9 +86,11 @@
   }
   $: action = model.action
   $: debtorName = model.display.debtorName ?? ''
+  $: oldAmountString = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
+  $: oldUnitAmount = oldAmountString + ' ' + model.display.unit
+  $: newAmountString = amountToString(model.availableAmount, action.amountDivisor, action.decimalPlaces)
+  $: newUnitAmount = newAmountString + ' ' + action.unit
   $: invalid = approved === 'yes' && invalidNegligibleUnitAmount
-  $: oldUnitAmount = amountToString(1000n, model.display.amountDivisor, model.display.decimalPlaces) + ' ' + model.display.unit
-  $: newUnitAmount = amountToString(1000n, action.amountDivisor, action.decimalPlaces) + ' ' + action.unit
 </script>
 
 <style>
