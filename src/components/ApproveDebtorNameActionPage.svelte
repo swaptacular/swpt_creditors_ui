@@ -2,6 +2,7 @@
   import type { AppState, ApproveDebtorNameActionModel, ActionManager } from '../app-state'
   import type { ApproveDebtorNameActionWithId } from '../operations'
   import { tick } from 'svelte'
+  import { amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -100,10 +101,26 @@
   $: newName = action.debtorName
   $: changedName = newName !== oldName
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
+  $: availableAmount = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
+  $: amountUnit = model.display.unit
   $: invalid = invalidDebtorName || !uniqueDebtorName
 </script>
 
 <style>
+  ul {
+    list-style: '\2713\00A0' outside;
+    margin: 0.75em 1.25em;
+  }
+  li {
+    margin: 0.5em 0;
+  }
+  em {
+    font-weight: bold;
+    color: #444;
+  }
+  .amount {
+    font-size: 1.1em;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -154,11 +171,19 @@
                   Approve a new name
                 </Title>
                 <Content>
-                  {#if changedName}
-                    "{oldName}" has changed the currency's official name to "{newName}".
-                  {:else}
-                    Now the official name of the currency is: "{newName}".
-                  {/if}
+                  <p>
+                    {#if changedName}
+                      "{oldName}" has changed the currency's official name to "{newName}".
+                    {:else}
+                      Now the official name of the currency is: "{newName}".
+                    {/if}
+                  </p>
+                  <ul>
+                    <li>
+                      <em class="amount">{availableAmount}&npsp;{amountUnit}</em>
+                      are available in your account.
+                    </li>
+                  </ul>
                 </Content>
               </Paper>
             </Cell>
