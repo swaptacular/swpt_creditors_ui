@@ -153,7 +153,7 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 12px; margin-bottom: 28px; word-break: break-word" elevation={6}>
+              <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
                 <Title>
                   Currency name
                 </Title>
@@ -171,7 +171,7 @@
             </Cell>
 
             {#if showConfusedCheckbox}
-              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -18px 0 20px 0">
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -14px 0 20px 0">
                 <FormField>
                   <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
                   <span slot="label">

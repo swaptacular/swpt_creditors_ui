@@ -112,10 +112,6 @@
   li {
     margin: 0.5em 0;
   }
-  em {
-    font-weight: bold;
-    color: #333;
-  }
   .summary {
     color: #888;
     margin-top: 16px;
@@ -194,7 +190,7 @@
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
                 <Wrapper>
                   <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-                    <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
+                    <Title>
                       {#if data.debtorData.debtorHomepage}
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
                           <Text>
@@ -209,11 +205,7 @@
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       {/if}
-                      {#if data.existingAccount}
-                        Existing account with "{data.debtorData.debtorName}"
-                      {:else}
-                        Account with "{data.debtorData.debtorName}"
-                      {/if}
+                      Account with "{data.debtorData.debtorName}"
                     </Title>
                     <Content style="clear: both">
                       {#if data.debtorData.summary}
@@ -231,6 +223,11 @@
                             This currency is pegged to another
                             currency. Later, you will be asked to
                             approve this currency peg.
+                          </li>
+                        {/if}
+                        {#if data.existingAccount}
+                          <li>
+                            This account has been confirmed already.
                           </li>
                         {/if}
                       </ul>
@@ -302,7 +299,7 @@
         </div>
         <div class="fab-container">
           <Fab color="primary" on:click={confirm} extended>
-            <Label>Confirm</Label>
+            <Label>{data.existingAccount ? 'Update' : 'Confirm'}</Label>
           </Fab>
         </div>
       </svelte:fragment>

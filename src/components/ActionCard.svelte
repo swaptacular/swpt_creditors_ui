@@ -20,7 +20,7 @@
     case 'CreateAccount':
       return 'Confirm account'
     case "AckAccountInfo":
-      return 'Acknowledge'
+      return 'Acknowledge changes'
     case 'ApprovePeg':
       return 'Approve peg'
     case 'ApproveAmountDisplay':
@@ -64,8 +64,10 @@
       }
       case "CreateAccount": {
         const editedDebtorName = action.state?.editedDebtorName
-        const name = editedDebtorName !== undefined ? `"${editedDebtorName}"` : "an unknown currency"
-        return `Create account with ${name}.`
+        const descripiton = editedDebtorName !== undefined
+          ? `Confirm account with "${editedDebtorName}".`
+          : "Create a new account."
+        return descripiton
       }
       case "AckAccountInfo": {
         const debtorName = getDebtorName(action.accountUri)

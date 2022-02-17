@@ -61,7 +61,7 @@
   }
 </style>
 
-<Page title="Currency changes">
+<Page title="Acknowledge changes">
   <svelte:fragment slot="content">
     <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
