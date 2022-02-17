@@ -153,7 +153,7 @@
 
 <div class="shaking-container">
   {#if !(data && action.state)}
-    <Page title="Create account">
+    <Page title="Confirm account">
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
           <Title>Unknown currency</Title>
@@ -179,7 +179,7 @@
       </svelte:fragment>
     </Page>
   {:else}
-    <Page title="Create account">
+    <Page title="Confirm account">
       <svelte:fragment slot="content">
         <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 

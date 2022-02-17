@@ -126,7 +126,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Currency display">
+  <Page title="Approve display">
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -141,7 +141,7 @@
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
               <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
                 <Title>
-                  Approve a new way to display amounts
+                  Currency display
                 </Title>
                 <Content>
                   "{debtorName}" has changed the way currency amounts

@@ -140,7 +140,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Currency name">
+  <Page title="Approve name">
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -155,7 +155,7 @@
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
               <Paper style="margin-top: 12px; margin-bottom: 28px; word-break: break-word" elevation={6}>
                 <Title>
-                  Approve a new name
+                  Currency name
                 </Title>
                 <Content>
                   <p>

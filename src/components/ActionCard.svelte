@@ -18,7 +18,7 @@
     case 'AbortTransfer':
       return 'Show the problem'
     case 'CreateAccount':
-      return 'Confirm'
+      return 'Confirm account'
     case "AckAccountInfo":
       return 'Acknowledge'
     case 'ApprovePeg':
