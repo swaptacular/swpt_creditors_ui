@@ -225,7 +225,7 @@
                             approve this currency peg.
                           </li>
                         {/if}
-                        {#if data.existingAccount}
+                        {#if data.isConfirmedAccount}
                           <li>
                             This account has been confirmed already.
                           </li>
@@ -294,12 +294,12 @@
       <svelte:fragment slot="floating">
         <div class="fab-container">
           <Fab on:click={() => actionManager.remove() } extended>
-            <Label>{data.existingAccount ? 'Cancel' : 'Reject'}</Label>
+            <Label>{data.isConfirmedAccount ? 'Cancel' : 'Reject'}</Label>
           </Fab>
         </div>
         <div class="fab-container">
           <Fab color="primary" on:click={confirm} extended>
-            <Label>{data.existingAccount ? 'Update' : 'Confirm'}</Label>
+            <Label>{data.isConfirmedAccount ? 'Update' : 'Confirm'}</Label>
           </Fab>
         </div>
       </svelte:fragment>

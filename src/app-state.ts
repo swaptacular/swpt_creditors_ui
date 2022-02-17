@@ -101,7 +101,7 @@ export type CreateAccountActionData = {
   unit: string,
   amountDivisor: number,
   decimalPlaces: bigint,
-  existingAccount: boolean,
+  isConfirmedAccount: boolean,
 }
 
 export type CreateAccountActionModel = BasePageModel & {
@@ -302,7 +302,7 @@ export class AppState {
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
-        existingAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
+        isConfirmedAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
     const initializeActionState = async (): Promise<void> => {
