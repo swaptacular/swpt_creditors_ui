@@ -114,7 +114,7 @@
   }
   em {
     font-weight: bold;
-    color: #444;
+    color: #333;
   }
   .summary {
     color: #888;
@@ -224,7 +224,7 @@
                           <em class="amount">
                             {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
                           </em>
-                          are deposited in your account.
+                          are currently available in your account.
                         </li>
                         {#if data.account.display.debtorName === undefined && data.debtorData.peg}
                           <li>

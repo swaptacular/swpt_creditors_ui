@@ -139,7 +139,7 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 16px; margin-bottom: 24px; word-break: break-word" elevation={4}>
+              <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
                 <Title>
                   Approve a new way amounts are displayed
                 </Title>

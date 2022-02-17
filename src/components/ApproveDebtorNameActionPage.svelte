@@ -107,16 +107,12 @@
 </script>
 
 <style>
-  ul {
-    list-style: '\2713\00A0' outside;
-    margin: 0.75em 1.25em;
-  }
-  li {
-    margin: 0.5em 0;
-  }
   em {
     font-weight: bold;
-    color: #444;
+    color: #333;
+  }
+  .amount-paragraph {
+    margin-top: 1em;
   }
   .amount {
     font-size: 1.1em;
@@ -166,7 +162,7 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 16px; margin-bottom: 28px; word-break: break-word" elevation={4}>
+              <Paper style="margin-top: 12px; margin-bottom: 28px; word-break: break-word" elevation={6}>
                 <Title>
                   Approve a new name
                 </Title>
@@ -178,12 +174,10 @@
                       Now the official name of the currency is: "{newName}".
                     {/if}
                   </p>
-                  <ul>
-                    <li>
-                      <em class="amount">{availableAmount}&npsp;{amountUnit}</em>
-                      are available in your account.
-                    </li>
-                  </ul>
+                  <p class="amount-paragraph">
+                    <em class="amount">{availableAmount}&nbsp;{amountUnit}</em>
+                    are currently available in this account.
+                  </p>
                 </Content>
               </Paper>
             </Cell>
@@ -240,8 +234,8 @@
                 <FormField style="margin-top: 0.6em">
                   <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
                   <span slot="label">
-                    This change is confusing. I am not sure about the
-                    real identity of the issuer of this currency
+                    This change is confusing. I am not certain about
+                    the real identity of the issuer of this currency
                     anymore, and do not want to receive payments in
                     this currency.
                   </span>
