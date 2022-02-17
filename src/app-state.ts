@@ -309,7 +309,7 @@ export class AppState {
       assert(data !== undefined)
       const { account, debtorData, debtorDataSource } = data
       const useDisplay = account.display.debtorName !== undefined
-      const tinyNegligibleAmount = calcSmallestDisplayableNumber(debtorData.amountDivisor, debtorData.decimalPlaces)
+      const tinyNegligibleAmount = calcSmallestDisplayableNumber(data.amountDivisor, data.decimalPlaces)
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
       const state = {
