@@ -164,7 +164,7 @@
                     {:else}
                       Now the official name of the currency is: "{newName}".
                     {/if}
-                    You have {availableAmount} {amountUnit} available in this account.
+                    At the moment, you have {availableAmount} {amountUnit} available in this account.
                   </p>
                 </Content>
               </Paper>
