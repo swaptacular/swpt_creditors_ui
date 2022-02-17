@@ -103,20 +103,11 @@
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
   $: availableAmount = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
   $: amountUnit = model.display.unit
+  $: showConfusedCheckbox = knownDebtor && changedName
   $: invalid = invalidDebtorName || !uniqueDebtorName
 </script>
 
 <style>
-  em {
-    font-weight: bold;
-    color: #333;
-  }
-  .amount-paragraph {
-    margin-top: 1em;
-  }
-  .amount {
-    font-size: 1.1em;
-  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -173,14 +164,25 @@
                     {:else}
                       Now the official name of the currency is: "{newName}".
                     {/if}
-                  </p>
-                  <p class="amount-paragraph">
-                    <em class="amount">{availableAmount}&nbsp;{amountUnit}</em>
-                    are currently available in this account.
+                    You have {availableAmount} {amountUnit} available in this account.
                   </p>
                 </Content>
               </Paper>
             </Cell>
+
+            {#if showConfusedCheckbox}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -18px 0 20px 0">
+                <FormField>
+                  <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
+                  <span slot="label">
+                    This change is confusing. I am not certain about
+                    the real identity of the issuer of this currency
+                    anymore, and I do not want to receive payments in
+                    it from now on.
+                  </span>
+                </FormField>
+              </Cell>
+            {/if}
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
@@ -204,7 +206,7 @@
               </Textfield>
             </Cell>
 
-            {#if knownDebtor && changedName }
+            {#if showConfusedCheckbox}
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                 <div class="radio-group">
                   <FormField>
@@ -228,18 +230,6 @@
                       <span slot="label">Use the old name</span>
                   </FormField>
                 </div>
-              </Cell>
-
-              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-                <FormField style="margin-top: 0.6em">
-                  <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
-                  <span slot="label">
-                    This change is confusing. I am not certain about
-                    the real identity of the issuer of this currency
-                    anymore, and do not want to receive payments in
-                    this currency.
-                  </span>
-                </FormField>
               </Cell>
             {/if}
           </LayoutGrid>
