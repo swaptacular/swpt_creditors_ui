@@ -154,7 +154,7 @@
             </Cell>
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-              <div class="radio-group" style="margin-bottom: 16px; word-break: break-word">
+              <div class="radio-group" style="margin-bottom: 8px; word-break: break-word">
                 <FormField>
                   <Radio bind:group={approved} value="yes" touch />
                     <span slot="label">Use the new way ({newUnitAmount})</span>
