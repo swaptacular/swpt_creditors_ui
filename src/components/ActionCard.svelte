@@ -78,8 +78,8 @@
       case 'ApproveAmountDisplay': {
         const debtorName = getDebtorName(action.accountUri)
         return debtorName ?
-          `Approve a new way currency amounts are displayed for "${debtorName}".` :
-          'Approve a new way currency amounts are displayed.'
+          `Approve a new way to display currency amounts for "${debtorName}".` :
+          'Approve a new way to display currency amounts.'
       }
       case 'ApproveDebtorName': {
         const debtorName = getDebtorName(action.accountUri)
