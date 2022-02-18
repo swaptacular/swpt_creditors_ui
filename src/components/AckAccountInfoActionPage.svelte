@@ -102,7 +102,7 @@
     {/if}
 
     <div class="text-container">
-      <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+      <Paper style="margin: 28px 16px; word-break: break-word" elevation={6}>
         <Title>
           Changes in "{debtorName}"
         </Title>
