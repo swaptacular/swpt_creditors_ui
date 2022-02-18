@@ -2,6 +2,7 @@
   import type { AppState, AckAccountInfoActionModel } from '../app-state'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
+  import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Fab, { Label as FabLabel } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
@@ -44,11 +45,6 @@
 </script>
 
 <style>
-  .text-container {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -102,126 +98,130 @@
     {/if}
 
     <div class="text-container">
-      <Paper style="margin: 28px 16px; word-break: break-word" elevation={6}>
-        <Title>
-          Changes in "{debtorName}"
-        </Title>
-        <Content>
-          <ul>
-            {#if changes.configError}
-              <li>
-                {#if configError === undefined}
-                  The previously experienced account configuration
-                  problem has been resolved. Now your account is
-                  configured correctly.
-                {:else if configError === 'NO_CONNECTION_TO_DEBTOR'}
-                  No connection can be made to the servers that manage
-                  this currency. You will not be able to send or
-                  receive money from this account, but you still can
-                  peg other currencies to it.
-                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
-                  An account configuration problem has occurred.
-                  Usually this means that temporarily, a connection
-                  can not be made to the servers that manage this
-                  currency.
-                {:else}
-                  An account configuration problem has occurred: {configError}.
-                {/if}
-              </li>
-            {/if}
-
-            {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
-              <li>
-                The issuer has declared a new official way to display
-                currency amounts. Later, you will be asked to approve
-                this important change.
-              </li>
-            {/if}
-
-            {#if changes.debtorName}
-              <li>
-                The official name of the currency has been changed to
-                "{debtorData.debtorName}". Later, you will be asked to
-                approve this important change.
-              </li>
-            {/if}
-
-            {#if changes.pegParams || changes.pegDebtorInfoUri}
-              <li>
-                {#if debtorData.peg}
-                  {#if action.previousPeg}
-                    {#if !changes.pegParams}
-                      The issuer has specified a different digital
-                      coin (a QR code) for the already declared peg
-                      currency. Later, you may be asked to approve
-                      this change.
+      <LayoutGrid>
+        <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+          <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+            <Title>
+              Changes in "{debtorName}"
+            </Title>
+            <Content>
+              <ul>
+                {#if changes.configError}
+                  <li>
+                    {#if configError === undefined}
+                      The previously experienced account configuration
+                      problem has been resolved. Now your account is
+                      configured correctly.
+                    {:else if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                      No connection can be made to the servers that manage
+                      this currency. You will not be able to send or
+                      receive money from this account, but you still can
+                      peg other currencies to it.
+                    {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                      An account configuration problem has occurred.
+                      Usually this means that temporarily, a connection
+                      can not be made to the servers that manage this
+                      currency.
                     {:else}
-                      The issuer has declared a new, different
-                      currency peg. Later, you will be asked to
-                      approve the new peg.
+                      An account configuration problem has occurred: {configError}.
                     {/if}
-                  {:else}
-                    The issuer has declared a fixed exchange rate
-                    between this currency and some other
-                    currency. Later, you will be asked to approve this
-                    currency peg.
-                  {/if}
-                {:else}
-                  The previously declared currency peg has been removed.
+                  </li>
                 {/if}
-              </li>
-            {/if}
 
-            {#if changes.interestRate}
-              <li>
-                On {interestRateChangeDate} the issuer changed the
-                annual interest rate on your account to
-                {interestRate}%.
-              </li>
-            {/if}
-
-            {#if changes.debtorHomepage}
-              <li>
-                {#if debtorData.debtorHomepage}
-                  The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
-                {:else}
-                  The official home page of the currency has been changed.
+                {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
+                  <li>
+                    The issuer has declared a new official way to display
+                    currency amounts. Later, you will be asked to approve
+                    this important change.
+                  </li>
                 {/if}
-              </li>
-            {/if}
 
-            {#if changes.summary}
-              <li>
-                {#if debtorData.summary}
-                  The official currency summary, as stated by the issuer,
-                  has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
-                {:else}
-                  The official currency summary, stated by the issuer,
-                  has been removed.
+                {#if changes.debtorName}
+                  <li>
+                    The official name of the currency has been changed to
+                    "{debtorData.debtorName}". Later, you will be asked to
+                    approve this important change.
+                  </li>
                 {/if}
-                {#if debtorData.debtorHomepage}
-                  You may find more information on the <a href="{debtorData.debtorHomepage.uri}" target="_blank">homepage</a>.
+
+                {#if changes.pegParams || changes.pegDebtorInfoUri}
+                  <li>
+                    {#if debtorData.peg}
+                      {#if action.previousPeg}
+                        {#if !changes.pegParams}
+                          The issuer has specified a different digital
+                          coin (a QR code) for the already declared peg
+                          currency. Later, you may be asked to approve
+                          this change.
+                        {:else}
+                          The issuer has declared a new, different
+                          currency peg. Later, you will be asked to
+                          approve the new peg.
+                        {/if}
+                      {:else}
+                        The issuer has declared a fixed exchange rate
+                        between this currency and some other
+                        currency. Later, you will be asked to approve this
+                        currency peg.
+                      {/if}
+                    {:else}
+                      The previously declared currency peg has been removed.
+                    {/if}
+                  </li>
                 {/if}
-              </li>
-            {/if}
 
-            {#if changes.latestDebtorInfo}
-              <li>
-                The digital coin (the QR code) of the currency has
-                changed. The new digital coin contains a different
-                <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
-              </li>
-            {/if}
+                {#if changes.interestRate}
+                  <li>
+                    On {interestRateChangeDate} the issuer changed the
+                    annual interest rate on your account to
+                    {interestRate}%.
+                  </li>
+                {/if}
 
-            {#if changes.otherChanges}
-              <li>
-                Some unimportant technical details in the description
-                of the currency have been changed.
-              </li>
-            {/if}
-          </ul>
-        </Content>
-      </Paper>
+                {#if changes.debtorHomepage}
+                  <li>
+                    {#if debtorData.debtorHomepage}
+                      The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
+                    {:else}
+                      The official home page of the currency has been changed.
+                    {/if}
+                  </li>
+                {/if}
+
+                {#if changes.summary}
+                  <li>
+                    {#if debtorData.summary}
+                      The official currency summary, as stated by the issuer,
+                      has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
+                    {:else}
+                      The official currency summary, stated by the issuer,
+                      has been removed.
+                    {/if}
+                    {#if debtorData.debtorHomepage}
+                      You may find more information on the <a href="{debtorData.debtorHomepage.uri}" target="_blank">homepage</a>.
+                    {/if}
+                  </li>
+                {/if}
+
+                {#if changes.latestDebtorInfo}
+                  <li>
+                    The digital coin (the QR code) of the currency has
+                    changed. The new digital coin contains a different
+                    <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
+                  </li>
+                {/if}
+
+                {#if changes.otherChanges}
+                  <li>
+                    Some unimportant technical details in the description
+                    of the currency have been changed.
+                  </li>
+                {/if}
+              </ul>
+            </Content>
+          </Paper>
+        </Cell>
+      </LayoutGrid>
     </div>
   </svelte:fragment>
 
