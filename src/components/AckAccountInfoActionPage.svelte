@@ -102,9 +102,9 @@
     {/if}
 
     <div class="text-container">
-      <Paper elevation={8} style="margin: 24px 16px; word-break: break-word">
-        <Title style="font-size: 1.25em; font-weight: bold; line-height: 1.3; color: #444">
-          There are some changes in the "{debtorName}" currency:
+      <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+        <Title>
+          Changes in "{debtorName}"
         </Title>
         <Content>
           <ul>
@@ -132,7 +132,7 @@
 
             {#if changes.amountDivisor || changes.decimalPlaces || changes.unit}
               <li>
-                The issuer declared a new official way to display
+                The issuer has declared a new official way to display
                 currency amounts. Later, you will be asked to approve
                 this important change.
               </li>
@@ -151,19 +151,20 @@
                 {#if debtorData.peg}
                   {#if action.previousPeg}
                     {#if !changes.pegParams}
-                      The issuer specified a different digital coin (a
-                      QR code) for the already declared peg
+                      The issuer has specified a different digital
+                      coin (a QR code) for the already declared peg
                       currency. Later, you may be asked to approve
                       this change.
                     {:else}
-                      The issuer declared a new, different currency
-                      peg. Later, you will be asked to approve the new
-                      peg.
+                      The issuer has declared a new, different
+                      currency peg. Later, you will be asked to
+                      approve the new peg.
                     {/if}
                   {:else}
-                    The issuer declared a fixed exchange rate between
-                    this currency and some other currency. Later, you
-                    will be asked to approve this currency peg.
+                    The issuer has declared a fixed exchange rate
+                    between this currency and some other
+                    currency. Later, you will be asked to approve this
+                    currency peg.
                   {/if}
                 {:else}
                   The previously declared currency peg has been removed.
