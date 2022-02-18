@@ -50,10 +50,10 @@
   }
   ul {
     list-style: square outside;
-    margin: 0.75em 1.25em;
+    margin: 0.75em 1.25em 0 1.25em;
   }
   li {
-    margin: 0.5em 0;
+    margin-top: 0.5em;
   }
 </style>
 
