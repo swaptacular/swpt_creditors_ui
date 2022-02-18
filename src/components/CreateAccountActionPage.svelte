@@ -227,7 +227,9 @@
                         {/if}
                         {#if data.isConfirmedAccount}
                           <li>
-                            This account has been confirmed already.
+                            You have already confirmed, that you are
+                            certain about the real identity of the
+                            issuer of this currency.
                           </li>
                         {/if}
                       </ul>
