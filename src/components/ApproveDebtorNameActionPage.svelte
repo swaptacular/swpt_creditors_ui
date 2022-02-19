@@ -166,7 +166,8 @@
                       {/if}
                       has changed the currency's official name to "{newName}".
                     {:else}
-                      Now the official name of the currency is: "{newName}".
+                      Now the official name of the currency is
+                      "{newName}"{#if !knownDebtor} (unconfirmed account).{:else}.{/if}
                     {/if}
                     At the moment, you have {availableAmount} {amountUnit} available in this account.
                   </p>
