@@ -160,7 +160,11 @@
                 <Content>
                   <p>
                     {#if changedName}
-                      "{oldName}" has changed the currency's official name to "{newName}".
+                      "{oldName}"
+                      {#if !knownDebtor}
+                        (unconfirmed account)
+                      {/if}
+                      has changed the currency's official name to "{newName}".
                     {:else}
                       Now the official name of the currency is: "{newName}".
                     {/if}

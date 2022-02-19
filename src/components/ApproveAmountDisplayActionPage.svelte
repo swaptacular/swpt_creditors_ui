@@ -85,6 +85,7 @@
     negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
   }
   $: action = model.action
+  $: knownDebtor = model.display.knownDebtor
   $: debtorName = model.display.debtorName ?? ''
   $: oldAmountString = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
   $: oldUnitAmount = oldAmountString + ' ' + model.display.unit
@@ -144,8 +145,12 @@
                   Currency display
                 </Title>
                 <Content>
-                  "{debtorName}" has changed the way currency amounts
-                  are displayed. If you choose to use the new way to
+                  "{debtorName}"
+                  {#if !knownDebtor}
+                    (unconfirmed account)
+                  {/if}
+                  has changed the way currency amounts are
+                  displayed. If you choose to use the new way to
                   display amounts, the {oldUnitAmount} that you have
                   in your account, in the future will be shown as
                   {newUnitAmount}.

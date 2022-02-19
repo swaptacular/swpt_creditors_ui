@@ -36,6 +36,7 @@
     assert(model.account.display.debtorName !== undefined)
   }
   $: action = model.action
+  $: knownDebtor = model.account.display.knownDebtor
   $: debtorName = model.account.display.debtorName
   $: changes = action.changes
   $: debtorData = action.debtorData
@@ -103,6 +104,9 @@
           <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
             <Title>
               Changes in "{debtorName}"
+              {#if !knownDebtor}
+                (unconfirmed account)
+              {/if}
             </Title>
             <Content>
               <ul>
