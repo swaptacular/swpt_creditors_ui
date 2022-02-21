@@ -561,7 +561,6 @@ export class AppState {
       const data = await this.uc.getKnownAccountData(action.accountUri)
       if (
         data &&
-        data.display.debtorName !== undefined &&
         data.debtorData.debtorName === action.debtorName
       ) {
         if (this.interactionId === interactionId) {
@@ -635,7 +634,6 @@ export class AppState {
       const data = await this.uc.getKnownAccountData(action.accountUri)
       if (
         data &&
-        data.display.debtorName !== undefined &&
         data.debtorData.amountDivisor === action.amountDivisor &&
         data.debtorData.decimalPlaces === action.decimalPlaces &&
         data.debtorData.unit === action.unit &&
