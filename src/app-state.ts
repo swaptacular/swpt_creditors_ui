@@ -406,7 +406,12 @@ export class AppState {
         assert(knownPegAccount)
       }
       if (knownPegAccount) {
-        // TODO: fetch peggedAccount info here.
+        // TODO: Fetch peggedAccount info here. Ensure that the pegged
+        // account (accountUri) exists,
+        // `peggedAccount.AccountDisplay.debtorName` is not undefined,
+        // and `peggedAccount.AccountKnowledge.debtorData` describes
+        // the same peg as `peg`. (Maybe check for circular pegs as
+        // well.)
         checkAndGoApprovePeg()
       } else {
         checkAndGoCreateAccount()
