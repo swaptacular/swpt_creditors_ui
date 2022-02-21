@@ -3,7 +3,7 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
-  AccountRecord, ApprovePegActionWithId
+  AccountRecord, ApprovePegActionWithId, AccountExchangeRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
@@ -53,6 +53,7 @@ export type KnownAccountData = {
   account: AccountRecord,
   knowledge: AccountKnowledgeRecord,
   display: AccountDisplayRecord,
+  exchange: AccountExchangeRecord
   ledger: AccountLedgerRecord,
   debtorData: BaseDebtorData,
 }
@@ -290,11 +291,9 @@ export class UserContext {
     return account
   }
 
-  /* Ensures that the account (accountUri) exists,
-   * `account.display.debtorName` is not undefined, and
-   * `account.knowledge.debtorData` matches `debtorName`. Returns
-   * account's `account.display.debtorName` on success, or `undefined`
-   * on failure.
+  /* Ensures that the account (accountUri) exists, and
+   * `account.display.debtorName` is not undefined. Returns account's
+   * known data on success, or `undefined` on failure.
    */
   async getKnownAccountData(accountUri: string): Promise<KnownAccountData | undefined> {
     const account = await getAccountRecord(accountUri)
@@ -309,12 +308,21 @@ export class UserContext {
     if (knowledge === undefined) {
       return undefined
     }
+    const exchange = await getAccountObjectRecord(account.exchange.uri) as AccountExchangeRecord | undefined
+    if (exchange === undefined) {
+      return undefined
+    }
     const ledger = await getAccountObjectRecord(account.ledger.uri) as AccountLedgerRecord | undefined
     if (ledger === undefined) {
       return undefined
     }
+    assert(account.type === 'Account')
+    assert(display.type === 'AccountDisplay')
+    assert(knowledge.type === 'AccountKnowledge')
+    assert(exchange.type === 'AccountExchange')
+    assert(ledger.type === 'AccountLedger')
     const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    return { account, display, knowledge, ledger, debtorData }
+    return { account, display, knowledge, exchange, ledger, debtorData }
   }
 
   /* Changes the display name (and possibly clears `knownDebtor`) as

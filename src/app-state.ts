@@ -3,7 +3,7 @@ import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
-  ApproveAmountDisplayActionWithId, ApprovePegActionWithId
+  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -138,7 +138,8 @@ export type ApproveAmountDisplayActionModel = BasePageModel & {
 export type ApprovePegActionModel = BasePageModel & {
   type: 'ApprovePegActionModel',
   action: ApprovePegActionWithId,
-  createAccountData?: CreateAccountData,
+  createAccountData: CreateAccountData,
+  peggedAccountData: KnownAccountData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -296,16 +297,28 @@ export class AppState {
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     let createAccountData: CreateAccountData | undefined
 
-    const checkAndGoApprovePeg = () => {
+    const loadPeggedAccountDataAndGoApprovePeg = async (): Promise<void> => {
       assert(action.actionType === 'ApprovePeg')
-      if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'ApprovePegActionModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          createAccountData,
-        })
+      assert(createAccountData !== undefined)
+      const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
+      if (
+        // TODO: Maybe check for circular pegs here as well.
+        peggedAccountData &&
+        equal(peggedAccountData.debtorData.peg, action.peg)
+      ) {
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'ApprovePegActionModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            goBack,
+            action,
+            createAccountData,
+            peggedAccountData,
+          })
+        }
+      } else {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
       }
     }
     const checkAndGoCreateAccount = () => {
@@ -406,13 +419,7 @@ export class AppState {
         assert(knownPegAccount)
       }
       if (knownPegAccount) {
-        // TODO: Fetch peggedAccount info here. Ensure that the pegged
-        // account (accountUri) exists,
-        // `peggedAccount.AccountDisplay.debtorName` is not undefined,
-        // and `peggedAccount.AccountKnowledge.debtorData` describes
-        // the same peg as `peg`. (Maybe check for circular pegs as
-        // well.)
-        checkAndGoApprovePeg()
+        await loadPeggedAccountDataAndGoApprovePeg()
       } else {
         checkAndGoCreateAccount()
       }
