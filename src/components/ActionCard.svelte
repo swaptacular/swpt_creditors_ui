@@ -78,7 +78,10 @@
       }
       case 'ApprovePeg': {
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName ? `"${debtorName}" has declared a currency peg.` : 'Declared currency peg.'
+        const descripiton = debtorName
+          ? `Approve a fixed exchange rate between "${debtorName}" and another currency.`
+          : 'Approve a fixed exchange rate between two currencies.'
+        return descripiton
       }
       case 'ApproveAmountDisplay': {
         const debtorName = getDebtorName(action.accountUri)

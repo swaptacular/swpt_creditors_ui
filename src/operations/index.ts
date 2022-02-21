@@ -3,7 +3,7 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
-  AccountRecord
+  AccountRecord, ApprovePegActionWithId
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
@@ -63,6 +63,7 @@ export type {
   AckAccountInfoActionWithId,
   ApproveDebtorNameActionWithId,
   ApproveAmountDisplayActionWithId,
+  ApprovePegActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,

@@ -458,11 +458,7 @@ export class AppState {
   ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => {
-      if (this.interactionId === interactionId) {
-        goBack()
-      }
-    }
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
