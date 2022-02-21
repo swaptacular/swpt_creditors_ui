@@ -242,7 +242,7 @@ export class AppState {
         if (action !== undefined) {
           switch (action.actionType) {
             case 'CreateAccount':
-              this.showCreateAccountAction(this.createActionManager(action), back)
+              this.showCreateAccountAction(action, back)
               break
             case 'AckAccountInfo':
               this.showAckAccountInfoAction(action, back)
@@ -277,12 +277,10 @@ export class AppState {
     })
   }
 
-  showCreateAccountAction(actionManager: ActionManager<CreateAccountActionWithId>, back?: () => void): Promise<void> {
+  showCreateAccountAction(action: CreateAccountActionWithId, back?: () => void): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
-    let action = actionManager.currentValue
     let data: CreateAccountActionData | undefined
 
     const obtainData = async (): Promise<CreateAccountActionData> => {
@@ -326,7 +324,6 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      await saveActionPromise
       try {
         data = await obtainData()
         if (action.state === undefined) {
