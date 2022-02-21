@@ -63,7 +63,7 @@
         return `${title}: ${unitAmount} ${unit} to ${payeeName}.`
       }
       case "CreateAccount": {
-        const editedDebtorName = action.state?.editedDebtorName
+        const editedDebtorName = action.accountCreationState?.editedDebtorName
         const descripiton = editedDebtorName !== undefined
           ? `Confirm account with "${editedDebtorName}".`
           : "Create a new account."

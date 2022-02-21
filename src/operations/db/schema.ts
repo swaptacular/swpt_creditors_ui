@@ -349,7 +349,7 @@ export type CreateAccountAction =
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    state?: {
+    accountCreationState?: {
       accountUri: string,
       accountInitializationInProgress: boolean,
       debtorData: BaseDebtorData,
@@ -461,6 +461,15 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
+    accountCreationState?: {
+      accountUri: string,
+      accountInitializationInProgress: boolean,
+      debtorData: BaseDebtorData,
+      debtorDataSource: DebtorDataSource,
+      editedDebtorName: string,
+      editedNegligibleAmount: number,
+      tinyNegligibleAmount: number,
+    }
   }
 
 export type ApprovePegActionWithId =

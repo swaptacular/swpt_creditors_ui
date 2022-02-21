@@ -3,7 +3,7 @@ import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
-  ApproveAmountDisplayActionWithId
+  ApproveAmountDisplayActionWithId, ApprovePegActionWithId
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -94,7 +94,7 @@ export type ActionsModel = BasePageModel & {
   scrollLeft?: number,
 }
 
-export type CreateAccountActionData = {
+export type CreateAccountData = {
   account: AccountV0,
   debtorData: BaseDebtorData,
   debtorDataSource: DebtorDataSource,
@@ -107,7 +107,7 @@ export type CreateAccountActionData = {
 export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
   action: CreateAccountActionWithId,
-  data?: CreateAccountActionData,
+  createAccountData?: CreateAccountData,
 }
 
 export type AckAccountInfoActionModel = BasePageModel & {
@@ -132,6 +132,12 @@ export type ApproveAmountDisplayActionModel = BasePageModel & {
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
   availableAmount: bigint,
+}
+
+export type ApprovePegActionModel = BasePageModel & {
+  type: 'ApprovePegActionModel',
+  action: ApprovePegActionWithId,
+  createAccountData?: CreateAccountData,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -253,6 +259,9 @@ export class AppState {
             case 'ApproveAmountDisplay':
               this.showApproveAmountDisplayAction(action, back)
               break
+            case 'ApprovePeg':
+              this.showApprovePegAction(action, back)
+              break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
           }
@@ -281,13 +290,13 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    let data: CreateAccountActionData | undefined
+    let createAccountData: CreateAccountData | undefined
 
-    const obtainData = async (): Promise<CreateAccountActionData> => {
+    const obtainCreateAccountData = async (): Promise<CreateAccountData> => {
       const { latestDebtorInfoUri, debtorIdentityUri } = action
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
-      const { debtorData, debtorDataSource } = action.state
+      const { debtorData, debtorDataSource } = action.accountCreationState
         ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
       if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
         throw new InvalidDocument('obsolete debtor info URI')
@@ -303,15 +312,18 @@ export class AppState {
         isConfirmedAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
-    const initializeActionState = async (): Promise<void> => {
-      assert(data !== undefined)
-      const { account, debtorData, debtorDataSource } = data
+    const initializeAccountCreationState = async (): Promise<void> => {
+      assert(createAccountData !== undefined)
+      const { account, debtorData, debtorDataSource } = createAccountData
       const useDisplay = account.display.debtorName !== undefined
-      const tinyNegligibleAmount = calcSmallestDisplayableNumber(data.amountDivisor, data.decimalPlaces)
+      const tinyNegligibleAmount = calcSmallestDisplayableNumber(
+        createAccountData.amountDivisor,
+        createAccountData.decimalPlaces,
+      )
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
-      const state = {
-        accountUri: data.account.uri,
+      const accountCreationState = {
+        accountUri: createAccountData.account.uri,
         accountInitializationInProgress: false,
         debtorData,
         debtorDataSource,
@@ -319,15 +331,15 @@ export class AppState {
         editedDebtorName,
         editedNegligibleAmount,
       }
-      await this.uc.replaceActionRecord(action, action = { ...action, state })
+      await this.uc.replaceActionRecord(action, action = { ...action, accountCreationState })
     }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
       try {
-        data = await obtainData()
-        if (action.state === undefined) {
-          await initializeActionState()
+        createAccountData = await obtainCreateAccountData()
+        if (action.accountCreationState === undefined) {
+          await initializeAccountCreationState()
         }
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
@@ -337,18 +349,19 @@ export class AppState {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
           case e instanceof InvalidDocument:
-            assert(action.state === undefined)
+            assert(action.accountCreationState === undefined)
             break
           default:
             throw e
         }
       }
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
-        action.state?.accountInitializationInProgress === true &&
-        data?.account.display.debtorName !== undefined
+        action.accountCreationState?.accountInitializationInProgress === true &&
+        createAccountData?.account.display.debtorName !== undefined
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
+        await this.uc.replaceActionRecord(action, null)
         checkAndGoBack()
       } else {
         if (this.interactionId === interactionId) {
@@ -357,7 +370,7 @@ export class AppState {
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,
-            data,
+            createAccountData,
           })
         }
       }
@@ -375,10 +388,11 @@ export class AppState {
     })
   }
 
-  confirmCreateAccountAction(
-    actionManager: ActionManager<CreateAccountActionWithId>,
-    data: CreateAccountActionData,
+  approveAccountCreationAction(
+    actionManager: ActionManager<CreateAccountActionWithId | ApprovePegActionWithId>,
+    data: CreateAccountData,
     pin: string,
+    knownDebtor: boolean,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number
@@ -388,12 +402,12 @@ export class AppState {
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
-      assert(action.state !== undefined)
+      assert(action.accountCreationState !== undefined)
       interactionId = this.interactionId
       await saveActionPromise
       const isNewAccount = data.account.display.debtorName === undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
-        action.state.accountInitializationInProgress &&
+        action.accountCreationState.accountInitializationInProgress &&
         !isNewAccount
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
@@ -401,9 +415,17 @@ export class AppState {
       } else if (isNewAccount) {
         await this.uc.initializeNewAccount(action, data.account, true, pin)
       } else {
-        await this.uc.confirmKnownAccount(action, data.account, pin)
+        await this.uc.confirmKnownAccount(action, data.account, pin, knownDebtor)
       }
-      checkAndGoBack()
+      if (action.actionType === 'CreateAccount') {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
+      } else {
+        // The action type is `ApprovePeg`. The peg account creation
+        // was only the first stage of the action, now the user should
+        // continue with the approval of the peg.
+        this.showAction(action.actionId, back)
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
@@ -626,6 +648,13 @@ export class AppState {
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
+  }
+
+  showApprovePegAction(action: ApprovePegActionWithId, back?: () => void): Promise<void> {
+    // TODO: Add real implementation.
+    action
+    back
+    return Promise.resolve()
   }
 
   showAccounts(): Promise<void> {

@@ -416,29 +416,22 @@ export class UserContext {
    * `RecordDoesNotExist` or `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
   async initializeNewAccount(
-    action: CreateAccountActionWithId,
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
     account: AccountV0,
     knownDebtor: boolean,
     pin: string,
   ): Promise<void> {
     assert(action.userId === this.userId)
-    assert(action.state)
+    assert(action.accountCreationState)
     assert(account.display.debtorName === undefined)
 
     // Start the process of account initialization. If something goes
     // wrong, we will use the `accountInitializationInProgress` flag
     // to detect the problem and try to automatically recover from the
     // crash.
-    await this.replaceActionRecord(action, action = {
-      ...action,
-      state: {
-        ...action.state,
-        accountInitializationInProgress: true,
-      },
-    })
-    assert(action.state)
+    await this.setInitializationInProgressFlag(action, true)
 
-    const debtorData = action.state.debtorData
+    const debtorData = action.accountCreationState.debtorData
     const knowledge: AccountKnowledgeV0 = {
       type: account.knowledge.type,
       uri: account.knowledge.uri,
@@ -449,14 +442,14 @@ export class UserContext {
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: action.state.editedNegligibleAmount,
+      negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       latestUpdateId: account.config.latestUpdateId + 1n,
       scheduledForDeletion: false,
       pin,
     }
     const display: AccountDisplayV0 = {
       ...account.display,
-      debtorName: action.state.editedDebtorName,
+      debtorName: action.accountCreationState.editedDebtorName,
       decimalPlaces: debtorData.decimalPlaces,
       amountDivisor: debtorData.amountDivisor,
       unit: debtorData.unit,
@@ -474,48 +467,53 @@ export class UserContext {
    * corresponding create account action. The caller must be prepared
    * this method to throw `RecordDoesNotExist`.
    */
-  async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
-    assert(action.state)
-    assert(action.state.accountInitializationInProgress)
-    const peg = action.state.debtorData.peg
+  async finishAccountInitialization(action: CreateAccountActionWithId | ApprovePegActionWithId): Promise<void> {
+    assert(action.accountCreationState)
+    assert(action.accountCreationState.accountInitializationInProgress)
+    const peg = action.accountCreationState.debtorData.peg
     if (peg) {
       await createApproveAction({
         actionType: 'ApprovePeg',
         userId: this.userId,
         createdAt: new Date(),
-        accountUri: action.state.accountUri,
+        accountUri: action.accountCreationState.accountUri,
         peg,
       }, false)
     }
-    await this.replaceActionRecord(action, null)
+    await this.setInitializationInProgressFlag(action, false)
   }
 
   /* Update the display and config records of an already initialized
    * (known) account. The caller must be prepared this method to throw
    * `RecordDoesNotExist` or `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
-  async confirmKnownAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+  async confirmKnownAccount(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    account: AccountV0,
+    pin: string,
+    knownDebtor: boolean,
+  ): Promise<void> {
     assert(action.userId === this.userId)
-    assert(action.state)
-    assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
+    assert(action.accountCreationState)
+    assert(!action.accountCreationState.accountInitializationInProgress && account.display.debtorName !== undefined)
 
     const display: AccountDisplayV0 = {
       ...account.display,
-      knownDebtor: true,
-      debtorName: action.state.editedDebtorName,
+      knownDebtor: account.display.knownDebtor || knownDebtor,
+      debtorName: action.accountCreationState.editedDebtorName,
       latestUpdateId: account.display.latestUpdateId + 1n,
       pin,
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: action.state.editedNegligibleAmount,
+      negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       scheduledForDeletion: false,
       latestUpdateId: account.config.latestUpdateId + 1n,
       pin,
     }
     await this.updateAccountObject(display)
     await this.updateAccountObject(config)
-    await this.replaceActionRecord(action, null)
+    await this.setInitializationInProgressFlag(action, false)
   }
 
   /* Updates account's knowledge. May throw `ConflictingUpdate` or
@@ -587,6 +585,21 @@ export class UserContext {
 
   async logout(): Promise<never> {
     return await this.server.logout()
+  }
+
+  private async setInitializationInProgressFlag(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    value: boolean,
+  ): Promise<void> {
+    assert(action.accountCreationState)
+    await this.replaceActionRecord(action, {
+      ...action,
+      accountCreationState: {
+        ...action.accountCreationState,
+        accountInitializationInProgress: value,
+      },
+    })
+    action.accountCreationState.accountInitializationInProgress = value
   }
 
   private async removeExistingPegs(pegAccountUri: string, pin: string): Promise<void> {

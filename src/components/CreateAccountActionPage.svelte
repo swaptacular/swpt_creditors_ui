@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AppState, CreateAccountActionModel, ActionManager } from '../app-state'
-  import type { CreateAccountActionWithId } from '../operations'
+  import type { AppState, CreateAccountActionModel, ApprovePegActionModel, ActionManager } from '../app-state'
+  import type { CreateAccountActionWithId, ApprovePegActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -18,8 +18,8 @@
   export let model: CreateAccountActionModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: CreateAccountActionModel
-  let actionManager: ActionManager<CreateAccountActionWithId>
+  let currentModel: CreateAccountActionModel | ApprovePegActionModel
+  let actionManager: ActionManager<CreateAccountActionWithId | ApprovePegActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
 
@@ -31,13 +31,13 @@
   let invalidNegligibleUnitAmount: boolean
   let uniqueDebtorName: boolean
 
-  function createUpdatedAction(): CreateAccountActionWithId {
-    assert(data && action.state)
+  function createUpdatedAction(): CreateAccountActionWithId | ApprovePegActionWithId {
+    assert(data && action.accountCreationState)
     uniqueDebtorName = isUniqueDebtorName(debtorName, action)
     return {
       ...action,
-      state: {
-        ...action.state,
+      accountCreationState: {
+        ...action.accountCreationState,
         editedDebtorName: debtorName,
         editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * limitAmountDivisor(data.amountDivisor),
       },
@@ -52,7 +52,11 @@
       assert(Number.isFinite(amount))
       amount = BigInt(Math.ceil(amount))
     }
-    return amountToString(amount, model.data?.amountDivisor ?? 1, model.data?.decimalPlaces ?? 0n)
+    return amountToString(
+      amount,
+      model.createAccountData?.amountDivisor ?? 1,
+      model.createAccountData?.decimalPlaces ?? 0n,
+    )
   }
 
   function shakeForm(): void {
@@ -74,18 +78,22 @@
   }
 
   function submit(pin: string): void {
-    assert(data && action.state)
-    app.confirmCreateAccountAction(actionManager, data, pin, model.goBack)
+    assert(data && action.accountCreationState)
+    const knownDebtor = action.actionType === 'CreateAccount'
+    app.approveAccountCreationAction(actionManager, data, pin, knownDebtor, model.goBack)
   }
 
-  function isUniqueDebtorName(debtorName: string, action: CreateAccountActionWithId): boolean {
+  function isUniqueDebtorName(debtorName: string, action: CreateAccountActionWithId | ApprovePegActionWithId): boolean {
     const nameRegex = new RegExp(`^${debtorName}$`, 'us')
     const matchingAccounts = app.accountsMap.getAccountRecordsMatchingDebtorName(nameRegex)
     switch (matchingAccounts.length) {
     case 0:
       return true
     case 1:
-      return matchingAccounts[0].debtor.uri === action.debtorIdentityUri
+      const debtorIdentityUri = action.actionType === 'CreateAccount'
+        ? action.debtorIdentityUri
+        : action.peg.debtorIdentity.uri
+      return matchingAccounts[0].debtor.uri === debtorIdentityUri
     default:
       return false
     }
@@ -94,13 +102,14 @@
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
-    debtorName = model.action.state?.editedDebtorName ?? ''
-    negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
-    negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
+    debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
+    negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
+    negligibleUnitAmountStep = formatAsUnitAmount(model.action.accountCreationState?.tinyNegligibleAmount)
     uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
   }
   $: action = model.action
-  $: data = model.data
+  $: pageTitle = action.actionType === 'CreateAccount' ? 'Confirm account' : 'Create peg account'
+  $: data = model.createAccountData
   $: invalid = invalidDebtorName || !uniqueDebtorName || invalidNegligibleUnitAmount
 </script>
 
@@ -148,8 +157,8 @@
 </style>
 
 <div class="shaking-container">
-  {#if !(data && action.state)}
-    <Page title="Confirm account">
+  {#if !(data && action.accountCreationState)}
+    <Page title={pageTitle}>
       <svelte:fragment slot="content">
         <Paper style="margin: 36px 18px" elevation={8}>
           <Title>Unknown currency</Title>
@@ -175,7 +184,7 @@
       </svelte:fragment>
     </Page>
   {:else}
-    <Page title="Confirm account">
+    <Page title={pageTitle}>
       <svelte:fragment slot="content">
         <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -301,7 +310,11 @@
         </div>
         <div class="fab-container">
           <Fab color="primary" on:click={confirm} extended>
-            <Label>{data.isConfirmedAccount ? 'Update' : 'Confirm'}</Label>
+            <Label>{action.actionType === 'CreateAccount'
+              ? (data.isConfirmedAccount ? 'Update' : 'Confirm')
+              : 'Create'
+              }
+            </Label>
           </Fab>
         </div>
       </svelte:fragment>
