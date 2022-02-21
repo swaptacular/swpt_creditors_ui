@@ -164,7 +164,7 @@
       <svelte:fragment slot="floating">
         <div class="fab-container">
           <Fab on:click={() => actionManager.remove()} extended>
-            <Label>Reject</Label>
+            <Label>Cancel</Label>
           </Fab>
         </div>
         <div class="fab-container">
