@@ -5,6 +5,7 @@
   import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
   import ApproveDebtorNameActionPage from './ApproveDebtorNameActionPage.svelte'
   import ApproveAmountDisplayActionPage from './ApproveAmountDisplayActionPage.svelte'
+  import ApprovePegActionPage from './ApprovePegActionPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
 
@@ -28,6 +29,8 @@
       return ApproveDebtorNameActionPage
     case 'ApproveAmountDisplayModel':
       return ApproveAmountDisplayActionPage
+    case 'ApprovePegActionModel':
+      return ApprovePegActionPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

@@ -79,6 +79,7 @@ export type PageModel =
   | AckAccountInfoActionModel
   | ApproveDebtorNameActionModel
   | ApproveAmountDisplayActionModel
+  | ApprovePegActionModel
   | AccountsModel
 
 type BasePageModel = {
@@ -106,7 +107,7 @@ export type CreateAccountData = {
 
 export type CreateAccountActionModel = BasePageModel & {
   type: 'CreateAccountActionModel',
-  action: CreateAccountActionWithId,
+  action: CreateAccountActionWithId | ApprovePegActionWithId,
   createAccountData?: CreateAccountData,
 }
 
@@ -260,7 +261,7 @@ export class AppState {
               this.showApproveAmountDisplayAction(action, back)
               break
             case 'ApprovePeg':
-              this.showApprovePegAction(action, back)
+              this.showCreateAccountAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -286,19 +287,53 @@ export class AppState {
     })
   }
 
-  showCreateAccountAction(action: CreateAccountActionWithId, back?: () => void): Promise<void> {
+  showCreateAccountAction(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    back?: () => void,
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     let createAccountData: CreateAccountData | undefined
 
+    const checkAndGoApprovePeg = () => {
+      assert(action.actionType === 'ApprovePeg')
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'ApprovePegActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          createAccountData,
+        })
+      }
+    }
+    const checkAndGoCreateAccount = () => {
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'CreateAccountActionModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          createAccountData,
+        })
+      }
+    }
+    const getUris = () => action.actionType === 'CreateAccount' ? action : {
+      latestDebtorInfoUri: action.peg.latestDebtorInfo.uri,
+      debtorIdentityUri: action.peg.debtorIdentity.uri,
+    }
     const obtainCreateAccountData = async (): Promise<CreateAccountData> => {
-      const { latestDebtorInfoUri, debtorIdentityUri } = action
+      const { latestDebtorInfoUri, debtorIdentityUri } = getUris()
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
       const { debtorData, debtorDataSource } = action.accountCreationState
         ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
-      if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+      if (
+        action.actionType === 'CreateAccount' &&
+        debtorDataSource === 'uri' &&
+        debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri
+      ) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
       const useDisplay = account.display.debtorName !== undefined
@@ -355,24 +390,26 @@ export class AppState {
             throw e
         }
       }
+      const debtorName = createAccountData?.account.display.debtorName
+      const knownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
         action.accountCreationState?.accountInitializationInProgress === true &&
-        createAccountData?.account.display.debtorName !== undefined
+        debtorName !== undefined
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
-        await this.uc.replaceActionRecord(action, null)
-        checkAndGoBack()
-      } else {
-        if (this.interactionId === interactionId) {
-          this.pageModel.set({
-            type: 'CreateAccountActionModel',
-            reload: () => { this.showAction(action.actionId, back) },
-            goBack,
-            action,
-            createAccountData,
-          })
+        if (action.actionType === 'CreateAccount') {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+          return
         }
+        assert(knownPegAccount)
+      }
+      if (knownPegAccount) {
+        // TODO: fetch peggedAccount info here.
+        checkAndGoApprovePeg()
+      } else {
+        checkAndGoCreateAccount()
       }
     }, {
       // NOTE: After the alert has been acknowledged, we want to be

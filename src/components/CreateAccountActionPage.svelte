@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, CreateAccountActionModel, ApprovePegActionModel, ActionManager } from '../app-state'
+  import type { AppState, CreateAccountActionModel, ActionManager } from '../app-state'
   import type { CreateAccountActionWithId, ApprovePegActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
@@ -18,7 +18,7 @@
   export let model: CreateAccountActionModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: CreateAccountActionModel | ApprovePegActionModel
+  let currentModel: CreateAccountActionModel
   let actionManager: ActionManager<CreateAccountActionWithId | ApprovePegActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
