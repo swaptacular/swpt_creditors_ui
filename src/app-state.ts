@@ -76,10 +76,10 @@ export type Store<T> = {
 export type PageModel =
   | ActionsModel
   | CreateAccountModel
-  | AckAccountInfoActionModel
-  | ApproveDebtorNameActionModel
-  | ApproveAmountDisplayActionModel
-  | ApprovePegActionModel
+  | AckAccountInfoModel
+  | ApproveDebtorNameModel
+  | ApproveAmountDisplayModel
+  | ApprovePegModel
   | AccountsModel
 
 type BasePageModel = {
@@ -111,13 +111,13 @@ export type CreateAccountModel = BasePageModel & {
   createAccountData?: CreateAccountData,
 }
 
-export type AckAccountInfoActionModel = BasePageModel & {
-  type: 'AckAccountInfoActionModel',
+export type AckAccountInfoModel = BasePageModel & {
+  type: 'AckAccountInfoModel',
   action: AckAccountInfoActionWithId,
   account: AccountV0,
 }
 
-export type ApproveDebtorNameActionModel = BasePageModel & {
+export type ApproveDebtorNameModel = BasePageModel & {
   type: 'ApproveDebtorNameModel',
   action: ApproveDebtorNameActionWithId,
   accountRecord: AccountRecord,
@@ -126,7 +126,7 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
   availableAmount: bigint,
 }
 
-export type ApproveAmountDisplayActionModel = BasePageModel & {
+export type ApproveAmountDisplayModel = BasePageModel & {
   type: 'ApproveAmountDisplayModel',
   action: ApproveAmountDisplayActionWithId,
   accountRecord: AccountRecord,
@@ -135,8 +135,15 @@ export type ApproveAmountDisplayActionModel = BasePageModel & {
   availableAmount: bigint,
 }
 
-export type ApprovePegActionModel = BasePageModel & {
-  type: 'ApprovePegActionModel',
+export type CoinUriOverrideModel = BasePageModel & {
+  type: 'ApprovePegModel',
+  action: ApprovePegActionWithId,
+  createAccountData: CreateAccountData,
+  peggedAccountData: KnownAccountData,
+}
+
+export type ApprovePegModel = BasePageModel & {
+  type: 'ApprovePegModel',
   action: ApprovePegActionWithId,
   createAccountData: CreateAccountData,
   peggedAccountData: KnownAccountData,
@@ -311,7 +318,7 @@ export class AppState {
       ) {
         if (this.interactionId === interactionId) {
           this.pageModel.set({
-            type: 'ApprovePegActionModel',
+            type: 'ApprovePegModel',
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,
@@ -505,7 +512,7 @@ export class AppState {
       ) {
         if (this.interactionId === interactionId) {
           this.pageModel.set({
-            type: 'AckAccountInfoActionModel',
+            type: 'AckAccountInfoModel',
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,

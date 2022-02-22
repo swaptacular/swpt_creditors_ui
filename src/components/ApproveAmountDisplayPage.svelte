@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveAmountDisplayActionModel, ActionManager } from '../app-state'
+  import type { AppState, ApproveAmountDisplayModel, ActionManager } from '../app-state'
   import type { ApproveAmountDisplayActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import { amountToString } from '../format-amounts'
@@ -16,10 +16,10 @@
   import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
-  export let model: ApproveAmountDisplayActionModel
+  export let model: ApproveAmountDisplayModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApproveAmountDisplayActionModel
+  let currentModel: ApproveAmountDisplayModel
   let actionManager: ActionManager<ApproveAmountDisplayActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false

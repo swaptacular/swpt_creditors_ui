@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, AckAccountInfoActionModel } from '../app-state'
+  import type { AppState, AckAccountInfoModel } from '../app-state'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -10,10 +10,10 @@
   import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
-  export let model: AckAccountInfoActionModel
+  export let model: AckAccountInfoModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: AckAccountInfoActionModel
+  let currentModel: AckAccountInfoModel
   let showSummary: boolean = false
   let showLink: boolean = false
   let openEnterPinDialog: boolean = false

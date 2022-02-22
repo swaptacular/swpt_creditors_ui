@@ -2,10 +2,10 @@
   import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
   import CreateAccountPage from './CreateAccountPage.svelte'
-  import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
-  import ApproveDebtorNameActionPage from './ApproveDebtorNameActionPage.svelte'
-  import ApproveAmountDisplayActionPage from './ApproveAmountDisplayActionPage.svelte'
-  import ApprovePegActionPage from './ApprovePegActionPage.svelte'
+  import AckAccountInfoPage from './AckAccountInfoPage.svelte'
+  import ApproveDebtorNamePage from './ApproveDebtorNamePage.svelte'
+  import ApproveAmountDisplayPage from './ApproveAmountDisplayPage.svelte'
+  import ApprovePegPage from './ApprovePegPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
 
@@ -21,16 +21,16 @@
   }
   function getPageComponent(pageModelType: string) {
     switch (pageModelType) {
-    case 'CreateAccountActionModel':
+    case 'CreateAccountModel':
       return CreateAccountPage
-    case 'AckAccountInfoActionModel':
-      return AckAccountInfoActionPage
+    case 'AckAccountInfoModel':
+      return AckAccountInfoPage
     case 'ApproveDebtorNameModel':
-      return ApproveDebtorNameActionPage
+      return ApproveDebtorNamePage
     case 'ApproveAmountDisplayModel':
-      return ApproveAmountDisplayActionPage
-    case 'ApprovePegActionModel':
-      return ApprovePegActionPage
+      return ApproveAmountDisplayPage
+    case 'ApprovePegModel':
+      return ApprovePegPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

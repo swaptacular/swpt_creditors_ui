@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApprovePegActionModel, ActionManager } from '../app-state'
+  import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
   // import { amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
@@ -15,10 +15,10 @@
   import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
-  export let model: ApprovePegActionModel
+  export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApprovePegActionModel
+  let currentModel: ApprovePegModel
   let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
