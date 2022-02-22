@@ -1,7 +1,7 @@
 <script lang="ts">
   import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
-  import CreateAccountActionPage from './CreateAccountActionPage.svelte'
+  import CreateAccountPage from './CreateAccountPage.svelte'
   import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
   import ApproveDebtorNameActionPage from './ApproveDebtorNameActionPage.svelte'
   import ApproveAmountDisplayActionPage from './ApproveAmountDisplayActionPage.svelte'
@@ -22,7 +22,7 @@
   function getPageComponent(pageModelType: string) {
     switch (pageModelType) {
     case 'CreateAccountActionModel':
-      return CreateAccountActionPage
+      return CreateAccountPage
     case 'AckAccountInfoActionModel':
       return AckAccountInfoActionPage
     case 'ApproveDebtorNameModel':

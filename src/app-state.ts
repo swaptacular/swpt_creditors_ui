@@ -75,7 +75,7 @@ export type Store<T> = {
 
 export type PageModel =
   | ActionsModel
-  | CreateAccountActionModel
+  | CreateAccountModel
   | AckAccountInfoActionModel
   | ApproveDebtorNameActionModel
   | ApproveAmountDisplayActionModel
@@ -105,8 +105,8 @@ export type CreateAccountData = {
   isConfirmedAccount: boolean,
 }
 
-export type CreateAccountActionModel = BasePageModel & {
-  type: 'CreateAccountActionModel',
+export type CreateAccountModel = BasePageModel & {
+  type: 'CreateAccountModel',
   action: CreateAccountActionWithId | ApprovePegActionWithId,
   createAccountData?: CreateAccountData,
 }
@@ -327,7 +327,7 @@ export class AppState {
     const checkAndGoCreateAccount = () => {
       if (this.interactionId === interactionId) {
         this.pageModel.set({
-          type: 'CreateAccountActionModel',
+          type: 'CreateAccountModel',
           reload: () => { this.showAction(action.actionId, back) },
           goBack,
           action,
