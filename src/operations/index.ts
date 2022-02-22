@@ -484,6 +484,7 @@ export class UserContext {
         actionType: 'ApprovePeg',
         userId: this.userId,
         createdAt: new Date(),
+        ignoreCoinMismatch: false,
         accountUri: action.accountCreationState.accountUri,
         peg,
       }, false)

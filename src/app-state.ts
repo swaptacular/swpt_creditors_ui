@@ -79,6 +79,7 @@ export type PageModel =
   | AckAccountInfoModel
   | ApproveDebtorNameModel
   | ApproveAmountDisplayModel
+  | CoinOverrideModel
   | ApprovePegModel
   | AccountsModel
 
@@ -99,6 +100,7 @@ export type CreateAccountData = {
   account: AccountV0,
   debtorData: BaseDebtorData,
   debtorDataSource: DebtorDataSource,
+  hasDebtorInfo: boolean,
   unit: string,
   amountDivisor: number,
   decimalPlaces: bigint,
@@ -135,11 +137,10 @@ export type ApproveAmountDisplayModel = BasePageModel & {
   availableAmount: bigint,
 }
 
-export type CoinUriOverrideModel = BasePageModel & {
-  type: 'ApprovePegModel',
+export type CoinOverrideModel = BasePageModel & {
+  type: 'CoinOverrideModel',
   action: ApprovePegActionWithId,
   createAccountData: CreateAccountData,
-  peggedAccountData: KnownAccountData,
 }
 
 export type ApprovePegModel = BasePageModel & {
@@ -304,31 +305,49 @@ export class AppState {
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     let createAccountData: CreateAccountData | undefined
 
-    const loadPeggedAccountDataAndGoApprovePeg = async (): Promise<void> => {
+    const continueWithPegApproval = async (): Promise<void> => {
       assert(action.actionType === 'ApprovePeg')
       assert(createAccountData !== undefined)
-      const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
-      if (
-        peggedAccountData &&
-        equal(peggedAccountData.debtorData.peg, action.peg) &&
-        !(
-          peggedAccountData.exchange.peg?.account.uri === createAccountData.account.uri &&
-          peggedAccountData.exchange.peg.exchangeRate === action.peg.exchangeRate
-        )
-      ) {
+      const coinMismatch = (
+        !action.ignoreCoinMismatch &&
+        !createAccountData.hasDebtorInfo &&
+        createAccountData.debtorDataSource === 'knowledge' &&
+        createAccountData.debtorData.latestDebtorInfo.uri !== action.peg.latestDebtorInfo.uri
+      )
+      if (coinMismatch) {
         if (this.interactionId === interactionId) {
           this.pageModel.set({
-            type: 'ApprovePegModel',
+            type: 'CoinOverrideModel',
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,
             createAccountData,
-            peggedAccountData,
           })
         }
       } else {
-        await this.uc.replaceActionRecord(action, null)
-        checkAndGoBack()
+        const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
+        if (
+          peggedAccountData &&
+          equal(peggedAccountData.debtorData.peg, action.peg) &&
+          !(
+            peggedAccountData.exchange.peg?.account.uri === createAccountData.account.uri &&
+            peggedAccountData.exchange.peg.exchangeRate === action.peg.exchangeRate
+          )
+        ) {
+          if (this.interactionId === interactionId) {
+            this.pageModel.set({
+              type: 'ApprovePegModel',
+              reload: () => { this.showAction(action.actionId, back) },
+              goBack,
+              action,
+              createAccountData,
+              peggedAccountData,
+            })
+          }
+        } else {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+        }
       }
     }
     const checkAndGoCreateAccount = () => {
@@ -350,7 +369,7 @@ export class AppState {
       const { latestDebtorInfoUri, debtorIdentityUri } = getUris()
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
-      const { debtorData, debtorDataSource } = action.accountCreationState
+      const { debtorData, debtorDataSource, hasDebtorInfo } = action.accountCreationState
         ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
       if (
         action.actionType === 'CreateAccount' &&
@@ -364,6 +383,7 @@ export class AppState {
         account,
         debtorData,
         debtorDataSource,
+        hasDebtorInfo,
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
@@ -372,7 +392,7 @@ export class AppState {
     }
     const initializeAccountCreationState = async (): Promise<void> => {
       assert(createAccountData !== undefined)
-      const { account, debtorData, debtorDataSource } = createAccountData
+      const { account, debtorData, debtorDataSource, hasDebtorInfo } = createAccountData
       const useDisplay = account.display.debtorName !== undefined
       const tinyNegligibleAmount = calcSmallestDisplayableNumber(
         createAccountData.amountDivisor,
@@ -385,6 +405,7 @@ export class AppState {
         accountInitializationInProgress: false,
         debtorData,
         debtorDataSource,
+        hasDebtorInfo,
         tinyNegligibleAmount,
         editedDebtorName,
         editedNegligibleAmount,
@@ -429,7 +450,7 @@ export class AppState {
         assert(knownPegAccount)
       }
       if (knownPegAccount) {
-        await loadPeggedAccountDataAndGoApprovePeg()
+        await continueWithPegApproval()
       } else {
         checkAndGoCreateAccount()
       }

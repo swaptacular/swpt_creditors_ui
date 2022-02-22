@@ -205,8 +205,7 @@ export function parseCoinUri(coinUri: string): [string, string] {
 export async function obtainBaseDebtorData(
   account: AccountV0,
   latestDebtorInfoUri: string,
-  preferInfoOverKnowledge: boolean = false,
-): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource }> {
+): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource, hasDebtorInfo: boolean }> {
   const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<BaseDebtorData> => {
     const document = await fetchDebtorInfoDocument(debtorInfo.iri)
     if (!await putDocumentRecord(document)) {
@@ -228,21 +227,24 @@ export async function obtainBaseDebtorData(
     return sanitizeBaseDebtorData(debtorData)
   }
 
-  // Find the most reliable source of information about the debtor.
-  if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
+  const hasDebtorInfo = account.info.debtorInfo !== undefined
+  if (account.display.debtorName !== undefined) {
     return {
       debtorData: getBaseDebtorDataFromAccoutKnowledge(account.knowledge),
       debtorDataSource: 'knowledge',
+      hasDebtorInfo,
     }
-  } else if (account.info.debtorInfo) {
+  } else if (account.info.debtorInfo !== undefined) {
     return {
       debtorData: await getFromDebtorInfo(account.info.debtorInfo),
       debtorDataSource: 'info',
+      hasDebtorInfo,
     }
   } else {
     return {
       debtorData: await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
       debtorDataSource: 'uri',
+      hasDebtorInfo,
     }
   }
 }

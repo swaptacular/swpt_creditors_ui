@@ -166,6 +166,17 @@ export type CreateTransferAction =
     execution?: ExecutionState,
   }
 
+export type AccountCreationState = {
+  accountUri: string,
+  accountInitializationInProgress: boolean,
+  debtorData: BaseDebtorData,
+  debtorDataSource: DebtorDataSource,
+  hasDebtorInfo: boolean,
+  editedDebtorName: string,
+  editedNegligibleAmount: number,
+  tinyNegligibleAmount: number,
+}
+
 export type CreateTransferActionWithId =
   & ActionRecordWithId
   & CreateTransferAction
@@ -349,15 +360,7 @@ export type CreateAccountAction =
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    accountCreationState?: {
-      accountUri: string,
-      accountInitializationInProgress: boolean,
-      debtorData: BaseDebtorData,
-      debtorDataSource: DebtorDataSource,
-      editedDebtorName: string,
-      editedNegligibleAmount: number,
-      tinyNegligibleAmount: number,
-    }
+    accountCreationState?: AccountCreationState,
   }
 
 export type CreateAccountActionWithId =
@@ -461,15 +464,8 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
-    accountCreationState?: {
-      accountUri: string,
-      accountInitializationInProgress: boolean,
-      debtorData: BaseDebtorData,
-      debtorDataSource: DebtorDataSource,
-      editedDebtorName: string,
-      editedNegligibleAmount: number,
-      tinyNegligibleAmount: number,
-    }
+    ignoreCoinMismatch: boolean,
+    accountCreationState?: AccountCreationState,
   }
 
 export type ApprovePegActionWithId =
