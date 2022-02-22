@@ -302,9 +302,12 @@ export class AppState {
       assert(createAccountData !== undefined)
       const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
       if (
-        // TODO: Maybe check for circular pegs here as well.
         peggedAccountData &&
-        equal(peggedAccountData.debtorData.peg, action.peg)
+        equal(peggedAccountData.debtorData.peg, action.peg) &&
+        !(
+          peggedAccountData.exchange.peg?.account.uri === createAccountData.account.uri &&
+          peggedAccountData.exchange.peg.exchangeRate === action.peg.exchangeRate
+        )
       ) {
         if (this.interactionId === interactionId) {
           this.pageModel.set({
