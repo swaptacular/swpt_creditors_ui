@@ -79,7 +79,7 @@ export type PageModel =
   | AckAccountInfoModel
   | ApproveDebtorNameModel
   | ApproveAmountDisplayModel
-  | CoinOverrideModel
+  | OverrideCoinModel
   | ApprovePegModel
   | AccountsModel
 
@@ -137,8 +137,8 @@ export type ApproveAmountDisplayModel = BasePageModel & {
   availableAmount: bigint,
 }
 
-export type CoinOverrideModel = BasePageModel & {
-  type: 'CoinOverrideModel',
+export type OverrideCoinModel = BasePageModel & {
+  type: 'OverrideCoinModel',
   action: ApprovePegActionWithId,
   createAccountData: CreateAccountData,
 }
@@ -303,62 +303,17 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    let createAccountData: CreateAccountData | undefined
+    const reload = () => { this.showAction(action.actionId, back) }
 
-    const continueWithPegApproval = async (): Promise<void> => {
-      assert(action.actionType === 'ApprovePeg')
-      assert(createAccountData !== undefined)
-      const coinMismatch = (
-        !action.ignoreCoinMismatch &&
-        !createAccountData.hasDebtorInfo &&
-        createAccountData.debtorDataSource === 'knowledge' &&
-        createAccountData.debtorData.latestDebtorInfo.uri !== action.peg.latestDebtorInfo.uri
-      )
-      if (coinMismatch) {
-        if (this.interactionId === interactionId) {
-          this.pageModel.set({
-            type: 'CoinOverrideModel',
-            reload: () => { this.showAction(action.actionId, back) },
-            goBack,
-            action,
-            createAccountData,
-          })
-        }
-      } else {
-        const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
-        if (
-          peggedAccountData &&
-          equal(peggedAccountData.debtorData.peg, action.peg) &&
-          !(
-            peggedAccountData.exchange.peg?.account.uri === createAccountData.account.uri &&
-            peggedAccountData.exchange.peg.exchangeRate === action.peg.exchangeRate
-          )
-        ) {
-          if (this.interactionId === interactionId) {
-            this.pageModel.set({
-              type: 'ApprovePegModel',
-              reload: () => { this.showAction(action.actionId, back) },
-              goBack,
-              action,
-              createAccountData,
-              peggedAccountData,
-            })
-          }
-        } else {
-          await this.uc.replaceActionRecord(action, null)
-          checkAndGoBack()
-        }
+    const checkAndGoCreateAccount = (data: CreateAccountData | undefined) => {
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({ type: 'CreateAccountModel', reload, goBack, action, createAccountData: data })
       }
     }
-    const checkAndGoCreateAccount = () => {
+    const checkAndGoOverrideCoin = (data: CreateAccountData) => {
+      assert(action.actionType === 'ApprovePeg')
       if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'CreateAccountModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-          createAccountData,
-        })
+        this.pageModel.set({ type: 'OverrideCoinModel', reload, goBack, action, createAccountData: data })
       }
     }
     const getUris = () => action.actionType === 'CreateAccount' ? action : {
@@ -390,18 +345,14 @@ export class AppState {
         isConfirmedAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
-    const initializeAccountCreationState = async (): Promise<void> => {
-      assert(createAccountData !== undefined)
-      const { account, debtorData, debtorDataSource, hasDebtorInfo } = createAccountData
+    const initializeAccountCreationState = async (data: CreateAccountData): Promise<void> => {
+      const { account, debtorData, debtorDataSource, hasDebtorInfo } = data
       const useDisplay = account.display.debtorName !== undefined
-      const tinyNegligibleAmount = calcSmallestDisplayableNumber(
-        createAccountData.amountDivisor,
-        createAccountData.decimalPlaces,
-      )
+      const tinyNegligibleAmount = calcSmallestDisplayableNumber(data.amountDivisor, data.decimalPlaces)
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
       const accountCreationState = {
-        accountUri: createAccountData.account.uri,
+        accountUri: data.account.uri,
         accountInitializationInProgress: false,
         debtorData,
         debtorDataSource,
@@ -415,10 +366,11 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
+      let createAccountData
       try {
         createAccountData = await obtainCreateAccountData()
         if (action.accountCreationState === undefined) {
-          await initializeAccountCreationState()
+          await initializeAccountCreationState(createAccountData)
         }
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
@@ -428,6 +380,7 @@ export class AppState {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
           case e instanceof InvalidDocument:
+            assert(createAccountData === undefined)
             assert(action.accountCreationState === undefined)
             break
           default:
@@ -435,24 +388,54 @@ export class AppState {
         }
       }
       const debtorName = createAccountData?.account.display.debtorName
-      const knownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
+      const isKnownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
         action.accountCreationState?.accountInitializationInProgress === true &&
         debtorName !== undefined
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
-        if (action.actionType === 'CreateAccount') {
+        if (!isKnownPegAccount) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()
           return
         }
-        assert(knownPegAccount)
       }
-      if (knownPegAccount) {
-        await continueWithPegApproval()
+      if (isKnownPegAccount) {
+        assert(action.actionType === 'ApprovePeg')
+        assert(createAccountData !== undefined)
+        const coinMismatch = (
+          !createAccountData.hasDebtorInfo &&
+          createAccountData.debtorDataSource === 'knowledge' &&
+          createAccountData.debtorData.latestDebtorInfo.uri !== action.peg.latestDebtorInfo.uri
+        )
+        if (coinMismatch && !action.ignoreCoinMismatch) {
+          checkAndGoOverrideCoin(createAccountData)
+          return
+        }
+        const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
+        const pegEqualsTheKnownPeg = equal(action.peg, peggedAccountData?.debtorData.peg)
+        const pegIsApprovedAlready = (
+          peggedAccountData?.exchange.peg?.account.uri === createAccountData.account.uri &&
+          peggedAccountData?.exchange.peg?.exchangeRate === action.peg.exchangeRate
+        )
+        if (peggedAccountData === undefined || !pegEqualsTheKnownPeg || pegIsApprovedAlready) {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+          return
+        }
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'ApprovePegModel',
+            createAccountData,
+            reload,
+            goBack,
+            action,
+            peggedAccountData,
+          })
+        }
       } else {
-        checkAndGoCreateAccount()
+        checkAndGoCreateAccount(createAccountData)
       }
     }, {
       // NOTE: After the alert has been acknowledged, we want to be
