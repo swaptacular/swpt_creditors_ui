@@ -401,20 +401,20 @@ export class AppState {
         }
       }
       const debtorName = createAccountData?.account.display.debtorName
-      const isKnownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
+      const knownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
         action.accountCreationState?.accountInitializationInProgress === true &&
         debtorName !== undefined
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
-        if (!isKnownPegAccount) {
+        if (!knownPegAccount) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()
           return
         }
       }
-      if (isKnownPegAccount) {
+      if (knownPegAccount) {
         assert(action.actionType === 'ApprovePeg')
         assert(createAccountData !== undefined)
         const coinMismatch = (
