@@ -23,18 +23,31 @@
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
 
-  let approved: 'yes' | 'no' = 'no'
+  let approved: 'yes' | 'no' | '' = ''
 
   function confirm(): void {
-    if (approved === 'no') {
-      actionManager.remove()
+    if (invalid) {
+      shakeForm()
+    } else if (approved === 'no') {
+      console.log('removed')
+      // actionManager.remove()
     } else {
       openEnterPinDialog = true
     }
   }
 
+  function shakeForm(): void {
+    const shakingSuffix = ' shaking-block'
+    const origClassName = shakingElement.className
+    if (!origClassName.endsWith(shakingSuffix)) {
+      shakingElement.className += shakingSuffix
+      setTimeout(() => { shakingElement.className = origClassName }, 1000)
+    }
+  }
+
   function submit(pin: string): void {
     // TODO: implement
+    console.log(`submitted ${pin}`)
     pin
     app
   }
@@ -43,9 +56,20 @@
     currentModel = model
     actionManager = app.createActionManager(model.action)
   }
+  $: invalid = approved === ''
 </script>
 
 <style>
+  ul {
+    list-style: square outside;
+    margin: 0.75em 1.25em 0 1.25em;
+  }
+  li {
+    margin-top: 0.5em;
+  }
+  .amount {
+    font-size: 1.1em;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -73,7 +97,7 @@
   }
 </style>
 
-<Page title="Approve display">
+<Page title="Approve peg">
   <svelte:fragment slot="content">
     <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -88,23 +112,43 @@
           <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
             <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
               <Title>
-                Peg
+                Peg for "Pegged"
               </Title>
               <Content>
-                Blah-blah
+                <p>
+                  The issuer of "Pegged" has declared a fixed exchange
+                  rate with "Peg". If you approve this peg:
+                </p>
+                <ul>
+                  <li>
+                    Every
+                    <em class="amount">1.00 BGN</em> in your account
+                    with "Pegged", will be displayed as
+                    <em class="amount">0.50 EUR</em> instead.
+                  </li>
+                  <li>
+                    <a href="#currencies">5 other currencies</a> will
+                    be indirectly pegged to "Peg", which will also
+                    affect the way their amounts are displayed.
+                  </li>
+                  <li>
+                    There will be more opportunities to make automatic
+                    exchanges between different currencies.
+                  </li>
+                </ul>
               </Content>
             </Paper>
           </Cell>
 
           <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-            <div class="radio-group" style="margin-bottom: 8px; word-break: break-word">
+            <div class="radio-group" style="margin-top: -10px; word-break: break-word">
               <FormField>
                 <Radio bind:group={approved} value="yes" touch />
-                <span slot="label">This is OK</span>
+                <span slot="label">Approve</span>
               </FormField>
               <FormField>
                 <Radio bind:group={approved} value="no" touch />
-                <span slot="label">This is not OK</span>
+                <span slot="label">Do not approve</span>
               </FormField>
             </div>
           </Cell>
@@ -116,7 +160,7 @@
   <svelte:fragment slot="floating">
     <div class="fab-container">
       <Fab color="primary" on:click={confirm} extended>
-        <Label>Approve</Label>
+        <Label>Make decision</Label>
       </Fab>
     </div>
   </svelte:fragment>
