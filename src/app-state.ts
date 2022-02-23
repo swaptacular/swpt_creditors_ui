@@ -305,9 +305,9 @@ export class AppState {
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const reload = () => { this.showAction(action.actionId, back) }
 
-    const checkAndGoCreateAccount = (data: CreateAccountData | undefined) => {
+    const checkAndGoCreateAccount = (createAccountData: CreateAccountData | undefined) => {
       if (this.interactionId === interactionId) {
-        this.pageModel.set({ type: 'CreateAccountModel', reload, goBack, action, createAccountData: data })
+        this.pageModel.set({ type: 'CreateAccountModel', reload, goBack, action, createAccountData })
       }
     }
     const checkAndGoApprovePeg = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
@@ -323,10 +323,10 @@ export class AppState {
         })
       }
     }
-    const checkAndGoOverrideCoin = (data: CreateAccountData) => {
+    const checkAndGoOverrideCoin = (createAccountData: CreateAccountData) => {
       assert(action.actionType === 'ApprovePeg')
       if (this.interactionId === interactionId) {
-        this.pageModel.set({ type: 'OverrideCoinModel', reload, goBack, action, createAccountData: data })
+        this.pageModel.set({ type: 'OverrideCoinModel', reload, goBack, action, createAccountData })
       }
     }
     const getUris = () => action.actionType === 'CreateAccount' ? action : {
@@ -388,7 +388,7 @@ export class AppState {
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
         // action page will show an appropriate error message when
-        // `data` is undefined.
+        // `createAccountData` is undefined.
         switch (true) {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
