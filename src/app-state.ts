@@ -310,6 +310,19 @@ export class AppState {
         this.pageModel.set({ type: 'CreateAccountModel', reload, goBack, action, createAccountData: data })
       }
     }
+    const checkAndGoApprovePeg = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
+      assert(action.actionType === 'ApprovePeg')
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'ApprovePegModel',
+          createAccountData,
+          reload,
+          goBack,
+          action,
+          peggedAccountData,
+        })
+      }
+    }
     const checkAndGoOverrideCoin = (data: CreateAccountData) => {
       assert(action.actionType === 'ApprovePeg')
       if (this.interactionId === interactionId) {
@@ -424,16 +437,7 @@ export class AppState {
           checkAndGoBack()
           return
         }
-        if (this.interactionId === interactionId) {
-          this.pageModel.set({
-            type: 'ApprovePegModel',
-            createAccountData,
-            reload,
-            goBack,
-            action,
-            peggedAccountData,
-          })
-        }
+        checkAndGoApprovePeg(createAccountData, peggedAccountData)
       } else {
         checkAndGoCreateAccount(createAccountData)
       }
