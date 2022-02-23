@@ -123,13 +123,13 @@
                   <li>
                     Every
                     <em class="amount">1.00 BGN</em> in your account
-                    with "Pegged", will be displayed as
-                    <em class="amount">0.50 EUR</em> instead.
+                    with "Pegged", will be considered equivalent to
+                    <em class="amount">0.50 EUR</em>.
                   </li>
                   <li>
                     <a href="#currencies">5 other currencies</a> will
-                    be indirectly pegged to "Peg", which will also
-                    affect the way their amounts are displayed.
+                    be also indirectly pegged to "Peg", which may
+                    change the way their amounts are displayed.
                   </li>
                   <li>
                     There will be more opportunities to make automatic
