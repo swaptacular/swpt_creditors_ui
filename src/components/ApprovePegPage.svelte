@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
-  import { amountToString } from '../format-amounts'
+  import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -42,6 +42,22 @@
     }
   }
 
+  function calcExampleAmount(model: ApprovePegModel): bigint {
+    const smallestPegAmount = calcSmallestDisplayableNumber(
+      model.createAccountData.account.display.amountDivisor,
+      model.createAccountData.account.display.decimalPlaces,
+    )
+    const smallestPeggedAmount = calcSmallestDisplayableNumber(
+      model.peggedAccountData.display.amountDivisor,
+      model.peggedAccountData.display.decimalPlaces,
+    )
+    const matchingPegAmount = smallestPeggedAmount * action.peg.exchangeRate
+    const amount = matchingPegAmount > smallestPegAmount ? matchingPegAmount : smallestPegAmount
+
+    // We want our example to have a precision of 4 decimal places.
+    return BigInt(10000 * amount)
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -76,7 +92,7 @@
   $: peggedDebtorName = model.peggedAccountData.display.debtorName
   $: pegDebtorName = model.createAccountData.account.display.debtorName
   $: knownDebtor = model.peggedAccountData.display.knownDebtor
-  $: exampleAmount = 10000n
+  $: exampleAmount = calcExampleAmount(model)
   $: oldAmountString = amountToString(
     exampleAmount,
     model.peggedAccountData.display.amountDivisor,
