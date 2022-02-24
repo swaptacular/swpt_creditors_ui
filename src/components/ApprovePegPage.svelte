@@ -112,27 +112,28 @@
           <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
             <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
               <Title>
-                Peg for "Pegged"
+                Peg for "Bulgarian Lev"
               </Title>
               <Content>
                 <p>
-                  The issuer of "Pegged" has declared a fixed exchange
-                  rate with "Peg". If you approve this peg:
+                  A fixed exchange rate has been declared between
+                  "Bulgarian Lev" and "Euro". If you approve this peg:
                 </p>
                 <ul>
                   <li>
                     Every
                     <em class="amount">1.00 BGN</em> in your account
-                    with "Pegged", will be considered equivalent to
+                    with "Bulgarian Lev", will be considered
+                    equivalent to
                     <em class="amount">0.50 EUR</em>.
                   </li>
                   <li>
                     <a href="#currencies">5 other currencies</a> will
-                    be also indirectly pegged to "Peg", which may
+                    be also indirectly pegged to "Euro", which may
                     change the way their amounts are displayed.
                   </li>
                   <li>
-                    There will be more opportunities to make automatic
+                    There will be more opportunities for automatic
                     exchanges between different currencies.
                   </li>
                 </ul>
