@@ -2,6 +2,7 @@
   import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
   // import { amountToString } from '../format-amounts'
+  import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -10,7 +11,8 @@
   // import HelperText from '@smui/textfield/helper-text/index'
   import Radio from '@smui/radio'
   import FormField from '@smui/form-field'
-
+  import Dialog from './Dialog.svelte'
+  import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 
@@ -19,6 +21,7 @@
   export const snackbarBottom: string = "84px"
 
   let currentModel: ApprovePegModel
+  let showCurrencies: boolean = false
   let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
@@ -56,16 +59,24 @@
     currentModel = model
     actionManager = app.createActionManager(model.action)
   }
+  $: peggedDebtorName = model.peggedAccountData.display.debtorName
+  $: pegDebtorName = model.createAccountData.account.display.debtorName
+  $: knownDebtor = model.peggedAccountData.display.knownDebtor
+  $: currencyList = []
   $: invalid = approved === ''
 </script>
 
 <style>
-  ul {
+  .checklist {
     list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em 0 1.25em;
   }
-  li {
+  .checklist li {
     margin-top: 0.5em;
+  }
+  .currency-list {
+    list-style: square outside;
+    margin: 0.75em 1.25em 0 1.25em;
   }
   .amount {
     font-size: 1.1em;
@@ -101,6 +112,29 @@
   <svelte:fragment slot="content">
     <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
+    {#if showCurrencies}
+      <Dialog
+        open
+        aria-labelledby="show-currencies-dialog-title"
+        aria-describedby="show-currencies-dialog-content"
+        on:MDCDialog:closed={() => showCurrencies = false}
+        >
+        <DialogTitle>Indirectly pegged currencies:</DialogTitle>
+        <DialogContent style="word-break: break-word">
+          <ul class="currency-list">
+            {#each currencyList as currency }
+              <li>{currency}</li>
+            {/each}
+          </ul>
+        </DialogContent>
+        <Actions>
+          <Button>
+            <ButtonLabel>Close</ButtonLabel>
+          </Button>
+        </Actions>
+      </Dialog>
+    {/if}
+
     <div bind:this={shakingElement} slot="content">
       <form
         noValidate
@@ -112,29 +146,43 @@
           <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
             <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
               <Title>
-                Peg for "Bulgarian Lev"
+                Peg for "{peggedDebtorName}"
               </Title>
               <Content>
                 <p>
-                  A fixed exchange rate has been declared between
-                  "Bulgarian Lev" and "Euro". If you approve this peg:
+                  "{peggedDebtorName}"
+                  {#if !knownDebtor}
+                    (unconfirmed account)
+                  {/if}
+                  has declared a fixed exchange rate with "{pegDebtorName}". If
+                  you approve this peg:
                 </p>
-                <ul>
+                <ul class="checklist">
                   <li>
                     Every
                     <em class="amount">1.00 BGN</em> in your account
-                    with "Bulgarian Lev", will be considered
+                    with "{peggedDebtorName}", will be considered
                     equivalent to
                     <em class="amount">0.50 EUR</em>.
                   </li>
-                  <li>
-                    <a href="#currencies">5 other currencies</a> will
-                    also get indirectly pegged to "Euro", which may
-                    change the way their amounts are displayed.
-                  </li>
+                  {#if currencyList.length > 0}
+                    <li>
+                      {#if currencyList.length === 1}
+                        <a  href="/" target="_blank" on:click|preventDefault={() => showCurrencies = true}>1 other currency</a>
+                        will also get indirectly pegged to
+                        "{pegDebtorName}", which may change the
+                        way its amounts are displayed.
+                      {:else}
+                        <a  href="/" target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length}other currencies</a>
+                        will also get indirectly pegged to
+                        "{pegDebtorName}", which may change the
+                        way their amounts are displayed.
+                      {/if}
+                    </li>
+                  {/if}
                   <li>
                     More opportunities will exist for automatic
-                    exchanges between different currencies.
+                    exchanges between currencies.
                   </li>
                 </ul>
               </Content>
