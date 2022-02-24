@@ -13,6 +13,11 @@
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 
+  type Display = {
+    amountDivisor: number,
+    decimalPlaces: bigint,
+  }
+
   export let app: AppState
   export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
@@ -42,16 +47,10 @@
     }
   }
 
-  function calcExampleAmount(model: ApprovePegModel): bigint {
-    const smallestPegAmount = calcSmallestDisplayableNumber(
-      model.createAccountData.account.display.amountDivisor,
-      model.createAccountData.account.display.decimalPlaces,
-    )
-    const smallestPeggedAmount = calcSmallestDisplayableNumber(
-      model.peggedAccountData.display.amountDivisor,
-      model.peggedAccountData.display.decimalPlaces,
-    )
-    const matchingPegAmount = smallestPeggedAmount * action.peg.exchangeRate
+  function calcExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): bigint {
+    const smallestPegAmount = calcSmallestDisplayableNumber(pegDisplay.amountDivisor, pegDisplay.decimalPlaces)
+    const smallestPeggedAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces)
+    const matchingPegAmount = smallestPeggedAmount * exchangeRate
     const amount = matchingPegAmount > smallestPegAmount ? matchingPegAmount : smallestPegAmount
 
     // We want our example to have a precision of 4 decimal places.
@@ -89,22 +88,16 @@
     }
   }
   $: action = model.action
-  $: peggedDebtorName = model.peggedAccountData.display.debtorName
+  $: exampleAmount = calcExampleAmount(peggedDisplay, pegDisplay, action.peg.exchangeRate)
+  $: peggedDisplay = model.peggedAccountData.display
+  $: peggedDebtorName = peggedDisplay.debtorName
+  $: peggedKnownDebtor = peggedDisplay.knownDebtor
+  $: peggedAmountString = amountToString(exampleAmount, peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces)
+  $: peggedUnitAmount = peggedAmountString + ' ' + peggedDisplay.unit
+  $: pegDisplay = action.peg.display
   $: pegDebtorName = model.createAccountData.account.display.debtorName
-  $: knownDebtor = model.peggedAccountData.display.knownDebtor
-  $: exampleAmount = calcExampleAmount(model)
-  $: oldAmountString = amountToString(
-    exampleAmount,
-    model.peggedAccountData.display.amountDivisor,
-    model.peggedAccountData.display.decimalPlaces,
-  )
-  $: oldUnitAmount = oldAmountString + ' ' + model.peggedAccountData.display.unit
-  $: newAmountString = amountToString(
-    exampleAmount,
-    model.createAccountData.account.display.amountDivisor,
-    model.createAccountData.account.display.decimalPlaces,
-  )
-  $: newUnitAmount = newAmountString + ' ' + model.createAccountData.account.display.unit
+  $: pegAmountString = amountToString(exampleAmount, pegDisplay.amountDivisor, pegDisplay.decimalPlaces)
+  $: pegUnitAmount = pegAmountString + ' ' + pegDisplay.unit
   $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(model.peggedAccountData.account.uri)
   $: invalid = approved === ''
 </script>
@@ -192,7 +185,7 @@
               <Content>
                 <p>
                   "{peggedDebtorName}"
-                  {#if !knownDebtor}
+                  {#if !peggedKnownDebtor}
                     (unconfirmed account)
                   {/if}
                   has declared a fixed exchange rate with "{pegDebtorName}". If
@@ -201,10 +194,10 @@
                 <ul class="checklist">
                   <li>
                     Every
-                    <em class="amount">{oldUnitAmount}</em> in your account
+                    <em class="amount">{peggedUnitAmount}</em> in your account
                     with "{peggedDebtorName}", will be considered
                     equivalent to
-                    <em class="amount">{newUnitAmount}</em>.
+                    <em class="amount">{pegUnitAmount}</em>.
                   </li>
                   {#if currencyList.length > 0}
                     <li>
