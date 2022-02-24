@@ -25,8 +25,14 @@
   let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
+  let approved: 'yes' | 'no' | ''
 
-  let approved: 'yes' | 'no' | '' = ''
+  function createUpdatedAction(): ApprovePegActionWithId {
+    return {
+      ...action,
+      approved: approved === 'yes' || (approved === 'no' ? false : undefined),
+    }
+  }
 
   function confirm(): void {
     if (invalid) {
@@ -57,8 +63,19 @@
 
   $: if (currentModel !== model) {
     currentModel = model
-    actionManager = app.createActionManager(model.action)
+    actionManager = app.createActionManager(model.action, createUpdatedAction)
+    switch (model.action.approved) {
+    case true:
+      approved = 'yes'
+      break
+    case false:
+      approved = 'no'
+      break
+    default:
+      approved = ''
+    }
   }
+  $: action = model.action
   $: peggedDebtorName = model.peggedAccountData.display.debtorName
   $: pegDebtorName = model.createAccountData.account.display.debtorName
   $: knownDebtor = model.peggedAccountData.display.knownDebtor

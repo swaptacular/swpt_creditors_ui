@@ -466,6 +466,7 @@ export type ApprovePegAction =
     peg: Peg,
     ignoreCoinMismatch: boolean,
     accountCreationState?: AccountCreationState,
+    approved?: boolean,
   }
 
 export type ApprovePegActionWithId =
