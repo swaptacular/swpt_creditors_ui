@@ -61,7 +61,7 @@
 
 <style>
   ul {
-    list-style: square outside;
+    list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em 0 1.25em;
   }
   li {
