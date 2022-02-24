@@ -172,9 +172,7 @@
         <LayoutGrid>
           <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
             <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-              <Title>
-                Peg for "{peggedDebtorName}"
-              </Title>
+              <Title>Currency peg</Title>
               <Content>
                 <p>
                   "{peggedDebtorName}"
@@ -208,7 +206,7 @@
                     </li>
                   {/if}
                   <li>
-                    More opportunities will exist for automatic
+                    More possibilities will exist for automatic
                     exchanges between currencies.
                   </li>
                 </ul>
@@ -217,14 +215,14 @@
           </Cell>
 
           <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-            <div class="radio-group" style="margin-top: -10px; word-break: break-word">
+            <div class="radio-group" style="margin-top: -8px; word-break: break-word">
               <FormField>
                 <Radio bind:group={approved} value="yes" touch />
-                <span slot="label">Approve</span>
+                <span slot="label">Approve this peg</span>
               </FormField>
               <FormField>
                 <Radio bind:group={approved} value="no" touch />
-                <span slot="label">Do not approve</span>
+                <span slot="label">Do not approve this peg</span>
               </FormField>
             </div>
           </Cell>
