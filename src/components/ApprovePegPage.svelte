@@ -133,7 +133,7 @@
                     change the way their amounts are displayed.
                   </li>
                   <li>
-                    There will be more opportunities for automatic
+                    More opportunities will exist for automatic
                     exchanges between different currencies.
                   </li>
                 </ul>
