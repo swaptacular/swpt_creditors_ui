@@ -67,10 +67,8 @@
   }
 
   function submit(pin: string): void {
-    // TODO: implement
     console.log(`submitted ${pin}`)
-    pin
-    app
+    // app.performApprovePegAction(actionManager, model.peggedAccountData, pin)
   }
 
   $: if (currentModel !== model) {
