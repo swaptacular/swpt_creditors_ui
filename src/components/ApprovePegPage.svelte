@@ -1,14 +1,11 @@
 <script lang="ts">
   import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
-  // import { amountToString } from '../format-amounts'
+  import { amountToString } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Textfield from '@smui/textfield'
-  // import TextfieldIcon from '@smui/textfield/icon'
-  // import HelperText from '@smui/textfield/helper-text/index'
   import Radio from '@smui/radio'
   import FormField from '@smui/form-field'
   import Dialog from './Dialog.svelte'
@@ -79,6 +76,19 @@
   $: peggedDebtorName = model.peggedAccountData.display.debtorName
   $: pegDebtorName = model.createAccountData.account.display.debtorName
   $: knownDebtor = model.peggedAccountData.display.knownDebtor
+  $: exampleAmount = 10000n
+  $: oldAmountString = amountToString(
+    exampleAmount,
+    model.peggedAccountData.display.amountDivisor,
+    model.peggedAccountData.display.decimalPlaces,
+  )
+  $: oldUnitAmount = oldAmountString + ' ' + model.peggedAccountData.display.unit
+  $: newAmountString = amountToString(
+    exampleAmount,
+    model.createAccountData.account.display.amountDivisor,
+    model.createAccountData.account.display.decimalPlaces,
+  )
+  $: newUnitAmount = newAmountString + ' ' + model.createAccountData.account.display.unit
   $: currencyList = []
   $: invalid = approved === ''
 </script>
@@ -177,10 +187,10 @@
                 <ul class="checklist">
                   <li>
                     Every
-                    <em class="amount">1.00 BGN</em> in your account
+                    <em class="amount">{oldUnitAmount}</em> in your account
                     with "{peggedDebtorName}", will be considered
                     equivalent to
-                    <em class="amount">0.50 EUR</em>.
+                    <em class="amount">{newUnitAmount}</em>.
                   </li>
                   {#if currencyList.length > 0}
                     <li>
