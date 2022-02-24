@@ -105,7 +105,7 @@
     model.createAccountData.account.display.decimalPlaces,
   )
   $: newUnitAmount = newAmountString + ' ' + model.createAccountData.account.display.unit
-  $: currencyList = []
+  $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(model.peggedAccountData.account.uri)
   $: invalid = approved === ''
 </script>
 

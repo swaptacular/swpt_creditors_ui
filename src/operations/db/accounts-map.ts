@@ -127,6 +127,35 @@ export class AccountsMap {
     return result
   }
 
+  getRecursivelyPeggedDebtorNames(pegAccountUri: string): string[] {
+    let accountUris: Map<string, string | undefined> = new Map([[pegAccountUri, undefined]])
+    while (this.addRecursivelyPeggedAccountUris(accountUris));
+    return [...accountUris.values()].filter(debtorName => debtorName !== undefined) as string[]
+  }
+
+  private addRecursivelyPeggedAccountUris(
+    accountUris: Map<string, string | undefined>,  // account URI -> debtor name
+  ): boolean {
+    let added = false
+    for (const accountUri of this.accounts.values()) {
+      if (!accountUris.has(accountUri)) {
+        const account = this.getObjectByUri(accountUri)
+        assert(account && account.type === 'Account')
+        const exchange = this.getObjectByUri(account.exchange.uri)
+        const display = this.getObjectByUri(account.display.uri)
+        if (exchange && display) {
+          assert(exchange.type === 'AccountExchange')
+          assert(display.type === 'AccountDisplay')
+          if (exchange.peg && accountUris.has(exchange.peg.account.uri)) {
+            accountUris.set(accountUri, display.debtorName)
+            added = true
+          }
+        }
+      }
+    }
+    return added
+  }
+
   private getAccountUrisMatchingDebtorName(regex: RegExp): string[] {
     let matchingAccountUris: string[] = []
     for (const [_, obj] of this.objects) {
