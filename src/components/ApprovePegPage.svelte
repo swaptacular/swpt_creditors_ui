@@ -129,7 +129,7 @@
                   </li>
                   <li>
                     <a href="#currencies">5 other currencies</a> will
-                    be also indirectly pegged to "Euro", which may
+                    also get indirectly pegged to "Euro", which may
                     change the way their amounts are displayed.
                   </li>
                   <li>
