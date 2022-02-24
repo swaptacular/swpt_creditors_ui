@@ -196,7 +196,7 @@
                   <li>
                     {#if debtorData.summary}
                       The official currency summary, as stated by the issuer,
-                      has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
+                      has been <a href="." target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
                     {:else}
                       The official currency summary, stated by the issuer,
                       has been removed.
@@ -211,7 +211,7 @@
                   <li>
                     The digital coin (the QR code) of the currency has
                     changed. The new digital coin contains a different
-                    <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
+                    <a href="." target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
                   </li>
                 {/if}
 
