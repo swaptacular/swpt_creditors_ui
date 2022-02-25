@@ -440,7 +440,11 @@ export class AppState {
           peggedAccountData?.exchange.peg?.account.uri === createAccountData.account.uri &&
           peggedAccountData?.exchange.peg?.exchangeRate === action.peg.exchangeRate
         )
-        if (peggedAccountData === undefined || !pegEqualsTheKnownPeg || pegIsApprovedAlready) {
+        if (
+          peggedAccountData === undefined ||
+          !pegEqualsTheKnownPeg ||
+          (pegIsApprovedAlready && !action.pegIsBeingEdited)
+        ) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()
           return

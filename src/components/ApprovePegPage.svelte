@@ -204,8 +204,8 @@
                   {#if !peggedKnownDebtor}
                     (unconfirmed account)
                   {/if}
-                  has declared a fixed exchange rate with "{pegDebtorName}". If
-                  you approve this peg:
+                  has declared a fixed exchange rate with
+                  "{pegDebtorName}". When this peg is approved:
                 </p>
                 <ul class="checklist">
                   <li>

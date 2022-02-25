@@ -84,6 +84,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
                 actionType: 'ApprovePeg',
                 createdAt: new Date(),
                 ignoreCoinMismatch: false,
+                pegIsBeingEdited: false,
                 peg: debtorData.peg,
                 userId,
                 accountUri,
