@@ -149,6 +149,7 @@ export type OverrideCoinModel = BasePageModel & {
 export type ApprovePegModel = BasePageModel & {
   type: 'ApprovePegModel',
   action: ApprovePegActionWithId,
+  pegAccountUri: string,
   pegDebtorName: string,
   peggedAccountDisplay: AccountDisplayRecord,
 }
@@ -319,6 +320,7 @@ export class AppState {
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'ApprovePegModel',
+          pegAccountUri: createAccountData.account.uri,
           pegDebtorName: createAccountData.account.display.debtorName,
           peggedAccountDisplay: peggedAccountData.display,
           reload,
@@ -721,6 +723,7 @@ export class AppState {
 
   performApprovePegAction(
     actionManager: ActionManager<ApprovePegActionWithId>,
+    pegAccountUri: string,
     displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
@@ -734,7 +737,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.performApprovePegAction(action, displayLatestUpdateId, pin)
+      await this.uc.performApprovePegAction(action, pegAccountUri, displayLatestUpdateId, pin)
       checkAndGoBack()
     }, {
       alerts: [

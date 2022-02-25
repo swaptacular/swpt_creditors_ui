@@ -408,12 +408,15 @@ export class UserContext {
    * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async performApprovePegAction(
     action: ApprovePegActionWithId,
+    pegAccountUri: string,
     displayLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
     await sync(this.server, this.userId)
+
     // TODO: add real implementation.
     action
+    pegAccountUri
     displayLatestUpdateId
     pin
     throw new CircularPegError()
