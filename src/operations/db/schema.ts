@@ -465,7 +465,7 @@ export type ApprovePegAction =
     accountUri: string,
     peg: Peg,
     ignoreCoinMismatch: boolean,
-    alreadyHasApproval: boolean,
+    alreadyHasApproval: boolean | undefined,
     editedApproval?: boolean,
     accountCreationState?: AccountCreationState,
   }

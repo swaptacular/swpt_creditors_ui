@@ -443,14 +443,14 @@ export class AppState {
         }
         const peggedAccountData = await this.uc.getKnownAccountData(action.accountUri)
         const pegEqualsTheKnownPeg = equal(action.peg, peggedAccountData?.debtorData.peg)
-        const pegIsApprovedAlready = (
+        const alreadyHasApproval = (
           peggedAccountData?.exchange.peg?.account.uri === createAccountData.account.uri &&
           peggedAccountData?.exchange.peg?.exchangeRate === action.peg.exchangeRate
         )
         if (
           peggedAccountData === undefined ||
           !pegEqualsTheKnownPeg ||
-          pegIsApprovedAlready !== action.alreadyHasApproval
+          !(action.alreadyHasApproval === undefined || action.alreadyHasApproval === alreadyHasApproval)
         ) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()
