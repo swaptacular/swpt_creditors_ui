@@ -425,6 +425,7 @@ export class AppState {
       if (knownPegAccount) {
         assert(action.actionType === 'ApprovePeg')
         assert(createAccountData !== undefined)
+        await this.uc.replaceActionRecord(action, action = { ...action, accountCreationState: undefined })
         const coinMismatch = (
           !createAccountData.hasDebtorInfo &&
           createAccountData.debtorDataSource === 'knowledge' &&
