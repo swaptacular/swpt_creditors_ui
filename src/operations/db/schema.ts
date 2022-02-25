@@ -459,14 +459,14 @@ export type CreateAccountActionWithId =
 //
 //   c) Write the new peg to `peggedAccount.AccountExchange`.
 export type ApprovePegAction =
-  & Omit<CreateAccountAction, 'actionType' | 'latestDebtorInfoUri' | 'debtorIdentityUri'>
+  & ActionData
   & {
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
     ignoreCoinMismatch: boolean,
-    accountCreationState?: AccountCreationState,
     approved?: boolean,
+    accountCreationState?: AccountCreationState,
   }
 
 export type ApprovePegActionWithId =

@@ -411,6 +411,7 @@ export class UserContext {
     displayLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
+    await sync(this.server, this.userId)
     // TODO: add real implementation.
     action
     displayLatestUpdateId
