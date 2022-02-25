@@ -450,7 +450,7 @@ export class AppState {
         if (
           peggedAccountData === undefined ||
           !pegEqualsTheKnownPeg ||
-          (pegIsApprovedAlready && !action.pegIsBeingEdited)
+          pegIsApprovedAlready !== action.alreadyHasApproval
         ) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()

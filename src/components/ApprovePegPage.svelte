@@ -34,15 +34,16 @@
   function createUpdatedAction(): ApprovePegActionWithId {
     return {
       ...action,
-      approved: approved === 'yes' || (approved === 'no' ? false : undefined),
+      editedApproval,
     }
   }
 
   function confirm(): void {
-    if (invalid) {
+    if (editedApproval === undefined) {
       shakeForm()
-    } else if (approved === 'no') {
-      actionManager.remove()
+    } else if (editedApproval === action.alreadyHasApproval) {
+      console.log('remove')
+      // actionManager.remove()
     } else {
       openEnterPinDialog = true
     }
@@ -69,20 +70,22 @@
   }
 
   function submit(pin: string): void {
-    app.resolveApprovePegAction(
-      actionManager,
-      true,
-      model.pegAccountUri,
-      model.exchangeLatestUpdateId,
-      pin,
-      model.goBack,
-    )
+    if (editedApproval !== undefined) {
+      app.resolveApprovePegAction(
+        actionManager,
+        editedApproval,
+        model.pegAccountUri,
+        model.exchangeLatestUpdateId,
+        pin,
+        model.goBack,
+      )
+    }
   }
 
   $: if (currentModel !== model) {
     currentModel = model
     actionManager = app.createActionManager(model.action, createUpdatedAction)
-    switch (model.action.approved) {
+    switch (model.action.editedApproval) {
     case true:
       approved = 'yes'
       break
@@ -115,7 +118,7 @@
   )
   $: pegUnitAmount = pegAmountString + ' ' + pegDisplay.unit
   $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(action.accountUri)
-  $: invalid = approved === ''
+  $: editedApproval = approved === 'yes' || (approved === 'no' ? false : undefined)
 </script>
 
 <style>
