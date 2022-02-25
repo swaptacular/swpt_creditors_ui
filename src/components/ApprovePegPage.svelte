@@ -218,7 +218,7 @@
                         "{pegDebtorName}", which may change the
                         way its amounts are displayed.
                       {:else}
-                        <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length}other currencies</a>
+                        <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length} other currencies</a>
                         will get indirectly pegged to
                         "{pegDebtorName}", which may change the
                         way their amounts are displayed.
