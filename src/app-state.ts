@@ -724,6 +724,7 @@ export class AppState {
   performApprovePegAction(
     actionManager: ActionManager<ApprovePegActionWithId>,
     pegAccountUri: string,
+    displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
   ): Promise<void> {
@@ -736,7 +737,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.performApprovePegAction(action, pegAccountUri, pin)
+      await this.uc.performApprovePegAction(action, pegAccountUri, displayLatestUpdateId, pin)
       checkAndGoBack()
     }, {
       alerts: [

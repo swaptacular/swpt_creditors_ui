@@ -409,6 +409,7 @@ export class UserContext {
   async performApprovePegAction(
     action: ApprovePegActionWithId,
     pegAccountUri: string,
+    displayLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
     await sync(this.server, this.userId)
@@ -416,6 +417,7 @@ export class UserContext {
     // TODO: add real implementation.
     action
     pegAccountUri
+    displayLatestUpdateId
     pin
     throw new CircularPegError()
   }
