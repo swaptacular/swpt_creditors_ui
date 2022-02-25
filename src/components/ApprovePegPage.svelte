@@ -42,8 +42,7 @@
     if (invalid) {
       shakeForm()
     } else if (approved === 'no') {
-      console.log('removed')
-      // actionManager.remove()
+      actionManager.remove()
     } else {
       openEnterPinDialog = true
     }
@@ -70,8 +69,7 @@
   }
 
   function submit(pin: string): void {
-    console.log(`submitted ${pin}`)
-    // app.performApprovePegAction(actionManager, model.peggedAccountData, pin)
+    app.performApprovePegAction(actionManager, peggedDisplay.latestUpdateId, pin, model.goBack)
   }
 
   $: if (currentModel !== model) {
@@ -90,7 +88,7 @@
   }
   $: action = model.action
   $: exampleAmount = calcExampleAmount(peggedDisplay, pegDisplay, action.peg.exchangeRate)
-  $: peggedDisplay = model.peggedAccountData.display
+  $: peggedDisplay = model.peggedAccountDisplay
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
   $: peggedAmount = Math.ceil(exampleAmount)
@@ -101,7 +99,7 @@
   )
   $: peggedUnitAmount = peggedAmountString + ' ' + peggedDisplay.unit
   $: pegDisplay = action.peg.display
-  $: pegDebtorName = model.createAccountData.account.display.debtorName
+  $: pegDebtorName = model.pegDebtorName
   $: pegAmount = Math.ceil(exampleAmount * action.peg.exchangeRate)
   $: pegAmountString = amountToString(
     BigInt(Math.min(pegAmount, MAX_AMOUNT)),
@@ -109,7 +107,7 @@
     pegDisplay.decimalPlaces,
   )
   $: pegUnitAmount = pegAmountString + ' ' + pegDisplay.unit
-  $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(model.peggedAccountData.account.uri)
+  $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(action.accountUri)
   $: invalid = approved === ''
 </script>
 

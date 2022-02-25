@@ -146,8 +146,8 @@ export type OverrideCoinModel = BasePageModel & {
 export type ApprovePegModel = BasePageModel & {
   type: 'ApprovePegModel',
   action: ApprovePegActionWithId,
-  createAccountData: CreateAccountData,
-  peggedAccountData: KnownAccountData,
+  pegDebtorName: string,
+  peggedAccountDisplay: AccountDisplayRecord,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -312,14 +312,15 @@ export class AppState {
     }
     const checkAndGoApprovePeg = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
       assert(action.actionType === 'ApprovePeg')
+      assert(createAccountData.account.display.debtorName !== undefined)
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'ApprovePegModel',
-          createAccountData,
+          pegDebtorName: createAccountData.account.display.debtorName,
+          peggedAccountDisplay: peggedAccountData.display,
           reload,
           goBack,
           action,
-          peggedAccountData,
         })
       }
     }
@@ -609,7 +610,7 @@ export class AppState {
     displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
-  ) {
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
@@ -692,7 +693,7 @@ export class AppState {
     displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
-  ) {
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
@@ -715,11 +716,32 @@ export class AppState {
     })
   }
 
-  showApprovePegAction(action: ApprovePegActionWithId, back?: () => void): Promise<void> {
-    // TODO: Add real implementation.
-    action
-    back
-    return Promise.resolve()
+  performApprovePegAction(
+    actionManager: ActionManager<ApprovePegActionWithId>,
+    displayLatestUpdateId: bigint,
+    pin: string,
+    back?: () => void,
+  ): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      await this.uc.performApprovePegAction(action, displayLatestUpdateId, pin)
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
   }
 
   showAccounts(): Promise<void> {

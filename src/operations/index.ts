@@ -398,6 +398,18 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  async performApprovePegAction(
+    action: ApprovePegActionWithId,
+    displayLatestUpdateId: bigint,
+    pin: string,
+  ): Promise<void> {
+    // TODO: add real implementation.
+    action
+    displayLatestUpdateId
+    pin
+    return Promise.resolve()
+  }
+
   /* Create an account if necessary. Return the most recent version of
    * the account. The caller must be prepared this method to throw
    * `InvalidCoinUri` or `ServerSessionError`. */
