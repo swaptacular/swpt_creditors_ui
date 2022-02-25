@@ -69,7 +69,7 @@
   }
 
   function submit(pin: string): void {
-    app.performApprovePegAction(actionManager, model.pegAccountUri, peggedDisplay.latestUpdateId, pin, model.goBack)
+    app.performApprovePegAction(actionManager, model.pegAccountUri, pin, model.goBack)
   }
 
   $: if (currentModel !== model) {
