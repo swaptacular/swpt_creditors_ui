@@ -406,18 +406,20 @@ export class UserContext {
    * be prepared this method to throw `CircularPegError`,
    * `RecordDoesNotExist`, `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
-  async performApprovePegAction(
+  async resolveApprovePegAction(
     action: ApprovePegActionWithId,
+    approve: boolean,
     pegAccountUri: string,
-    displayLatestUpdateId: bigint,
+    exchangeLatestUpdateId: bigint,
     pin: string,
   ): Promise<void> {
     await sync(this.server, this.userId)
 
     // TODO: add real implementation.
     action
+    approve
     pegAccountUri
-    displayLatestUpdateId
+    exchangeLatestUpdateId
     pin
     throw new CircularPegError()
   }

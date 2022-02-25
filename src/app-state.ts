@@ -152,6 +152,7 @@ export type ApprovePegModel = BasePageModel & {
   pegAccountUri: string,
   pegDebtorName: string,
   peggedAccountDisplay: AccountDisplayRecord,
+  exchangeLatestUpdateId: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -323,6 +324,7 @@ export class AppState {
           pegAccountUri: createAccountData.account.uri,
           pegDebtorName: createAccountData.account.display.debtorName,
           peggedAccountDisplay: peggedAccountData.display,
+          exchangeLatestUpdateId: peggedAccountData.exchange.latestUpdateId,
           reload,
           goBack,
           action,
@@ -721,10 +723,11 @@ export class AppState {
     })
   }
 
-  performApprovePegAction(
+  resolveApprovePegAction(
     actionManager: ActionManager<ApprovePegActionWithId>,
+    approve: boolean,
     pegAccountUri: string,
-    displayLatestUpdateId: bigint,
+    exchangeLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
   ): Promise<void> {
@@ -737,7 +740,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.performApprovePegAction(action, pegAccountUri, displayLatestUpdateId, pin)
+      await this.uc.resolveApprovePegAction(action, approve, pegAccountUri, exchangeLatestUpdateId, pin)
       checkAndGoBack()
     }, {
       alerts: [
