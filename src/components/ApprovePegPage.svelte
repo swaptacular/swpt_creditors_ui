@@ -22,6 +22,8 @@
   export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
 
+  const maxAmount = Number(9223372036854775807n)
+
   let currentModel: ApprovePegModel
   let showCurrencies: boolean = false
   let actionManager: ActionManager<ApprovePegActionWithId>
@@ -47,14 +49,15 @@
     }
   }
 
-  function calcExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): bigint {
-    const smallestPegAmount = calcSmallestDisplayableNumber(pegDisplay.amountDivisor, pegDisplay.decimalPlaces)
-    const smallestPeggedAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces)
-    const matchingPegAmount = smallestPeggedAmount * exchangeRate
-    const amount = matchingPegAmount > smallestPegAmount ? matchingPegAmount : smallestPegAmount
-
-    // We want our example to have a precision of 4 decimal places.
-    return BigInt(10000 * amount)
+  function calcExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): number {
+    let exampleAmount: number
+    let prec = 4n  // We want our example to have a precision of at least 4 decimal places.
+    const minPegAmount = calcSmallestDisplayableNumber(pegDisplay.amountDivisor, pegDisplay.decimalPlaces - prec)
+    do {
+      exampleAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces - prec)
+      prec++
+    } while (exampleAmount * exchangeRate < minPegAmount)
+    return Math.min(exampleAmount, maxAmount)
   }
 
   function shakeForm(): void {
@@ -90,11 +93,21 @@
   $: peggedDisplay = model.peggedAccountData.display
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
-  $: peggedAmountString = amountToString(exampleAmount, peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces)
+  $: peggedAmount = Math.ceil(exampleAmount)
+  $: peggedAmountString = amountToString(
+    BigInt(peggedAmount),
+    peggedDisplay.amountDivisor,
+    peggedDisplay.decimalPlaces,
+  )
   $: peggedUnitAmount = peggedAmountString + ' ' + peggedDisplay.unit
   $: pegDisplay = action.peg.display
   $: pegDebtorName = model.createAccountData.account.display.debtorName
-  $: pegAmountString = amountToString(exampleAmount, pegDisplay.amountDivisor, pegDisplay.decimalPlaces)
+  $: pegAmount = Math.ceil(exampleAmount * action.peg.exchangeRate)
+  $: pegAmountString = amountToString(
+    BigInt(Math.min(pegAmount, maxAmount)),
+    pegDisplay.amountDivisor,
+    pegDisplay.decimalPlaces,
+  )
   $: pegUnitAmount = pegAmountString + ' ' + pegDisplay.unit
   $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(model.peggedAccountData.account.uri)
   $: invalid = approved === ''
