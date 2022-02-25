@@ -88,6 +88,10 @@ export class CircularPegError extends Error {
   name = 'CircularPegError'
 }
 
+export class PegDisplayMismatch extends Error {
+  name = 'PegDisplayMismatch'
+}
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -404,7 +408,7 @@ export class UserContext {
 
   /* Saves the the peg in account's exchange record. The caller must
    * be prepared this method to throw `CircularPegError`,
-   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `PegDisplayMismatch`, `RecordDoesNotExist`, `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async resolveApprovePegAction(
     action: ApprovePegActionWithId,
@@ -421,7 +425,7 @@ export class UserContext {
     pegAccountUri
     exchangeLatestUpdateId
     pin
-    throw new CircularPegError()
+    throw new PegDisplayMismatch()
   }
 
   /* Create an account if necessary. Return the most recent version of

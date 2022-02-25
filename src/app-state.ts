@@ -13,7 +13,7 @@ import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError
+  WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -47,6 +47,12 @@ export const INVALID_COIN_MESSAGE = 'Invalid digital coin. '
 
 export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
   + 'it would create a circular chain of pegs.'
+
+export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the issuer '
+  + 'of the pegged currency, do not match the available information about '
+  + 'the peg currency. First, make sure that you have acknowledged the latest '
+  + 'changes in the peg currency. Then, you may try to approve the peg '
+  + 'again, or decide to not approve it.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
@@ -755,6 +761,7 @@ export class AppState {
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [PegDisplayMismatch, new Alert(PEG_DISPLAY_MISMATCH_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }
