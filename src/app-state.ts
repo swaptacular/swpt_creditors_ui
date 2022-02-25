@@ -739,7 +739,7 @@ export class AppState {
     approve: boolean,
     pegAccountUri: string,
     exchangeLatestUpdateId: bigint,
-    pin: string,
+    pin: string | undefined,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number

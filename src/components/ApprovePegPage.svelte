@@ -42,9 +42,10 @@
     if (editedApproval === undefined) {
       shakeForm()
     } else if (editedApproval === action.alreadyHasApproval) {
-      console.log('remove')
-      // actionManager.remove()
+      // No change has been made, so no PIN is required.
+      submit(undefined)
     } else {
+      // The choice has been altered, so PIN is required.
       openEnterPinDialog = true
     }
   }
@@ -69,7 +70,7 @@
     }
   }
 
-  function submit(pin: string): void {
+  function submit(pin: string | undefined): void {
     if (editedApproval !== undefined) {
       app.resolveApprovePegAction(
         actionManager,

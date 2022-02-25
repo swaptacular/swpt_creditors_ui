@@ -415,7 +415,7 @@ export class UserContext {
     approve: boolean,
     pegAccountUri: string,
     exchangeLatestUpdateId: bigint,
-    pin: string,
+    pin: string | undefined,
   ): Promise<void> {
     await sync(this.server, this.userId)
 
