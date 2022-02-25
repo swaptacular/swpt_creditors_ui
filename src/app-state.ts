@@ -13,7 +13,7 @@ import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  WrongPin, ConflictingUpdate, UnprocessableEntity
+  WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -44,6 +44,9 @@ export const ACTION_DOES_NOT_EXIST_MESSAGE = 'The requested action record does n
 export const INVALID_COIN_MESSAGE = 'Invalid digital coin. '
   + 'Make sure that you are scanning the correct QR code, '
   + 'for the correct digital coin.'
+
+export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
+  + 'it would create a circular chain of pegs.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
@@ -735,6 +738,7 @@ export class AppState {
       checkAndGoBack()
     }, {
       alerts: [
+        [CircularPegError, new Alert(CIRCULAR_PEG_MESSAGE)],
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],

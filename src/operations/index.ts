@@ -84,6 +84,10 @@ export class UnprocessableEntity extends Error {
   name = 'UnprocessableEntity'
 }
 
+export class CircularPegError extends Error {
+  name = 'CircularPegError'
+}
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -327,8 +331,8 @@ export class UserContext {
 
   /* Changes the display name (and possibly clears `knownDebtor`) as
    * the given action states. The caller must be prepared this method
-   * to throw `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * to throw `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async resolveApproveDebtorNameAction(
     action: ApproveDebtorNameActionWithId,
     displayLatestUpdateId: bigint,
@@ -355,8 +359,8 @@ export class UserContext {
 
   /* Changes the amount display settings as the given action
    * states. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async resolveApproveAmountDisplayAction(
     action: ApproveAmountDisplayActionWithId,
     displayLatestUpdateId: bigint,
@@ -398,6 +402,10 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Saves the the peg in account's exchange record. The caller must
+   * be prepared this method to throw `CircularPegError`,
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async performApprovePegAction(
     action: ApprovePegActionWithId,
     displayLatestUpdateId: bigint,
@@ -407,7 +415,7 @@ export class UserContext {
     action
     displayLatestUpdateId
     pin
-    return Promise.resolve()
+    throw new CircularPegError()
   }
 
   /* Create an account if necessary. Return the most recent version of
@@ -433,8 +441,8 @@ export class UserContext {
 
   /* Initialize new account's knowledge, config and display
    * records. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async initializeNewAccount(
     action: CreateAccountActionWithId | ApprovePegActionWithId,
     account: AccountV0,
@@ -506,8 +514,8 @@ export class UserContext {
 
   /* Update the display and config records of an already initialized
    * (known) account. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * `RecordDoesNotExist`, `ConflictingUpdate`, `WrongPin`,
+   * `UnprocessableEntity`, `ServerSessionError`. */
   async confirmKnownAccount(
     action: CreateAccountActionWithId | ApprovePegActionWithId,
     account: AccountV0,
@@ -563,7 +571,7 @@ export class UserContext {
   }
 
   /* Remove account's exchange peg. May throw `ConflictingUpdate`,
-   * `WrongPin`, `UnprocessableEntity`, or `ServerSessionError`. */
+   * `WrongPin`, `UnprocessableEntity`, `ServerSessionError`. */
   async removePeg(exchange: AccountExchangeV0, pin: string, timeout?: number): Promise<void> {
     const updatedExchange: AccountExchangeV0 = {
       ...exchange,
@@ -638,7 +646,7 @@ export class UserContext {
 
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ServerSessionError`,
-   * `ConflictingUpdate`, `WrongPin` or `UnprocessableEntity`. */
+   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`. */
   private async updateAccountObject<T extends UpdatableAccountObject>(
     obj: T,
     options: { timeout?: number, ignore404?: boolean } = {},
