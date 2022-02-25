@@ -22,7 +22,7 @@
   export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
 
-  const maxAmount = Number(9223372036854775807n)
+  const MAX_AMOUNT = Number(9223372036854775807n)
 
   let currentModel: ApprovePegModel
   let showCurrencies: boolean = false
@@ -57,7 +57,7 @@
       exampleAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces - prec)
       prec++
     } while (exampleAmount * exchangeRate < minPegAmount)
-    return Math.min(exampleAmount, maxAmount)
+    return Math.min(exampleAmount, MAX_AMOUNT)
   }
 
   function shakeForm(): void {
@@ -104,7 +104,7 @@
   $: pegDebtorName = model.createAccountData.account.display.debtorName
   $: pegAmount = Math.ceil(exampleAmount * action.peg.exchangeRate)
   $: pegAmountString = amountToString(
-    BigInt(Math.min(pegAmount, maxAmount)),
+    BigInt(Math.min(pegAmount, MAX_AMOUNT)),
     pegDisplay.amountDivisor,
     pegDisplay.decimalPlaces,
   )
