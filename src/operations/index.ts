@@ -764,10 +764,15 @@ export class UserContext {
     try {
       await sync(this.server, this.userId)
     } catch (e: unknown) {
-      if (e instanceof HttpError) {
-        throw new ServerSyncError()
+      switch (true) {
+        case e instanceof AuthenticationError:
+          await this.ensureAuthenticated()
+          break
+        case e instanceof HttpError:
+          throw new ServerSyncError()
+        default:
+          throw e
       }
-      throw e
     }
   }
 }
