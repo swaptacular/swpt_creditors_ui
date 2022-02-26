@@ -14,7 +14,7 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound
+  ResourceNotFound, ServerSyncError
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -54,6 +54,8 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
   + 'the peg currency. First, make sure that you have acknowledged the latest '
   + 'changes in the peg currency. Then, you may try to approve the peg '
   + 'again, or decide to not approve it.'
+
+export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
@@ -727,6 +729,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
@@ -759,6 +762,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],

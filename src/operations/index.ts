@@ -97,6 +97,10 @@ export class PegDisplayMismatch extends Error {
   name = 'PegDisplayMismatch'
 }
 
+export class ServerSyncError extends Error {
+  name = 'ServerSyncError'
+}
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -370,7 +374,8 @@ export class UserContext {
   /* Changes the amount display settings as the given action
    * states. The caller must be prepared this method to throw
    * `RecordDoesNotExist`, `ConflictingUpdate`, `ResourceNotFound`,
-   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
+   * `WrongPin`,`UnprocessableEntity`, `ServerSyncError`,
+   * `ServerSessionError`. */
   async resolveApproveAmountDisplayAction(
     action: ApproveAmountDisplayActionWithId,
     displayLatestUpdateId: bigint,
@@ -415,7 +420,8 @@ export class UserContext {
   /* Saves the the peg in account's exchange record. The caller must
    * be prepared this method to throw `CircularPegError`,
    * `PegDisplayMismatch`, `RecordDoesNotExist`, `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`, `ServerSessionError`.
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`, `ServerSyncError`,
+   * `ServerSessionError`.
    */
   async resolveApprovePegAction(
     action: ApprovePegActionWithId,
@@ -424,7 +430,7 @@ export class UserContext {
     exchangeLatestUpdateId: bigint,
     pin: string | undefined,
   ): Promise<void> {
-    await sync(this.server, this.userId)
+    await this.sync()
     const expectedApproveValue = pin !== undefined ? undefined : approve
     const peggedAccountData = await this.validatePeggedAccount(action, action.accountUri, expectedApproveValue)
     if (peggedAccountData === undefined) {
@@ -448,6 +454,8 @@ export class UserContext {
           exchangeRate: action.peg.exchangeRate,
         }
       }
+
+      // TODO: Check for circular pegs here.
       await this.updateAccountObject(updatedExchange)
     }
   }
@@ -703,8 +711,7 @@ export class UserContext {
   }
 
   private async removeExistingPegs(pegAccountUri: string, pin: string): Promise<void> {
-    await sync(this.server, this.userId)
-
+    await this.sync()
     const exchanges = this.accountsMap
       .getPeggedAccountExchangeRecords(pegAccountUri)
       .map(accountExchangeRecord => {
@@ -751,6 +758,17 @@ export class UserContext {
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {
     const response = await this.server.get(pinInfoUri) as HttpResponse<PinInfo>
     return response.data
+  }
+
+  private async sync(): Promise<void> {
+    try {
+      await sync(this.server, this.userId)
+    } catch (e: unknown) {
+      if (e instanceof HttpError) {
+        throw new ServerSyncError()
+      }
+      throw e
+    }
   }
 }
 
