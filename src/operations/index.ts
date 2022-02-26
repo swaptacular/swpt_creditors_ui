@@ -11,6 +11,7 @@ import type {
 import type { UserResetMessage } from './db-sync'
 import type { BaseDebtorData } from '../debtor-info'
 
+import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import {
@@ -82,6 +83,10 @@ export class WrongPin extends Error {
 
 export class UnprocessableEntity extends Error {
   name = 'UnprocessableEntity'
+}
+
+export class ResourceNotFound extends Error {
+  name = 'ResourceNotFound'
 }
 
 export class CircularPegError extends Error {
@@ -336,7 +341,8 @@ export class UserContext {
   /* Changes the display name (and possibly clears `knownDebtor`) as
    * the given action states. The caller must be prepared this method
    * to throw `RecordDoesNotExist`, `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
+   * `ServerSessionError`. */
   async resolveApproveDebtorNameAction(
     action: ApproveDebtorNameActionWithId,
     displayLatestUpdateId: bigint,
@@ -363,7 +369,7 @@ export class UserContext {
 
   /* Changes the amount display settings as the given action
    * states. The caller must be prepared this method to throw
-   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `RecordDoesNotExist`, `ConflictingUpdate`, `ResourceNotFound`,
    * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async resolveApproveAmountDisplayAction(
     action: ApproveAmountDisplayActionWithId,
@@ -409,7 +415,8 @@ export class UserContext {
   /* Saves the the peg in account's exchange record. The caller must
    * be prepared this method to throw `CircularPegError`,
    * `PegDisplayMismatch`, `RecordDoesNotExist`, `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`, `ServerSessionError`.
+   */
   async resolveApprovePegAction(
     action: ApprovePegActionWithId,
     approve: boolean,
@@ -418,14 +425,55 @@ export class UserContext {
     pin: string | undefined,
   ): Promise<void> {
     await sync(this.server, this.userId)
+    const expectedApproveValue = pin !== undefined ? undefined : approve
+    const peggedAccountData = await this.validatePeggedAccount(action, action.accountUri, expectedApproveValue)
+    if (peggedAccountData === undefined) {
+      throw new RecordDoesNotExist()
+    }
+    if (pin !== undefined) {
+      const { userId, ...exchange } = peggedAccountData.exchange  // Remove the `userId` field.
+      let updatedExchange: AccountExchangeV0 = {
+        ...exchange,
+        peg: undefined,
+        latestUpdateId: exchangeLatestUpdateId + 1n,
+        pin,
+      }
+      if (approve) {
+        if (!await this.validatePegAccount(action, pegAccountUri)) {
+          throw new PegDisplayMismatch()
+        }
+        updatedExchange.peg = {
+          type: 'CurrencyPeg',
+          account: { uri: pegAccountUri },
+          exchangeRate: action.peg.exchangeRate,
+        }
+      }
+      await this.updateAccountObject(updatedExchange)
+    }
+  }
 
-    // TODO: add real implementation.
-    action
-    approve
-    pegAccountUri
-    exchangeLatestUpdateId
-    pin
-    throw new PegDisplayMismatch()
+  async validatePeggedAccount(
+    action: ApprovePegActionWithId,
+    pegAccountUri: string,
+    approval?: boolean,
+  ): Promise<KnownAccountData | undefined> {
+    const peggedAccountData = await this.getKnownAccountData(action.accountUri)
+    if (peggedAccountData) {
+      const knownPeg = peggedAccountData.debtorData.peg
+      const exchangePeg = peggedAccountData.exchange.peg
+      const pegAlreadyHasApproval = (
+        exchangePeg !== undefined &&
+        exchangePeg.account.uri === pegAccountUri &&
+        exchangePeg.exchangeRate === action.peg.exchangeRate
+      )
+      if (
+        !equal(action.peg, knownPeg) ||
+        !(approval === undefined || approval === pegAlreadyHasApproval)
+      ) {
+        return undefined
+      }
+    }
+    return peggedAccountData
   }
 
   /* Create an account if necessary. Return the most recent version of
@@ -627,6 +675,18 @@ export class UserContext {
     return await this.server.logout()
   }
 
+  private async validatePegAccount(action: ApprovePegActionWithId, pegAccountUri: string): Promise<boolean> {
+    const { amountDivisor, decimalPlaces, unit } = action.peg.display
+    const data = await this.getKnownAccountData(pegAccountUri)
+    return (
+      data !== undefined &&
+      action.peg.debtorIdentity.uri === data.account.debtor.uri &&
+      amountDivisor === data.display.amountDivisor &&
+      decimalPlaces === data.display.decimalPlaces &&
+      unit === data.display.unit
+    )
+  }
+
   private async setInitializationInProgressFlag(
     action: CreateAccountActionWithId | ApprovePegActionWithId,
     value: boolean,
@@ -657,7 +717,8 @@ export class UserContext {
 
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ServerSessionError`,
-   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`. */
+   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
+   * `ResourceNotFound`. */
   private async updateAccountObject<T extends UpdatableAccountObject>(
     obj: T,
     options: { timeout?: number, ignore404?: boolean } = {},
@@ -672,7 +733,7 @@ export class UserContext {
         switch (e.status) {
           case 404:
             if (ignore404) return
-            break
+            throw new ResourceNotFound()
           case 409:
             throw new ConflictingUpdate()
           case 403:
