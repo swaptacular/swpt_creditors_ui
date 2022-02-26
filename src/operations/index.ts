@@ -767,6 +767,7 @@ export class UserContext {
       switch (true) {
         case e instanceof AuthenticationError:
           await this.ensureAuthenticated()
+          await sync(this.server, this.userId)
           break
         case e instanceof HttpError:
           throw new ServerSyncError()
