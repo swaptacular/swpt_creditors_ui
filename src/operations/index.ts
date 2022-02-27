@@ -431,8 +431,9 @@ export class UserContext {
     pin: string | undefined,
   ): Promise<void> {
     await this.sync()
+    const { accountUri, peg } = action
     const expectedApproveValue = pin !== undefined ? undefined : approve
-    const peggedAccountData = await this.validatePeggedAccount(action, action.accountUri, expectedApproveValue)
+    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApproveValue)
     if (peggedAccountData === undefined) {
       throw new RecordDoesNotExist()
     }
@@ -451,13 +452,19 @@ export class UserContext {
         updatedExchange.peg = {
           type: 'CurrencyPeg',
           account: { uri: pegAccountUri },
-          exchangeRate: action.peg.exchangeRate,
+          exchangeRate: peg.exchangeRate,
+        }
+        const bound = this.accountsMap.followPegChain(pegAccountUri, accountUri)
+        if (!bound) {
+          throw new RecordDoesNotExist()
+        }
+        if (bound.accountUri === accountUri) {
+          throw new CircularPegError()
         }
       }
-
-      // TODO: Check for circular pegs here.
       await this.updateAccountObject(updatedExchange)
     }
+    await this.replaceActionRecord(action, null)
   }
 
   async validatePeggedAccount(

@@ -1,4 +1,4 @@
-import type { BaseDebtorData } from '../../debtor-info'
+import type { BaseDebtorData, PegDisplay } from '../../debtor-info'
 import type { AccountRecord, AccountObjectRecord, AccountExchangeRecord } from './schema'
 
 import { tryToParseDebtorInfoDocument } from '../../debtor-info'
@@ -34,6 +34,13 @@ export type DeletedObjectMessage = {
 }
 
 export type AccountsMapMessage = AddedObjectMessage | DeletedObjectMessage
+
+export type PegBound = {
+  accountUri: string,
+  debtorName: string | undefined,
+  exchangeRate: number,
+  display: PegDisplay,
+}
 
 export function postAccountsMapMessage(message: AccountsMapMessage): void {
   accountsMapChannel.postMessage(message)
@@ -131,6 +138,43 @@ export class AccountsMap {
     let accountUris: Map<string, string | undefined> = new Map([[pegAccountUri, undefined]])
     while (this.addRecursivelyPeggedAccountUris(accountUris));
     return [...accountUris.values()].filter(debtorName => debtorName !== undefined) as string[]
+  }
+
+  followPegChain(accountUri: string, stopAt?: string, visited: Set<string> = new Set()): PegBound | undefined {
+    const account = this.getObjectByUri(accountUri)
+    if (account) {
+      assert(account.type === 'Account')
+      const exchange = this.getObjectByUri(account.exchange.uri)
+      const display = this.getObjectByUri(account.display.uri)
+      if (exchange && display) {
+        assert(exchange.type === 'AccountExchange')
+        assert(display.type === 'AccountDisplay')
+        visited.add(accountUri)
+        let bound
+        if (
+          accountUri === stopAt ||
+          !exchange.peg ||
+          visited.has(exchange.peg.account.uri) ||
+          !(bound = this.followPegChain(exchange.peg.account.uri, stopAt, visited))
+        ) {
+          const { debtorName, amountDivisor, decimalPlaces, unit } = display
+          return {
+            accountUri,
+            debtorName,
+            exchangeRate: 1,
+            display: {
+              type: 'PegDisplay',
+              unit: unit ?? "\u00a4",
+              amountDivisor,
+              decimalPlaces,
+            },
+          }
+        }
+        bound.exchangeRate *= exchange.peg.exchangeRate
+        return bound
+      }
+    }
+    return undefined  // Can not find a proper account corresponding to `accountUri`.
   }
 
   private addRecursivelyPeggedAccountUris(
