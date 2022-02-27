@@ -444,12 +444,9 @@ export class AppState {
           checkAndGoOverrideCoin(createAccountData)
           return
         }
-        const peggedAccountData = await this.uc.validatePeggedAccount(
-          action,
-          createAccountData.account.uri,
-          action.alreadyHasApproval,
-        )
-        if (peggedAccountData === undefined) {
+        const pegAccountUri = createAccountData.account.uri
+        const peggedAccountData = await this.uc.validatePeggedAccount(action, pegAccountUri, action.alreadyHasApproval)
+        if (!peggedAccountData) {
           await this.uc.replaceActionRecord(action, null)
           checkAndGoBack()
           return

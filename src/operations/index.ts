@@ -432,8 +432,8 @@ export class UserContext {
   ): Promise<void> {
     await this.sync()
     const { accountUri, peg } = action
-    const expectedApproveValue = pin !== undefined ? undefined : approve
-    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApproveValue)
+    const expectedApprovalValue = pin !== undefined ? undefined : approve
+    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApprovalValue)
     if (peggedAccountData === undefined) {
       throw new RecordDoesNotExist()
     }
@@ -470,20 +470,20 @@ export class UserContext {
   async validatePeggedAccount(
     action: ApprovePegActionWithId,
     pegAccountUri: string,
-    approval?: boolean,
+    expectedApprovalValue?: boolean,
   ): Promise<KnownAccountData | undefined> {
     const peggedAccountData = await this.getKnownAccountData(action.accountUri)
     if (peggedAccountData) {
       const knownPeg = peggedAccountData.debtorData.peg
       const exchangePeg = peggedAccountData.exchange.peg
-      const pegAlreadyHasApproval = (
+      const approval = (
         exchangePeg !== undefined &&
         exchangePeg.account.uri === pegAccountUri &&
         exchangePeg.exchangeRate === action.peg.exchangeRate
       )
       if (
         !equal(action.peg, knownPeg) ||
-        !(approval === undefined || approval === pegAlreadyHasApproval)
+        !(expectedApprovalValue === undefined || approval === expectedApprovalValue)
       ) {
         return undefined
       }
