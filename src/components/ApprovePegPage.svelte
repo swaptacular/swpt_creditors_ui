@@ -61,6 +61,19 @@
     return Math.min(exampleAmount, MAX_AMOUNT)
   }
 
+  function calcFinalUnitAmount(accountUri: string, amount: number): string | undefined {
+    const bound = app.accountsMap.followPegChain(accountUri)
+    if (bound && bound.accountUri !== accountUri) {
+      const finalUnitAmount = amountToString(
+        BigInt(Math.min(amount * bound.exchangeRate, MAX_AMOUNT)),
+        bound.display.amountDivisor,
+        bound.display.decimalPlaces,
+      ) + ' ' + bound.display.unit
+      return finalUnitAmount
+    }
+    return undefined
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -118,6 +131,7 @@
     pegDisplay.decimalPlaces,
   )
   $: pegUnitAmount = pegAmountString + ' ' + pegDisplay.unit
+  $: finalUnitAmount = calcFinalUnitAmount(model.pegAccountUri, pegAmount)
   $: currencyList = app.accountsMap.getRecursivelyPeggedDebtorNames(action.accountUri)
   $: editedApproval = approved === 'yes' || (approved === 'no' ? false : undefined)
 </script>
@@ -219,6 +233,16 @@
                     equivalent to
                     <em class="amount">{pegUnitAmount}</em>.
                   </li>
+                  {#if finalUnitAmount !== undefined }
+                    <li>
+                      As "{pegDebtorName}" is by itself pegged to
+                      another currency, every
+                      <em class="amount">{peggedUnitAmount}</em> in
+                      your account with "{peggedDebtorName}", will
+                      also be considered equivalent to
+                      <em class="amount">{finalUnitAmount}</em>.
+                    </li>
+                  {/if}
                   {#if currencyList.length > 0}
                     <li>
                       {#if currencyList.length === 1}
