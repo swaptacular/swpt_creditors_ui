@@ -505,7 +505,9 @@ export class AppState {
         // The action type is `ApprovePeg`. The peg account creation
         // was only the first stage of the action, now the user should
         // continue with the approval of the peg.
-        this.showAction(action.actionId, back)
+        if (this.interactionId === interactionId) {
+          this.showAction(action.actionId, back)
+        }
       }
     }, {
       alerts: [
