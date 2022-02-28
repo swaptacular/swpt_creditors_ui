@@ -154,6 +154,10 @@
   .fab-container {
     margin: 16px 16px;
   }
+  .shaking-container {
+    position: relative;
+    overflow: hidden;
+  }
   .radio-group > :global(*) {
     margin: 0 0.2em;
   }
@@ -178,117 +182,119 @@
   }
 </style>
 
-<Page title="Approve peg">
-  <svelte:fragment slot="content">
-    <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
+<div class="shaking-container">
+  <Page title="Approve peg">
+    <svelte:fragment slot="content">
+      <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
-    {#if showCurrencies}
-      <Dialog
-        open
-        aria-labelledby="show-currencies-dialog-title"
-        aria-describedby="show-currencies-dialog-content"
-        on:MDCDialog:closed={() => showCurrencies = false}
-        >
-        <DialogTitle>Indirectly pegged currencies:</DialogTitle>
-        <DialogContent style="word-break: break-word">
-          <ul class="currency-list">
-            {#each currencyList as currency }
-              <li>{currency}</li>
-            {/each}
-          </ul>
-        </DialogContent>
-        <Actions>
-          <Button>
-            <ButtonLabel>Close</ButtonLabel>
-          </Button>
-        </Actions>
-      </Dialog>
-    {/if}
+      {#if showCurrencies}
+        <Dialog
+          open
+          aria-labelledby="show-currencies-dialog-title"
+          aria-describedby="show-currencies-dialog-content"
+          on:MDCDialog:closed={() => showCurrencies = false}
+          >
+          <DialogTitle>Indirectly pegged currencies:</DialogTitle>
+          <DialogContent style="word-break: break-word">
+            <ul class="currency-list">
+              {#each currencyList as currency }
+                <li>{currency}</li>
+              {/each}
+            </ul>
+          </DialogContent>
+          <Actions>
+            <Button>
+              <ButtonLabel>Close</ButtonLabel>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
 
-    <div bind:this={shakingElement} slot="content">
-      <form
-        noValidate
-        autoComplete="off"
-        on:input={() => actionManager.markDirty()}
-        on:change={() => actionManager.save()}
-        >
-        <LayoutGrid>
-          <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-            <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-              <Title>Currency peg</Title>
-              <Content>
-                <p>
-                  "{peggedDebtorName}"
-                  {#if !peggedKnownDebtor}
-                    (unconfirmed account)
+<div bind:this={shakingElement} slot="content">
+  <form
+    noValidate
+    autoComplete="off"
+    on:input={() => actionManager.markDirty()}
+    on:change={() => actionManager.save()}
+    >
+    <LayoutGrid>
+      <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+        <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+          <Title>Currency peg</Title>
+          <Content>
+            <p>
+              "{peggedDebtorName}"
+              {#if !peggedKnownDebtor}
+                (unconfirmed account)
+              {/if}
+              has declared a fixed exchange rate with
+              "{pegDebtorName}". When this peg is approved:
+            </p>
+            <ul class="checklist">
+              <li>
+                Every
+                <em class="amount">{peggedUnitAmount}</em> in your account
+                with "{peggedDebtorName}", will be considered
+                equivalent to
+                <em class="amount">{pegUnitAmount}</em>.
+              </li>
+              {#if finalUnitAmount !== undefined }
+                <li>
+                  As "{pegDebtorName}" is by itself pegged to
+                  another currency, every
+                  <em class="amount">{peggedUnitAmount}</em> in
+                  your account with "{peggedDebtorName}", will
+                  also be considered equivalent to
+                  <em class="amount">{finalUnitAmount}</em>.
+                </li>
+              {/if}
+              {#if currencyList.length > 0}
+                <li>
+                  {#if currencyList.length === 1}
+                    <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>1 other currency</a>
+                    will get indirectly pegged to
+                    "{pegDebtorName}", which may change the
+                    way its amounts are displayed.
+                  {:else}
+                    <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length} other currencies</a>
+                    will get indirectly pegged to
+                    "{pegDebtorName}", which may change the
+                    way their amounts are displayed.
                   {/if}
-                  has declared a fixed exchange rate with
-                  "{pegDebtorName}". When this peg is approved:
-                </p>
-                <ul class="checklist">
-                  <li>
-                    Every
-                    <em class="amount">{peggedUnitAmount}</em> in your account
-                    with "{peggedDebtorName}", will be considered
-                    equivalent to
-                    <em class="amount">{pegUnitAmount}</em>.
-                  </li>
-                  {#if finalUnitAmount !== undefined }
-                    <li>
-                      As "{pegDebtorName}" is by itself pegged to
-                      another currency, every
-                      <em class="amount">{peggedUnitAmount}</em> in
-                      your account with "{peggedDebtorName}", will
-                      also be considered equivalent to
-                      <em class="amount">{finalUnitAmount}</em>.
-                    </li>
-                  {/if}
-                  {#if currencyList.length > 0}
-                    <li>
-                      {#if currencyList.length === 1}
-                        <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>1 other currency</a>
-                        will get indirectly pegged to
-                        "{pegDebtorName}", which may change the
-                        way its amounts are displayed.
-                      {:else}
-                        <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length} other currencies</a>
-                        will get indirectly pegged to
-                        "{pegDebtorName}", which may change the
-                        way their amounts are displayed.
-                      {/if}
-                    </li>
-                  {/if}
-                  <li>
-                    More possibilities will exist for automatic
-                    exchanges between currencies.
-                  </li>
-                </ul>
-              </Content>
-            </Paper>
-          </Cell>
+                </li>
+              {/if}
+              <li>
+                More possibilities will exist for automatic
+                exchanges between currencies.
+              </li>
+            </ul>
+          </Content>
+        </Paper>
+      </Cell>
 
-          <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-            <div class="radio-group" style="margin-top: -10px; word-break: break-word">
-              <FormField>
-                <Radio bind:group={approved} value="yes" touch />
-                <span slot="label">Approve this peg</span>
-              </FormField>
-              <FormField>
-                <Radio bind:group={approved} value="no" touch />
-                <span slot="label">Do not approve this peg</span>
-              </FormField>
-            </div>
-          </Cell>
-        </LayoutGrid>
-      </form>
-    </div>
-  </svelte:fragment>
+      <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+        <div class="radio-group" style="margin-top: -10px; word-break: break-word">
+          <FormField>
+            <Radio bind:group={approved} value="yes" touch />
+            <span slot="label">Approve this peg</span>
+          </FormField>
+          <FormField>
+            <Radio bind:group={approved} value="no" touch />
+            <span slot="label">Do not approve this peg</span>
+          </FormField>
+        </div>
+      </Cell>
+    </LayoutGrid>
+  </form>
+</div>
+    </svelte:fragment>
 
-  <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab color="primary" on:click={confirm} extended>
-        <Label>Make a decision</Label>
-      </Fab>
-    </div>
-  </svelte:fragment>
-</Page>
+    <svelte:fragment slot="floating">
+      <div class="fab-container">
+        <Fab color="primary" on:click={confirm} extended>
+          <Label>Make a decision</Label>
+        </Fab>
+      </div>
+    </svelte:fragment>
+  </Page>
+</div>
