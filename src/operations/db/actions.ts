@@ -6,8 +6,11 @@ import type {
 import { Dexie } from 'dexie'
 import equal from 'fast-deep-equal'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser, verifyAccountKnowledge } from './common'
+import {
+  UserDoesNotExist, isInstalledUser, verifyAccountKnowledge, getBaseDebtorDataFromAccoutKnowledge
+} from './common'
 import { abortTransfer } from './transfers'
+import type { BaseDebtorData } from 'src/debtor-info'
 
 export type ApproveAction = ApprovePegAction | ApproveAmountDisplayAction | ApproveDebtorNameAction
 
@@ -75,21 +78,33 @@ export async function removeActionRecord(actionId: number): Promise<void> {
               })
             }
             if ((changes.pegParams || changes.pegDebtorInfoUri) && debtorData.peg) {
-              // TODO: If `changes.pegParams` is false, and the
-              // acknowledged `debtorData.peg.latestDebtorInfo` is not
-              // in conflict with for the available information source
-              // for the peg account, consider not creating an approve
-              // peg action here.
-              await createApproveAction({
-                actionType: 'ApprovePeg',
+              const peg = debtorData.peg
+              const approvePegAction = {
+                actionType: 'ApprovePeg' as const,
                 createdAt: new Date(),
                 onlyTheCoinHasChanged: !changes.pegParams,
                 ignoreCoinMismatch: false,
                 alreadyHasApproval: false,
-                peg: debtorData.peg,
+                peg,
                 userId,
                 accountUri,
-              }, changes.pegParams)
+              }
+              if (changes.pegParams) {
+                await createApproveAction(approvePegAction, true)
+              } else {
+                const pegDebtorData = await getDebtorDataFromDebtorUri(peg.debtorIdentity.uri)
+                if (pegDebtorData?.latestDebtorInfo.uri !== peg.latestDebtorInfo.uri) {
+                  await createApproveAction(approvePegAction, false)
+                }
+              }
+            }
+            if (changes.latestDebtorInfo) {
+              // TODO: Go through the existing 'ApprovePeg' actions
+              // which want to create a peg to `action.accountUri`,
+              // and if `a.onlyTheCoinHasChanged === true &&
+              // a.peg.latestDebtorInfo.uri ===
+              // debtorData.latestDebtorInfo.uri` -- delete the
+              // action.
             }
           }
           verifyAccountKnowledge(action.accountUri)
@@ -165,5 +180,26 @@ export async function createApproveAction(action: ApproveAction, overrideExistin
       }
     }
     return await createActionRecord(action)
+  })
+}
+
+async function getDebtorDataFromDebtorUri(debtorUri: string): Promise<BaseDebtorData | undefined> {
+  return await db.transaction('rw', [db.accounts, db.accountObjects], async () => {
+    let debtorData
+    const accounts = await db.accounts.filter(account => account.debtor.uri === debtorUri).toArray()
+    if (accounts.length > 0) {
+      assert(accounts.length == 1)
+      const account = accounts[1]
+      const display = await db.accountObjects.get(account.display.uri)
+      const knowledge = await db.accountObjects.get(account.knowledge.uri)
+      if (display && knowledge) {
+        assert(display.type === 'AccountDisplay')
+        assert(knowledge.type === 'AccountKnowledge')
+        if (display.debtorName !== undefined) {
+          debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+        }
+      }
+    }
+    return debtorData
   })
 }
