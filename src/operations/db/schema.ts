@@ -464,6 +464,7 @@ export type ApprovePegAction =
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
+    onlyTheCoinHasChanged: boolean,
     ignoreCoinMismatch: boolean,
     alreadyHasApproval: boolean | undefined,
     editedApproval?: boolean,

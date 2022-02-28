@@ -83,12 +83,13 @@ export async function removeActionRecord(actionId: number): Promise<void> {
               await createApproveAction({
                 actionType: 'ApprovePeg',
                 createdAt: new Date(),
+                onlyTheCoinHasChanged: !changes.pegParams,
                 ignoreCoinMismatch: false,
                 alreadyHasApproval: false,
                 peg: debtorData.peg,
                 userId,
                 accountUri,
-              })
+              }, changes.pegParams)
             }
           }
           verifyAccountKnowledge(action.accountUri)
@@ -134,14 +135,32 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
 export async function createApproveAction(action: ApproveAction, overrideExisting: boolean = true): Promise<number> {
   const { accountUri, actionType } = action
   return await db.transaction('rw', [db.wallets, db.actions], async () => {
-    const existingActionsQuery = db.actions
-        .where({ accountUri })
-        .filter(action => action.actionType === actionType)
+    const existingActionQuery = db.actions
+      .where({ accountUri })
+      .filter(a => a.actionType === actionType)
     if (overrideExisting) {
-      await existingActionsQuery.delete()
+      await existingActionQuery.delete()
     } else {
-      const existingAction = await existingActionsQuery.first() as ActionRecordWithId | undefined
+      const existingAction = await existingActionQuery.first() as ActionRecordWithId | undefined
       if (existingAction) {
+        // Even when we do not want to override the existing action,
+        // we still want to update the `peg.latestDebtorInfo.uri`
+        // field of 'ApprovePeg' actions. This should be unnoticeable
+        // to the user, and makes using the wrong URI less probable.
+        if (actionType === 'ApprovePeg') {
+          const uri = action.peg.latestDebtorInfo.uri
+          await existingActionQuery.modify((a: ApprovePegAction) => {
+            if (
+              a.peg.exchangeRate === action.peg.exchangeRate &&
+              a.peg.debtorIdentity.uri === action.peg.debtorIdentity.uri &&
+              equal(a.peg.display, action.peg.display) &&
+              a.peg.latestDebtorInfo.uri !== uri
+            ) {
+              a.peg.latestDebtorInfo.uri = uri
+              a.ignoreCoinMismatch = false
+            }
+          })
+        }
         return existingAction.actionId
       }
     }
