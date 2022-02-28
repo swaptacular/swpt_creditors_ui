@@ -125,10 +125,10 @@ export async function authorizePinReset(): Promise<void> {
 
 /* Tries to update the local database, reading the latest data from
  * the server. Any network failures will be swallowed. */
-export async function update(server: ServerSession, userId: number): Promise<void> {
+export async function update(server: ServerSession, userId: number, accountsMap: AccountsMap): Promise<void> {
   try {
     await sync(server, userId)
-    await reviseOutdatedDebtorInfosIfNecessary(userId)
+    await reviseOutdatedDebtorInfosIfNecessary(userId, accountsMap)
     await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
@@ -155,14 +155,14 @@ export async function update(server: ServerSession, userId: number): Promise<voi
   }
 }
 
-async function reviseOutdatedDebtorInfosIfNecessary(userId: number): Promise<void> {
+async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
   const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
   const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
   const latestRevisionTime = new Date(storage_value).getTime()
   const intervalMilliseconds = 1000 * 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
   const now = new Date()
   if (latestRevisionTime + intervalMilliseconds < now.getTime()) {
-    await reviseOutdatedDebtorInfos(userId)
+    await reviseOutdatedDebtorInfos(userId, accountsMap)
     console.log('Created update tasks for outdated debtor infos.')
   }
   localStorage.setItem(storage_key, now.toISOString())
@@ -829,7 +829,7 @@ export async function obtainUserContext(
 
   return new UserContext(
     server,
-    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId)),
+    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId, accountsMap)),
     accountsMap,
     await getWalletRecord(userId),
   )
