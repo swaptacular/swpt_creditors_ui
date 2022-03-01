@@ -153,7 +153,8 @@
                   displayed. If you choose to use the new way to
                   display amounts, the {oldUnitAmount} that you have
                   in your account, in the future will be shown as
-                  {newUnitAmount}.
+                  {newUnitAmount}. If in doubt &mdash; use the new
+                  way.
                 </Content>
               </Paper>
             </Cell>
