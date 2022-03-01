@@ -189,7 +189,7 @@ async function getDebtorDataFromDebtorUri(debtorUri: string): Promise<BaseDebtor
     const accounts = await db.accounts.filter(account => account.debtor.uri === debtorUri).toArray()
     if (accounts.length > 0) {
       assert(accounts.length == 1)
-      const account = accounts[1]
+      const account = accounts[0]
       const display = await db.accountObjects.get(account.display.uri)
       const knowledge = await db.accountObjects.get(account.knowledge.uri)
       if (display && knowledge) {
