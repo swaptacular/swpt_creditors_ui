@@ -179,23 +179,7 @@
                     specified for "{pegDebtorName}" does not match the
                     already known coin for it.
                   </p>
-                  {#if knownCurrencyList.length !== 0 || newCurrencyList.length !== 0}
                     <ul class="checklist">
-                      {#if knownCurrencyList.length !== 0}
-                        <li>
-                          {#if knownCurrencyList.length === 1}
-                            <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
-                              1 pegged currency
-                            </a>
-                            uses the already known coin.
-                          {:else}
-                            <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
-                              {knownCurrencyList.length} pegged currencies
-                            </a>
-                            use the already known coin.
-                          {/if}
-                        </li>
-                      {/if}
                       {#if newCurrencyList.length !== 0}
                         <li>
                           {#if newCurrencyList.length === 1}
@@ -211,8 +195,22 @@
                           {/if}
                         </li>
                       {/if}
+                      <li>
+                        {#if knownCurrencyList.length === 0}
+                          There are no pegged currencies that use the already known coin.
+                        {:else if knownCurrencyList.length === 1}
+                          <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
+                            1 pegged currency
+                          </a>
+                          uses the already known coin.
+                        {:else}
+                          <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
+                            {knownCurrencyList.length} pegged currencies
+                          </a>
+                          use the already known coin.
+                        {/if}
+                      </li>
                     </ul>
-                  {/if}
                 </Content>
               </Paper>
             </Cell>
