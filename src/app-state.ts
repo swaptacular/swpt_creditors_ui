@@ -153,6 +153,7 @@ export type OverrideCoinModel = BasePageModel & {
   type: 'OverrideCoinModel',
   action: ApprovePegActionWithId,
   createAccountData: CreateAccountData,
+  peggedAccountDisplay: AccountDisplayRecord,
 }
 
 export type ApprovePegModel = BasePageModel & {
@@ -340,10 +341,17 @@ export class AppState {
         })
       }
     }
-    const checkAndGoOverrideCoin = (createAccountData: CreateAccountData) => {
+    const checkAndGoOverrideCoin = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
       assert(action.actionType === 'ApprovePeg')
       if (this.interactionId === interactionId) {
-        this.pageModel.set({ type: 'OverrideCoinModel', reload, goBack, action, createAccountData })
+        this.pageModel.set({
+          type: 'OverrideCoinModel',
+          peggedAccountDisplay: peggedAccountData.display,
+          reload,
+          goBack,
+          action,
+          createAccountData,
+        })
       }
     }
     const getUris = () => action.actionType === 'CreateAccount' ? action : {
@@ -435,20 +443,20 @@ export class AppState {
         assert(action.actionType === 'ApprovePeg')
         assert(createAccountData !== undefined)
         await this.uc.replaceActionRecord(action, action = { ...action, accountCreationState: undefined })
+        const pegAccountUri = createAccountData.account.uri
+        const peggedAccountData = await this.uc.validatePeggedAccount(action, pegAccountUri, action.alreadyHasApproval)
+        if (!peggedAccountData) {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+          return
+        }
         const coinMismatch = (
           !createAccountData.hasDebtorInfo &&
           createAccountData.debtorDataSource === 'knowledge' &&
           createAccountData.debtorData.latestDebtorInfo.uri !== action.peg.latestDebtorInfo.uri
         )
         if (coinMismatch && !action.ignoreCoinMismatch) {
-          checkAndGoOverrideCoin(createAccountData)
-          return
-        }
-        const pegAccountUri = createAccountData.account.uri
-        const peggedAccountData = await this.uc.validatePeggedAccount(action, pegAccountUri, action.alreadyHasApproval)
-        if (!peggedAccountData) {
-          await this.uc.replaceActionRecord(action, null)
-          checkAndGoBack()
+          checkAndGoOverrideCoin(createAccountData, peggedAccountData)
           return
         }
         checkAndGoApprovePeg(createAccountData, peggedAccountData)

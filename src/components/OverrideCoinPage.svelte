@@ -1,50 +1,86 @@
 <script lang="ts">
-  import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
+  import type { AppState, OverrideCoinModel, ActionManager } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
-  // import { amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Textfield from '@smui/textfield'
-  // import TextfieldIcon from '@smui/textfield/icon'
-  // import HelperText from '@smui/textfield/helper-text/index'
   import Radio from '@smui/radio'
+  import Button, { Label as ButtonLabel } from '@smui/button'
   import FormField from '@smui/form-field'
-
+  import Dialog from './Dialog.svelte'
+  import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
   import Page from './Page.svelte'
-  import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
-  export let model: ApprovePegModel
+  export let model: OverrideCoinModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApprovePegModel
+  let currentModel: OverrideCoinModel
+  let showKnownCurrencies: boolean = false
+  let showNewCurrencies: boolean = false
   let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
-  let openEnterPinDialog: boolean = false
 
-  let approved: 'yes' | 'no' = 'no'
+  let replace: 'yes' | 'no' = 'no'
 
-  function confirm(): void {
-    console.log('confirmed')
-    // openEnterPinDialog = true
+  function createUpdatedAction(): ApprovePegActionWithId {
+    return {
+      ...action,
+      editedReplaceCoin,
+    }
   }
 
-  function submit(pin: string): void {
-    // TODO: implement
-    pin
-    app
+  function shakeForm(): void {
+    const shakingSuffix = ' shaking-block'
+    const origClassName = shakingElement.className
+    if (!origClassName.endsWith(shakingSuffix)) {
+      shakingElement.className += shakingSuffix
+      setTimeout(() => { shakingElement.className = origClassName }, 1000)
+    }
+  }
+
+  function submit(): void {
+    if (editedReplaceCoin === undefined) {
+      shakeForm()
+    } else {
+      // TODO: implement
+      console.log(`submitted ${editedReplaceCoin}`)
+    }
   }
 
   $: if (currentModel !== model) {
     currentModel = model
-    actionManager = app.createActionManager(model.action)
+    actionManager = app.createActionManager(model.action, createUpdatedAction)
+    replace = model.action.editedReplaceCoin ? 'yes' : 'no'
   }
+  $: action = model.action
+  $: editedReplaceCoin = replace === 'yes' || (replace === 'no' ? false : undefined)
+  $: peggedDisplay = model.peggedAccountDisplay
+  $: peggedDebtorName = peggedDisplay.debtorName
+  $: peggedKnownDebtor = peggedDisplay.knownDebtor
+  $: pegDebtorName = model.createAccountData.account.display.debtorName
+  $: knownCurrencyList = ['xxx']
+  $: newCurrencyList = ['yyy']
 </script>
 
 <style>
+  .checklist {
+    list-style: '\2713\00A0' outside;
+    margin: 0.75em 1.25em 0 1.25em;
+  }
+  .checklist li {
+    margin-top: 0.5em;
+  }
+  .currency-list {
+    list-style: square outside;
+    margin: 0.75em 1.25em 0 1.25em;
+  }
   .fab-container {
     margin: 16px 16px;
+  }
+  .shaking-container {
+    position: relative;
+    overflow: hidden;
   }
   .radio-group > :global(*) {
     margin: 0 0.2em;
@@ -70,51 +106,116 @@
   }
 </style>
 
-<Page title="Approve display">
-  <svelte:fragment slot="content">
-    <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
+<div class="shaking-container">
+  <Page title="Replace coin">
+    <svelte:fragment slot="content">
+      {#if showKnownCurrencies}
+        <Dialog
+          open
+          aria-labelledby="show-known-currencies-dialog-title"
+          aria-describedby="show-known-currencies-dialog-content"
+          on:MDCDialog:closed={() => showKnownCurrencies = false}
+          >
+          <DialogTitle>Currencies using the already known coin:</DialogTitle>
+          <DialogContent style="word-break: break-word">
+            <ul class="currency-list">
+              {#each knownCurrencyList as currency }
+                <li>{currency}</li>
+              {/each}
+            </ul>
+          </DialogContent>
+          <Actions>
+            <Button>
+              <ButtonLabel>Close</ButtonLabel>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
 
-    <div bind:this={shakingElement} slot="content">
-      <form
-        noValidate
-        autoComplete="off"
-        on:input={() => actionManager.markDirty()}
-        on:change={() => actionManager.save()}
-        >
-        <LayoutGrid>
-          <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-            <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-              <Title>
-                Coin override
-              </Title>
-              <Content>
-                Blah-blah
-              </Content>
-            </Paper>
-          </Cell>
+      {#if showNewCurrencies}
+        <Dialog
+          open
+          aria-labelledby="show-new-currencies-dialog-title"
+          aria-describedby="show-new-currencies-dialog-content"
+          on:MDCDialog:closed={() => showNewCurrencies = false}
+          >
+          <DialogTitle>Currencies specifying the same digital coin as "{peggedDebtorName}":</DialogTitle>
+          <DialogContent style="word-break: break-word">
+            <ul class="currency-list">
+              {#each newCurrencyList as currency }
+                <li>{currency}</li>
+              {/each}
+            </ul>
+          </DialogContent>
+          <Actions>
+            <Button>
+              <ButtonLabel>Close</ButtonLabel>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
 
-          <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-            <div class="radio-group" style="margin-bottom: 8px; word-break: break-word">
-              <FormField>
-                <Radio bind:group={approved} value="yes" touch />
-                <span slot="label">This is OK</span>
-              </FormField>
-              <FormField>
-                <Radio bind:group={approved} value="no" touch />
-                <span slot="label">This is not OK</span>
-              </FormField>
-            </div>
-          </Cell>
-        </LayoutGrid>
-      </form>
-    </div>
-  </svelte:fragment>
+      <div bind:this={shakingElement} slot="content">
+        <form
+          noValidate
+          autoComplete="off"
+          on:input={() => actionManager.markDirty()}
+          on:change={() => actionManager.save()}
+          >
+          <LayoutGrid>
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+                <Title>
+                  Digital coin conflict
+                </Title>
+                <Content>
+                  <p>
+                    "{peggedDebtorName}"
+                    {#if !peggedKnownDebtor}
+                      (unconfirmed account)
+                    {/if}
+                    has declared a fixed exchange rate with
+                    "{pegDebtorName}". However, the digital coin
+                    specified for "{pegDebtorName}" does not match the
+                    already known coin for it.
+                  </p>
+                  <ul class="checklist">
+                    <li>
+                      <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>5 pegged currencies</a>
+                      use the already known coin.
+                    </li>
+                    <li>
+                      <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>1 other pegged currency</a>
+                      specifies the same digital coin as "{peggedDebtorName}".
+                    </li>
+                  </ul>
+                </Content>
+              </Paper>
+            </Cell>
 
-  <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab color="primary" on:click={confirm} extended>
-        <Label>Continue</Label>
-      </Fab>
-    </div>
-  </svelte:fragment>
-</Page>
+            <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+              <div class="radio-group" style="margin-top: -10px; word-break: break-word">
+                <FormField>
+                  <Radio bind:group={replace} value="yes" touch />
+                  <span slot="label">Replace the known coin</span>
+                </FormField>
+                <FormField>
+                  <Radio bind:group={replace} value="no" touch />
+                  <span slot="label">Do not replace the known coin</span>
+                </FormField>
+              </div>
+            </Cell>
+          </LayoutGrid>
+        </form>
+      </div>
+    </svelte:fragment>
+
+    <svelte:fragment slot="floating">
+      <div class="fab-container">
+        <Fab color="primary" on:click={submit} extended>
+          <Label>Make a decision</Label>
+        </Fab>
+      </div>
+    </svelte:fragment>
+  </Page>
+</div>

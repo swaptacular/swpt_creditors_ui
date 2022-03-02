@@ -468,6 +468,7 @@ export type ApprovePegAction =
     ignoreCoinMismatch: boolean,
     alreadyHasApproval: boolean | undefined,
     editedApproval?: boolean,
+    editedReplaceCoin?: boolean,
     accountCreationState?: AccountCreationState,
   }
 
