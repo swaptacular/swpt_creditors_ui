@@ -107,7 +107,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Replace coin">
+  <Page title="Resolve conflict">
     <svelte:fragment slot="content">
       {#if showKnownCurrencies}
         <Dialog
@@ -139,7 +139,7 @@
           aria-describedby="show-new-currencies-dialog-content"
           on:MDCDialog:closed={() => showNewCurrencies = false}
           >
-          <DialogTitle>Currencies specifying the same digital coin as "{peggedDebtorName}":</DialogTitle>
+          <DialogTitle>Currencies specifying the same coin as "{peggedDebtorName}":</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
               {#each newCurrencyList as currency }
@@ -180,24 +180,9 @@
                     already known coin for it.
                   </p>
                     <ul class="checklist">
-                      {#if newCurrencyList.length !== 0}
-                        <li>
-                          {#if newCurrencyList.length === 1}
-                            <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
-                              1 other pegged currency
-                            </a>
-                            specifies the same digital coin as "{peggedDebtorName}".
-                          {:else}
-                            <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
-                              {newCurrencyList.length} other pegged currencies
-                            </a>
-                            specify the same digital coin as "{peggedDebtorName}".
-                          {/if}
-                        </li>
-                      {/if}
                       <li>
                         {#if knownCurrencyList.length === 0}
-                          There are no pegged currencies that use the already known coin.
+                          No pegged currencies use the already known coin.
                         {:else if knownCurrencyList.length === 1}
                           <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
                             1 pegged currency
@@ -210,6 +195,21 @@
                           use the already known coin.
                         {/if}
                       </li>
+                      <li>
+                        {#if newCurrencyList.length === 0}
+                          No pegged currencies specify the same coin as "{peggedDebtorName}".
+                        {:else if newCurrencyList.length === 1}
+                          <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
+                            1 pegged currency
+                          </a>
+                          specifies the same coin as "{peggedDebtorName}".
+                        {:else}
+                          <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
+                            {newCurrencyList.length} pegged currencies
+                          </a>
+                          specify the same coin as "{peggedDebtorName}".
+                        {/if}
+                      </li>
                     </ul>
                 </Content>
               </Paper>
@@ -218,12 +218,16 @@
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <div class="radio-group" style="margin-top: -10px; word-break: break-word">
                 <FormField>
-                  <Radio bind:group={replace} value="yes" touch />
-                  <span slot="label">Replace the known coin</span>
+                  <Radio bind:group={replace} value="no" touch />
+                  <span slot="label">Use the known coin.</span>
                 </FormField>
                 <FormField>
-                  <Radio bind:group={replace} value="no" touch />
-                  <span slot="label">Do not replace the known coin</span>
+                  <Radio bind:group={replace} value="yes" touch />
+                  <span slot="label">
+                    It seems like the known coin is obsolete or
+                    fake. Replace it with the coin that
+                    "{peggedDebtorName}" specifies.
+                  </span>
                 </FormField>
               </div>
             </Cell>
@@ -235,7 +239,7 @@
     <svelte:fragment slot="floating">
       <div class="fab-container">
         <Fab color="primary" on:click={submit} extended>
-          <Label>Make a decision</Label>
+          <Label>Resolve</Label>
         </Fab>
       </div>
     </svelte:fragment>
