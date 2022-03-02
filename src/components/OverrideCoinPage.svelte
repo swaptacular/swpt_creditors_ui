@@ -60,7 +60,7 @@
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
   $: pegDebtorName = model.createAccountData.account.display.debtorName
   $: knownCurrencyList = ['xxx']
-  $: newCurrencyList = ['yyy']
+  $: newCurrencyList = ['yyy', '222']
 </script>
 
 <style>
@@ -179,16 +179,40 @@
                     specified for "{pegDebtorName}" does not match the
                     already known coin for it.
                   </p>
-                  <ul class="checklist">
-                    <li>
-                      <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>5 pegged currencies</a>
-                      use the already known coin.
-                    </li>
-                    <li>
-                      <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>1 other pegged currency</a>
-                      specifies the same digital coin as "{peggedDebtorName}".
-                    </li>
-                  </ul>
+                  {#if knownCurrencyList.length !== 0 || newCurrencyList.length !== 0}
+                    <ul class="checklist">
+                      {#if knownCurrencyList.length !== 0}
+                        <li>
+                          {#if knownCurrencyList.length === 1}
+                            <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
+                              1 pegged currency
+                            </a>
+                            uses the already known coin.
+                          {:else}
+                            <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
+                              {knownCurrencyList.length} pegged currencies
+                            </a>
+                            use the already known coin.
+                          {/if}
+                        </li>
+                      {/if}
+                      {#if newCurrencyList.length !== 0}
+                        <li>
+                          {#if newCurrencyList.length === 1}
+                            <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
+                              1 other pegged currency
+                            </a>
+                            specifies the same digital coin as "{peggedDebtorName}".
+                          {:else}
+                            <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
+                              {newCurrencyList.length} other pegged currencies
+                            </a>
+                            specify the same digital coin as "{peggedDebtorName}".
+                          {/if}
+                        </li>
+                      {/if}
+                    </ul>
+                  {/if}
                 </Content>
               </Paper>
             </Cell>
