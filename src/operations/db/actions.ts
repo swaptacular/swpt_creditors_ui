@@ -99,12 +99,13 @@ export async function removeActionRecord(actionId: number): Promise<void> {
               }
             }
             if (changes.latestDebtorInfo) {
-              // TODO: Go through the existing 'ApprovePeg' actions
-              // which want to create a peg to `action.accountUri`,
-              // and if `a.onlyTheCoinHasChanged === true &&
-              // a.peg.latestDebtorInfo.uri ===
-              // debtorData.latestDebtorInfo.uri` -- delete the
-              // action.
+              const account = await db.accounts.get(action.accountUri)
+              await db.actions.filter(a =>
+                a.actionType === 'ApprovePeg' &&
+                a.peg.debtorIdentity.uri === account?.debtor.uri &&
+                a.peg.latestDebtorInfo.uri === action.debtorData.latestDebtorInfo.uri &&
+                a.onlyTheCoinHasChanged
+              ).delete()
             }
           }
           verifyAccountKnowledge(action.accountUri)
