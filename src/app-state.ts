@@ -42,9 +42,11 @@ export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
 
 export const ACTION_DOES_NOT_EXIST_MESSAGE = 'The requested action record does not exist.'
 
-export const INVALID_COIN_MESSAGE = 'Invalid digital coin. '
+export const INVALID_SCANNED_COIN_MESSAGE = 'Invalid digital coin. '
   + 'Make sure that you are scanning the correct QR code, '
   + 'for the correct digital coin.'
+
+export const INVALID_COIN_MESSAGE = 'Invalid digital coin.'
 
 export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
   + 'it would create a circular chain of pegs.'
@@ -306,7 +308,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
+        [InvalidCoinUri, new Alert(INVALID_SCANNED_COIN_MESSAGE)],
       ],
     })
   }
@@ -774,6 +776,34 @@ export class AppState {
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [PegDisplayMismatch, new Alert(PEG_DISPLAY_MISMATCH_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  resolveCoinConflict(
+    actionManager: ActionManager<ApprovePegActionWithId>,
+    replace: boolean,
+    back?: () => void,
+  ): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      const ackAccountInfoActionId = await this.uc.resolveCoinConflict(action, replace)
+      if (this.interactionId === interactionId) {
+        this.showAction(ackAccountInfoActionId ?? action.actionId)
+      }
+    }, {
+      alerts: [
+        [DocumentFetchError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
+        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }

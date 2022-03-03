@@ -43,8 +43,7 @@
     if (editedReplaceCoin === undefined) {
       shakeForm()
     } else {
-      // TODO: implement
-      console.log(`submitted ${editedReplaceCoin}`)
+      app.resolveCoinConflict(actionManager, editedReplaceCoin)
     }
   }
 

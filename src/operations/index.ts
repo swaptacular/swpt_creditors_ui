@@ -467,6 +467,14 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  async resolveCoinConflict(action: ApprovePegActionWithId, approve: boolean): Promise<number | undefined> {
+    action
+    approve
+    console.log('resolveCoinConflict')
+    // TODO: implement
+    return undefined
+  }
+
   async validatePeggedAccount(
     action: ApprovePegActionWithId,
     pegAccountUri: string,
