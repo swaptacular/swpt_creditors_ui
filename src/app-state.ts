@@ -802,7 +802,6 @@ export class AppState {
     }, {
       alerts: [
         [DocumentFetchError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
         [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
