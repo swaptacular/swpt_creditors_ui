@@ -22,7 +22,7 @@ import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
-  getAccountRecord, getAccountObjectRecord
+  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -30,7 +30,7 @@ import {
 import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
-  obtainBaseDebtorData
+  obtainBaseDebtorData, getDataFromDebtorInfo
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -467,12 +467,19 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
-  async resolveCoinConflict(action: ApprovePegActionWithId, approve: boolean): Promise<number | undefined> {
-    action
-    approve
-    console.log('resolveCoinConflict')
-    // TODO: implement
-    return undefined
+  async resolveCoinConflict(
+    action: ApprovePegActionWithId,
+    approve: boolean,
+    pegAccountUri: string,
+  ): Promise<number | undefined> {
+    let ackAccountInfoActionId
+    if (approve) {
+      const debtorInfo = { type: 'DebtorInfo' as const, iri: action.peg.latestDebtorInfo.uri }
+      const debtorData = await getDataFromDebtorInfo(debtorInfo, action.peg.debtorIdentity.uri)
+      ackAccountInfoActionId = await verifyAccountKnowledge(pegAccountUri, debtorData, true)
+    }
+    await this.replaceActionRecord(action, { ...action, ignoreCoinMismatch: true })
+    return ackAccountInfoActionId
   }
 
   async validatePeggedAccount(

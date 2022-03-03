@@ -43,7 +43,7 @@
     if (editedReplaceCoin === undefined) {
       shakeForm()
     } else {
-      app.resolveCoinConflict(actionManager, editedReplaceCoin)
+      app.resolveCoinConflict(actionManager, editedReplaceCoin, model.createAccountData.account.uri)
     }
   }
 

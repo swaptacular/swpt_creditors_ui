@@ -783,6 +783,7 @@ export class AppState {
   resolveCoinConflict(
     actionManager: ActionManager<ApprovePegActionWithId>,
     replace: boolean,
+    pegAccountUri: string,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number
@@ -794,7 +795,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      const ackAccountInfoActionId = await this.uc.resolveCoinConflict(action, replace)
+      const ackAccountInfoActionId = await this.uc.resolveCoinConflict(action, replace, pegAccountUri)
       if (this.interactionId === interactionId) {
         this.showAction(ackAccountInfoActionId ?? action.actionId)
       }
