@@ -116,7 +116,7 @@
           aria-describedby="show-known-currencies-dialog-content"
           on:MDCDialog:closed={() => showKnownCurrencies = false}
           >
-          <DialogTitle>Currencies suggesting the already known coin:</DialogTitle>
+          <DialogTitle>Currencies using the already known coin:</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
               {#each knownCurrencyList as currency }
@@ -182,17 +182,17 @@
                     <ul class="checklist">
                       <li>
                         {#if knownCurrencyList.length === 0}
-                          No pegged currencies suggest the already known coin.
+                          No pegged currencies use the already known coin.
                         {:else if knownCurrencyList.length === 1}
                           <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
                             1 pegged currency
                           </a>
-                          suggests the already known coin.
+                          uses the already known coin.
                         {:else}
                           <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
                             {knownCurrencyList.length} pegged currencies
                           </a>
-                          suggest the already known coin.
+                          use the already known coin.
                         {/if}
                       </li>
                       <li>
