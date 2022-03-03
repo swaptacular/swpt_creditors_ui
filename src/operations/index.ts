@@ -447,6 +447,7 @@ export class UserContext {
       }
       if (approve) {
         if (!await this.validatePegAccount(action, pegAccountUri)) {
+          await this.replaceActionRecord(action, { ...action, ignoreCoinMismatch: false })
           throw new PegDisplayMismatch()
         }
         updatedExchange.peg = {
