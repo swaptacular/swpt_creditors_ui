@@ -475,6 +475,11 @@ export class UserContext {
   ): Promise<number | undefined> {
     let ackAccountInfoActionId
     if (approve) {
+      // Before we get the not-so-reliable debtor data from the coin
+      // link, we make a "last chance" attempt to obtain reliable
+      // debtor info directly from the server.
+      await this.getAccount(pegAccountUri)
+
       const debtorInfo = { type: 'DebtorInfo' as const, iri: action.peg.latestDebtorInfo.uri }
       const debtorData = await getDataFromDebtorInfo(debtorInfo, action.peg.debtorIdentity.uri)
       ackAccountInfoActionId = await verifyAccountKnowledge(pegAccountUri, debtorData, true)

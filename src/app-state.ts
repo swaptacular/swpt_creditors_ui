@@ -48,6 +48,10 @@ export const INVALID_SCANNED_COIN_MESSAGE = 'Invalid digital coin. '
 
 export const INVALID_COIN_MESSAGE = 'Invalid digital coin.'
 
+export const COIN_FETCH_ERROR_MESSAGE = 'Can not read the necessary '
+  + 'currency information from the digital coin. This is either a '
+  + 'temporary problem, or the digital coin is not correctly set up.'
+
 export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
   + 'it would create a circular chain of pegs.'
 
@@ -801,8 +805,9 @@ export class AppState {
       }
     }, {
       alerts: [
-        [DocumentFetchError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [InvalidDocument, new Alert(INVALID_COIN_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [DocumentFetchError, new Alert(COIN_FETCH_ERROR_MESSAGE)],
+        [InvalidDocument, new Alert(COIN_FETCH_ERROR_MESSAGE)],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
