@@ -116,7 +116,7 @@
           aria-describedby="show-known-currencies-dialog-content"
           on:MDCDialog:closed={() => showKnownCurrencies = false}
           >
-          <DialogTitle>Currencies using the already known coin:</DialogTitle>
+          <DialogTitle>Currencies suggesting the already known coin:</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
               {#each knownCurrencyList as currency }
@@ -139,7 +139,7 @@
           aria-describedby="show-new-currencies-dialog-content"
           on:MDCDialog:closed={() => showNewCurrencies = false}
           >
-          <DialogTitle>Currencies specifying the same coin as "{peggedDebtorName}":</DialogTitle>
+          <DialogTitle>Currencies suggesting the same coin as "{peggedDebtorName}":</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
               {#each newCurrencyList as currency }
@@ -176,38 +176,38 @@
                     {/if}
                     has declared a fixed exchange rate with
                     "{pegDebtorName}". However, the digital coin
-                    specified for "{pegDebtorName}" does not match the
+                    declared for "{pegDebtorName}" does not match the
                     already known coin for it.
                   </p>
                     <ul class="checklist">
                       <li>
                         {#if knownCurrencyList.length === 0}
-                          No pegged currencies use the already known coin.
+                          No pegged currencies suggest the already known coin.
                         {:else if knownCurrencyList.length === 1}
                           <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
                             1 pegged currency
                           </a>
-                          uses the already known coin.
+                          suggests the already known coin.
                         {:else}
                           <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
                             {knownCurrencyList.length} pegged currencies
                           </a>
-                          use the already known coin.
+                          suggest the already known coin.
                         {/if}
                       </li>
                       <li>
                         {#if newCurrencyList.length === 0}
-                          No pegged currencies specify the same coin as "{peggedDebtorName}".
+                          No pegged currencies suggest the same coin as "{peggedDebtorName}".
                         {:else if newCurrencyList.length === 1}
                           <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
                             1 pegged currency
                           </a>
-                          specifies the same coin as "{peggedDebtorName}".
+                          suggests the same coin as "{peggedDebtorName}".
                         {:else}
                           <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
                             {newCurrencyList.length} pegged currencies
                           </a>
-                          specify the same coin as "{peggedDebtorName}".
+                          suggest the same coin as "{peggedDebtorName}".
                         {/if}
                       </li>
                     </ul>
@@ -219,14 +219,14 @@
               <div class="radio-group" style="margin-top: -10px; word-break: break-word">
                 <FormField>
                   <Radio bind:group={replace} value="no" touch />
-                  <span slot="label">Use the known coin.</span>
+                  <span slot="label">Use the already known coin.</span>
                 </FormField>
                 <FormField>
                   <Radio bind:group={replace} value="yes" touch />
                   <span slot="label">
                     It seems like the known coin is obsolete or
                     fake. Replace it with the coin that
-                    "{peggedDebtorName}" specifies.
+                    "{peggedDebtorName}" declares.
                   </span>
                 </FormField>
               </div>
