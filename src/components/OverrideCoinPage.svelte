@@ -198,17 +198,17 @@
                           use the already known coin.
                         {/if}
                       </li>
-                      <li>
-                        {#if newCoinList.length === 0}
-                          No pegged currencies suggest the same coin as "{peggedDebtorName}".
-                        {:else if newCoinList.length === 1}
-                          <LinkPopup bind:show={showNewCoinList}>1 pegged currency</LinkPopup>
-                          suggests the same coin as "{peggedDebtorName}".
-                        {:else}
-                          <LinkPopup bind:show={showNewCoinList}>{newCoinList.length} pegged currencies</LinkPopup>
-                          suggest the same coin as "{peggedDebtorName}".
-                        {/if}
-                      </li>
+                      {#if newCoinList.length > 0}
+                        <li>
+                          {#if newCoinList.length === 1}
+                            <LinkPopup bind:show={showNewCoinList}>1 pegged currency</LinkPopup>
+                            suggests the same coin as "{peggedDebtorName}".
+                          {:else}
+                            <LinkPopup bind:show={showNewCoinList}>{newCoinList.length} pegged currencies</LinkPopup>
+                            suggest the same coin as "{peggedDebtorName}".
+                          {/if}
+                        </li>
+                      {/if}
                     </ul>
                 </Content>
               </Paper>
