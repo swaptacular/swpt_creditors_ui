@@ -1,5 +1,5 @@
 import type { DocumentRecord, DebtorDataSource } from './db'
-import type { BaseDebtorData } from '../debtor-info'
+import type { DebtorData, BaseDebtorData } from '../debtor-info'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
 import type { AccountV0, TransferV0, LedgerEntryV0, AccountLedgerV0, DebtorInfoV0 } from './canonical-objects'
 import { HttpError } from './server'
@@ -200,49 +200,56 @@ export function parseCoinUri(coinUri: string): [string, string] {
   return [latestDebtorInfoUri, debtorIdentityUri]
 }
 
+export async function getDataFromDebtorInfo(debtorInfo: DebtorInfoV0, debtorIdentityUri: string): Promise<DebtorData> {
+  const document = await fetchDebtorInfoDocument(debtorInfo.iri)
+  if (!await putDocumentRecord(document)) {
+    // This could happen if an extremely unusual (but still
+    // possible) race condition had occurred. In this case the
+    // user will have to simply retry the action.
+    throw new DocumentFetchError()
+  }
+  const debtorData = parseDebtorInfoDocument(document)
+  if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
+    throw new InvalidDocument('wrong SHA256 value')
+  }
+  if (debtorInfo.contentType !== undefined && document.contentType !== debtorInfo.contentType) {
+    throw new InvalidDocument('wrong content type')
+  }
+  if (debtorData.debtorIdentity.uri !== debtorIdentityUri) {
+    throw new InvalidDocument('wrong debtor identity')
+  }
+  return debtorData
+}
+
+
 /* Obtain and return debtor's data. The caller must be prepared this
  * function to throw `InvalidDocument` or `DocumentFetchError` */
 export async function obtainBaseDebtorData(
   account: AccountV0,
   latestDebtorInfoUri: string,
-  preferInfoOverKnowledge: boolean = false,
-): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource }> {
+): Promise<{ debtorData: BaseDebtorData, debtorDataSource: DebtorDataSource, hasDebtorInfo: boolean }> {
   const getFromDebtorInfo = async (debtorInfo: DebtorInfoV0): Promise<BaseDebtorData> => {
-    const document = await fetchDebtorInfoDocument(debtorInfo.iri)
-    if (!await putDocumentRecord(document)) {
-      // This could happen if an extremely unusual (but still
-      // possible) race condition had occurred. In this case the
-      // user will have to simply retry the action.
-      throw new DocumentFetchError()
-    }
-    const debtorData = parseDebtorInfoDocument(document)
-    if (debtorInfo.sha256 !== undefined && document.sha256 !== debtorInfo.sha256) {
-      throw new InvalidDocument('wrong SHA256 value')
-    }
-    if (debtorInfo.contentType !== undefined && document.contentType !== debtorInfo.contentType) {
-      throw new InvalidDocument('wrong content type')
-    }
-    if (debtorData.debtorIdentity.uri !== account.debtor.uri) {
-      throw new InvalidDocument('wrong debtor identity')
-    }
+    const debtorData = await getDataFromDebtorInfo(debtorInfo, account.debtor.uri)
     return sanitizeBaseDebtorData(debtorData)
   }
-
-  // Find the most reliable source of information about the debtor.
-  if (account.display.debtorName !== undefined && !(account.info.debtorInfo && preferInfoOverKnowledge)) {
+  const hasDebtorInfo = account.info.debtorInfo !== undefined
+  if (account.display.debtorName !== undefined) {
     return {
       debtorData: getBaseDebtorDataFromAccoutKnowledge(account.knowledge),
       debtorDataSource: 'knowledge',
+      hasDebtorInfo,
     }
-  } else if (account.info.debtorInfo) {
+  } else if (account.info.debtorInfo !== undefined) {
     return {
       debtorData: await getFromDebtorInfo(account.info.debtorInfo),
       debtorDataSource: 'info',
+      hasDebtorInfo,
     }
   } else {
     return {
       debtorData: await getFromDebtorInfo({ type: 'DebtorInfo' as const, iri: latestDebtorInfoUri }),
       debtorDataSource: 'uri',
+      hasDebtorInfo,
     }
   }
 }

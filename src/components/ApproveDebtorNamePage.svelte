@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveDebtorNameActionModel, ActionManager } from '../app-state'
+  import type { AppState, ApproveDebtorNameModel, ActionManager } from '../app-state'
   import type { ApproveDebtorNameActionWithId } from '../operations'
   import { tick } from 'svelte'
   import { amountToString } from '../format-amounts'
@@ -17,10 +17,10 @@
   import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
-  export let model: ApproveDebtorNameActionModel
+  export let model: ApproveDebtorNameModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApproveDebtorNameActionModel
+  let currentModel: ApproveDebtorNameModel
   let actionManager: ActionManager<ApproveDebtorNameActionWithId>
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false

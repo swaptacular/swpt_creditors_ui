@@ -1,4 +1,5 @@
 import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './schema'
+import type { AccountsMap } from  './accounts-map'
 
 import { Dexie } from 'dexie'
 import { db } from './schema'
@@ -20,15 +21,16 @@ export async function removeTask(taskId: number): Promise<void> {
   await db.tasks.delete(taskId)
 }
 
-export async function reviseOutdatedDebtorInfos(userId: number): Promise<void> {
-  // TODO: As an optimization here, consider not triggering updates
-  // for currencies that do not have any other currencies pegged to
-  // them. Such currencies are probably useless, and the user should
-  // not be interested in knowing their latest settings.
-
+export async function reviseOutdatedDebtorInfos(userId: number, accountsMap: AccountsMap): Promise<void> {
   const accountUris = await db.accounts.where({ userId }).primaryKeys()
   for (const accountUri of accountUris) {
-    await triggerOutdatedDebtorInfoUpdate(accountUri)
+    // NOTE: As an optimization here, we do not trigger updates for
+    // currencies that do not have any other currencies pegged to
+    // them. Such currencies are probably useless, and the user should
+    // not be interested in knowing their latest settings.
+    if (accountsMap.getRecursivelyPeggedDebtorNames(accountUri).length > 0) {
+      await triggerOutdatedDebtorInfoUpdate(accountUri)
+    }
   }
 }
 

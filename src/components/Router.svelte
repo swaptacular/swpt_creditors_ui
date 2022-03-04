@@ -1,10 +1,12 @@
 <script lang="ts">
   import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
-  import CreateAccountActionPage from './CreateAccountActionPage.svelte'
-  import AckAccountInfoActionPage from './AckAccountInfoActionPage.svelte'
-  import ApproveDebtorNameActionPage from './ApproveDebtorNameActionPage.svelte'
-  import ApproveAmountDisplayActionPage from './ApproveAmountDisplayActionPage.svelte'
+  import CreateAccountPage from './CreateAccountPage.svelte'
+  import AckAccountInfoPage from './AckAccountInfoPage.svelte'
+  import ApproveDebtorNamePage from './ApproveDebtorNamePage.svelte'
+  import ApproveAmountDisplayPage from './ApproveAmountDisplayPage.svelte'
+  import OverrideCoinPage from './OverrideCoinPage.svelte'
+  import ApprovePegPage from './ApprovePegPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
 
@@ -20,14 +22,18 @@
   }
   function getPageComponent(pageModelType: string) {
     switch (pageModelType) {
-    case 'CreateAccountActionModel':
-      return CreateAccountActionPage
-    case 'AckAccountInfoActionModel':
-      return AckAccountInfoActionPage
+    case 'CreateAccountModel':
+      return CreateAccountPage
+    case 'AckAccountInfoModel':
+      return AckAccountInfoPage
     case 'ApproveDebtorNameModel':
-      return ApproveDebtorNameActionPage
+      return ApproveDebtorNamePage
     case 'ApproveAmountDisplayModel':
-      return ApproveAmountDisplayActionPage
+      return ApproveAmountDisplayPage
+    case 'OverrideCoinModel':
+      return OverrideCoinPage
+    case 'ApprovePegModel':
+      return ApprovePegPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

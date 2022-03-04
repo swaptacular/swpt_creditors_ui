@@ -3,7 +3,7 @@ import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
-  ApproveAmountDisplayActionWithId
+  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -13,7 +13,8 @@ import { writable } from 'svelte/store'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  WrongPin, ConflictingUpdate, UnprocessableEntity
+  WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
+  ResourceNotFound, ServerSyncError
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -41,9 +42,26 @@ export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
 
 export const ACTION_DOES_NOT_EXIST_MESSAGE = 'The requested action record does not exist.'
 
-export const INVALID_COIN_MESSAGE = 'Invalid digital coin. '
+export const INVALID_SCANNED_COIN_MESSAGE = 'Invalid digital coin. '
   + 'Make sure that you are scanning the correct QR code, '
   + 'for the correct digital coin.'
+
+export const INVALID_COIN_MESSAGE = 'Invalid digital coin.'
+
+export const COIN_FETCH_ERROR_MESSAGE = 'Can not read the necessary '
+  + 'currency information from the digital coin. This is either a '
+  + 'temporary problem, or the digital coin is not correctly set up.'
+
+export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
+  + 'it would create a circular chain of pegs.'
+
+export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the issuer '
+  + 'of the pegged currency, do not match the available information about '
+  + 'the peg currency. First, make sure that you have acknowledged the latest '
+  + 'changes in the peg currency. Then, you may try to approve the peg '
+  + 'again, or decide to not approve it.'
+
+export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
@@ -75,10 +93,12 @@ export type Store<T> = {
 
 export type PageModel =
   | ActionsModel
-  | CreateAccountActionModel
-  | AckAccountInfoActionModel
-  | ApproveDebtorNameActionModel
-  | ApproveAmountDisplayActionModel
+  | CreateAccountModel
+  | AckAccountInfoModel
+  | ApproveDebtorNameModel
+  | ApproveAmountDisplayModel
+  | OverrideCoinModel
+  | ApprovePegModel
   | AccountsModel
 
 type BasePageModel = {
@@ -94,29 +114,30 @@ export type ActionsModel = BasePageModel & {
   scrollLeft?: number,
 }
 
-export type CreateAccountActionData = {
+export type CreateAccountData = {
   account: AccountV0,
   debtorData: BaseDebtorData,
   debtorDataSource: DebtorDataSource,
+  hasDebtorInfo: boolean,
   unit: string,
   amountDivisor: number,
   decimalPlaces: bigint,
   isConfirmedAccount: boolean,
 }
 
-export type CreateAccountActionModel = BasePageModel & {
-  type: 'CreateAccountActionModel',
-  action: CreateAccountActionWithId,
-  data?: CreateAccountActionData,
+export type CreateAccountModel = BasePageModel & {
+  type: 'CreateAccountModel',
+  action: CreateAccountActionWithId | ApprovePegActionWithId,
+  createAccountData?: CreateAccountData,
 }
 
-export type AckAccountInfoActionModel = BasePageModel & {
-  type: 'AckAccountInfoActionModel',
+export type AckAccountInfoModel = BasePageModel & {
+  type: 'AckAccountInfoModel',
   action: AckAccountInfoActionWithId,
   account: AccountV0,
 }
 
-export type ApproveDebtorNameActionModel = BasePageModel & {
+export type ApproveDebtorNameModel = BasePageModel & {
   type: 'ApproveDebtorNameModel',
   action: ApproveDebtorNameActionWithId,
   accountRecord: AccountRecord,
@@ -125,13 +146,29 @@ export type ApproveDebtorNameActionModel = BasePageModel & {
   availableAmount: bigint,
 }
 
-export type ApproveAmountDisplayActionModel = BasePageModel & {
+export type ApproveAmountDisplayModel = BasePageModel & {
   type: 'ApproveAmountDisplayModel',
   action: ApproveAmountDisplayActionWithId,
   accountRecord: AccountRecord,
   debtorData: BaseDebtorData,
   display: AccountDisplayRecord,
   availableAmount: bigint,
+}
+
+export type OverrideCoinModel = BasePageModel & {
+  type: 'OverrideCoinModel',
+  action: ApprovePegActionWithId,
+  createAccountData: CreateAccountData,
+  peggedAccountDisplay: AccountDisplayRecord,
+}
+
+export type ApprovePegModel = BasePageModel & {
+  type: 'ApprovePegModel',
+  action: ApprovePegActionWithId,
+  pegAccountUri: string,
+  pegDebtorName: string,
+  peggedAccountDisplay: AccountDisplayRecord,
+  exchangeLatestUpdateId: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -253,6 +290,9 @@ export class AppState {
             case 'ApproveAmountDisplay':
               this.showApproveAmountDisplayAction(action, back)
               break
+            case 'ApprovePeg':
+              this.showCreateAccountAction(action, back)
+              break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
           }
@@ -272,24 +312,69 @@ export class AppState {
       }
     }, {
       alerts: [
-        [InvalidCoinUri, new Alert(INVALID_COIN_MESSAGE)],
+        [InvalidCoinUri, new Alert(INVALID_SCANNED_COIN_MESSAGE)],
       ],
     })
   }
 
-  showCreateAccountAction(action: CreateAccountActionWithId, back?: () => void): Promise<void> {
+  showCreateAccountAction(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    back?: () => void,
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    let data: CreateAccountActionData | undefined
+    const reload = () => { this.showAction(action.actionId, back) }
 
-    const obtainData = async (): Promise<CreateAccountActionData> => {
-      const { latestDebtorInfoUri, debtorIdentityUri } = action
+    const checkAndGoCreateAccount = (createAccountData: CreateAccountData | undefined) => {
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({ type: 'CreateAccountModel', reload, goBack, action, createAccountData })
+      }
+    }
+    const checkAndGoApprovePeg = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
+      assert(action.actionType === 'ApprovePeg')
+      assert(createAccountData.account.display.debtorName !== undefined)
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'ApprovePegModel',
+          pegAccountUri: createAccountData.account.uri,
+          pegDebtorName: createAccountData.account.display.debtorName,
+          peggedAccountDisplay: peggedAccountData.display,
+          exchangeLatestUpdateId: peggedAccountData.exchange.latestUpdateId,
+          reload,
+          goBack,
+          action,
+        })
+      }
+    }
+    const checkAndGoOverrideCoin = (createAccountData: CreateAccountData, peggedAccountData: KnownAccountData) => {
+      assert(action.actionType === 'ApprovePeg')
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'OverrideCoinModel',
+          peggedAccountDisplay: peggedAccountData.display,
+          reload,
+          goBack,
+          action,
+          createAccountData,
+        })
+      }
+    }
+    const getUris = () => action.actionType === 'CreateAccount' ? action : {
+      latestDebtorInfoUri: action.peg.latestDebtorInfo.uri,
+      debtorIdentityUri: action.peg.debtorIdentity.uri,
+    }
+    const obtainCreateAccountData = async (): Promise<CreateAccountData> => {
+      const { latestDebtorInfoUri, debtorIdentityUri } = getUris()
       const account = await this.uc.ensureAccountExists(debtorIdentityUri)
       assert(account.debtor.uri === debtorIdentityUri)
-      const { debtorData, debtorDataSource } = action.state
+      const { debtorData, debtorDataSource, hasDebtorInfo } = action.accountCreationState
         ?? await this.uc.obtainBaseDebtorData(account, latestDebtorInfoUri)
-      if (debtorDataSource === 'uri' && debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri) {
+      if (
+        action.actionType === 'CreateAccount' &&
+        debtorDataSource === 'uri' &&
+        debtorData.latestDebtorInfo.uri !== latestDebtorInfoUri
+      ) {
         throw new InvalidDocument('obsolete debtor info URI')
       }
       const useDisplay = account.display.debtorName !== undefined
@@ -297,69 +382,92 @@ export class AppState {
         account,
         debtorData,
         debtorDataSource,
+        hasDebtorInfo,
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
         isConfirmedAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
-    const initializeActionState = async (): Promise<void> => {
-      assert(data !== undefined)
-      const { account, debtorData, debtorDataSource } = data
+    const initializeAccountCreationState = async (data: CreateAccountData): Promise<void> => {
+      const { account, debtorData, debtorDataSource, hasDebtorInfo } = data
       const useDisplay = account.display.debtorName !== undefined
       const tinyNegligibleAmount = calcSmallestDisplayableNumber(data.amountDivisor, data.decimalPlaces)
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
       const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
-      const state = {
+      const accountCreationState = {
         accountUri: data.account.uri,
         accountInitializationInProgress: false,
         debtorData,
         debtorDataSource,
+        hasDebtorInfo,
         tinyNegligibleAmount,
         editedDebtorName,
         editedNegligibleAmount,
       }
-      await this.uc.replaceActionRecord(action, action = { ...action, state })
+      await this.uc.replaceActionRecord(action, action = { ...action, accountCreationState })
     }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
+      let createAccountData
       try {
-        data = await obtainData()
-        if (action.state === undefined) {
-          await initializeActionState()
+        createAccountData = await obtainCreateAccountData()
+        if (action.accountCreationState === undefined) {
+          await initializeAccountCreationState(createAccountData)
         }
       } catch (e: unknown) {
         // We can ignore some of the possible errors, because the
         // action page will show an appropriate error message when
-        // `data` is undefined.
+        // `createAccountData` is undefined.
         switch (true) {
           case e instanceof InvalidCoinUri:
           case e instanceof DocumentFetchError:
           case e instanceof InvalidDocument:
-            assert(action.state === undefined)
+            assert(createAccountData === undefined)
+            assert(action.accountCreationState === undefined)
             break
           default:
             throw e
         }
       }
+      const debtorName = createAccountData?.account.display.debtorName
+      const knownPegAccount = action.actionType === 'ApprovePeg' && debtorName !== undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
-        action.state?.accountInitializationInProgress === true &&
-        data?.account.display.debtorName !== undefined
+        action.accountCreationState?.accountInitializationInProgress === true &&
+        debtorName !== undefined
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
-        checkAndGoBack()
-      } else {
-        if (this.interactionId === interactionId) {
-          this.pageModel.set({
-            type: 'CreateAccountActionModel',
-            reload: () => { this.showAction(action.actionId, back) },
-            goBack,
-            action,
-            data,
-          })
+        if (!knownPegAccount) {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+          return
         }
+      }
+      if (knownPegAccount) {
+        assert(action.actionType === 'ApprovePeg')
+        assert(createAccountData !== undefined)
+        await this.uc.replaceActionRecord(action, action = { ...action, accountCreationState: undefined })
+        const pegAccountUri = createAccountData.account.uri
+        const peggedAccountData = await this.uc.validatePeggedAccount(action, pegAccountUri, action.alreadyHasApproval)
+        if (!peggedAccountData) {
+          await this.uc.replaceActionRecord(action, null)
+          checkAndGoBack()
+          return
+        }
+        const coinMismatch = (
+          !createAccountData.hasDebtorInfo &&
+          createAccountData.debtorDataSource === 'knowledge' &&
+          createAccountData.debtorData.latestDebtorInfo.uri !== action.peg.latestDebtorInfo.uri
+        )
+        if (coinMismatch && !action.ignoreCoinMismatch) {
+          checkAndGoOverrideCoin(createAccountData, peggedAccountData)
+          return
+        }
+        checkAndGoApprovePeg(createAccountData, peggedAccountData)
+      } else {
+        checkAndGoCreateAccount(createAccountData)
       }
     }, {
       // NOTE: After the alert has been acknowledged, we want to be
@@ -375,10 +483,11 @@ export class AppState {
     })
   }
 
-  confirmCreateAccountAction(
-    actionManager: ActionManager<CreateAccountActionWithId>,
-    data: CreateAccountActionData,
+  approveAccountCreationAction(
+    actionManager: ActionManager<CreateAccountActionWithId | ApprovePegActionWithId>,
+    data: CreateAccountData,
     pin: string,
+    knownDebtor: boolean,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number
@@ -388,12 +497,12 @@ export class AppState {
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
-      assert(action.state !== undefined)
+      assert(action.accountCreationState !== undefined)
       interactionId = this.interactionId
       await saveActionPromise
       const isNewAccount = data.account.display.debtorName === undefined
       const crash_happened_at_the_end_of_previously_started_account_initialization = (
-        action.state.accountInitializationInProgress &&
+        action.accountCreationState.accountInitializationInProgress &&
         !isNewAccount
       )
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
@@ -401,14 +510,25 @@ export class AppState {
       } else if (isNewAccount) {
         await this.uc.initializeNewAccount(action, data.account, true, pin)
       } else {
-        await this.uc.confirmKnownAccount(action, data.account, pin)
+        await this.uc.confirmKnownAccount(action, data.account, pin, knownDebtor)
       }
-      checkAndGoBack()
+      if (action.actionType === 'CreateAccount') {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
+      } else {
+        // The action type is `ApprovePeg`. The peg account creation
+        // was only the first stage of the action, now the user should
+        // continue with the approval of the peg.
+        if (this.interactionId === interactionId) {
+          this.showAction(action.actionId, back)
+        }
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
       ],
@@ -431,7 +551,7 @@ export class AppState {
       ) {
         if (this.interactionId === interactionId) {
           this.pageModel.set({
-            type: 'AckAccountInfoActionModel',
+            type: 'AckAccountInfoModel',
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,
@@ -474,6 +594,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
       ],
@@ -490,7 +611,6 @@ export class AppState {
       const data = await this.uc.getKnownAccountData(action.accountUri)
       if (
         data &&
-        data.display.debtorName !== undefined &&
         data.debtorData.debtorName === action.debtorName
       ) {
         if (this.interactionId === interactionId) {
@@ -521,7 +641,7 @@ export class AppState {
     displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
-  ) {
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
@@ -539,6 +659,7 @@ export class AppState {
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
@@ -564,7 +685,6 @@ export class AppState {
       const data = await this.uc.getKnownAccountData(action.accountUri)
       if (
         data &&
-        data.display.debtorName !== undefined &&
         data.debtorData.amountDivisor === action.amountDivisor &&
         data.debtorData.decimalPlaces === action.decimalPlaces &&
         data.debtorData.unit === action.unit &&
@@ -605,7 +725,7 @@ export class AppState {
     displayLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
-  ) {
+  ): Promise<void> {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
@@ -622,7 +742,72 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  resolveApprovePegAction(
+    actionManager: ActionManager<ApprovePegActionWithId>,
+    approve: boolean,
+    pegAccountUri: string,
+    exchangeLatestUpdateId: bigint,
+    pin: string | undefined,
+    back?: () => void,
+  ): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      await this.uc.resolveApprovePegAction(action, approve, pegAccountUri, exchangeLatestUpdateId, pin)
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [CircularPegError, new Alert(CIRCULAR_PEG_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [PegDisplayMismatch, new Alert(PEG_DISPLAY_MISMATCH_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  resolveCoinConflict(
+    actionManager: ActionManager<ApprovePegActionWithId>,
+    replace: boolean,
+    pegAccountUri: string,
+    back?: () => void,
+  ): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      const ackAccountInfoActionId = await this.uc.resolveCoinConflict(action, replace, pegAccountUri)
+      if (this.interactionId === interactionId) {
+        this.showAction(ackAccountInfoActionId ?? action.actionId)
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [DocumentFetchError, new Alert(COIN_FETCH_ERROR_MESSAGE)],
+        [InvalidDocument, new Alert(COIN_FETCH_ERROR_MESSAGE)],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })

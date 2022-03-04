@@ -361,10 +361,11 @@ async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData):
           records.accountLedgerRecord,
           records.accountConfigRecord,
         ])
-        // For the account info records we must ensure that, if it is
-        // needed, a `FetchDebtorInfo` task gets created. Note that
-        // `storeAccountInfoRecord` is called only after all the other
-        // account objects have been created.
+        // For the account info records we must ensure that, if
+        // needed, a `FetchDebtorInfo` task, and an `AckAccountInfo`
+        // action get created. Note that `storeAccountInfoRecord` is
+        // called only after all the other account objects have been
+        // created.
         await storeAccountInfoRecord(records.accountInfoRecord)
 
         oldAccountUris.delete(account.uri)

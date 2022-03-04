@@ -3,7 +3,7 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
-  AccountRecord, ApprovePegActionWithId
+  AccountRecord, ApprovePegActionWithId, AccountExchangeRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
@@ -11,6 +11,7 @@ import type {
 import type { UserResetMessage } from './db-sync'
 import type { BaseDebtorData } from '../debtor-info'
 
+import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import {
@@ -21,7 +22,7 @@ import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
-  getAccountRecord, getAccountObjectRecord
+  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -29,7 +30,7 @@ import {
 import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
-  obtainBaseDebtorData
+  obtainBaseDebtorData, getDataFromDebtorInfo
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -53,6 +54,7 @@ export type KnownAccountData = {
   account: AccountRecord,
   knowledge: AccountKnowledgeRecord,
   display: AccountDisplayRecord,
+  exchange: AccountExchangeRecord
   ledger: AccountLedgerRecord,
   debtorData: BaseDebtorData,
 }
@@ -83,6 +85,22 @@ export class UnprocessableEntity extends Error {
   name = 'UnprocessableEntity'
 }
 
+export class ResourceNotFound extends Error {
+  name = 'ResourceNotFound'
+}
+
+export class CircularPegError extends Error {
+  name = 'CircularPegError'
+}
+
+export class PegDisplayMismatch extends Error {
+  name = 'PegDisplayMismatch'
+}
+
+export class ServerSyncError extends Error {
+  name = 'ServerSyncError'
+}
+
 /* Logs out the user and redirects to home, never resolves. */
 export async function logout(server = defaultServer): Promise<never> {
   return await server.logout()
@@ -107,10 +125,10 @@ export async function authorizePinReset(): Promise<void> {
 
 /* Tries to update the local database, reading the latest data from
  * the server. Any network failures will be swallowed. */
-export async function update(server: ServerSession, userId: number): Promise<void> {
+export async function update(server: ServerSession, userId: number, accountsMap: AccountsMap): Promise<void> {
   try {
     await sync(server, userId)
-    await reviseOutdatedDebtorInfosIfNecessary(userId)
+    await reviseOutdatedDebtorInfosIfNecessary(userId, accountsMap)
     await executeReadyTasks(server, userId)
 
   } catch (error: unknown) {
@@ -137,14 +155,14 @@ export async function update(server: ServerSession, userId: number): Promise<voi
   }
 }
 
-async function reviseOutdatedDebtorInfosIfNecessary(userId: number): Promise<void> {
+async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
   const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
   const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
   const latestRevisionTime = new Date(storage_value).getTime()
   const intervalMilliseconds = 1000 * 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
   const now = new Date()
   if (latestRevisionTime + intervalMilliseconds < now.getTime()) {
-    await reviseOutdatedDebtorInfos(userId)
+    await reviseOutdatedDebtorInfos(userId, accountsMap)
     console.log('Created update tasks for outdated debtor infos.')
   }
   localStorage.setItem(storage_key, now.toISOString())
@@ -290,11 +308,9 @@ export class UserContext {
     return account
   }
 
-  /* Ensures that the account (accountUri) exists,
-   * `account.display.debtorName` is not undefined, and
-   * `account.knowledge.debtorData` matches `debtorName`. Returns
-   * account's `account.display.debtorName` on success, or `undefined`
-   * on failure.
+  /* Ensures that the account (accountUri) exists, and
+   * `account.display.debtorName` is not undefined. Returns account's
+   * known data on success, or `undefined` on failure.
    */
   async getKnownAccountData(accountUri: string): Promise<KnownAccountData | undefined> {
     const account = await getAccountRecord(accountUri)
@@ -309,18 +325,28 @@ export class UserContext {
     if (knowledge === undefined) {
       return undefined
     }
+    const exchange = await getAccountObjectRecord(account.exchange.uri) as AccountExchangeRecord | undefined
+    if (exchange === undefined) {
+      return undefined
+    }
     const ledger = await getAccountObjectRecord(account.ledger.uri) as AccountLedgerRecord | undefined
     if (ledger === undefined) {
       return undefined
     }
+    assert(account.type === 'Account')
+    assert(display.type === 'AccountDisplay')
+    assert(knowledge.type === 'AccountKnowledge')
+    assert(exchange.type === 'AccountExchange')
+    assert(ledger.type === 'AccountLedger')
     const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    return { account, display, knowledge, ledger, debtorData }
+    return { account, display, knowledge, exchange, ledger, debtorData }
   }
 
   /* Changes the display name (and possibly clears `knownDebtor`) as
    * the given action states. The caller must be prepared this method
-   * to throw `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * to throw `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
+   * `ServerSessionError`. */
   async resolveApproveDebtorNameAction(
     action: ApproveDebtorNameActionWithId,
     displayLatestUpdateId: bigint,
@@ -347,8 +373,9 @@ export class UserContext {
 
   /* Changes the amount display settings as the given action
    * states. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * `RecordDoesNotExist`, `ConflictingUpdate`, `ResourceNotFound`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSyncError`,
+   * `ServerSessionError`. */
   async resolveApproveAmountDisplayAction(
     action: ApproveAmountDisplayActionWithId,
     displayLatestUpdateId: bigint,
@@ -390,6 +417,101 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Saves the the peg in account's exchange record. The caller must
+   * be prepared this method to throw `CircularPegError`,
+   * `PegDisplayMismatch`, `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`, `ServerSyncError`,
+   * `ServerSessionError`.
+   */
+  async resolveApprovePegAction(
+    action: ApprovePegActionWithId,
+    approve: boolean,
+    pegAccountUri: string,
+    exchangeLatestUpdateId: bigint,
+    pin: string | undefined,
+  ): Promise<void> {
+    await this.sync()
+    const { accountUri, peg } = action
+    const expectedApprovalValue = pin !== undefined ? undefined : approve
+    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApprovalValue)
+    if (peggedAccountData === undefined) {
+      throw new RecordDoesNotExist()
+    }
+    if (pin !== undefined) {
+      const { userId, ...exchange } = peggedAccountData.exchange  // Remove the `userId` field.
+      let updatedExchange: AccountExchangeV0 = {
+        ...exchange,
+        peg: undefined,
+        latestUpdateId: exchangeLatestUpdateId + 1n,
+        pin,
+      }
+      if (approve) {
+        if (!await this.validatePegAccount(action, pegAccountUri)) {
+          await this.replaceActionRecord(action, { ...action, ignoreCoinMismatch: false })
+          throw new PegDisplayMismatch()
+        }
+        updatedExchange.peg = {
+          type: 'CurrencyPeg',
+          account: { uri: pegAccountUri },
+          exchangeRate: peg.exchangeRate,
+        }
+        const bound = this.accountsMap.followPegChain(pegAccountUri, accountUri)
+        if (!bound) {
+          throw new RecordDoesNotExist()
+        }
+        if (bound.accountUri === accountUri) {
+          throw new CircularPegError()
+        }
+      }
+      await this.updateAccountObject(updatedExchange)
+    }
+    await this.replaceActionRecord(action, null)
+  }
+
+  async resolveCoinConflict(
+    action: ApprovePegActionWithId,
+    approve: boolean,
+    pegAccountUri: string,
+  ): Promise<number | undefined> {
+    let ackAccountInfoActionId
+    if (approve) {
+      // Before we get the not-so-reliable debtor data from the coin
+      // link, we make a "last chance" attempt to obtain reliable
+      // debtor info directly from the server.
+      await this.getAccount(pegAccountUri)
+
+      const debtorInfo = { type: 'DebtorInfo' as const, iri: action.peg.latestDebtorInfo.uri }
+      const debtorData = await getDataFromDebtorInfo(debtorInfo, action.peg.debtorIdentity.uri)
+      ackAccountInfoActionId = await verifyAccountKnowledge(pegAccountUri, debtorData, true)
+    }
+    await this.replaceActionRecord(action, { ...action, ignoreCoinMismatch: true })
+    return ackAccountInfoActionId
+  }
+
+  async validatePeggedAccount(
+    action: ApprovePegActionWithId,
+    pegAccountUri: string,
+    expectedApprovalValue?: boolean,
+  ): Promise<KnownAccountData | undefined> {
+    const peggedAccountData = await this.getKnownAccountData(action.accountUri)
+    if (peggedAccountData) {
+      const knownPeg = peggedAccountData.debtorData.peg
+      const exchangePeg = peggedAccountData.exchange.peg
+      const approval = (
+        exchangePeg !== undefined &&
+        exchangePeg.account.uri === pegAccountUri &&
+        exchangePeg.exchangeRate === action.peg.exchangeRate
+      )
+      if (
+        !equal(action.peg, knownPeg) ||
+        !(expectedApprovalValue === undefined || approval === expectedApprovalValue)
+      ) {
+        return undefined
+      }
+    }
+    return peggedAccountData
+  }
+
   /* Create an account if necessary. Return the most recent version of
    * the account. The caller must be prepared this method to throw
    * `InvalidCoinUri` or `ServerSessionError`. */
@@ -413,32 +535,25 @@ export class UserContext {
 
   /* Initialize new account's knowledge, config and display
    * records. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
   async initializeNewAccount(
-    action: CreateAccountActionWithId,
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
     account: AccountV0,
     knownDebtor: boolean,
     pin: string,
   ): Promise<void> {
     assert(action.userId === this.userId)
-    assert(action.state)
+    assert(action.accountCreationState)
     assert(account.display.debtorName === undefined)
 
     // Start the process of account initialization. If something goes
     // wrong, we will use the `accountInitializationInProgress` flag
     // to detect the problem and try to automatically recover from the
     // crash.
-    await this.replaceActionRecord(action, action = {
-      ...action,
-      state: {
-        ...action.state,
-        accountInitializationInProgress: true,
-      },
-    })
-    assert(action.state)
+    await this.setInitializationInProgressFlag(action, true)
 
-    const debtorData = action.state.debtorData
+    const debtorData = action.accountCreationState.debtorData
     const knowledge: AccountKnowledgeV0 = {
       type: account.knowledge.type,
       uri: account.knowledge.uri,
@@ -449,14 +564,14 @@ export class UserContext {
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: action.state.editedNegligibleAmount,
+      negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       latestUpdateId: account.config.latestUpdateId + 1n,
       scheduledForDeletion: false,
       pin,
     }
     const display: AccountDisplayV0 = {
       ...account.display,
-      debtorName: action.state.editedDebtorName,
+      debtorName: action.accountCreationState.editedDebtorName,
       decimalPlaces: debtorData.decimalPlaces,
       amountDivisor: debtorData.amountDivisor,
       unit: debtorData.unit,
@@ -474,48 +589,56 @@ export class UserContext {
    * corresponding create account action. The caller must be prepared
    * this method to throw `RecordDoesNotExist`.
    */
-  async finishAccountInitialization(action: CreateAccountActionWithId): Promise<void> {
-    assert(action.state)
-    assert(action.state.accountInitializationInProgress)
-    const peg = action.state.debtorData.peg
+  async finishAccountInitialization(action: CreateAccountActionWithId | ApprovePegActionWithId): Promise<void> {
+    assert(action.accountCreationState)
+    assert(action.accountCreationState.accountInitializationInProgress)
+    const peg = action.accountCreationState.debtorData.peg
     if (peg) {
       await createApproveAction({
         actionType: 'ApprovePeg',
         userId: this.userId,
         createdAt: new Date(),
-        accountUri: action.state.accountUri,
+        onlyTheCoinHasChanged: false,
+        alreadyHasApproval: false,
+        ignoreCoinMismatch: false,
+        accountUri: action.accountCreationState.accountUri,
         peg,
       }, false)
     }
-    await this.replaceActionRecord(action, null)
+    await this.setInitializationInProgressFlag(action, false)
   }
 
   /* Update the display and config records of an already initialized
    * (known) account. The caller must be prepared this method to throw
-   * `RecordDoesNotExist` or `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity` or `ServerSessionError`. */
-  async confirmKnownAccount(action: CreateAccountActionWithId, account: AccountV0, pin: string): Promise<void> {
+   * `RecordDoesNotExist`, `ConflictingUpdate`, `WrongPin`,
+   * `UnprocessableEntity`, `ServerSessionError`. */
+  async confirmKnownAccount(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    account: AccountV0,
+    pin: string,
+    knownDebtor: boolean,
+  ): Promise<void> {
     assert(action.userId === this.userId)
-    assert(action.state)
-    assert(!action.state.accountInitializationInProgress && account.display.debtorName !== undefined)
+    assert(action.accountCreationState)
+    assert(!action.accountCreationState.accountInitializationInProgress && account.display.debtorName !== undefined)
 
     const display: AccountDisplayV0 = {
       ...account.display,
-      knownDebtor: true,
-      debtorName: action.state.editedDebtorName,
+      knownDebtor: account.display.knownDebtor || knownDebtor,
+      debtorName: action.accountCreationState.editedDebtorName,
       latestUpdateId: account.display.latestUpdateId + 1n,
       pin,
     }
     const config: AccountConfigV0 = {
       ...account.config,
-      negligibleAmount: action.state.editedNegligibleAmount,
+      negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       scheduledForDeletion: false,
       latestUpdateId: account.config.latestUpdateId + 1n,
       pin,
     }
     await this.updateAccountObject(display)
     await this.updateAccountObject(config)
-    await this.replaceActionRecord(action, null)
+    await this.setInitializationInProgressFlag(action, false)
   }
 
   /* Updates account's knowledge. May throw `ConflictingUpdate` or
@@ -544,7 +667,7 @@ export class UserContext {
   }
 
   /* Remove account's exchange peg. May throw `ConflictingUpdate`,
-   * `WrongPin`, `UnprocessableEntity`, or `ServerSessionError`. */
+   * `WrongPin`, `UnprocessableEntity`, `ServerSessionError`. */
   async removePeg(exchange: AccountExchangeV0, pin: string, timeout?: number): Promise<void> {
     const updatedExchange: AccountExchangeV0 = {
       ...exchange,
@@ -589,9 +712,35 @@ export class UserContext {
     return await this.server.logout()
   }
 
-  private async removeExistingPegs(pegAccountUri: string, pin: string): Promise<void> {
-    await sync(this.server, this.userId)
+  private async validatePegAccount(action: ApprovePegActionWithId, pegAccountUri: string): Promise<boolean> {
+    const { amountDivisor, decimalPlaces, unit } = action.peg.display
+    const data = await this.getKnownAccountData(pegAccountUri)
+    return (
+      data !== undefined &&
+      action.peg.debtorIdentity.uri === data.account.debtor.uri &&
+      amountDivisor === data.display.amountDivisor &&
+      decimalPlaces === data.display.decimalPlaces &&
+      unit === data.display.unit
+    )
+  }
 
+  private async setInitializationInProgressFlag(
+    action: CreateAccountActionWithId | ApprovePegActionWithId,
+    value: boolean,
+  ): Promise<void> {
+    assert(action.accountCreationState)
+    await this.replaceActionRecord(action, {
+      ...action,
+      accountCreationState: {
+        ...action.accountCreationState,
+        accountInitializationInProgress: value,
+      },
+    })
+    action.accountCreationState.accountInitializationInProgress = value
+  }
+
+  private async removeExistingPegs(pegAccountUri: string, pin: string): Promise<void> {
+    await this.sync()
     const exchanges = this.accountsMap
       .getPeggedAccountExchangeRecords(pegAccountUri)
       .map(accountExchangeRecord => {
@@ -604,7 +753,8 @@ export class UserContext {
 
   /* Updates account's config, knowledge, display, or exchange.
    * Returns the new version. May throw `ServerSessionError`,
-   * `ConflictingUpdate`, `WrongPin` or `UnprocessableEntity`. */
+   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
+   * `ResourceNotFound`. */
   private async updateAccountObject<T extends UpdatableAccountObject>(
     obj: T,
     options: { timeout?: number, ignore404?: boolean } = {},
@@ -619,7 +769,7 @@ export class UserContext {
         switch (e.status) {
           case 404:
             if (ignore404) return
-            break
+            throw new ResourceNotFound()
           case 409:
             throw new ConflictingUpdate()
           case 403:
@@ -637,6 +787,23 @@ export class UserContext {
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {
     const response = await this.server.get(pinInfoUri) as HttpResponse<PinInfo>
     return response.data
+  }
+
+  private async sync(): Promise<void> {
+    try {
+      await sync(this.server, this.userId)
+    } catch (e: unknown) {
+      switch (true) {
+        case e instanceof AuthenticationError:
+          await this.ensureAuthenticated()
+          await sync(this.server, this.userId)
+          break
+        case e instanceof HttpError:
+          throw new ServerSyncError()
+        default:
+          throw e
+      }
+    }
   }
 }
 
@@ -684,7 +851,7 @@ export async function obtainUserContext(
 
   return new UserContext(
     server,
-    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId)),
+    updateScheduler ?? new UpdateScheduler(update.bind(undefined, server, userId, accountsMap)),
     accountsMap,
     await getWalletRecord(userId),
   )

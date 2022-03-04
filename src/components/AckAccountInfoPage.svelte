@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, AckAccountInfoActionModel } from '../app-state'
+  import type { AppState, AckAccountInfoModel } from '../app-state'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -8,12 +8,13 @@
   import Page from './Page.svelte'
   import Dialog from './Dialog.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
+  import LinkPopup from './LinkPopup.svelte'
 
   export let app: AppState
-  export let model: AckAccountInfoActionModel
+  export let model: AckAccountInfoModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: AckAccountInfoActionModel
+  let currentModel: AckAccountInfoModel
   let showSummary: boolean = false
   let showLink: boolean = false
   let openEnterPinDialog: boolean = false
@@ -196,7 +197,7 @@
                   <li>
                     {#if debtorData.summary}
                       The official currency summary, as stated by the issuer,
-                      has been <a href="/" target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
+                      has been <a href="." target="_blank" on:click|preventDefault={() => showSummary = true}>updated</a>.
                     {:else}
                       The official currency summary, stated by the issuer,
                       has been removed.
@@ -211,7 +212,7 @@
                   <li>
                     The digital coin (the QR code) of the currency has
                     changed. The new digital coin contains a different
-                    <a href="/" target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
+                    <LinkPopup bind:show={showLink}>link</LinkPopup>
                   </li>
                 {/if}
 

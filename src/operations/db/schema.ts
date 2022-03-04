@@ -166,6 +166,17 @@ export type CreateTransferAction =
     execution?: ExecutionState,
   }
 
+export type AccountCreationState = {
+  accountUri: string,
+  accountInitializationInProgress: boolean,
+  debtorData: BaseDebtorData,
+  debtorDataSource: DebtorDataSource,
+  hasDebtorInfo: boolean,
+  editedDebtorName: string,
+  editedNegligibleAmount: number,
+  tinyNegligibleAmount: number,
+}
+
 export type CreateTransferActionWithId =
   & ActionRecordWithId
   & CreateTransferAction
@@ -349,15 +360,7 @@ export type CreateAccountAction =
     actionType: 'CreateAccount',
     debtorIdentityUri: string,
     latestDebtorInfoUri: string,
-    state?: {
-      accountUri: string,
-      accountInitializationInProgress: boolean,
-      debtorData: BaseDebtorData,
-      debtorDataSource: DebtorDataSource,
-      editedDebtorName: string,
-      editedNegligibleAmount: number,
-      tinyNegligibleAmount: number,
-    }
+    accountCreationState?: AccountCreationState,
   }
 
 export type CreateAccountActionWithId =
@@ -456,11 +459,17 @@ export type CreateAccountActionWithId =
 //
 //   c) Write the new peg to `peggedAccount.AccountExchange`.
 export type ApprovePegAction =
-  & Omit<CreateAccountAction, 'actionType' | 'latestDebtorInfoUri' | 'debtorIdentityUri'>
+  & ActionData
   & {
     actionType: 'ApprovePeg',
     accountUri: string,
     peg: Peg,
+    onlyTheCoinHasChanged: boolean,
+    ignoreCoinMismatch: boolean,
+    alreadyHasApproval: boolean | undefined,
+    editedApproval?: boolean,
+    editedReplaceCoin?: boolean,
+    accountCreationState?: AccountCreationState,
   }
 
 export type ApprovePegActionWithId =

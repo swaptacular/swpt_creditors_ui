@@ -118,20 +118,28 @@ export function getBaseDebtorDataFromAccoutKnowledge(knowledge: AccountKnowledge
  * contained in `account.knowledge` and the `account.info`. If it
  * differs, creates an `AckAccountInfo` action. Does nothing if an
  * `AckAccountInfo` action for the account already exists, or the
- * account is not configured yet.
+ * account is not configured yet. Returns the action ID of the created
+ * `AckAccountInfo` action, or `undefined` if action has not been
+ * created.
  *
  * If `account.info.debtorInfo` is undefined (that is: a disconnected
  * currency), and `debtorData` is passed, it will be used instead for
  * the comparison. This is used to decect changes in disconnected
  * currencies.
  */
-export async function verifyAccountKnowledge(accountUri: string, debtorData?: DebtorData): Promise<void> {
-  await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
-    const hasAckAccountInfoAction = await db.actions
+export async function verifyAccountKnowledge(
+  accountUri: string,
+  debtorData?: DebtorData,
+  override: boolean = false
+): Promise<number | undefined> {
+  return await db.transaction('rw', [db.accounts, db.accountObjects, db.actions, db.documents], async () => {
+    const ackAccountInfoActionQuery = db.actions
       .where({ accountUri })
       .filter(action => action.actionType === 'AckAccountInfo')
-      .count() > 0
-    if (!hasAckAccountInfoAction) {
+    if (override) {
+      await ackAccountInfoActionQuery.delete()
+    }
+    if (await ackAccountInfoActionQuery.count() === 0) {
       const account = await db.accounts.get(accountUri)
       if (account) {
         const display = await db.accountObjects.get(account.display.uri)
@@ -143,12 +151,13 @@ export async function verifyAccountKnowledge(accountUri: string, debtorData?: De
             if (info && knowledge) {
               assert(info.type === 'AccountInfo')
               assert(knowledge.type === 'AccountKnowledge')
-              await addAckAccountInfoActionIfThereAreChanges(account, info, knowledge, debtorData)
+              return await addAckAccountInfoActionIfThereAreChanges(account, info, knowledge, debtorData)
             }
           }
         }
       }
     }
+    return undefined
   })
 }
 
@@ -157,8 +166,8 @@ async function addAckAccountInfoActionIfThereAreChanges(
   info: AccountInfoRecord,
   knowledge: AccountKnowledgeRecord,
   newData?: DebtorData,
-): Promise<void> {
-  await db.transaction('rw', [db.actions, db.documents], async () => {
+): Promise<number | undefined> {
+  return await db.transaction('rw', [db.actions, db.documents], async () => {
     assert(info.account.uri === knowledge.account.uri)
     assert(info.interestRate !== undefined)
     assert(info.interestRateChangedAt !== undefined)
@@ -215,7 +224,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
       changes.unit || changes.pegParams || changes.pegDebtorInfoUri || changes.otherChanges
     )
     if (thereAreChanges) {
-      await db.actions.add({
+      return await db.actions.add({
         userId: info.userId,
         actionType: 'AckAccountInfo',
         createdAt: new Date(),
@@ -230,6 +239,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         changes,
       })
     }
+    return undefined
   })
 }
 
