@@ -10,14 +10,15 @@
   import Dialog from './Dialog.svelte'
   import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
   import Page from './Page.svelte'
+  import LinkPopup from './LinkPopup.svelte'
 
   export let app: AppState
   export let model: OverrideCoinModel
   export const snackbarBottom: string = "84px"
 
   let currentModel: OverrideCoinModel
-  let showKnownCurrencies: boolean = false
-  let showNewCurrencies: boolean = false
+  let showKnownCoinList: boolean = false
+  let showNewCoinList: boolean = false
   let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
 
@@ -43,7 +44,7 @@
     if (editedReplaceCoin === undefined) {
       shakeForm()
     } else {
-      app.resolveCoinConflict(actionManager, editedReplaceCoin, model.createAccountData.account.uri)
+      app.resolveCoinConflict(actionManager, editedReplaceCoin, pegAccount.uri)
     }
   }
 
@@ -57,9 +58,16 @@
   $: peggedDisplay = model.peggedAccountDisplay
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
-  $: pegDebtorName = model.createAccountData.account.display.debtorName
-  $: knownCurrencyList = ['xxx']
-  $: newCurrencyList = ['yyy', '222']
+  $: pegAccount = model.createAccountData.account
+  $: pegDebtorName = pegAccount.display.debtorName
+  $: knownCoinList = app.accountsMap.getDebtorNamesSuggestingGivenCoin(
+    pegAccount.uri,
+    model.createAccountData.debtorData.latestDebtorInfo.uri,
+  )
+  $: newCoinList = app.accountsMap.getDebtorNamesSuggestingGivenCoin(
+    pegAccount.uri,
+    action.peg.latestDebtorInfo.uri,
+  )
 </script>
 
 <style>
@@ -108,18 +116,18 @@
 <div class="shaking-container">
   <Page title="Resolve conflict">
     <svelte:fragment slot="content">
-      {#if showKnownCurrencies}
+      {#if showKnownCoinList}
         <Dialog
           open
           aria-labelledby="show-known-currencies-dialog-title"
           aria-describedby="show-known-currencies-dialog-content"
-          on:MDCDialog:closed={() => showKnownCurrencies = false}
+          on:MDCDialog:closed={() => showKnownCoinList = false}
           >
           <DialogTitle>Currencies using the already known coin:</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
-              {#each knownCurrencyList as currency }
-                <li>{currency}</li>
+              {#each knownCoinList as currencyName }
+                <li>{currencyName}</li>
               {/each}
             </ul>
           </DialogContent>
@@ -131,18 +139,18 @@
         </Dialog>
       {/if}
 
-      {#if showNewCurrencies}
+      {#if showNewCoinList}
         <Dialog
           open
           aria-labelledby="show-new-currencies-dialog-title"
           aria-describedby="show-new-currencies-dialog-content"
-          on:MDCDialog:closed={() => showNewCurrencies = false}
+          on:MDCDialog:closed={() => showNewCoinList = false}
           >
           <DialogTitle>Currencies suggesting the same coin as "{peggedDebtorName}":</DialogTitle>
           <DialogContent style="word-break: break-word">
             <ul class="currency-list">
-              {#each newCurrencyList as currency }
-                <li>{currency}</li>
+              {#each newCoinList as currencyName }
+                <li>{currencyName}</li>
               {/each}
             </ul>
           </DialogContent>
@@ -180,32 +188,24 @@
                   </p>
                     <ul class="checklist">
                       <li>
-                        {#if knownCurrencyList.length === 0}
+                        {#if knownCoinList.length === 0}
                           No pegged currencies use the already known coin.
-                        {:else if knownCurrencyList.length === 1}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
-                            1 pegged currency
-                          </a>
+                        {:else if knownCoinList.length === 1}
+                          <LinkPopup bind:show={showKnownCoinList}>1 pegged currency</LinkPopup>
                           uses the already known coin.
                         {:else}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showKnownCurrencies = true}>
-                            {knownCurrencyList.length} pegged currencies
-                          </a>
+                          <LinkPopup bind:show={showKnownCoinList}>{knownCoinList.length} pegged currencies</LinkPopup>
                           use the already known coin.
                         {/if}
                       </li>
                       <li>
-                        {#if newCurrencyList.length === 0}
+                        {#if newCoinList.length === 0}
                           No pegged currencies suggest the same coin as "{peggedDebtorName}".
-                        {:else if newCurrencyList.length === 1}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
-                            1 pegged currency
-                          </a>
+                        {:else if newCoinList.length === 1}
+                          <LinkPopup bind:show={showNewCoinList}>1 pegged currency</LinkPopup>
                           suggests the same coin as "{peggedDebtorName}".
                         {:else}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showNewCurrencies = true}>
-                            {newCurrencyList.length} pegged currencies
-                          </a>
+                          <LinkPopup bind:show={showNewCoinList}>{newCoinList.length} pegged currencies</LinkPopup>
                           suggest the same coin as "{peggedDebtorName}".
                         {/if}
                       </li>

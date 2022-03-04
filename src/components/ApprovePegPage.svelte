@@ -12,6 +12,7 @@
   import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
+  import LinkPopup from './LinkPopup.svelte'
 
   type Display = {
     amountDivisor: number,
@@ -251,12 +252,12 @@
                     {#if currencyList.length > 0}
                       <li>
                         {#if currencyList.length === 1}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>1 other currency</a>
+                          <LinkPopup bind:show={showCurrencies}>1 other currency</LinkPopup>
                           will get indirectly pegged to
                           "{pegDebtorName}", which may change the
                           way its amounts are displayed.
                         {:else}
-                          <a  href="." target="_blank" on:click|preventDefault={() => showCurrencies = true}>{currencyList.length} other currencies</a>
+                          <LinkPopup bind:show={showCurrencies}>{currencyList.length} other currencies</LinkPopup>
                           will get indirectly pegged to
                           "{pegDebtorName}", which may change the
                           way their amounts are displayed.

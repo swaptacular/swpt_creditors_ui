@@ -8,6 +8,7 @@
   import Page from './Page.svelte'
   import Dialog from './Dialog.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
+  import LinkPopup from './LinkPopup.svelte'
 
   export let app: AppState
   export let model: AckAccountInfoModel
@@ -211,7 +212,7 @@
                   <li>
                     The digital coin (the QR code) of the currency has
                     changed. The new digital coin contains a different
-                    <a href="." target="_blank" on:click|preventDefault={() => showLink = true}>link</a>.
+                    <LinkPopup bind:show={showLink}>link</LinkPopup>
                   </li>
                 {/if}
 

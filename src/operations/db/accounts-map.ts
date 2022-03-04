@@ -140,6 +140,10 @@ export class AccountsMap {
     return [...accountUris.values()].filter(debtorName => debtorName !== undefined) as string[]
   }
 
+  getDebtorNamesSuggestingGivenCoin(pegAccountUri: string, latestDebtorInfoUri: string): string[] {
+    return []
+  }
+
   followPegChain(accountUri: string, stopAt?: string, visited: Set<string> = new Set()): PegBound | undefined {
     const account = this.getObjectByUri(accountUri)
     if (account) {
