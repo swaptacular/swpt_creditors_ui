@@ -1,6 +1,7 @@
-import type { BaseDebtorData, PegDisplay } from '../../debtor-info'
+import type { BaseDebtorData, PegDisplay, Peg } from '../../debtor-info'
 import type { AccountRecord, AccountObjectRecord, AccountExchangeRecord } from './schema'
 
+import { getBaseDebtorDataFromAccoutKnowledge } from './common'
 import { tryToParseDebtorInfoDocument } from '../../debtor-info'
 import { db } from './schema'
 
@@ -40,6 +41,13 @@ export type PegBound = {
   debtorName: string | undefined,
   exchangeRate: number,
   display: PegDisplay,
+}
+
+type RecursiveSearchNodeData = {
+  debtorName: string,
+  knownDebtor: boolean,
+  latestDebtorInfoUri: string,
+  peg?: Peg,
 }
 
 export function postAccountsMapMessage(message: AccountsMapMessage): void {
@@ -135,13 +143,18 @@ export class AccountsMap {
   }
 
   getRecursivelyPeggedDebtorNames(pegAccountUri: string): string[] {
-    let accountUris: Map<string, string | undefined> = new Map([[pegAccountUri, undefined]])
+    let accountUris: Map<string, RecursiveSearchNodeData | undefined> = new Map([[pegAccountUri, undefined]])
     while (this.addRecursivelyPeggedAccountUris(accountUris));
-    return [...accountUris.values()].filter(debtorName => debtorName !== undefined) as string[]
+    const data = [...accountUris.values()].filter(x => x !== undefined) as RecursiveSearchNodeData[]
+    return data.map(x => x.debtorName)
   }
 
   getDebtorNamesSuggestingGivenCoin(pegAccountUri: string, latestDebtorInfoUri: string): string[] {
-    return []
+    const pegNodeData = { debtorName: '', knownDebtor: false, latestDebtorInfoUri }
+    let accountUris: Map<string, RecursiveSearchNodeData | undefined> = new Map([[pegAccountUri, pegNodeData]])
+    while (this.addRecursivelyPeggedAccountUris(accountUris, true));
+    const data = [...accountUris.values()].filter(x => x !== undefined && x.knownDebtor) as RecursiveSearchNodeData[]
+    return data.map(x => x.debtorName)
   }
 
   followPegChain(accountUri: string, stopAt?: string, visited: Set<string> = new Set()): PegBound | undefined {
@@ -182,7 +195,8 @@ export class AccountsMap {
   }
 
   private addRecursivelyPeggedAccountUris(
-    accountUris: Map<string, string | undefined>,  // account URI -> debtor name
+    accountUris: Map<string, RecursiveSearchNodeData | undefined>,
+    matchCoins: boolean = false,
   ): boolean {
     let added = false
     for (const accountUri of this.accounts.values()) {
@@ -191,12 +205,31 @@ export class AccountsMap {
         assert(account && account.type === 'Account')
         const exchange = this.getObjectByUri(account.exchange.uri)
         const display = this.getObjectByUri(account.display.uri)
-        if (exchange && display) {
+        const knowledge = this.getObjectByUri(account.knowledge.uri)
+        if (exchange && display && knowledge) {
           assert(exchange.type === 'AccountExchange')
           assert(display.type === 'AccountDisplay')
+          assert(knowledge.type === 'AccountKnowledge')
           if (exchange.peg && accountUris.has(exchange.peg.account.uri)) {
-            accountUris.set(accountUri, display.debtorName)
-            added = true
+            let nodeData
+            if (display.debtorName !== undefined) {
+              const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
+              nodeData = {
+                debtorName: display.debtorName,
+                knownDebtor: display.knownDebtor,
+                latestDebtorInfoUri: debtorData.latestDebtorInfo.uri,
+                peg: debtorData.peg,
+              }
+            }
+            let pegNodeData
+            if (
+              !matchCoins ||
+              (pegNodeData = accountUris.get(exchange.peg.account.uri)) &&
+              pegNodeData.latestDebtorInfoUri === nodeData?.peg?.latestDebtorInfo.uri
+            ) {
+              accountUris.set(accountUri, nodeData)
+              added = true
+            }
           }
         }
       }
