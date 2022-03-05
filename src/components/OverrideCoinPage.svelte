@@ -189,7 +189,7 @@
                     <ul class="checklist">
                       <li>
                         {#if knownCoinList.length === 0}
-                          No pegged currencies use the already known coin.
+                          The already known coin is not used by any pegged currencies.
                         {:else if knownCoinList.length === 1}
                           <LinkPopup bind:show={showKnownCoinList}>1 pegged currency</LinkPopup>
                           uses the already known coin.
