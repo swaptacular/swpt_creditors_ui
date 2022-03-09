@@ -1003,7 +1003,7 @@ export async function createStore<T>(observable: Observable<T>): Promise<Store<T
     onError = reject
   })
   const subscription = observable.subscribe(onNext, onError, () => onError(new Error('no value')))
-  let currentValue = await valuePromise
+  let currentValue: T = await valuePromise
   subscription.unsubscribe()
 
   return {
