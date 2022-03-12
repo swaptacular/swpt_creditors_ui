@@ -173,6 +173,8 @@ export type ApprovePegModel = BasePageModel & {
 
 export type AccountsModel = BasePageModel & {
   type: 'AccountsModel',
+  scrollTop?: number,
+  scrollLeft?: number,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -821,6 +823,13 @@ export class AppState {
         goBack: () => { this.showActions() },
       })
     })
+  }
+
+  async showAccount(accountUri: string, back?: () => void): Promise<void> {
+    // TODO: Add a real implementation.
+    back
+    console.log(`Showing ${accountUri}...`)
+    return Promise.resolve()
   }
 
   initiatePayment(paymentRequestFile: Blob | Promise<Blob>): Promise<void> {

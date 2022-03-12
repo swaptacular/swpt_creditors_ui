@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountsModel } from '../app-state'
+  import { onMount } from "svelte"
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab';
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -12,35 +13,56 @@
   export let app: AppState
   export let model: AccountsModel
   export const snackbarBottom: string = '84px'
+  export const scrollElement = document.documentElement
 
   let searchText = ''
   let scanCoinDialog = false
   let accounts = [
-    {title: 'Evgeni Pandurski', confirmed: true},
-    {title: 'United States Dollar', confirmed: true},
-    {title: 'United States Dollar', confirmed: true},
-    {title: 'United States Dollar', confirmed: true},
-    {title: 'United States Dollar', confirmed: true},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: true},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
+    {uri: '1', title: 'Evgeni Pandurski', confirmed: true},
+    {uri: '2', title: 'United States Dollar', confirmed: true},
+    {uri: '3', title: 'United States Dollar', confirmed: true},
+    {uri: '', title: 'United States Dollar', confirmed: true},
+    {uri: '', title: 'United States Dollar', confirmed: true},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: true},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
+    {uri: '', title: 'United States Dollar', confirmed: false},
   ]
+
+  function showAccount(accountUri: string): void {
+    const scrollTop = scrollElement.scrollTop
+    const scrollLeft = scrollElement.scrollLeft
+    app.showAccount(accountUri, () => {
+      app.pageModel.set({ ...model, scrollTop, scrollLeft })
+    })
+  }
+
+  onMount(() => {
+    if (scrollElement) {
+      scrollElement.scrollTop = model.scrollTop ?? scrollElement.scrollTop
+      scrollElement.scrollLeft = model.scrollLeft ?? scrollElement.scrollLeft
+    }
+  })
 
   // TODO: add real implementation
   app
@@ -117,7 +139,7 @@
         {#each accounts as account }
           <Cell>
             <Card>
-              <PrimaryAction padded on:click={() => console.log('activated')}>
+              <PrimaryAction padded on:click={() => showAccount(account.uri)}>
                 <p class="name" class:confirmed={account.confirmed}>{account.title}</p>
                 <p class="amount">137.00 USD</p>
               </PrimaryAction>
