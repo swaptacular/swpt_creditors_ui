@@ -15,29 +15,30 @@
   let searchText = ''
   let scanCoinDialog = false
   let accounts = [
-    {title: 'Evgeni Pandurski'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
-    {title: 'United States Dollar'},
+    {title: 'Evgeni Pandurski', confirmed: true},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: true},
+    {title: 'United States Dollar', confirmed: true},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: true},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: false},
   ]
 
   // TODO: add real implementation
@@ -61,10 +62,17 @@
   .empty-space {
     height: 92px;
   }
+  .name {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #aaa;
+  }
+  .confirmed {
+    color: black !important;
+  }
   .amount {
     font-size: 1.1em;
     margin-top: 0.33em;
-    font-weight: bold;
     color: #555;
     text-align: right;
   }
@@ -103,7 +111,7 @@
           <Cell>
             <Card>
               <PrimaryAction padded on:click={() => console.log('activated')}>
-                <p>{account.title} and some more</p>
+                <p class="name" class:confirmed={account.confirmed}>{account.title}</p>
                 <p class="amount">100.00 USD</p>
               </PrimaryAction>
             </Card>
