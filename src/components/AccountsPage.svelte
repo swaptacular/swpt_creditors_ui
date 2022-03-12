@@ -16,8 +16,8 @@
   let scanCoinDialog = false
   let accounts = [
     {title: 'Evgeni Pandurski', confirmed: true},
-    {title: 'United States Dollar', confirmed: false},
-    {title: 'United States Dollar', confirmed: false},
+    {title: 'United States Dollar', confirmed: true},
+    {title: 'United States Dollar', confirmed: true},
     {title: 'United States Dollar', confirmed: true},
     {title: 'United States Dollar', confirmed: true},
     {title: 'United States Dollar', confirmed: false},
@@ -75,6 +75,7 @@
     margin-top: 0.33em;
     color: #555;
     text-align: right;
+    font-family: ui-monospace;
   }
   .fab-container {
     margin: 16px 16px;
@@ -112,7 +113,7 @@
             <Card>
               <PrimaryAction padded on:click={() => console.log('activated')}>
                 <p class="name" class:confirmed={account.confirmed}>{account.title}</p>
-                <p class="amount">100.00 USD</p>
+                <p class="amount">137.00 USD</p>
               </PrimaryAction>
             </Card>
           </Cell>
