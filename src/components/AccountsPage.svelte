@@ -1,21 +1,44 @@
 <script lang="ts">
   import type { AppState, AccountsModel } from '../app-state'
   import Fab, { Icon } from '@smui/fab';
-  // import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import ActionCard from './ActionCard.svelte'
-  // import Checkbox from '@smui/checkbox'
-  // import FormField from '@smui/form-field'
-  // import Paper, { Title, Content } from '@smui/paper'
+  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import Card, { PrimaryAction } from '@smui/card'
+  import Textfield from '@smui/textfield'
+  import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
-  // import Card, { Actions, Content as CardContent } from '@smui/card'
-  // import Button, { Label } from '@smui/button'
   import ScanCoinDialog from './ScanCoinDialog.svelte'
 
   export let app: AppState
   export let model: AccountsModel
   export const snackbarBottom: string = '84px'
 
+  let searchText = ''
   let scanCoinDialog = false
+  let accounts = [
+    {title: 'Evgeni Pandurski'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+    {title: 'United States Dollar'},
+  ]
 
   // TODO: add real implementation
   app
@@ -23,6 +46,28 @@
 </script>
 
 <style>
+  .search-box {
+    position: fixed;
+    width: 100%;
+    height: 55px;
+    padding: 14px 0 14px 0;
+    background-color: white;
+    border-bottom: 1px solid #ccc;
+    z-index: 1;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+  }
+  .empty-space {
+    height: 100px;
+  }
+  .amount {
+    font-size: 1.1em;
+    margin-top: 0.33em;
+    font-weight: bold;
+    color: #555;
+    text-align: right;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -36,21 +81,47 @@
 
 <Page title="Accounts">
   <svelte:fragment slot="content">
-    <p class="no-accounts">
-      Press
-      <Icon class="material-icons" style="vertical-align: middle">add</Icon>
-      to create a new account.
-    </p>
+    {#if accounts.length > 0 }
+      <div class="search-box">
+        <div style="flex-grow: 10" >
+          <Textfield
+            variant="outlined"
+            type="text"
+            style="margin-left: 16px; width: 100%"
+            label="Filter by name"
+            bind:value={searchText}
+            >
+          </Textfield>
+        </div>
+        <div style="margin: 0 4px 0 20px; flex-grow: 0" >
+          <IconButton class="material-icons" on:click={() => searchText = ''}>backspace</IconButton>
+        </div>
+      </div>
+      <div class="empty-space"></div>
+      <LayoutGrid style="word-break: break-word">
+        {#each accounts as account }
+          <Cell>
+            <Card>
+              <PrimaryAction padded on:click={() => console.log('activated')}>
+                <p>{account.title} and some more</p>
+                <p class="amount">100.00 USD</p>
+              </PrimaryAction>
+            </Card>
+          </Cell>
+        {/each}
+      </LayoutGrid>
+    {:else}
+      <p class="no-accounts">
+        Press
+        <Icon class="material-icons" style="vertical-align: middle">add</Icon>
+        to create a new account.
+      </p>
+    {/if}
 
     <ScanCoinDialog bind:open={scanCoinDialog}/>
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab on:click={() => alert('not implemented') }>
-        <Icon class="material-icons">search</Icon>
-      </Fab>
-    </div>
     <div class="fab-container">
       <Fab color="primary" on:click={() => scanCoinDialog = true} >
         <Icon class="material-icons">add</Icon>
