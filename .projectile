@@ -2,6 +2,7 @@
 -/public/build
 -/public/*.min.js
 -/public/*.min.js.map
+-/public/*.min.css
 -/.vscode
 -/coverage
 -/dist
