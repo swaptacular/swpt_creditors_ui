@@ -15,7 +15,8 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
-  let searchText: string = model.searchText ?? ''
+  let currentModel: AccountsModel
+  let searchText: string
   let scanCoinDialog = false
   let accounts = [
     {uri: '1', title: 'Evgeni Pandurski', confirmed: true},
@@ -57,16 +58,26 @@
     })
   }
 
-  onMount(() => {
+  function resetScroll() {
     if (scrollElement) {
-      scrollElement.scrollTop = model.scrollTop ?? scrollElement.scrollTop
-      scrollElement.scrollLeft = model.scrollLeft ?? scrollElement.scrollLeft
+      scrollElement.scrollTop = model.scrollTop ?? 0
+      scrollElement.scrollLeft = model.scrollLeft ?? 0
     }
+  }
+
+  onMount(() => {
+    resetScroll()
   })
 
   // TODO: add real implementation
   app
   model
+
+  $: if (currentModel !== model) {
+    currentModel = model
+    searchText = model.searchText ?? ''
+    resetScroll()
+  }
 </script>
 
 <style>
