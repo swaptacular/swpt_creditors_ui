@@ -63,7 +63,7 @@
     height: 92px;
   }
   .name {
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: bold;
     color: #aaa;
   }
@@ -71,7 +71,7 @@
     color: black !important;
   }
   .amount {
-    font-size: 1.1em;
+    font-size: 1.2em;
     margin-top: 0.33em;
     color: #555;
     text-align: right;
