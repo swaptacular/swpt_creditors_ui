@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountsModel } from '../app-state'
+  import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab';
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Card, { PrimaryAction } from '@smui/card'
@@ -48,13 +49,11 @@
 
 <style>
   .search-box {
-    position: fixed;
     width: 100%;
-    height: 55px;
-    padding: 14px 0 14px 0;
+    height: 100%;
+    color: black;
     background-color: #f4f4f4;
     border-bottom: 1px solid #ccc;
-    z-index: 1;
     display: flex;
     justify-content: left;
     align-items: center;
@@ -63,7 +62,7 @@
     height: 92px;
   }
   .name {
-    font-size: 1.2em;
+    font-size: 1.25em;
     font-weight: bold;
     color: #aaa;
   }
@@ -71,7 +70,7 @@
     color: black !important;
   }
   .amount {
-    font-size: 1.2em;
+    font-size: 1.25em;
     margin-top: 0.33em;
     color: #555;
     text-align: right;
@@ -89,23 +88,30 @@
 </style>
 
 <Page title="Accounts">
+  <svelte:fragment slot="app-bar">
+    {#if accounts.length > 0 }
+      <Row style="height: 83px">
+        <div class="search-box">
+          <div style="padding-left: 16px; flex-grow: 1" >
+            <Textfield
+              variant="outlined"
+              type="text"
+              style="width: 100%"
+              label="Filter by name"
+              bind:value={searchText}
+              >
+            </Textfield>
+          </div>
+          <div style="padding: 4px; flex-grow: 0" >
+            <IconButton class="material-icons" on:click={() => searchText = ''}>backspace</IconButton>
+          </div>
+        </div>
+      </Row>
+    {/if}
+  </svelte:fragment>
+
   <svelte:fragment slot="content">
     {#if accounts.length > 0 }
-      <div class="search-box">
-        <div style="flex-grow: 10" >
-          <Textfield
-            variant="outlined"
-            type="text"
-            style="margin-left: 16px; width: 100%"
-            label="Filter by name"
-            bind:value={searchText}
-            >
-          </Textfield>
-        </div>
-        <div style="margin: 0 4px 0 20px; flex-grow: 0" >
-          <IconButton class="material-icons" on:click={() => searchText = ''}>backspace</IconButton>
-        </div>
-      </div>
       <div class="empty-space"></div>
       <LayoutGrid style="word-break: break-word">
         {#each accounts as account }

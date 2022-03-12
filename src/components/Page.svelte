@@ -85,6 +85,7 @@
         </IconButton>
       </Section>
     </Row>
+    <slot name="app-bar"></slot>
   </TopAppBar>
 
   <AutoAdjust {topAppBar}>
