@@ -173,6 +173,7 @@ export type ApprovePegModel = BasePageModel & {
 
 export type AccountsModel = BasePageModel & {
   type: 'AccountsModel',
+  searchText?: string,
   scrollTop?: number,
   scrollLeft?: number,
 }

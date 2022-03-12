@@ -15,7 +15,7 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
-  let searchText = ''
+  let searchText: string = model.searchText ?? ''
   let scanCoinDialog = false
   let accounts = [
     {uri: '1', title: 'Evgeni Pandurski', confirmed: true},
@@ -53,7 +53,7 @@
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
     app.showAccount(accountUri, () => {
-      app.pageModel.set({ ...model, scrollTop, scrollLeft })
+      app.pageModel.set({ ...model, searchText, scrollTop, scrollLeft })
     })
   }
 
