@@ -51,7 +51,7 @@
     width: 100%;
     height: 55px;
     padding: 14px 0 14px 0;
-    background-color: white;
+    background-color: #f4f4f4;
     border-bottom: 1px solid #ccc;
     z-index: 1;
     display: flex;
@@ -59,7 +59,7 @@
     align-items: center;
   }
   .empty-space {
-    height: 100px;
+    height: 92px;
   }
   .amount {
     font-size: 1.1em;
