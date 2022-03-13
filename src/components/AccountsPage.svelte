@@ -43,10 +43,6 @@
     }
   }
 
-  onMount(() => {
-    resetScroll(model.scrollTop, model.scrollLeft)
-  })
-
   function applyFilter(accounts: AccountData[], filter: string): AccountData[] {
     const words = filter.split(/\s+/u).filter(word => word.length > 0)
     const regExps = words.map(word => new RegExp(`${word}`, 'ui'))
@@ -68,6 +64,10 @@
       }, 1000)
     }
   }
+
+  onMount(() => {
+    resetScroll(model.scrollTop, model.scrollLeft)
+  })
 
   $: if (currentModel !== model) {
     currentModel = model
