@@ -69,9 +69,6 @@
     }
   }
 
-  // TODO: add real implementation
-  app
-
   $: if (currentModel !== model) {
     currentModel = model
     scanCoinDialog = false
