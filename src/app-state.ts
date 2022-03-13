@@ -819,11 +819,18 @@ export class AppState {
 
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
+      const accounts = this.accountsMap
+        .getAccountsDataForDisplay()
+        .sort((a, b) => {
+          const aa = (a.display.debtorName ?? '').toLowerCase()
+          const bb = (b.display.debtorName ?? '').toLowerCase()
+          return aa > bb ? 1 : (aa === bb ? 0 : -1)
+        })
       this.pageModel.set({
         type: 'AccountsModel',
         reload: () => { this.showAccounts() },
         goBack: () => { this.showActions() },
-        accounts: this.accountsMap.getAccountsDataForDisplay(),
+        accounts,
       })
     })
   }
