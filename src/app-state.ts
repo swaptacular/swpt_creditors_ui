@@ -3,7 +3,7 @@ import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
-  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData
+  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -173,6 +173,7 @@ export type ApprovePegModel = BasePageModel & {
 
 export type AccountsModel = BasePageModel & {
   type: 'AccountsModel',
+  accounts: AccountDataForDisplay[],
   searchText?: string,
   scrollTop?: number,
   scrollLeft?: number,
@@ -822,6 +823,7 @@ export class AppState {
         type: 'AccountsModel',
         reload: () => { this.showAccounts() },
         goBack: () => { this.showActions() },
+        accounts: this.accountsMap.getAccountsDataForDisplay(),
       })
     })
   }

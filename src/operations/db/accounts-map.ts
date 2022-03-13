@@ -1,5 +1,7 @@
 import type { BaseDebtorData, PegDisplay, Peg } from '../../debtor-info'
-import type { AccountRecord, AccountObjectRecord, AccountExchangeRecord } from './schema'
+import type {
+  AccountRecord, AccountObjectRecord, AccountExchangeRecord, AccountDisplayRecord, AccountLedgerRecord
+} from './schema'
 
 import { getBaseDebtorDataFromAccoutKnowledge } from './common'
 import { tryToParseDebtorInfoDocument } from '../../debtor-info'
@@ -41,6 +43,11 @@ export type PegBound = {
   debtorName: string | undefined,
   exchangeRate: number,
   display: PegDisplay,
+}
+
+export type AccountDataForDisplay = {
+  display: AccountDisplayRecord,
+  amount: bigint,
 }
 
 type RecursiveSearchNodeData = {
@@ -192,6 +199,26 @@ export class AccountsMap {
       }
     }
     return undefined  // Can not find a proper account corresponding to `accountUri`.
+  }
+
+  getAccountsDataForDisplay(): AccountDataForDisplay[] {
+    const accountUris = [...this.accounts.values()]
+    const accounts = accountUris.map(uri => this.objects.get(uri)).filter(a => a !== undefined) as AccountRecord[]
+    assert(accounts.every(x => x.type === 'Account'))
+    const displays = accounts.map(x => this.objects.get(x.display.uri)) as (AccountDisplayRecord | undefined)[]
+    assert(displays.every(x => x === undefined || x.type === 'AccountDisplay'))
+    const ledgers = accounts.map(x => this.objects.get(x.ledger.uri)) as (AccountLedgerRecord | undefined)[]
+    assert(ledgers.every(x => x === undefined || x.type === 'AccountLedger'))
+    const data = accounts.map((_, index) => {
+      const display = displays[index]
+      const ledger = ledgers[index]
+      if (display && display.debtorName !== undefined && ledger) {
+        return { display, amount: ledger.principal}
+      } else {
+        return undefined
+      }
+    })
+    return data.filter(x => x !== undefined) as AccountDataForDisplay[]
   }
 
   private addRecursivelyPeggedAccountUris(

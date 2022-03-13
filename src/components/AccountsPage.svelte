@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountsModel } from '../app-state'
+  import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab';
@@ -15,16 +16,9 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
-  type AccountData = {
-    uri: string,
-    title: string,
-    confirmed: boolean,
-  }
-
   let currentModel: AccountsModel
   let scanCoinDialog: boolean
   let pendingFilterChange: boolean
-  let allAccounts: AccountData[]
   let searchText: string
   let filter: string
 
@@ -43,10 +37,10 @@
     }
   }
 
-  function applyFilter(accounts: AccountData[], filter: string): AccountData[] {
+  function applyFilter(accounts: AccountsModel['accounts'], filter: string): AccountsModel['accounts'] {
     const words = filter.split(/\s+/u).filter(word => word.length > 0)
     const regExps = words.map(word => new RegExp(`${word}`, 'ui'))
-    return accounts.filter(account => regExps.every(re => re.test(account.title)))
+    return accounts.filter(account => regExps.every(re => re.test(account.display.debtorName ?? '')))
   }
 
   function clearFilter() {
@@ -73,42 +67,11 @@
     currentModel = model
     scanCoinDialog = false
     pendingFilterChange = false
-    allAccounts = [
-      {uri: '1', title: 'Evgeni Pandurski', confirmed: true},
-      {uri: '2', title: 'United States Dollar', confirmed: true},
-      {uri: '3', title: 'United States Dollar', confirmed: true},
-      {uri: '', title: 'United States Dollar', confirmed: true},
-      {uri: '', title: 'United States Dollar', confirmed: true},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: true},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-      {uri: '', title: 'United States Dollar', confirmed: false},
-    ]
     filter = searchText = model.searchText ?? ''
     resetScroll(model.scrollTop, model.scrollLeft)
   }
-  $: hasAccounts = allAccounts.length > 0
-  $: shownAccounts = applyFilter(allAccounts, filter)
+  $: hasAccounts = model.accounts.length > 0
+  $: shownAccounts = applyFilter(model.accounts, filter)
 </script>
 
 <style>
@@ -185,9 +148,14 @@
           {#each shownAccounts as account }
             <Cell>
               <Card>
-                <PrimaryAction padded on:click={() => showAccount(account.uri)}>
-                  <p class="name" class:confirmed={account.confirmed}>{account.title}</p>
-                  <p class="amount">137.00 USD</p>
+                <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
+                  <p class="name" class:confirmed={account.display.knownDebtor}>
+                    {account.display.debtorName}
+                  </p>
+                  <p class="amount">
+                    {amountToString(account.amount, account.display.amountDivisor, account.display.decimalPlaces)}
+                    {account.display.unit}
+                  </p>
                 </PrimaryAction>
               </Card>
             </Cell>
