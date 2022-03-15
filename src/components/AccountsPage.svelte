@@ -39,7 +39,7 @@
 
   function applyFilter(accounts: AccountsModel['accounts'], filter: string): AccountsModel['accounts'] {
     const words = filter.split(/\s+/u).filter(word => word.length > 0)
-    const regExps = words.map(word => new RegExp(`${word}`, 'ui'))
+    const regExps = words.map(word => new RegExp(`[\\s^]${word}`, 'ui'))
     return accounts.filter(account => regExps.every(re => re.test(account.display.debtorName ?? '')))
   }
 
