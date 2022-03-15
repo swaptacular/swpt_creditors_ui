@@ -48,6 +48,7 @@ export type PegBound = {
 export type AccountDataForDisplay = {
   display: AccountDisplayRecord,
   amount: bigint,
+  pegBounds: PegBound[],
 }
 
 type RecursiveSearchNodeData = {
@@ -164,7 +165,7 @@ export class AccountsMap {
     return data.map(x => x.debtorName)
   }
 
-  followPegChain(accountUri: string, stopAt?: string, visited: Set<string> = new Set()): PegBound | undefined {
+  followPegChain(accountUri: string, stopAt?: string, visited: Set<string> = new Set()): PegBound[] {
     const account = this.getObjectByUri(accountUri)
     if (account) {
       assert(account.type === 'Account')
@@ -174,31 +175,29 @@ export class AccountsMap {
         assert(exchange.type === 'AccountExchange')
         assert(display.type === 'AccountDisplay')
         visited.add(accountUri)
-        let bound
-        if (
-          accountUri === stopAt ||
-          !exchange.peg ||
-          visited.has(exchange.peg.account.uri) ||
-          !(bound = this.followPegChain(exchange.peg.account.uri, stopAt, visited))
-        ) {
-          const { debtorName, amountDivisor, decimalPlaces, unit } = display
-          return {
-            accountUri,
-            debtorName,
-            exchangeRate: 1,
-            display: {
-              type: 'PegDisplay',
-              unit: unit ?? "\u00a4",
-              amountDivisor,
-              decimalPlaces,
-            },
+        let bounds: PegBound[] = []
+        if (accountUri !== stopAt && exchange.peg && !visited.has(exchange.peg.account.uri)) {
+          bounds = this.followPegChain(exchange.peg.account.uri, stopAt, visited)
+          for (const bound of bounds) {
+            bound.exchangeRate *= exchange.peg.exchangeRate
           }
         }
-        bound.exchangeRate *= exchange.peg.exchangeRate
-        return bound
+        const { debtorName, amountDivisor, decimalPlaces, unit } = display
+        const identity = {
+          accountUri,
+          debtorName,
+          exchangeRate: 1,
+          display: {
+            type: 'PegDisplay' as const,
+            unit: unit ?? "\u00a4",
+            amountDivisor,
+            decimalPlaces,
+          },
+        }
+        return [identity, ...bounds]
       }
     }
-    return undefined  // Can not find a proper account corresponding to `accountUri`.
+    return []  // Can not find a proper account corresponding to `accountUri`.
   }
 
   getAccountsDataForDisplay(): AccountDataForDisplay[] {
@@ -209,11 +208,12 @@ export class AccountsMap {
     assert(displays.every(x => x === undefined || x.type === 'AccountDisplay'))
     const ledgers = accounts.map(x => this.objects.get(x.ledger.uri)) as (AccountLedgerRecord | undefined)[]
     assert(ledgers.every(x => x === undefined || x.type === 'AccountLedger'))
-    const data = accounts.map((_, index) => {
+    const data: (AccountDataForDisplay | undefined)[] = accounts.map((account, index) => {
       const display = displays[index]
       const ledger = ledgers[index]
-      if (display && display.debtorName !== undefined && ledger) {
-        return { display, amount: ledger.principal}
+      const pegBounds = this.followPegChain(account.uri)
+      if (display && display.debtorName !== undefined && ledger && pegBounds.length > 0) {
+        return { display, pegBounds, amount: ledger.principal }
       } else {
         return undefined
       }

@@ -456,7 +456,8 @@ export class UserContext {
           account: { uri: pegAccountUri },
           exchangeRate: peg.exchangeRate,
         }
-        const bound = this.accountsMap.followPegChain(pegAccountUri, accountUri)
+        const bounds = this.accountsMap.followPegChain(pegAccountUri, accountUri)
+        const bound = bounds.at(-1)
         if (!bound) {
           throw new RecordDoesNotExist()
         }

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountsModel } from '../app-state'
+  import type { AccountDataForDisplay } from '../operations'
   import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import { Row } from '@smui/top-app-bar'
@@ -57,6 +58,16 @@
         pendingFilterChange = false
       }, 1000)
     }
+  }
+
+  function calcDisplayAmount(accountData: AccountDataForDisplay): string {
+    const pegBound = accountData.pegBounds.at(-1)
+    assert(pegBound !== undefined)
+    const amount = Number(accountData.amount) * pegBound.exchangeRate
+    const { amountDivisor, decimalPlaces } = pegBound.display
+    const unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+    const unit = pegBound.display.unit
+    return `${unitAmount} ${unit}`
   }
 
   onMount(() => {
@@ -149,13 +160,8 @@
             <Cell>
               <Card>
                 <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
-                  <p class="name" class:confirmed={account.display.knownDebtor}>
-                    {account.display.debtorName}
-                  </p>
-                  <p class="amount">
-                    {amountToString(account.amount, account.display.amountDivisor, account.display.decimalPlaces)}
-                    {account.display.unit}
-                  </p>
+                  <p class="name" class:confirmed={account.display.knownDebtor}>{account.display.debtorName}</p>
+                  <p class="amount">{calcDisplayAmount(account)}</p>
                 </PrimaryAction>
               </Card>
             </Cell>

@@ -63,7 +63,8 @@
   }
 
   function calcFinalUnitAmount(accountUri: string, amount: number): string | undefined {
-    const bound = app.accountsMap.followPegChain(accountUri)
+    const bounds = app.accountsMap.followPegChain(accountUri)
+    const bound = bounds.at(-1)
     if (bound && bound.accountUri !== accountUri) {
       const finalUnitAmount = amountToString(
         BigInt(Math.min(amount * bound.exchangeRate, MAX_AMOUNT)),
