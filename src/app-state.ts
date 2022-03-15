@@ -523,7 +523,9 @@ export class AppState {
       }
       if (action.actionType === 'CreateAccount') {
         await this.uc.replaceActionRecord(action, null)
-        checkAndGoBack()
+        if (this.interactionId === interactionId) {
+          this.showAccount(data.account.uri, () => { this.showActions() })
+        }
       } else {
         // The action type is `ApprovePeg`. The peg account creation
         // was only the first stage of the action, now the user should
