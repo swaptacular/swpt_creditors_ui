@@ -819,12 +819,16 @@ export class AppState {
 
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
-      this.pageModel.set({
-        type: 'AccountsModel',
-        reload: () => { this.showAccounts() },
-        goBack: () => { this.showActions() },
-        accounts: await this.uc.getAccountsDataForDisplay(),
-      })
+      const interactionId = this.interactionId
+      const accounts = await this.uc.getAccountsDataForDisplay()
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'AccountsModel',
+          reload: () => { this.showAccounts() },
+          goBack: () => { this.showActions() },
+          accounts,
+        })
+      }
     })
   }
 
