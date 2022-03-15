@@ -100,6 +100,7 @@ export type PageModel =
   | OverrideCoinModel
   | ApprovePegModel
   | AccountsModel
+  | AccountModel
 
 type BasePageModel = {
   type: string,
@@ -177,6 +178,10 @@ export type AccountsModel = BasePageModel & {
   searchText?: string,
   scrollTop?: number,
   scrollLeft?: number,
+}
+
+export type AccountModel = BasePageModel & {
+  type: 'AccountModel',
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -834,9 +839,18 @@ export class AppState {
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
     // TODO: Add a real implementation.
-    back
-    console.log(`Showing ${accountUri}...`)
-    return Promise.resolve()
+
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const goBack = back ?? (() => { this.showAccounts() })
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'AccountModel',
+          reload: () => { this.showAccount(accountUri, back) },
+          goBack,
+        })
+      }
+    })
   }
 
   initiatePayment(paymentRequestFile: Blob | Promise<Blob>): Promise<void> {

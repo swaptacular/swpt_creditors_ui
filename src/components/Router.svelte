@@ -9,6 +9,7 @@
   import ApprovePegPage from './ApprovePegPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
+  import AccountPage from './AccountPage.svelte'
 
   export let app: AppState
   export let snackbarBottom: string = '0px'
@@ -38,6 +39,8 @@
       return ActionsPage
     case 'AccountsModel':
       return AccountsPage
+    case 'AccountModel':
+      return AccountPage
     default:
       throw new Error('unknown page model type')
     }
