@@ -136,6 +136,11 @@ export type DocumentRecord =
   & ResourceReference
   & DocumentWithHash
 
+export type AccountSortPriority =
+  & ResourceReference
+  & UserReference
+  & { priority: number }
+
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
@@ -606,6 +611,7 @@ class CreditorsDb extends Dexie {
   walletObjects: Dexie.Table<WalletObjectRecord, string>
   accounts: Dexie.Table<AccountRecord, string>
   accountObjects: Dexie.Table<AccountObjectRecord, string>
+  accountPriorities: Dexie.Table<AccountSortPriority, string>
   committedTransfers: Dexie.Table<CommittedTransferRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
   ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
@@ -621,6 +627,7 @@ class CreditorsDb extends Dexie {
       walletObjects: 'uri,userId',
       accounts: 'uri,userId',
       accountObjects: 'uri,userId,account.uri',
+      accountPriorities: 'uri,userId',
 
       // Committed transfers are objects that belong to a specific
       // account, but we will have lots of them, and in order to keep
@@ -648,6 +655,7 @@ class CreditorsDb extends Dexie {
     this.walletObjects = this.table('walletObjects')
     this.accounts = this.table('accounts')
     this.accountObjects = this.table('accountObjects')
+    this.accountPriorities = this.table('accountPriorities')
     this.committedTransfers = this.table('committedTransfers')
     this.transfers = this.table('transfers')
     this.ledgerEntries = this.table('ledgerEntries')
@@ -662,6 +670,7 @@ class CreditorsDb extends Dexie {
       this.walletObjects,
       this.accounts,
       this.accountObjects,
+      this.accountPriorities,
       this.committedTransfers,
       this.transfers,
       this.ledgerEntries,

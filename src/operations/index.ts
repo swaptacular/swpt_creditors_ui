@@ -22,7 +22,7 @@ import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
-  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge
+  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -711,6 +711,29 @@ export class UserContext {
 
   async logout(): Promise<never> {
     return await this.server.logout()
+  }
+
+  async getAccountsDataForDisplay(): Promise<AccountDataForDisplay[]> {
+    const priorities = await getAccountSortPriorities(this.userId)
+    const prioritiesMap = new Map(priorities.map(p => [p.uri, p.priority]))
+    return this.accountsMap
+      .getAccountsDataForDisplay()
+      .sort((a, b) => {
+        // Sort by priority. If priorities are equal, sort by debtor name.
+        const displayA = a.display
+        const displayB = b.display
+        const priorityA = prioritiesMap.get(displayA.account.uri) ?? 0
+        const priorityB = prioritiesMap.get(displayB.account.uri) ?? 0
+        if (priorityA > priorityB) {
+          return 1
+        }
+        if (priorityA < priorityB) {
+          return -1
+        }
+        const nameA = (displayA.debtorName ?? '').toLowerCase()
+        const nameB = (displayB.debtorName ?? '').toLowerCase()
+        return nameA > nameB ? 1 : (nameA === nameB ? 0 : -1)
+      })
   }
 
   private async validatePegAccount(action: ApprovePegActionWithId, pegAccountUri: string): Promise<boolean> {

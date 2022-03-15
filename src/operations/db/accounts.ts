@@ -1,4 +1,4 @@
-import type { CommittedTransferRecord, LedgerEntryRecord } from './schema'
+import type { CommittedTransferRecord, LedgerEntryRecord, AccountSortPriority } from './schema'
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
@@ -160,4 +160,12 @@ export async function storeAccountInfoRecord(record: AccountInfoRecord): Promise
     await db.accountObjects.put(record)
     await verifyAccountKnowledge(accountUri)
   })
+}
+
+export async function getAccountSortPriorities(userId: number): Promise<AccountSortPriority[]> {
+  return await db.accountPriorities.where({ userId }).toArray()
+}
+
+export async function setAccountSortPriority(userId: number, uri: string, priority: number): Promise<void> {
+  await db.accountPriorities.put({ userId, uri, priority })
 }
