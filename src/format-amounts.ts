@@ -23,7 +23,11 @@ export function stringToAmount(s: string | number, amountDivisor: number): bigin
   return amount
 }
 
-export function amountToString(value: bigint, amountDivisor: number, decimalPlaces: number | bigint): string {
+export function amountToString(
+  value: number | bigint,
+  amountDivisor: number,
+  decimalPlaces: number | bigint,
+): string {
   amountDivisor = limitAmountDivisor(amountDivisor)
   if (typeof decimalPlaces === 'bigint') {
     decimalPlaces = Number(decimalPlaces)
