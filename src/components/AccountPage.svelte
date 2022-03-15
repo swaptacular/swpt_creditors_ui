@@ -3,6 +3,7 @@
   // import type { AccountDataForDisplay } from '../operations'
   // import { amountToString } from '../format-amounts'
   // import { onMount } from "svelte"
+  import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab';
@@ -16,14 +17,27 @@
   export let app: AppState
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
+  export const scrollElement = document.documentElement
 
   let currentModel: AccountModel
 
   // TODO: add implementation.
   app
   
+  function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
+    if (scrollElement) {
+      scrollElement.scrollTop = scrollTop
+      scrollElement.scrollLeft = scrollLeft
+    }
+  }
+
+  onMount(() => {
+    resetScroll(model.scrollTop, model.scrollLeft)
+  })
+
   $: if (currentModel !== model) {
     currentModel = model
+    resetScroll(model.scrollTop, model.scrollLeft)
   }
 </script>
 
@@ -56,16 +70,40 @@
     <Row style="height: 64px">
       <div class="buttons-box">
         <div class="icon-container">
-          <IconButton class="material-icons" disabled on:click={() => undefined}>account_balance</IconButton>
+          <IconButton
+            class="material-icons"
+            disabled={model.tab === 'account'}
+            on:click={() => model.tab = 'account'}
+            >
+            account_balance
+          </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton class="material-icons" on:click={() => undefined}>qr_code_2</IconButton>
+          <IconButton
+            class="material-icons"
+            disabled={model.tab === 'coin'}
+            on:click={() => model.tab = 'coin'}
+            >
+            qr_code_2
+          </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton class="material-icons" on:click={() => undefined}>history</IconButton>
+          <IconButton
+            class="material-icons"
+            disabled={model.tab === 'ledger'}
+            on:click={() => model.tab = 'ledger'}
+            >
+            history
+          </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton class="material-icons" on:click={() => undefined}>sort</IconButton>
+          <IconButton
+            class="material-icons"
+            disabled={model.tab === 'sort'}
+            on:click={() => model.tab = 'sort'}
+            >
+            sort
+          </IconButton>
         </div>
       </div>
     </Row>

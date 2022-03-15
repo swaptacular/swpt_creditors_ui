@@ -182,6 +182,10 @@ export type AccountsModel = BasePageModel & {
 
 export type AccountModel = BasePageModel & {
   type: 'AccountModel',
+  tab: 'account' | 'coin' | 'ledger' | 'sort',
+  scrollTop?: number,
+  scrollLeft?: number,
+  // TODO: Add `transfers`, `account`,  fileds.
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -849,6 +853,7 @@ export class AppState {
         this.pageModel.set({
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
+          tab: 'account',
           goBack,
         })
       }
