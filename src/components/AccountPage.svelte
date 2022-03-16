@@ -9,7 +9,9 @@
   import Tooltip, { Wrapper } from '@smui/tooltip'
   import Chip, { Text } from '@smui/chips'
   import { Row } from '@smui/top-app-bar'
-  import Fab, { Icon } from '@smui/fab';
+  import Fab, { Icon } from '@smui/fab'
+  import Slider from '@smui/slider'
+  import FormField from '@smui/form-field'
   // import LayoutGrid, { Cell } from '@smui/layout-grid'
   // import Card, { PrimaryAction } from '@smui/card'
   // import Textfield from '@smui/textfield'
@@ -27,6 +29,7 @@
   let currentModel: AccountModel
   let configError: string = 'CONFIGURATION_IS_NOT_EFFECTUAL'
   let dataUrl: string
+  let sortRank: number = 0
 
   // TODO: add implementation.
   app
@@ -100,7 +103,7 @@
   }
 </style>
 
-<Page title="Evgeni Pandurski">
+<Page title="Account">
   <svelte:fragment slot="app-bar">
     <Row style="height: 64px">
       <div class="buttons-box">
@@ -221,19 +224,43 @@
       </div>
       <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>download</a>
       <div class="text-container">
-        <Paper elevation={8} style="margin: 0 16px 16px 16px; max-width: 600px; word-break: break-word">
+        <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
           <Title>Digital coin for "Evgeni Pandurski"</Title>
           <Content>
             <a href="." target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
               The image above
             </a>
             (an ordinary QR code, indeed) uniquely identifies the
-            digital currency. Other people may want to scan this image
-            with their mobile devices, so that they can use the
-            currency too.
+            account's digital currency. Other people may want to scan
+            this image with their mobile devices, so that they can use
+            the currency too.
           </Content>
         </Paper>
       </div>
+    {:else if model.tab === 'sort'}
+      <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+        <Title>Sort rank for "Evgeni Pandurski"</Title>
+        <Content>
+          To select this account more easily among other accounts, you
+          may increase its sort rank. By doing so, you will push this
+          account closer to the top of the list.
+        </Content>
+      </Paper>
+      <FormField align="center" style="display: flex; margin: 16px">
+        <Slider
+          style="flex-grow: 1"
+          min={0}
+          max={10}
+          step={1}
+          bind:value={sortRank}
+          />
+        <span
+          slot="label"
+          style="flex-grow: 0; padding: 8px 8px 8px 12px; font-size: 1.5em"
+          >
+          {sortRank}
+        </span>
+      </FormField>
     {/if}
   </svelte:fragment>
 
