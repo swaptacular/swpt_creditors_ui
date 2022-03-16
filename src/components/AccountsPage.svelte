@@ -72,7 +72,7 @@
   }
 
   function calcDisplayAmount(accountData: AccountDataForDisplay): string {
-    const pegBound = accountData.pegBounds.at(-1)
+    const pegBound = accountData.pegBounds[accountData.pegBounds.length - 1]
     assert(pegBound !== undefined)
     const amount = Number(accountData.amount) * pegBound.exchangeRate
     const { amountDivisor, decimalPlaces } = pegBound.display
