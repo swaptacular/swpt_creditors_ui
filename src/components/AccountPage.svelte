@@ -205,7 +205,7 @@
               </li>
               {#if true}
                 <li>
-                  This account is scheduled for deletion.
+                  This account has been scheduled for deletion.
                 </li>
               {/if}
               {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
