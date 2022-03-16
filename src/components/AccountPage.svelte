@@ -5,6 +5,9 @@
   // import { onMount } from "svelte"
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
+  import Paper, { Title, Content } from '@smui/paper'
+  import Tooltip, { Wrapper } from '@smui/tooltip'
+  import Chip, { Text } from '@smui/chips'
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab';
   // import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -12,6 +15,7 @@
   // import Textfield from '@smui/textfield'
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
+  import QrGenerator from './QrGenerator.svelte'
   // import ScanCoinDialog from './ScanCoinDialog.svelte'
 
   export let app: AppState
@@ -19,7 +23,10 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
+  let downloadLinkElement: HTMLAnchorElement
   let currentModel: AccountModel
+  let configError: string = 'CONFIGURATION_IS_NOT_EFFECTUAL'
+  let dataUrl: string
 
   // TODO: add implementation.
   app
@@ -39,9 +46,37 @@
     currentModel = model
     resetScroll(model.scrollTop, model.scrollLeft)
   }
+  $: debtorName = 'Evgeni Pandurski'
 </script>
 
 <style>
+  ul {
+    list-style: '\2713\00A0' outside;
+    margin: 0.75em 1.25em 0 1.25em;
+  }
+  li {
+    margin-top: 0.5em;
+  }
+  .summary {
+    color: #888;
+    margin-top: 16px;
+  }
+  .download-link {
+    display: none;
+  }
+  .qrcode-container {
+    width: 100%;
+    text-align: center;
+  }
+  .qrcode-container :global(img) {
+    width: 100%;
+    max-width: 66vh;
+  }
+  .text-container {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
   .buttons-box {
     width: 100%;
     height: 100%;
@@ -58,14 +93,14 @@
     text-align: center;
   }
   .empty-space {
-    height: 92px;
+    height: 64px;
   }
   .fab-container {
     margin: 16px 16px;
   }
 </style>
 
-<Page title="Accounts">
+<Page title="Evgeni Pandurski">
   <svelte:fragment slot="app-bar">
     <Row style="height: 64px">
       <div class="buttons-box">
@@ -111,6 +146,95 @@
 
   <svelte:fragment slot="content">
     <div class="empty-space"></div>
+    {#if model.tab === 'account'}
+      <Wrapper>
+        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+          <Title>
+            {#if true}
+              <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
+                <Text>
+                  <a
+                    href={'https://google.com/'}
+                    target="_blank"
+                    style="text-decoration: none; color: #666"
+                    >
+                    www
+                  </a>
+                </Text>
+              </Chip>
+              <Tooltip>{'https://google.com/'}</Tooltip>
+            {/if}
+            Account with "Evgeni Pandurski"
+          </Title>
+          <Content style="clear: both">
+            {#if true}
+              <blockquote class="summary">
+                This currency is simply amazing. Be prepared to become
+                the happiest person in the world, simply by using this
+                currency.
+              </blockquote>
+            {/if}
+            <ul>
+              <li>
+                The annual interest rate on this account is 5.000%.
+              </li>
+              {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                <li>
+                  No connection can be made to the servers that manage
+                  this currency. You will not be able to send or receive
+                  money from this account, but you still can peg other
+                  currencies to it.
+                </li>
+              {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                <li>
+                  This account has a configuration problem. Usually
+                  this means that temporarily, a connection can not be
+                  made to the servers that manage this currency.
+                </li>
+              {:else}
+                <li>
+                  This account has a configuration problem:
+                  <span style="word-break: break-all">{configError}</span>.
+                </li>
+              {/if}
+              <li>
+                The alailable amount is:
+                <p>195.00 BGN</p>
+                <p><a href="." target="_blank" on:click|preventDefault={() => undefined}>195.00 BGN</a></p>
+                <p><a href="." target="_blank" on:click|preventDefault={() => undefined}>100.00 EUR</a></p>
+              </li>
+            </ul>
+          </Content>
+        </Paper>
+      </Wrapper>
+    {:else if model.tab === 'coin'}
+      <div class="qrcode-container">
+        <QrGenerator
+          value="https://www.w3schools.com/cssref/css3_pr_word-break.asp"
+          size={320}
+          padding={28}
+          errorCorrection="L"
+          background="#FFFFFF"
+          color="#000000"
+          bind:dataUrl
+          />
+      </div>
+      <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>download</a>
+      <div class="text-container">
+        <Paper elevation={8} style="margin: 0 16px 16px 16px; max-width: 600px; word-break: break-word">
+          <Title>Digital coin for "Evgeni Pandurski"</Title>
+          <Content>
+            <a href="." target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
+              The image above
+            </a>
+            (an ordinary QR code, indeed) uniquely identifies the
+            digital currency. Other people may want to scan this image
+            with their mobile devices, so that they can use the
+            currency too.
+          </Content>
+        </Paper>
+      </div>
+    {/if}
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
