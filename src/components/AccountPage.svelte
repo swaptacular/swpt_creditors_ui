@@ -2,7 +2,6 @@
   import type { AppState, AccountModel } from '../app-state'
   // import type { AccountDataForDisplay } from '../operations'
   // import { amountToString } from '../format-amounts'
-  // import { onMount } from "svelte"
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
   import Paper, { Title, Content } from '@smui/paper'
@@ -14,11 +13,9 @@
   import FormField from '@smui/form-field'
   // import LayoutGrid, { Cell } from '@smui/layout-grid'
   // import Card, { PrimaryAction } from '@smui/card'
-  // import Textfield from '@smui/textfield'
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import QrGenerator from './QrGenerator.svelte'
-  // import ScanCoinDialog from './ScanCoinDialog.svelte'
 
   export let app: AppState
   export let model: AccountModel
@@ -54,7 +51,7 @@
 
 <style>
   ul {
-    list-style: square outside;
+    list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em 0 1.25em;
   }
   li {
