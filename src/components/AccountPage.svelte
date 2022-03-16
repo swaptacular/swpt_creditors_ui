@@ -243,7 +243,7 @@
         <Content>
           To select this account more easily among other accounts, you
           may increase its sort rank. By doing so, you will push this
-          account closer to the top of the list.
+          account closer to the top of the accounts list.
         </Content>
       </Paper>
       <FormField align="center" style="display: flex; margin: 16px">
