@@ -54,11 +54,20 @@
 
 <style>
   ul {
-    list-style: '\2713\00A0' outside;
+    list-style: square outside;
     margin: 0.75em 1.25em 0 1.25em;
   }
   li {
     margin-top: 0.5em;
+  }
+  .amount {
+    font-family: Courier,monospace;
+    font-size: 1.1em;
+    text-align: right;
+  }
+  .amount a {
+    color: rgb(0, 0, 238);
+    text-decoration: none;
   }
   .summary {
     color: #888;
@@ -170,6 +179,19 @@
             Account with "Evgeni Pandurski"
           </Title>
           <Content style="clear: both">
+            <p class="amount">
+              195.00 BGN
+            </p>
+            <p class="amount">
+              <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                = 195.00 BGN
+              </a>
+            </p>
+            <p class="amount">
+              <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                = 100.00 EUR
+              </a>
+            </p>
             {#if true}
               <blockquote class="summary">
                 This currency is simply amazing. Be prepared to become
@@ -201,10 +223,7 @@
                 </li>
               {/if}
               <li>
-                The alailable amount is:
-                <p>195.00 BGN</p>
-                <p><a href="." target="_blank" on:click|preventDefault={() => undefined}>195.00 BGN</a></p>
-                <p><a href="." target="_blank" on:click|preventDefault={() => undefined}>100.00 EUR</a></p>
+                This account is scheduled for deletion.
               </li>
             </ul>
           </Content>

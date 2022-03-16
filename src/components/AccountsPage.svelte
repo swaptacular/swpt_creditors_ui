@@ -120,11 +120,11 @@
     color: black !important;
   }
   .amount {
-    font-size: 1.25em;
+    font-size: 1.20em;
     margin-top: 0.33em;
     color: #555;
     text-align: right;
-    font-family: ui-monospace;
+    font-family: Courier,ui-monospace;
   }
   .fab-container {
     margin: 16px 16px;
