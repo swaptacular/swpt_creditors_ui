@@ -128,19 +128,19 @@
         <div class="icon-container">
           <IconButton
             class="material-icons"
-            disabled={model.tab === 'ledger'}
-            on:click={() => model.tab = 'ledger'}
+            disabled={model.tab === 'sort'}
+            on:click={() => model.tab = 'sort'}
             >
-            history
+            sort
           </IconButton>
         </div>
         <div class="icon-container">
           <IconButton
             class="material-icons"
-            disabled={model.tab === 'sort'}
-            on:click={() => model.tab = 'sort'}
+            disabled={model.tab === 'ledger'}
+            on:click={() => model.tab = 'ledger'}
             >
-            sort
+            history
           </IconButton>
         </div>
       </div>
