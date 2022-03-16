@@ -214,13 +214,14 @@
                 </li>
               {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
                 <li>
-                  This account has a configuration problem. Usually
+                  This account has some configuration problem. Usually
                   this means that temporarily, a connection can not be
                   made to the servers that manage this currency.
                 </li>
               {:else}
                 <li>
-                  This account has a configuration problem:
+                  An unexpected account configuration problem has
+                  occurred:
                   <span style="word-break: break-all">{configError}</span>.
                 </li>
               {/if}
