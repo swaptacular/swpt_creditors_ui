@@ -203,6 +203,11 @@
               <li>
                 The annual interest rate on this account is 5.000%.
               </li>
+              {#if true}
+                <li>
+                  This account is scheduled for deletion.
+                </li>
+              {/if}
               {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
                 <li>
                   No connection can be made to the servers that manage
@@ -222,9 +227,6 @@
                   <span style="word-break: break-all">{configError}</span>.
                 </li>
               {/if}
-              <li>
-                This account is scheduled for deletion.
-              </li>
             </ul>
           </Content>
         </Paper>
