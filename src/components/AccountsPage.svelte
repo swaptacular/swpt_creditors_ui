@@ -2,8 +2,7 @@
   import type { AppState, AccountsModel } from '../app-state'
   import type { AccountDataForDisplay } from '../operations'
   import { amountToString } from '../format-amounts'
-  import { onMount } from "svelte"
-  import { Row } from '@smui/top-app-bar'
+  import { tick, onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Card, { PrimaryAction } from '@smui/card'
@@ -17,17 +16,22 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
+  let searchInput: HTMLInputElement
   let currentModel: AccountsModel
+  let visibleSearchBox: boolean
   let scanCoinDialog: boolean
   let pendingFilterChange: boolean
   let searchText: string
   let filter: string
 
   function showAccount(accountUri: string): void {
-    const scrollTop = scrollElement.scrollTop
-    const scrollLeft = scrollElement.scrollLeft
     app.showAccount(accountUri, () => {
-      app.pageModel.set({ ...model, searchText, scrollTop, scrollLeft })
+      app.pageModel.set({
+        ...model,
+        searchText: visibleSearchBox ? searchText : undefined,
+        scrollTop: scrollElement.scrollTop,
+        scrollLeft: scrollElement.scrollLeft,
+      })
     })
   }
 
@@ -44,9 +48,16 @@
     return accounts.filter(account => regExps.every(re => re.test(account.display.debtorName ?? '')))
   }
 
-  function clearFilter() {
+  async function showSearchBox() {
+    visibleSearchBox = true
+    await tick()
+    searchInput?.focus()
+  }
+
+  function hideSearchBox() {
     resetScroll()
     filter = searchText = ''
+    visibleSearchBox = false
   }
 
   function triggerFilterChange() {
@@ -72,6 +83,9 @@
 
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
+    if (visibleSearchBox) {
+      searchInput?.focus()
+    }
   })
 
   $: if (currentModel !== model) {
@@ -79,6 +93,7 @@
     scanCoinDialog = false
     pendingFilterChange = false
     filter = searchText = model.searchText ?? ''
+    visibleSearchBox = model.searchText !== undefined
     resetScroll(model.scrollTop, model.scrollLeft)
   }
   $: hasAccounts = model.accounts.length > 0
@@ -87,17 +102,14 @@
 
 <style>
   .search-box {
+    padding: 12px 0 12px 0;
     width: 100%;
-    height: 100%;
     color: black;
     background-color: #f4f4f4;
-    border-bottom: 1px solid #ccc;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content: left;
     align-items: center;
-  }
-  .empty-space {
-    height: 92px;
   }
   .name {
     font-size: 1.25em;
@@ -126,34 +138,8 @@
 </style>
 
 <Page title="Accounts">
-  <svelte:fragment slot="app-bar">
-    {#if hasAccounts }
-      <Row style="height: 83px">
-        <div class="search-box">
-          <div style="padding-left: 16px; flex-grow: 1" >
-            <Textfield
-              variant="outlined"
-              type="text"
-              style="width: 100%"
-              label="Filter by name"
-              input$spellcheck="false"
-              bind:value={searchText}
-              on:input={triggerFilterChange}
-              on:change={triggerFilterChange}
-              >
-            </Textfield>
-          </div>
-          <div style="padding: 4px; flex-grow: 0" >
-            <IconButton class="material-icons" on:click={clearFilter}>backspace</IconButton>
-          </div>
-        </div>
-      </Row>
-    {/if}
-  </svelte:fragment>
-
   <svelte:fragment slot="content">
     {#if hasAccounts}
-      <div class="empty-space"></div>
       {#if shownAccounts.length > 0 }
         <LayoutGrid style="word-break: break-word">
           {#each shownAccounts as account }
@@ -185,10 +171,39 @@
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab color="primary" on:click={() => scanCoinDialog = true} >
-        <Icon class="material-icons">add</Icon>
-      </Fab>
-    </div>
+    {#if visibleSearchBox}
+      <div class="search-box">
+        <div style="padding-left: 16px; flex-grow: 1" >
+          <Textfield
+            variant="outlined"
+            type="text"
+            style="width: 100%"
+            label="Filter by name"
+            input$spellcheck="false"
+            bind:this={searchInput}
+            bind:value={searchText}
+            on:input={triggerFilterChange}
+            on:change={triggerFilterChange}
+            >
+          </Textfield>
+        </div>
+        <div style="padding: 4px; flex-grow: 0" >
+          <IconButton class="material-icons" on:click={hideSearchBox}>close</IconButton>
+        </div>
+      </div>
+    {:else}
+      {#if hasAccounts }
+        <div class="fab-container">
+          <Fab on:click={showSearchBox}>
+            <Icon class="material-icons">search</Icon>
+          </Fab>
+        </div>
+      {/if}
+      <div class="fab-container">
+        <Fab color="primary" on:click={() => scanCoinDialog = true} >
+          <Icon class="material-icons">add</Icon>
+        </Fab>
+      </div>
+    {/if}
   </svelte:fragment>
 </Page>
