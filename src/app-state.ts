@@ -185,6 +185,8 @@ export type AccountModel = BasePageModel & {
   tab: 'account' | 'coin' | 'ledger' | 'sort',
   scrollTop?: number,
   scrollLeft?: number,
+  accountUri: string,
+  sortRank: number,
   // TODO: Add `transfers`, `account`,  fileds.
 }
 
@@ -849,15 +851,22 @@ export class AppState {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
+      const sortRank = await this.uc.getAccountSortPriority(accountUri)
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
           tab: 'account',
           goBack,
+          accountUri,
+          sortRank,
         })
       }
     })
+  }
+
+  async setAccountSortPriority(uri: string, priority: number): Promise<void> {
+    await this.uc.setAccountSortPriority(uri, priority)
   }
 
   initiatePayment(paymentRequestFile: Blob | Promise<Blob>): Promise<void> {

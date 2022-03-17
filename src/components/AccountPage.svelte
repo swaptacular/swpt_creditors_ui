@@ -26,7 +26,8 @@
   let currentModel: AccountModel
   let configError: string = 'CONFIGURATION_IS_NOT_EFFECTUAL'
   let dataUrl: string
-  let sortRank: number = 0
+  let sortRank: number
+  let saveSortRankPromise: Promise<number> | undefined
 
   // TODO: add implementation.
   app
@@ -38,15 +39,35 @@
     }
   }
 
+  async function saveSortRank(): Promise<void> {
+    const save = async () => {
+      const rank = sortRank
+      await app.setAccountSortPriority(model.accountUri, rank)
+      saveSortRankPromise = undefined
+      var m = model
+      m.goBack = () => { app.showAccounts() }  // This ensures that the account list will be reloaded when going back.
+      return rank
+    }
+    if (saveSortRankPromise) {
+      saveSortRankPromise = saveSortRankPromise.then(r => r === sortRank ? r: save())
+    } else {
+      saveSortRankPromise = save()
+    }
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
 
   $: if (currentModel !== model) {
     currentModel = model
+    sortRank = model.sortRank
     resetScroll(model.scrollTop, model.scrollLeft)
   }
   $: debtorName = 'Evgeni Pandurski'
+  $: if (sortRank !== model.sortRank) {
+    saveSortRank()
+  }
 </script>
 
 <style>
@@ -218,7 +239,7 @@
                   this means that temporarily, a connection can not be
                   made to the servers that manage this currency.
                 </li>
-              {:else}
+              {:else if configError}
                 <li>
                   An unexpected account configuration problem has
                   occurred:

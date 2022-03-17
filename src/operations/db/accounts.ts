@@ -166,6 +166,11 @@ export async function getAccountSortPriorities(userId: number): Promise<AccountS
   return await db.accountPriorities.where({ userId }).toArray()
 }
 
+export async function getAccountSortPriority(uri: string): Promise<number> {
+  const obj = await db.accountPriorities.get(uri)
+  return obj?.priority ?? 0
+}
+
 export async function setAccountSortPriority(userId: number, uri: string, priority: number): Promise<void> {
   await db.accountPriorities.put({ userId, uri, priority })
 }

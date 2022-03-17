@@ -22,7 +22,8 @@ import {
   getWalletRecord, getTasks, removeTask, getActionRecords, settleFetchDebtorInfoTask,
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
-  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities
+  getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
+  getAccountSortPriority, setAccountSortPriority
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -217,6 +218,8 @@ export class UserContext {
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
   readonly obtainBaseDebtorData = obtainBaseDebtorData
+  readonly getAccountSortPriority = getAccountSortPriority
+  readonly setAccountSortPriority: (uri: string, priority: number) => Promise<void>
 
   constructor(
     server: ServerSession,
@@ -231,6 +234,7 @@ export class UserContext {
     this.walletRecord = walletRecord
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
     this.getActionRecords = getActionRecords.bind(undefined, this.userId)
+    this.setAccountSortPriority = setAccountSortPriority.bind(undefined, this.userId)
   }
 
   /* The caller must be prepared this method to throw
@@ -726,10 +730,10 @@ export class UserContext {
         const priorityA = prioritiesMap.get(displayA.account.uri) ?? 0
         const priorityB = prioritiesMap.get(displayB.account.uri) ?? 0
         if (priorityA > priorityB) {
-          return 1
+          return -1
         }
         if (priorityA < priorityB) {
-          return -1
+          return 1
         }
         const nameA = (displayA.debtorName ?? '').toLowerCase()
         const nameB = (displayB.debtorName ?? '').toLowerCase()
