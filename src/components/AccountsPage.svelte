@@ -25,12 +25,15 @@
   let filter: string
 
   function showAccount(accountUri: string): void {
+    const scrollTop = scrollElement.scrollTop
+    const scrollLeft = scrollElement.scrollLeft
+    const text = visibleSearchBox ? searchText : undefined
     app.showAccount(accountUri, () => {
       app.pageModel.set({
         ...model,
-        searchText: visibleSearchBox ? searchText : undefined,
-        scrollTop: scrollElement.scrollTop,
-        scrollLeft: scrollElement.scrollLeft,
+        searchText: text,
+        scrollTop,
+        scrollLeft,
       })
     })
   }
