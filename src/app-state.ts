@@ -863,7 +863,9 @@ export class AppState {
       latestUpdateId: 1n,
       latestUpdateAt: '2020-01-01T00:00:00Z',
     })
-
+    const sleep = (milliseconds: number) => {
+      return new Promise(resolve => setTimeout(resolve, milliseconds))
+    }
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
@@ -872,7 +874,12 @@ export class AppState {
         this.pageModel.set({
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
-          fetchTransfers: () => Promise.resolve(transfers),
+          fetchTransfers: async () => {
+            await this.attempt(async () => {
+              await sleep(2000)
+            })
+            return transfers
+          },
           tab: 'account',
           transfers: [],
           goBack,

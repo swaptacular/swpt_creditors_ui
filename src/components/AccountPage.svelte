@@ -31,10 +31,8 @@
   let saveSortRankPromise: Promise<number> | undefined
   let newBatch: TransferV0[]
   let transfers: TransferV0[]
+  let showLoadedTranfersButton: boolean
 
-  // TODO: add implementation.
-  app
-  
   function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
     if (scrollElement) {
       scrollElement.scrollTop = scrollTop
@@ -63,6 +61,13 @@
     return initiatedAt.toLocaleString()
   }
 
+  function loadTransfers(): void {
+    // TODO: What if the fetch fails? Should we still hide the "load
+    // transfers" button?
+    showLoadedTranfersButton = false
+    fetchNewBatch()
+  }
+
   async function fetchNewBatch(): Promise<void> {
     newBatch = await model.fetchTransfers()
   }
@@ -76,6 +81,7 @@
     sortRank = model.sortRank
     newBatch = model.transfers
     transfers = []
+    showLoadedTranfersButton = true
     resetScroll(model.scrollTop, model.scrollLeft)
   }
   $: transfers = [...transfers, ...newBatch]
@@ -372,20 +378,23 @@
             </Card>
           </Cell>
         {/each}
-        <Cell span={12} style="text-align: cetner">
-          <Card>
-            <PrimaryAction on:click={fetchNewBatch}>
-              <CardContent>
-                <div class="load-button">
-                  <span>Load older tranfers</span>
-                  <Icon class="material-icons">arrow_forward</Icon>
-                </div>
-              </CardContent>
-            </PrimaryAction>
-          </Card>
-        </Cell>
+        {#if showLoadedTranfersButton}
+          <Cell span={12} style="text-align: cetner">
+            <Card>
+              <PrimaryAction on:click={loadTransfers}>
+                <CardContent>
+                  <div class="load-button">
+                    <span>Load older tranfers</span>
+                    <Icon class="material-icons">arrow_forward</Icon>
+                  </div>
+                </CardContent>
+              </PrimaryAction>
+            </Card>
+          </Cell>
+        {:else}
+          <InfiniteScroll bind:scrollElement hasMore={newBatch.length > 0} threshold={100} on:loadMore={fetchNewBatch} />
+        {/if}
       </LayoutGrid>
-      <InfiniteScroll bind:scrollElement hasMore={newBatch.length > 0} threshold={100} on:loadMore={fetchNewBatch} />
     {/if}
   </svelte:fragment>
 
