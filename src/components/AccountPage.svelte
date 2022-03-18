@@ -312,21 +312,23 @@
           account closer to the top of the accounts list.
         </Content>
       </Paper>
-      <FormField align="center" style="display: flex; margin: 16px">
-        <Slider
-          style="flex-grow: 1"
-          min={0}
-          max={10}
-          step={1}
-          bind:value={sortRank}
-          />
-        <span
-          slot="label"
-          style="flex-grow: 0; padding: 8px 8px 8px 12px; font-size: 1.5em"
-          >
-          {sortRank}
-        </span>
-      </FormField>
+      <div class="text-container">
+        <FormField align="center" style="max-width: 400px; flex-grow: 1; display: flex; margin: 16px">
+          <Slider
+            style="flex-grow: 1"
+            min={0}
+            max={10}
+            step={1}
+            bind:value={sortRank}
+            />
+          <span
+            slot="label"
+            style="flex-grow: 0; padding: 8px 8px 8px 12px; font-size: 1.5em"
+            >
+            {sortRank}
+          </span>
+        </FormField>
+      </div>
 
     {:else if model.tab === 'ledger'}
       <LayoutGrid>
