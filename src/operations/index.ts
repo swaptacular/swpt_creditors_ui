@@ -6,7 +6,7 @@ import type {
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay
 } from './db'
 import type {
-  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0,
+  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, TransferV0
 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
 import type { BaseDebtorData } from '../debtor-info'
@@ -73,6 +73,7 @@ export type {
   AccountRecord,
   AccountDisplayRecord,
   AccountDataForDisplay,
+  TransferV0,
 }
 
 export class ConflictingUpdate extends Error {

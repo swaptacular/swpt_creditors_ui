@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  // import type { AccountDataForDisplay } from '../operations'
+  import type { TransferV0 } from '../operations'
   // import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
@@ -11,23 +11,26 @@
   import Fab, { Icon } from '@smui/fab'
   import Slider from '@smui/slider'
   import FormField from '@smui/form-field'
-  // import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Card, { PrimaryAction } from '@smui/card'
+  import LayoutGrid, { Cell } from '@smui/layout-grid'
+  import Card, { PrimaryAction, Content as CardContent } from '@smui/card'
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import QrGenerator from './QrGenerator.svelte'
+  import InfiniteScroll from "./InfiniteScroll.svelte"
 
   export let app: AppState
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
-  export const scrollElement = document.documentElement
 
+  let scrollElement = document.documentElement
   let downloadLinkElement: HTMLAnchorElement
   let currentModel: AccountModel
   let configError: string = 'CONFIGURATION_IS_NOT_EFFECTUAL'
   let dataUrl: string
   let sortRank: number
   let saveSortRankPromise: Promise<number> | undefined
+  let newBatch: TransferV0[]
+  let transfers: TransferV0[]
 
   // TODO: add implementation.
   app
@@ -55,6 +58,15 @@
     }
   }
 
+  function getDate(t: TransferV0): string {
+    const initiatedAt = new Date(t.initiatedAt)
+    return initiatedAt.toLocaleString()
+  }
+
+  async function fetchNewBatch(): Promise<void> {
+    newBatch = await model.fetchTransfers()
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
@@ -62,8 +74,11 @@
   $: if (currentModel !== model) {
     currentModel = model
     sortRank = model.sortRank
+    newBatch = model.transfers
+    transfers = []
     resetScroll(model.scrollTop, model.scrollLeft)
   }
+  $: transfers = [...transfers, ...newBatch]
   $: debtorName = 'Evgeni Pandurski'
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
@@ -176,6 +191,7 @@
 
   <svelte:fragment slot="content">
     <div class="empty-space"></div>
+
     {#if model.tab === 'account'}
       <Wrapper>
         <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
@@ -250,6 +266,7 @@
           </Content>
         </Paper>
       </Wrapper>
+
     {:else if model.tab === 'coin'}
       <div class="qrcode-container">
         <QrGenerator
@@ -277,6 +294,7 @@
           </Content>
         </Paper>
       </div>
+
     {:else if model.tab === 'sort'}
       <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
         <Title>Sort rank for "Evgeni Pandurski"</Title>
@@ -301,6 +319,39 @@
           {sortRank}
         </span>
       </FormField>
+
+    {:else if model.tab === 'ledger'}
+      <LayoutGrid>
+        {#each transfers as transfer }
+          <Cell>
+            <Card>
+              <PrimaryAction on:click={() => undefined}>
+                <CardContent>
+                  <h5>
+                    <Icon style="vertical-align: -20%" class="material-icons">check</Icon>
+                    {getDate(transfer)}
+                  </h5>
+                  <p>
+                    {`500 EUR to ${transfer.note}`}
+                  </p>
+                </CardContent>
+              </PrimaryAction>
+            </Card>
+          </Cell>
+        {/each}
+        <Cell span={12} style="text-align: cetner">
+          <Card>
+            <PrimaryAction on:click={fetchNewBatch}>
+              <CardContent>
+                <h5>
+                  Load older tranfers
+                </h5>
+              </CardContent>
+            </PrimaryAction>
+          </Card>
+        </Cell>
+      </LayoutGrid>
+      <InfiniteScroll bind:scrollElement hasMore={newBatch.length > 0} threshold={100} on:loadMore={fetchNewBatch} />
     {/if}
   </svelte:fragment>
 

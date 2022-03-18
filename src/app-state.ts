@@ -3,7 +3,8 @@ import type { Observable } from 'dexie'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
-  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay
+  ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
+  TransferV0
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -187,7 +188,8 @@ export type AccountModel = BasePageModel & {
   scrollLeft?: number,
   accountUri: string,
   sortRank: number,
-  // TODO: Add `transfers`, `account`,  fileds.
+  transfers: TransferV0[],
+  fetchTransfers: () => Promise<TransferV0[]>,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -847,6 +849,20 @@ export class AppState {
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
     // TODO: Add a real implementation.
+    const transfers: TransferV0[] = Array(30).fill({
+      type: 'Transfer',
+      uri: '',
+      transfersList: { uri: '' },
+      transferUuid: '',
+      recipient: { type: 'AccountIdentity', uri: '' },
+      amount: 1000n,
+      noteFormat: '',
+      note: '',
+      initiatedAt: '2020-01-01T00:00:00Z',
+      options: { type: 'TransferOptions' },
+      latestUpdateId: 1n,
+      latestUpdateAt: '2020-01-01T00:00:00Z',
+    })
 
     return this.attempt(async () => {
       const interactionId = this.interactionId
@@ -856,7 +872,9 @@ export class AppState {
         this.pageModel.set({
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
+          fetchTransfers: () => Promise.resolve(transfers),
           tab: 'account',
+          transfers: [],
           goBack,
           accountUri,
           sortRank,
