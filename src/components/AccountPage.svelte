@@ -93,6 +93,9 @@
   li {
     margin-top: 0.5em;
   }
+  .amounts-box {
+    flex: 0 0 20em;
+  }
   .amount {
     font-family: Courier,monospace;
     font-size: 1.1em;
@@ -102,9 +105,10 @@
     color: rgb(0, 0, 238);
     text-decoration: none;
   }
-  .summary {
+  .summary-box {
     color: #888;
     margin-top: 16px;
+    flex: 1 1 25em;
   }
   .download-link {
     display: none;
@@ -213,26 +217,30 @@
             Account with "Evgeni Pandurski"
           </Title>
           <Content style="clear: both">
-            <p class="amount">
-              195.00 BGN
-            </p>
-            <p class="amount">
-              <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                = 195.00 BGN
-              </a>
-            </p>
-            <p class="amount">
-              <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                = 100.00 EUR
-              </a>
-            </p>
-            {#if true}
-              <blockquote class="summary">
-                This currency is simply amazing. Be prepared to become
-                the happiest person in the world, simply by using this
-                currency.
-              </blockquote>
-            {/if}
+            <div style="display: flex; flex-flow: row-reverse wrap">
+              <div class="amounts-box">
+                <p class="amount">
+                  195.00 BGN
+                </p>
+                <p class="amount">
+                  <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                    = 195.00 BGN
+                  </a>
+                </p>
+                <p class="amount">
+                  <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                    = 100.00 EUR
+                  </a>
+                </p>
+              </div>
+              {#if true}
+                <blockquote class="summary-box">
+                  This currency is simply amazing. Be prepared to become
+                  the happiest person in the world, simply by using this
+                  currency.
+                </blockquote>
+              {/if}
+            </div>
             <ul>
               <li>
                 The annual interest rate on this account is 5.000%.
