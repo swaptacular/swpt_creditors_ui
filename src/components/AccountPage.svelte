@@ -126,6 +126,24 @@
     width: 100%;
     justify-content: center;
   }
+  .no-transfers {
+    margin: 36px 18px 26px 18px;
+    text-align: center;
+    color: #c4c4c4;
+  }
+  .load-button {
+    color: rgb(98, 0, 238);
+    letter-spacing: 1.4px;
+    font-size: 16px;
+    font-family: Roboto, sans-serif;
+    font-weight: 500%;
+    display: flex;
+    align-items: center;
+    text-transform: uppercase;
+  }
+  .load-button span {
+    flex-grow: 1;
+  }
   .buttons-box {
     width: 100%;
     height: 100%;
@@ -331,6 +349,11 @@
       </div>
 
     {:else if model.tab === 'ledger'}
+      {#if transfers.length === 0}
+        <p class="no-transfers">
+          There are no known transfers to/from this account.
+        </p>
+      {/if}
       <LayoutGrid>
         {#each transfers as transfer }
           <Cell>
@@ -353,9 +376,10 @@
           <Card>
             <PrimaryAction on:click={fetchNewBatch}>
               <CardContent>
-                <h5>
-                  Load older tranfers
-                </h5>
+                <div class="load-button">
+                  <span>Load older tranfers</span>
+                  <Icon class="material-icons">arrow_forward</Icon>
+                </div>
               </CardContent>
             </PrimaryAction>
           </Card>
