@@ -189,7 +189,7 @@ export type AccountModel = BasePageModel & {
   accountUri: string,
   sortRank: number,
   transfers: TransferV0[],
-  fetchTransfers: () => Promise<TransferV0[]>,
+  fetchTransfers: () => Promise<TransferV0[] | undefined>,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -849,7 +849,7 @@ export class AppState {
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
     // TODO: Add a real implementation.
-    const transfers: TransferV0[] = Array(30).fill({
+    const dummyTransfers: TransferV0[] = Array(30).fill({
       type: 'Transfer',
       uri: '',
       transfersList: { uri: '' },
@@ -875,8 +875,18 @@ export class AppState {
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
           fetchTransfers: async () => {
+            let transfers: TransferV0[] | undefined
             await this.attempt(async () => {
               await sleep(2000)
+              if (Math.random() > 0.2) {
+                transfers = dummyTransfers
+              } else {
+                throw new ServerSessionError()
+              }
+            }, {
+              alerts: [
+                [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+              ],
             })
             return transfers
           },

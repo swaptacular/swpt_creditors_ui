@@ -61,15 +61,21 @@
     return initiatedAt.toLocaleString()
   }
 
-  function loadTransfers(): void {
-    // TODO: What if the fetch fails? Should we still hide the "load
-    // transfers" button?
-    showLoadedTranfersButton = false
-    fetchNewBatch()
+  async function loadTransfers(): Promise<void> {
+    if (showLoadedTranfersButton) {
+      showLoadedTranfersButton = false
+      await fetchNewBatch()
+    }
   }
 
   async function fetchNewBatch(): Promise<void> {
-    newBatch = await model.fetchTransfers()
+    const fetchedTransfers = await model.fetchTransfers()
+    if (fetchedTransfers !== undefined) {
+      newBatch = fetchedTransfers
+    } else {
+      showLoadedTranfersButton = true
+      newBatch = []
+    }
   }
 
   onMount(() => {
