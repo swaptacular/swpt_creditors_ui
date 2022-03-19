@@ -92,12 +92,27 @@
   }
   $: transfers = [...transfers, ...newBatch]
   $: debtorName = 'Evgeni Pandurski'
+  $: showCoin = true
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
 </script>
 
 <style>
+  h5 {
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  .transfer {
+    font-size: 1.1em;
+    word-break: break-word;
+    margin-top: 10px;
+  }
+  .transfer-note {
+    word-break: break-word;
+    margin-top: 5px;
+    color: #888;
+  }
   ul {
     list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em 0 1.25em;
@@ -192,15 +207,17 @@
             account_balance
           </IconButton>
         </div>
-        <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'coin'}
-            on:click={() => model.tab = 'coin'}
-            >
-            qr_code_2
-          </IconButton>
-        </div>
+        {#if showCoin}
+          <div class="icon-container">
+            <IconButton
+              class="material-icons"
+              disabled={model.tab === 'coin'}
+              on:click={() => model.tab = 'coin'}
+              >
+              qr_code_2
+            </IconButton>
+          </div>
+        {/if}
         <div class="icon-container">
           <IconButton
             class="material-icons"
@@ -372,12 +389,12 @@
             <Card>
               <PrimaryAction on:click={() => undefined}>
                 <CardContent>
-                  <h5>
-                    <Icon style="vertical-align: -20%" class="material-icons">check</Icon>
-                    {getDate(transfer)}
-                  </h5>
-                  <p>
-                    {`500 EUR to ${transfer.note}`}
+                  <h5>{getDate(transfer)}</h5>
+                  <p class="transfer">
+                    <span>500 EUR</span> to "Ivan Ivanov"
+                  </p>
+                  <p class="transfer-note">
+                    Rent payment for February
                   </p>
                 </CardContent>
               </PrimaryAction>
