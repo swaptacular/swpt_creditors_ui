@@ -875,6 +875,8 @@ export class AppState {
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
           fetchTransfers: async () => {
+            // TODO: Get ~100 transfers from the local DB, and if
+            // there are not enough of them -- fetch some from the server.
             let transfers: TransferV0[] | undefined
             await this.attempt(async () => {
               await sleep(2000)
@@ -891,7 +893,7 @@ export class AppState {
             return transfers
           },
           tab: 'account',
-          transfers: [],
+          transfers: dummyTransfers,  // TODO: get ~100 transfers from the local DB.
           goBack,
           accountUri,
           sortRank,
