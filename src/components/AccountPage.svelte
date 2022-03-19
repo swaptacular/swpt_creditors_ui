@@ -16,7 +16,6 @@
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import QrGenerator from './QrGenerator.svelte'
-  import InfiniteScroll from "./InfiniteScroll.svelte"
 
   export let app: AppState
   export let model: AccountModel
@@ -29,7 +28,6 @@
   let dataUrl: string
   let sortRank: number
   let saveSortRankPromise: Promise<number> | undefined
-  let newBatch: CommittedTransferRecord[]
   let transfers: CommittedTransferRecord[]
   let showLoadedTranfersButton: boolean
 
@@ -64,17 +62,14 @@
   async function loadTransfers(): Promise<void> {
     if (showLoadedTranfersButton) {
       showLoadedTranfersButton = false
-      await fetchNewBatch()
-    }
-  }
-
-  async function fetchNewBatch(): Promise<void> {
-    const fetchedTransfers = await model.fetchTransfers()
-    if (fetchedTransfers !== undefined) {
-      newBatch = fetchedTransfers
-    } else {
-      showLoadedTranfersButton = true
-      newBatch = []
+      const newBatch = await model.fetchTransfers()
+      if (newBatch === undefined) {
+        showLoadedTranfersButton = true
+      } else if (newBatch.length > 0) {
+        transfers.push(...newBatch)
+        transfers = transfers
+        showLoadedTranfersButton = true
+      }
     }
   }
 
@@ -93,12 +88,10 @@
   $: if (currentModel !== model) {
     currentModel = model
     sortRank = model.sortRank
-    newBatch = model.transfers
-    transfers = []
+    transfers = [...model.transfers]
     showLoadedTranfersButton = true
     resetScroll(model.scrollTop, model.scrollLeft)
   }
-  $: transfers = [...transfers, ...newBatch]
   $: debtorName = 'Evgeni Pandurski'
   $: secureCoin = true
   $: if (sortRank !== model.sortRank) {
@@ -409,22 +402,18 @@
             </Card>
           </Cell>
         {/each}
-        {#if showLoadedTranfersButton}
-          <Cell span={12} style="text-align: cetner">
-            <Card>
-              <PrimaryAction on:click={loadTransfers}>
-                <CardContent>
-                  <div class="load-button">
-                    <span>Load older tranfers</span>
-                    <Icon class="material-icons">arrow_forward</Icon>
-                  </div>
-                </CardContent>
-              </PrimaryAction>
-            </Card>
-          </Cell>
-        {:else}
-          <InfiniteScroll bind:scrollElement hasMore={newBatch.length > 0} threshold={100} on:loadMore={fetchNewBatch} />
-        {/if}
+        <Cell span={12} style="text-align: cetner; visibility: {showLoadedTranfersButton ? 'visible' : 'hidden'}">
+          <Card>
+            <PrimaryAction on:click={loadTransfers}>
+              <CardContent>
+                <div class="load-button">
+                  <span>Load older tranfers</span>
+                  <Icon class="material-icons">arrow_forward</Icon>
+                </div>
+              </CardContent>
+            </PrimaryAction>
+          </Card>
+        </Cell>
       </LayoutGrid>
     {/if}
   </svelte:fragment>

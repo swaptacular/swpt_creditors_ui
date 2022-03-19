@@ -55,7 +55,7 @@
     "just-clone": "^3.2.1",
     "qr-scanner": "^1.2.0",
     "qrious": "^4.0.2",
-    "svelte": "^3.37.0",
+    "svelte": "^3.46.4",
     "svelte-check": "^2.1.0",
     "svelte-preprocess": "^4.7.2",
     "tinyqueue": "^2.0.3",
