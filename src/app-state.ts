@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  TransferV0
+  CommittedTransferRecord
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -188,8 +188,8 @@ export type AccountModel = BasePageModel & {
   scrollLeft?: number,
   accountUri: string,
   sortRank: number,
-  transfers: TransferV0[],
-  fetchTransfers: () => Promise<TransferV0[] | undefined>,
+  transfers: CommittedTransferRecord[],
+  fetchTransfers: () => Promise<CommittedTransferRecord[] | undefined>,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -849,19 +849,17 @@ export class AppState {
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
     // TODO: Add a real implementation.
-    const dummyTransfers: TransferV0[] = Array(30).fill({
-      type: 'Transfer',
+    const dummyTransfers: CommittedTransferRecord[] = Array(40).fill({
+      type: 'CommittedTransfer',
       uri: '',
-      transfersList: { uri: '' },
-      transferUuid: '',
+      userId: 1,
+      account: {uri: ''},
+      sender: { type: 'AccountIdentity', uri: '' },
       recipient: { type: 'AccountIdentity', uri: '' },
-      amount: 1000n,
+      acquiredAmount: 1000n,
       noteFormat: '',
       note: '',
-      initiatedAt: '2020-01-01T00:00:00Z',
-      options: { type: 'TransferOptions' },
-      latestUpdateId: 1n,
-      latestUpdateAt: '2020-01-01T00:00:00Z',
+      committedAt: '2020-01-01T00:00:00Z',
     })
     const sleep = (milliseconds: number) => {
       return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -877,7 +875,7 @@ export class AppState {
           fetchTransfers: async () => {
             // TODO: Get ~100 transfers from the local DB, and if
             // there are not enough of them -- fetch some from the server.
-            let transfers: TransferV0[] | undefined
+            let transfers: CommittedTransferRecord[] | undefined
             await this.attempt(async () => {
               await sleep(2000)
               if (Math.random() > 0.2) {
@@ -900,6 +898,12 @@ export class AppState {
         })
       }
     })
+  }
+
+  async showLedgerEntry(commitedTransferUri: string, back?: () => void): Promise<void> {
+    commitedTransferUri
+    back
+    // TODO: implement.
   }
 
   async setAccountSortPriority(uri: string, priority: number): Promise<void> {

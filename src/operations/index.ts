@@ -3,10 +3,11 @@ import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
-  AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay
+  AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
+  CommittedTransferRecord
 } from './db'
 import type {
-  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, TransferV0
+  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
 import type { BaseDebtorData } from '../debtor-info'
@@ -73,7 +74,7 @@ export type {
   AccountRecord,
   AccountDisplayRecord,
   AccountDataForDisplay,
-  TransferV0,
+  CommittedTransferRecord,
 }
 
 export class ConflictingUpdate extends Error {

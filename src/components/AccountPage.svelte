@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import type { TransferV0 } from '../operations'
+  import type { CommittedTransferRecord } from '../operations'
   // import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
@@ -29,8 +29,8 @@
   let dataUrl: string
   let sortRank: number
   let saveSortRankPromise: Promise<number> | undefined
-  let newBatch: TransferV0[]
-  let transfers: TransferV0[]
+  let newBatch: CommittedTransferRecord[]
+  let transfers: CommittedTransferRecord[]
   let showLoadedTranfersButton: boolean
 
   function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
@@ -56,8 +56,8 @@
     }
   }
 
-  function getDate(t: TransferV0): string {
-    const initiatedAt = new Date(t.initiatedAt)
+  function getDate(t: CommittedTransferRecord): string {
+    const initiatedAt = new Date(t.committedAt)
     return initiatedAt.toLocaleString()
   }
 
@@ -78,6 +78,14 @@
     }
   }
 
+  function showLedgerEntry(commitedTransferUri: string): void {
+    const scrollTop = scrollElement.scrollTop
+    const scrollLeft = scrollElement.scrollLeft
+    app.showLedgerEntry(commitedTransferUri, () => {
+      app.pageModel.set({ ...model, transfers, scrollTop, scrollLeft })
+    })
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
@@ -92,7 +100,7 @@
   }
   $: transfers = [...transfers, ...newBatch]
   $: debtorName = 'Evgeni Pandurski'
-  $: showCoin = true
+  $: secureCoin = true
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
@@ -207,7 +215,7 @@
             account_balance
           </IconButton>
         </div>
-        {#if showCoin}
+        {#if secureCoin}
           <div class="icon-container">
             <IconButton
               class="material-icons"
@@ -387,7 +395,7 @@
         {#each transfers as transfer }
           <Cell>
             <Card>
-              <PrimaryAction on:click={() => undefined}>
+              <PrimaryAction on:click={() => showLedgerEntry(transfer.uri)}>
                 <CardContent>
                   <h5>{getDate(transfer)}</h5>
                   <p class="transfer">
@@ -434,10 +442,12 @@
         </Icon>
       </Fab>
     </div>
-    <div class="fab-container">
-      <Fab color="primary" on:click={() => undefined} >
-        <Icon class="material-icons">receipt</Icon>
-      </Fab>
-    </div>
+    {#if secureCoin}
+      <div class="fab-container">
+        <Fab color="primary" on:click={() => undefined} >
+          <Icon class="material-icons">receipt</Icon>
+        </Fab>
+      </div>
+    {/if}
   </svelte:fragment>
 </Page>
