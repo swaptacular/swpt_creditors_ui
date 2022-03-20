@@ -185,7 +185,6 @@
   .load-button {
     color: rgb(98, 0, 238);
     letter-spacing: 1.4px;
-    font-size: 16px;
     font-family: Roboto, sans-serif;
     font-weight: 500%;
     display: flex;
