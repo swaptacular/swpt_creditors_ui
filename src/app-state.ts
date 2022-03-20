@@ -860,7 +860,7 @@ export class AppState {
       recipient: { type: 'AccountIdentity', uri: '' },
       acquiredAmount: 1000n,
       noteFormat: '',
-      note: '',
+      note: 'Pretty simple and straight-forward right? \n\n\n\n `Ivan Ivanov Ivanov` says that this can be used for much more than just setting font-size however, and they can be used pretty much everywhere units are expected (padding, margin, width, height, max-width,…you get the picture!).',
       committedAt: '2020-01-01T00:00:00Z',
     })
     const sleep = (milliseconds: number) => {
