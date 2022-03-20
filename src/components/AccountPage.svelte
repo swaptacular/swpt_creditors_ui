@@ -70,18 +70,22 @@
   }
 
   function showLedgerEntry(commitedTransferUri: string): void {
+    const m = model
+    const t = transfers
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
     app.showLedgerEntry(commitedTransferUri, () => {
-      app.pageModel.set({ ...model, transfers, scrollTop, scrollLeft })
+      app.pageModel.set({ ...m, transfers: t, scrollTop, scrollLeft })
     })
   }
 
   function showAccount(accountUri: string): void {
+    const m = model
+    const t = transfers
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
     app.showAccount(accountUri, () => {
-      app.pageModel.set({ ...model, transfers, scrollTop, scrollLeft })
+      app.pageModel.set({ ...m, transfers: t, scrollTop, scrollLeft })
     })
   }
 
@@ -243,10 +247,10 @@
       <div class="empty-space"></div>
 
       {#if model.tab === 'account'}
-        <Wrapper>
-          <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-            <Title>
-              {#if data.debtorData.debtorHomepage}
+        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+          <Title>
+            {#if data.debtorData.debtorHomepage}
+              <Wrapper>
                 <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
                   <Text>
                     <a
@@ -259,65 +263,68 @@
                   </Text>
                 </Chip>
                 <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
-              {/if}
-              {#if data.display.knownDebtor}
-                Account with "{data.display.debtorName}"
-              {:else}
-                Unconfirmed account with "{data.display.debtorName}"
-              {/if}
-            </Title>
-            <Content style="clear: both">
-              <div style="display: flex; flex-flow: row-reverse wrap">
-                <div class="amounts-box">
-                  {#each data.pegBounds as pegBound, index}
-                    <p class="amount">
-                      {#if index === 0}
-                        {calcDisplayAmount(data.amount, pegBound)}
-                      {:else}
+              </Wrapper>
+            {/if}
+            {#if data.display.knownDebtor}
+              Account with "{data.display.debtorName}"
+            {:else}
+              Unconfirmed account with "{data.display.debtorName}"
+            {/if}
+          </Title>
+          <Content style="clear: both">
+            <div style="display: flex; flex-flow: row-reverse wrap">
+              <div class="amounts-box">
+                {#each data.pegBounds as pegBound, index}
+                  <p class="amount">
+                    {#if index === 0}
+                      {calcDisplayAmount(data.amount, pegBound)}
+                    {:else}
+                      <Wrapper>
                         <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
                           = {calcDisplayAmount(data.amount, pegBound)}
                         </a>
-                      {/if}
-                    </p>
-                  {/each}
-                </div>
-                {#if data.debtorData.summary}
-                  <blockquote class="summary-box">{data.debtorData.summary}</blockquote>
-                {/if}
+                        <Tooltip>{pegBound.debtorName}</Tooltip>
+                      </Wrapper>
+                    {/if}
+                  </p>
+                {/each}
               </div>
-              <ul>
+              {#if data.debtorData.summary}
+                <blockquote class="summary-box">{data.debtorData.summary}</blockquote>
+              {/if}
+            </div>
+            <ul>
+              <li>
+                The annual interest rate on this account is {data.info.interestRate.toFixed(3)}%.
+              </li>
+              {#if data.config.scheduledForDeletion}
                 <li>
-                  The annual interest rate on this account is {data.info.interestRate.toFixed(3)}%.
+                  This account has been scheduled for deletion.
                 </li>
-                {#if data.config.scheduledForDeletion}
-                  <li>
-                    This account has been scheduled for deletion.
-                  </li>
-                {/if}
-                {#if data.info.configError === 'NO_CONNECTION_TO_DEBTOR'}
-                  <li>
-                    No connection can be made to the servers that manage
-                    this currency. You will not be able to send or receive
-                    money from this account, but you still can peg other
-                    currencies to it.
-                  </li>
-                {:else if data.info.configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
-                  <li>
-                    This account has some configuration problem. Usually
-                    this means that temporarily, a connection can not be
-                    made to the servers that manage this currency.
-                  </li>
-                {:else if data.info.configError !== undefined}
-                  <li>
-                    An unexpected account configuration problem has
-                    occurred:
-                    <span style="word-break: break-all">{data.info.configError}</span>.
-                  </li>
-                {/if}
-              </ul>
-            </Content>
-          </Paper>
-        </Wrapper>
+              {/if}
+              {#if data.info.configError === 'NO_CONNECTION_TO_DEBTOR'}
+                <li>
+                  No connection can be made to the servers that manage
+                  this currency. You will not be able to send or receive
+                  money from this account, but you still can peg other
+                  currencies to it.
+                </li>
+              {:else if data.info.configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                <li>
+                  This account has some configuration problem. Usually
+                  this means that temporarily, a connection can not be
+                  made to the servers that manage this currency.
+                </li>
+              {:else if data.info.configError !== undefined}
+                <li>
+                  An unexpected account configuration problem has
+                  occurred:
+                  <span style="word-break: break-all">{data.info.configError}</span>.
+                </li>
+              {/if}
+            </ul>
+          </Content>
+        </Paper>
 
     {:else if model.tab === 'coin'}
       <div class="qrcode-container">

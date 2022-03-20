@@ -197,10 +197,10 @@
             >
             <LayoutGrid>
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-                <Wrapper>
-                  <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-                    <Title>
-                      {#if data.debtorData.debtorHomepage}
+                <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+                  <Title>
+                    {#if data.debtorData.debtorHomepage}
+                      <Wrapper>
                         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
                           <Text>
                             <a
@@ -213,38 +213,38 @@
                           </Text>
                         </Chip>
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
-                      {/if}
-                      Account with "{data.debtorData.debtorName}"
-                    </Title>
-                    <Content style="clear: both">
-                      {#if data.debtorData.summary}
-                        <blockquote class="summary">{data.debtorData.summary}</blockquote>
-                      {/if}
-                      <ul>
+                      </Wrapper>
+                    {/if}
+                    Account with "{data.debtorData.debtorName}"
+                  </Title>
+                  <Content style="clear: both">
+                    {#if data.debtorData.summary}
+                      <blockquote class="summary">{data.debtorData.summary}</blockquote>
+                    {/if}
+                    <ul>
+                      <li>
+                        <em class="amount">
+                          {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
+                        </em>
+                        are currently available in your account.
+                      </li>
+                      {#if data.account.display.debtorName === undefined && data.debtorData.peg}
                         <li>
-                          <em class="amount">
-                            {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
-                          </em>
-                          are currently available in your account.
+                          This currency is pegged to another
+                          currency. Later, you will be asked to
+                          approve this currency peg.
                         </li>
-                        {#if data.account.display.debtorName === undefined && data.debtorData.peg}
-                          <li>
-                            This currency is pegged to another
-                            currency. Later, you will be asked to
-                            approve this currency peg.
-                          </li>
-                        {/if}
-                        {#if data.isConfirmedAccount}
-                          <li>
-                            You have already confirmed, that you are
-                            certain about the real identity of the
-                            issuer of this currency.
-                          </li>
-                        {/if}
-                      </ul>
-                    </Content>
-                  </Paper>
-                </Wrapper>
+                      {/if}
+                      {#if data.isConfirmedAccount}
+                        <li>
+                          You have already confirmed, that you are
+                          certain about the real identity of the
+                          issuer of this currency.
+                        </li>
+                      {/if}
+                    </ul>
+                  </Content>
+                </Paper>
               </Cell>
 
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
