@@ -283,14 +283,9 @@
                       {calcDisplayAmount(amount, pegBound)}
                     </span>
                   {:else}
-                    <Wrapper>
-                      <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
-                        = {calcDisplayAmount(amount, pegBound)}
-                      </a>
-                      <Tooltip unbounded>
-                        {pegBound.debtorName}
-                      </Tooltip>
-                    </Wrapper>
+                    <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+                      = {calcDisplayAmount(amount, pegBound)}
+                    </a>
                   {/if}
                 </p>
               {/each}
