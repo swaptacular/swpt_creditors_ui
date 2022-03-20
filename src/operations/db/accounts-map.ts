@@ -1,10 +1,11 @@
 import type { BaseDebtorData, PegDisplay, Peg } from '../../debtor-info'
 import type {
-  AccountRecord, AccountObjectRecord, AccountExchangeRecord, AccountDisplayRecord, AccountLedgerRecord
+  AccountRecord, AccountObjectRecord, AccountExchangeRecord, AccountDisplayRecord, AccountLedgerRecord,
+  AccountKnowledgeRecord, AccountInfoRecord, AccountConfigRecord
 } from './schema'
 
 import { getBaseDebtorDataFromAccoutKnowledge } from './common'
-import { tryToParseDebtorInfoDocument } from '../../debtor-info'
+import { tryToParseDebtorInfoDocument, matchBaseDebtorData } from '../../debtor-info'
 import { db } from './schema'
 
 const MAX_INT64 = (1n << 63n) - 1n
@@ -18,6 +19,8 @@ const accountsMapChannel = new BroadcastChannel(accountsMapChannelName)
 
 export type ParsedDebtorInfoDocument = BaseDebtorData & {
   type: 'ParsedDebtorInfoDocument',
+  contentType: string,
+  sha256: string,
   uri: string,
   latestUpdateId: bigint,
 }
@@ -45,8 +48,19 @@ export type PegBound = {
   display: PegDisplay,
 }
 
+export type AccountFullData = AccountDataForDisplay & {
+  account: AccountRecord,
+  ledger: AccountLedgerRecord,
+  config: AccountConfigRecord,
+  info: AccountInfoRecord,
+  knowledge: AccountKnowledgeRecord,
+  exchange: AccountExchangeRecord,
+  debtorInfoDocument?: ParsedDebtorInfoDocument,
+  secureCoin: boolean,
+}
+
 export type AccountDataForDisplay = {
-  display: AccountDisplayRecord,
+  display: AccountDisplayRecord & { debtorName: string },
   amount: bigint,
   pegBounds: PegBound[],
 }
@@ -107,6 +121,8 @@ export class AccountsMap {
                 ...debtorData,
                 type: 'ParsedDebtorInfoDocument',
                 uri: document.uri,
+                contentType: document.contentType,
+                sha256: document.sha256,
                 latestUpdateId: MAX_INT64,
               })
             }
@@ -213,12 +229,72 @@ export class AccountsMap {
       const ledger = ledgers[index]
       const pegBounds = this.followPegChain(account.uri)
       if (display && display.debtorName !== undefined && ledger && pegBounds.length > 0) {
-        return { display, pegBounds, amount: ledger.principal }
+        return {
+          display: display as AccountDataForDisplay['display'],
+          pegBounds,
+          amount: ledger.principal,
+        }
       } else {
         return undefined
       }
     })
     return data.filter(x => x !== undefined) as AccountDataForDisplay[]
+  }
+
+  getAccountFullData(accountUri: string): AccountFullData | undefined {
+    const account = this.getObjectByUri(accountUri)
+    if (account) {
+      assert(account.type === 'Account')
+      const display = this.getObjectByUri(account.display.uri)
+      const ledger = this.getObjectByUri(account.ledger.uri)
+      const config = this.getObjectByUri(account.config.uri)
+      const info = this.getObjectByUri(account.info.uri)
+      const knowledge = this.getObjectByUri(account.knowledge.uri)
+      const exchange = this.getObjectByUri(account.exchange.uri)
+      if (display && ledger && config && info && knowledge && exchange) {
+        assert(display.type === 'AccountDisplay')
+        assert(ledger.type === 'AccountLedger')
+        assert(config.type === 'AccountConfig')
+        assert(info.type === 'AccountInfo')
+        assert(knowledge.type === 'AccountKnowledge')
+        assert(exchange.type === 'AccountExchange')
+        const pegBounds = this.followPegChain(accountUri)
+        let debtorInfoDocument: ParsedDebtorInfoDocument | undefined
+        if (info.debtorInfo) {
+          const { contentType, sha256, iri } = info.debtorInfo
+          const obj = this.getObjectByUri(iri)
+          if (
+            obj &&
+            obj.type === 'ParsedDebtorInfoDocument' &&
+            obj.contentType === (contentType ?? obj.contentType) &&
+            obj.sha256 === (sha256 ?? obj.sha256)
+          ) {
+            debtorInfoDocument = obj
+          }
+        }
+        const secureCoin = (
+          display.knownDebtor &&
+          debtorInfoDocument !== undefined &&
+          matchBaseDebtorData(debtorInfoDocument, getBaseDebtorDataFromAccoutKnowledge(knowledge))
+        )
+        if (display.debtorName !== undefined && pegBounds.length > 0) {
+          return {
+            account,
+            ledger,
+            config,
+            knowledge,
+            info,
+            exchange,
+            pegBounds,
+            debtorInfoDocument,
+            secureCoin,
+            display: display as AccountFullData['display'],
+            amount: ledger.principal,
+          }
+        }
+      }
+    }
+    return undefined
   }
 
   private addRecursivelyPeggedAccountUris(

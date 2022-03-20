@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import type { CommittedTransferRecord } from '../operations'
+  import type { CommittedTransferRecord, AccountFullData } from '../operations'
   // import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
@@ -30,6 +30,7 @@
   let saveSortRankPromise: Promise<number> | undefined
   let transfers: CommittedTransferRecord[]
   let showLoadedTranfersButton: boolean
+  let data: AccountFullData | undefined
 
   function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
     if (scrollElement) {
@@ -87,13 +88,13 @@
 
   $: if (currentModel !== model) {
     currentModel = model
+    data = app.accountsMap.getAccountFullData(model.accountUri)
     sortRank = model.sortRank
     transfers = [...model.transfers]
     showLoadedTranfersButton = true
     resetScroll(model.scrollTop, model.scrollLeft)
   }
   $: debtorName = 'Evgeni Pandurski'
-  $: secureCoin = true
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
@@ -195,133 +196,134 @@
   }
 </style>
 
-<Page title="Account">
-  <svelte:fragment slot="app-bar">
-    <Row style="height: 64px">
-      <div class="buttons-box">
-        <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'account'}
-            on:click={() => model.tab = 'account'}
-            >
-            account_balance
-          </IconButton>
-        </div>
-        {#if secureCoin}
+{#if data}
+  <Page title="{data.display.debtorName}">
+    <svelte:fragment slot="app-bar">
+      <Row style="height: 64px">
+        <div class="buttons-box">
           <div class="icon-container">
             <IconButton
               class="material-icons"
-              disabled={model.tab === 'coin'}
-              on:click={() => model.tab = 'coin'}
+              disabled={model.tab === 'account'}
+              on:click={() => model.tab = 'account'}
               >
-              qr_code_2
+              account_balance
             </IconButton>
           </div>
-        {/if}
-        <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'sort'}
-            on:click={() => model.tab = 'sort'}
-            >
-            sort
-          </IconButton>
-        </div>
-        <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'ledger'}
-            on:click={() => model.tab = 'ledger'}
-            >
-            history
-          </IconButton>
-        </div>
-      </div>
-    </Row>
-  </svelte:fragment>
-
-  <svelte:fragment slot="content">
-    <div class="empty-space"></div>
-
-    {#if model.tab === 'account'}
-      <Wrapper>
-        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-          <Title>
-            {#if true}
-              <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
-                <Text>
-                  <a
-                    href={'https://google.com/'}
-                    target="_blank"
-                    style="text-decoration: none; color: #666"
-                    >
-                    www
-                  </a>
-                </Text>
-              </Chip>
-              <Tooltip>{'https://google.com/'}</Tooltip>
-            {/if}
-            Account with "Evgeni Pandurski"
-          </Title>
-          <Content style="clear: both">
-            <div style="display: flex; flex-flow: row-reverse wrap">
-              <div class="amounts-box">
-                <p class="amount">
-                  195.00 BGN
-                </p>
-                <p class="amount">
-                  <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                    = 195.00 BGN
-                  </a>
-                </p>
-                <p class="amount">
-                  <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                    = 100.00 EUR
-                  </a>
-                </p>
-              </div>
-              {#if true}
-                <blockquote class="summary-box">
-                  This currency is simply amazing. Be prepared to become
-                  the happiest person in the world, simply by using this
-                  currency.
-                </blockquote>
-              {/if}
+          {#if data.secureCoin}
+            <div class="icon-container">
+              <IconButton
+                class="material-icons"
+                disabled={model.tab === 'coin'}
+                on:click={() => model.tab = 'coin'}
+                >
+                qr_code_2
+              </IconButton>
             </div>
-            <ul>
-              <li>
-                The annual interest rate on this account is 5.000%.
-              </li>
+          {/if}
+          <div class="icon-container">
+            <IconButton
+              class="material-icons"
+              disabled={model.tab === 'sort'}
+              on:click={() => model.tab = 'sort'}
+              >
+              sort
+            </IconButton>
+          </div>
+          <div class="icon-container">
+            <IconButton
+              class="material-icons"
+              disabled={model.tab === 'ledger'}
+              on:click={() => model.tab = 'ledger'}
+              >
+              history
+            </IconButton>
+          </div>
+        </div>
+      </Row>
+    </svelte:fragment>
+
+    <svelte:fragment slot="content">
+      <div class="empty-space"></div>
+
+      {#if model.tab === 'account'}
+        <Wrapper>
+          <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+            <Title>
               {#if true}
-                <li>
-                  This account has been scheduled for deletion.
-                </li>
+                <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
+                  <Text>
+                    <a
+                      href={'https://google.com/'}
+                      target="_blank"
+                      style="text-decoration: none; color: #666"
+                      >
+                      www
+                    </a>
+                  </Text>
+                </Chip>
+                <Tooltip>{'https://google.com/'}</Tooltip>
               {/if}
-              {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+              Account with "Evgeni Pandurski"
+            </Title>
+            <Content style="clear: both">
+              <div style="display: flex; flex-flow: row-reverse wrap">
+                <div class="amounts-box">
+                  <p class="amount">
+                    195.00 BGN
+                  </p>
+                  <p class="amount">
+                    <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                      = 195.00 BGN
+                    </a>
+                  </p>
+                  <p class="amount">
+                    <a href="." target="_blank" on:click|preventDefault={() => undefined}>
+                      = 100.00 EUR
+                    </a>
+                  </p>
+                </div>
+                {#if true}
+                  <blockquote class="summary-box">
+                    This currency is simply amazing. Be prepared to become
+                    the happiest person in the world, simply by using this
+                    currency.
+                  </blockquote>
+                {/if}
+              </div>
+              <ul>
                 <li>
-                  No connection can be made to the servers that manage
-                  this currency. You will not be able to send or receive
-                  money from this account, but you still can peg other
-                  currencies to it.
+                  The annual interest rate on this account is 5.000%.
                 </li>
-              {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
-                <li>
-                  This account has some configuration problem. Usually
-                  this means that temporarily, a connection can not be
-                  made to the servers that manage this currency.
-                </li>
-              {:else if configError}
-                <li>
-                  An unexpected account configuration problem has
-                  occurred:
-                  <span style="word-break: break-all">{configError}</span>.
-                </li>
-              {/if}
-            </ul>
-          </Content>
-        </Paper>
-      </Wrapper>
+                {#if true}
+                  <li>
+                    This account has been scheduled for deletion.
+                  </li>
+                {/if}
+                {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                  <li>
+                    No connection can be made to the servers that manage
+                    this currency. You will not be able to send or receive
+                    money from this account, but you still can peg other
+                    currencies to it.
+                  </li>
+                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                  <li>
+                    This account has some configuration problem. Usually
+                    this means that temporarily, a connection can not be
+                    made to the servers that manage this currency.
+                  </li>
+                {:else if configError}
+                  <li>
+                    An unexpected account configuration problem has
+                    occurred:
+                    <span style="word-break: break-all">{configError}</span>.
+                  </li>
+                {/if}
+              </ul>
+            </Content>
+          </Paper>
+        </Wrapper>
 
     {:else if model.tab === 'coin'}
       <div class="qrcode-container">
@@ -418,25 +420,38 @@
     {/if}
   </svelte:fragment>
 
-  <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab on:click={() => undefined} >
-        <Icon class="material-icons">settings</Icon>
-      </Fab>
-    </div>
-    <div class="fab-container">
-      <Fab on:click={() => undefined} >
-        <Icon component={Svg} viewBox="0 0 24 24" style="outline-style: none">
-          <g><rect fill="none" height="24" width="24"/></g><g><path d="M12.89,11.1c-1.78-0.59-2.64-0.96-2.64-1.9c0-1.02,1.11-1.39,1.81-1.39c1.31,0,1.79,0.99,1.9,1.34l1.58-0.67 C15.39,8.03,14.72,6.56,13,6.24V5h-2v1.26C8.52,6.82,8.51,9.12,8.51,9.22c0,2.27,2.25,2.91,3.35,3.31 c1.58,0.56,2.28,1.07,2.28,2.03c0,1.13-1.05,1.61-1.98,1.61c-1.82,0-2.34-1.87-2.4-2.09L8.1,14.75c0.63,2.19,2.28,2.78,2.9,2.96V19 h2v-1.24c0.4-0.09,2.9-0.59,2.9-3.22C15.9,13.15,15.29,11.93,12.89,11.1z M3,21H1v-6h6v2l-2.48,0c1.61,2.41,4.36,4,7.48,4 c4.97,0,9-4.03,9-9h2c0,6.08-4.92,11-11,11c-3.72,0-7.01-1.85-9-4.67L3,21z M1,12C1,5.92,5.92,1,12,1c3.72,0,7.01,1.85,9,4.67L21,3 h2v6h-6V7l2.48,0C17.87,4.59,15.12,3,12,3c-4.97,0-9,4.03-9,9H1z"/></g>
-        </Icon>
-      </Fab>
-    </div>
-    {#if secureCoin}
+    <svelte:fragment slot="floating">
       <div class="fab-container">
-        <Fab color="primary" on:click={() => undefined} >
-          <Icon class="material-icons">receipt</Icon>
+        <Fab on:click={() => undefined} >
+          <Icon class="material-icons">settings</Icon>
         </Fab>
       </div>
-    {/if}
-  </svelte:fragment>
-</Page>
+      <div class="fab-container">
+        <Fab on:click={() => undefined} >
+          <Icon component={Svg} viewBox="0 0 24 24" style="outline-style: none">
+            <g><rect fill="none" height="24" width="24"/></g><g><path d="M12.89,11.1c-1.78-0.59-2.64-0.96-2.64-1.9c0-1.02,1.11-1.39,1.81-1.39c1.31,0,1.79,0.99,1.9,1.34l1.58-0.67 C15.39,8.03,14.72,6.56,13,6.24V5h-2v1.26C8.52,6.82,8.51,9.12,8.51,9.22c0,2.27,2.25,2.91,3.35,3.31 c1.58,0.56,2.28,1.07,2.28,2.03c0,1.13-1.05,1.61-1.98,1.61c-1.82,0-2.34-1.87-2.4-2.09L8.1,14.75c0.63,2.19,2.28,2.78,2.9,2.96V19 h2v-1.24c0.4-0.09,2.9-0.59,2.9-3.22C15.9,13.15,15.29,11.93,12.89,11.1z M3,21H1v-6h6v2l-2.48,0c1.61,2.41,4.36,4,7.48,4 c4.97,0,9-4.03,9-9h2c0,6.08-4.92,11-11,11c-3.72,0-7.01-1.85-9-4.67L3,21z M1,12C1,5.92,5.92,1,12,1c3.72,0,7.01,1.85,9,4.67L21,3 h2v6h-6V7l2.48,0C17.87,4.59,15.12,3,12,3c-4.97,0-9,4.03-9,9H1z"/></g>
+          </Icon>
+        </Fab>
+      </div>
+      {#if data.secureCoin}
+        <div class="fab-container">
+          <Fab color="primary" on:click={() => undefined} >
+            <Icon class="material-icons">receipt</Icon>
+          </Fab>
+        </div>
+      {/if}
+    </svelte:fragment>
+  </Page>
+
+{:else}
+  <!-- Normally, this should not happen. -->
+  <Page title="Account">
+    <svelte:fragment slot="content">
+      <Paper style="margin: 24px 18px" elevation={6}>
+        <Title>Unknown account</Title>
+        <Content>Can not obtain information about this account.</Content>
+      </Paper>
+    </svelte:fragment>
+  </Page>
+{/if}
+

@@ -89,6 +89,8 @@ export async function settleFetchDebtorInfoTask(
             ...debtorData,
             type: 'ParsedDebtorInfoDocument',
             uri: debtorInfoDocument.uri,
+            contentType: debtorInfoDocument.contentType,
+            sha256: debtorInfoDocument.sha256,
             latestUpdateId: MAX_INT64,
           },
         })
