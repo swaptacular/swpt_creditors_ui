@@ -283,7 +283,7 @@
                         <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
                           = {calcDisplayAmount(data.amount, pegBound)}
                         </a>
-                        <Tooltip>{pegBound.debtorName}</Tooltip>
+                        <Tooltip unbounded>{pegBound.debtorName}</Tooltip>
                       </Wrapper>
                     {/if}
                   </p>
