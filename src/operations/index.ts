@@ -4,7 +4,7 @@ import type {
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData
+  CommittedTransferRecord, AccountFullData, PegBound
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
@@ -76,6 +76,7 @@ export type {
   AccountDataForDisplay,
   CommittedTransferRecord,
   AccountFullData,
+  PegBound,
 }
 
 export class ConflictingUpdate extends Error {

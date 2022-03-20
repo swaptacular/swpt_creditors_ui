@@ -55,6 +55,7 @@ export type AccountFullData = AccountDataForDisplay & {
   info: AccountInfoRecord,
   knowledge: AccountKnowledgeRecord,
   exchange: AccountExchangeRecord,
+  debtorData: BaseDebtorData,
   debtorInfoDocument?: ParsedDebtorInfoDocument,
   secureCoin: boolean,
 }
@@ -272,10 +273,11 @@ export class AccountsMap {
             debtorInfoDocument = obj
           }
         }
+        const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
         const secureCoin = (
           display.knownDebtor &&
           debtorInfoDocument !== undefined &&
-          matchBaseDebtorData(debtorInfoDocument, getBaseDebtorDataFromAccoutKnowledge(knowledge))
+          matchBaseDebtorData(debtorInfoDocument, debtorData)
         )
         if (display.debtorName !== undefined && pegBounds.length > 0) {
           return {
@@ -287,6 +289,7 @@ export class AccountsMap {
             exchange,
             pegBounds,
             debtorInfoDocument,
+            debtorData,
             secureCoin,
             display: display as AccountFullData['display'],
             amount: ledger.principal,

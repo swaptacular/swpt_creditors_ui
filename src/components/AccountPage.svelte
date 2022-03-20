@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import type { CommittedTransferRecord, AccountFullData } from '../operations'
-  // import { amountToString } from '../format-amounts'
+  import type { CommittedTransferRecord, AccountFullData, PegBound } from '../operations'
+  import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Svg from '@smui/common/Svg.svelte'
   import Paper, { Title, Content } from '@smui/paper'
@@ -16,6 +16,7 @@
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import QrGenerator from './QrGenerator.svelte'
+  import CommittedTransferCard from './CommittedTransferCard.svelte'
 
   export let app: AppState
   export let model: AccountModel
@@ -24,7 +25,6 @@
   let scrollElement = document.documentElement
   let downloadLinkElement: HTMLAnchorElement
   let currentModel: AccountModel
-  let configError: string = 'CONFIGURATION_IS_NOT_EFFECTUAL'
   let dataUrl: string
   let sortRank: number
   let saveSortRankPromise: Promise<number> | undefined
@@ -55,11 +55,6 @@
     }
   }
 
-  function getDate(t: CommittedTransferRecord): string {
-    const initiatedAt = new Date(t.committedAt)
-    return initiatedAt.toLocaleString()
-  }
-
   async function loadTransfers(): Promise<void> {
     if (showLoadedTranfersButton) {
       showLoadedTranfersButton = false
@@ -82,6 +77,22 @@
     })
   }
 
+  function showAccount(accountUri: string): void {
+    const scrollTop = scrollElement.scrollTop
+    const scrollLeft = scrollElement.scrollLeft
+    app.showAccount(accountUri, () => {
+      app.pageModel.set({ ...model, transfers, scrollTop, scrollLeft })
+    })
+  }
+
+  function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
+    const amount = Number(amt) * pegBound.exchangeRate
+    const { amountDivisor, decimalPlaces } = pegBound.display
+    const unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+    const unit = pegBound.display.unit
+    return `${unitAmount} ${unit}`
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
@@ -94,27 +105,12 @@
     showLoadedTranfersButton = true
     resetScroll(model.scrollTop, model.scrollLeft)
   }
-  $: debtorName = 'Evgeni Pandurski'
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
 </script>
 
 <style>
-  h5 {
-    font-size: 1.1em;
-    font-weight: bold;
-  }
-  .transfer {
-    font-size: 1.1em;
-    word-break: break-word;
-    margin-top: 10px;
-  }
-  .transfer-note {
-    word-break: break-word;
-    margin-top: 5px;
-    color: #888;
-  }
   ul {
     list-style: '\2713\00A0' outside;
     margin: 0.75em 1.25em 0 1.25em;
@@ -250,11 +246,11 @@
         <Wrapper>
           <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
             <Title>
-              {#if true}
+              {#if data.debtorData.debtorHomepage}
                 <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
                   <Text>
                     <a
-                      href={'https://google.com/'}
+                      href={data.debtorData.debtorHomepage.uri}
                       target="_blank"
                       style="text-decoration: none; color: #666"
                       >
@@ -262,62 +258,60 @@
                     </a>
                   </Text>
                 </Chip>
-                <Tooltip>{'https://google.com/'}</Tooltip>
+                <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
               {/if}
-              Account with "Evgeni Pandurski"
+              {#if data.display.knownDebtor}
+                Account with "{data.display.debtorName}"
+              {:else}
+                Unconfirmed account with "{data.display.debtorName}"
+              {/if}
             </Title>
             <Content style="clear: both">
               <div style="display: flex; flex-flow: row-reverse wrap">
                 <div class="amounts-box">
-                  <p class="amount">
-                    195.00 BGN
-                  </p>
-                  <p class="amount">
-                    <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                      = 195.00 BGN
-                    </a>
-                  </p>
-                  <p class="amount">
-                    <a href="." target="_blank" on:click|preventDefault={() => undefined}>
-                      = 100.00 EUR
-                    </a>
-                  </p>
+                  {#each data.pegBounds as pegBound, index}
+                    <p class="amount">
+                      {#if index === 0}
+                        {calcDisplayAmount(data.amount, pegBound)}
+                      {:else}
+                        <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+                          = {calcDisplayAmount(data.amount, pegBound)}
+                        </a>
+                      {/if}
+                    </p>
+                  {/each}
                 </div>
-                {#if true}
-                  <blockquote class="summary-box">
-                    This currency is simply amazing. Be prepared to become
-                    the happiest person in the world, simply by using this
-                    currency.
-                  </blockquote>
+                {#if data.debtorData.summary}
+                  <blockquote class="summary-box">{data.debtorData.summary}</blockquote>
                 {/if}
               </div>
               <ul>
                 <li>
-                  The annual interest rate on this account is 5.000%.
+                  The annual interest rate on this account is {data.info.interestRate.toFixed(3)}%.
                 </li>
-                {#if true}
+                {#if data.config.scheduledForDeletion}
                   <li>
                     This account has been scheduled for deletion.
                   </li>
                 {/if}
-                {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                {#if data.info.configError === 'NO_CONNECTION_TO_DEBTOR'}
                   <li>
                     No connection can be made to the servers that manage
                     this currency. You will not be able to send or receive
                     money from this account, but you still can peg other
                     currencies to it.
                   </li>
-                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                {:else if data.info.configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
                   <li>
                     This account has some configuration problem. Usually
                     this means that temporarily, a connection can not be
                     made to the servers that manage this currency.
                   </li>
-                {:else if configError}
+                {:else if data.info.configError !== undefined}
                   <li>
                     An unexpected account configuration problem has
                     occurred:
-                    <span style="word-break: break-all">{configError}</span>.
+                    <span style="word-break: break-all">{data.info.configError}</span>.
                   </li>
                 {/if}
               </ul>
@@ -328,7 +322,7 @@
     {:else if model.tab === 'coin'}
       <div class="qrcode-container">
         <QrGenerator
-          value="https://www.w3schools.com/cssref/css3_pr_word-break.asp"
+          value={`${data.debtorData.latestDebtorInfo.uri}#${data.account.debtor.uri}`}
           size={320}
           padding={28}
           errorCorrection="L"
@@ -337,10 +331,17 @@
           bind:dataUrl
           />
       </div>
-      <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>download</a>
+      <a
+        class="download-link"
+        href={dataUrl}
+        download={`${data.display.debtorName}.png`}
+        bind:this={downloadLinkElement}
+        >
+        download
+      </a>
       <div class="text-container">
         <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
-          <Title>Digital coin for "Evgeni Pandurski"</Title>
+          <Title>Digital coin for "{data.display.debtorName}"</Title>
           <Content>
             <a href="." target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
               The image above
@@ -355,7 +356,7 @@
 
     {:else if model.tab === 'sort'}
       <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-        <Title>Sort rank for "Evgeni Pandurski"</Title>
+        <Title>Sort rank for "{data.display.debtorName}"</Title>
         <Content>
           To select this account more easily among other accounts, you
           may increase its sort rank. By doing so, you will push this
@@ -389,19 +390,11 @@
       <LayoutGrid>
         {#each transfers as transfer }
           <Cell>
-            <Card>
-              <PrimaryAction on:click={() => showLedgerEntry(transfer.uri)}>
-                <CardContent>
-                  <h5>{getDate(transfer)}</h5>
-                  <p class="transfer">
-                    <span>500 EUR</span> to "Ivan Ivanov"
-                  </p>
-                  <p class="transfer-note">
-                    Rent payment for February
-                  </p>
-                </CardContent>
-              </PrimaryAction>
-            </Card>
+            <CommittedTransferCard
+              {transfer}
+              pegBound={data.pegBounds[0]}
+              activate={() => showLedgerEntry(transfer.uri)}
+              />
           </Cell>
         {/each}
         <Cell span={12} style="text-align: cetner; visibility: {showLoadedTranfersButton ? 'visible' : 'hidden'}">
