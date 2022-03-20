@@ -135,8 +135,8 @@
 
 <style>
   ul {
-    list-style: '\2713\00A0' outside;
-    margin: 0.75em 1.25em 0 1.25em;
+    list-style: disc outside;
+    margin: 0.75em 1.25em 0 18px;
   }
   li {
     margin-top: 0.5em;
@@ -152,6 +152,9 @@
   .amount a {
     color: rgb(0, 0, 238);
     text-decoration: none;
+  }
+  .single-amount {
+    font-size: 1.1em;
   }
   .summary-box {
     color: #888;
@@ -277,7 +280,9 @@
               {#each pegBounds as pegBound, index}
                 <p class="amount">
                   {#if index === 0}
-                    {calcDisplayAmount(amount, pegBound)}
+                    <span class:single-amount={pegBounds.length === 1}>
+                      {calcDisplayAmount(amount, pegBound)}
+                    </span>
                   {:else}
                     <Wrapper>
                       <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
@@ -325,9 +330,7 @@
                 {:else}
                   An unexpected account configuration problem has
                   occurred:
-                  <span style="word-break: break-all">
-                    {configError}
-                  </span>.
+                  <span style="word-break: break-all">{configError}</span>.
                 {/if}
               </li>
             {/if}

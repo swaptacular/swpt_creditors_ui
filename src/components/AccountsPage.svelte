@@ -123,7 +123,7 @@
     color: black !important;
   }
   .amount {
-    font-size: 1.20em;
+    font-size: 1.25em;
     margin-top: 0.33em;
     color: #555;
     text-align: right;
