@@ -21,12 +21,27 @@
   }
   
   $: paymentInfo = parseTransferNote(transfer)
+  $: payeeName = paymentInfo.payeeName
+  $: payeeReference = paymentInfo.payeeReference
+  $: description = paymentInfo.description
+  $: amount = transfer.acquiredAmount
+  $: displayAmount = calcDisplayAmount(amount)
 </script>
 
 <style>
   h5 {
     font-size: 1.1em;
     font-weight: bold;
+  }
+  pre {
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    width: 100%;
+  }
+  a {
+    overflow-wrap: break-word;
+    width: 100%;
   }
   .transfer {
     font-size: 1.1em;
@@ -45,12 +60,21 @@
     <Content>
       <h5>{getDate(transfer)}</h5>
       <p class="transfer">
-        <span>{calcDisplayAmount(transfer.acquiredAmount)}</span>
-        to
-        "{paymentInfo.payeeName}"
+        <span>{displayAmount}</span>
+        {#if amount >= 0 && payeeName}
+          from "{payeeName}"
+        {:else if payeeReference}
+          towards "{payeeReference}"
+        {/if}
       </p>
       <p class="transfer-note">
-        {paymentInfo.description.content}
+        {#if description.contentFormat === '.'}
+          <a href="{description.content}" target="_blank" on:click|stopPropagation>{description.content}</a>
+        {:else if description.content}
+          <pre>
+            {description.content}
+          </pre>
+        {/if}
       </p>
     </Content>
   </PrimaryAction>
