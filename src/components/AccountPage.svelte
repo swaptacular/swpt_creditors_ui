@@ -119,6 +119,7 @@
   $: display = data.display
   $: knownDebtor = display.knownDebtor
   $: info = data.info
+  $: interestRate = info.interestRate
   $: configError = info.configError
   $: config = data.config
   $: scheduledForDeletion = config.scheduledForDeletion
@@ -219,40 +220,24 @@
     <Row style="height: 64px">
       <div class="buttons-box">
         <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'account'}
-            on:click={() => model.tab = 'account'}
-            >
+          <IconButton class="material-icons" disabled={model.tab === 'account'} on:click={() => model.tab = 'account'}>
             account_balance
           </IconButton>
         </div>
         {#if isSecureCoin}
           <div class="icon-container">
-            <IconButton
-              class="material-icons"
-              disabled={model.tab === 'coin'}
-              on:click={() => model.tab = 'coin'}
-              >
+            <IconButton class="material-icons" disabled={model.tab === 'coin'} on:click={() => model.tab = 'coin'}>
               qr_code_2
             </IconButton>
           </div>
         {/if}
         <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'sort'}
-            on:click={() => model.tab = 'sort'}
-            >
+          <IconButton class="material-icons" disabled={model.tab === 'sort'} on:click={() => model.tab = 'sort'}>
             sort
           </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton
-            class="material-icons"
-            disabled={model.tab === 'ledger'}
-            on:click={() => model.tab = 'ledger'}
-            >
+          <IconButton class="material-icons" disabled={model.tab === 'ledger'} on:click={() => model.tab = 'ledger'}>
             history
           </IconButton>
         </div>
@@ -268,12 +253,16 @@
         <Title>
           {#if homepageUri}
             <Wrapper>
-              <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
+              <Chip chip="help" style="float: right; margin-left: 6px">
                 <Text>
-                  <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">www</a>
+                  <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
+                    www
+                  </a>
                 </Text>
               </Chip>
-              <Tooltip>{homepageUri}</Tooltip>
+              <Tooltip>
+                {homepageUri}
+              </Tooltip>
             </Wrapper>
           {/if}
           {#if knownDebtor}
@@ -294,19 +283,28 @@
                       <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
                         = {calcDisplayAmount(amount, pegBound)}
                       </a>
-                      <Tooltip unbounded>{pegBound.debtorName}</Tooltip>
+                      <Tooltip unbounded>
+                        {pegBound.debtorName}
+                      </Tooltip>
                     </Wrapper>
                   {/if}
                 </p>
               {/each}
             </div>
             {#if summary}
-              <blockquote class="summary-box">{summary}</blockquote>
+              <blockquote class="summary-box">
+                {summary}
+              </blockquote>
             {/if}
           </div>
           <ul>
             <li>
-              The annual interest rate on this account is {info.interestRate.toFixed(3)}%.
+              The annual interest rate on this account is
+              {#if interestRate === 0}
+                0%.
+              {:else}
+                {interestRate.toFixed(3)}%.
+              {/if}
             </li>
             {#if scheduledForDeletion}
               <li>
@@ -327,7 +325,9 @@
                 {:else}
                   An unexpected account configuration problem has
                   occurred:
-                  <span style="word-break: break-all">{configError}</span>.
+                  <span style="word-break: break-all">
+                    {configError}
+                  </span>.
                 {/if}
               </li>
             {/if}
@@ -352,9 +352,11 @@
       </a>
       <div class="text-container">
         <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
-          <Title>Digital coin for "{debtorName}"</Title>
+          <Title>
+            Digital coin for "{debtorName}"
+          </Title>
           <Content>
-            <a href="." target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
+            <a href="{digitalCoin}" target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
               The image above
             </a>
             (an ordinary QR code, indeed) uniquely identifies the
@@ -404,8 +406,12 @@
             <PrimaryAction on:click={loadTransfers}>
               <CardContent>
                 <div class="load-button">
-                  <span>Load older tranfers</span>
-                  <Icon class="material-icons">arrow_forward</Icon>
+                  <span>
+                    Load older tranfers
+                  </span>
+                  <Icon class="material-icons">
+                    arrow_forward
+                  </Icon>
                 </div>
               </CardContent>
             </PrimaryAction>
@@ -418,7 +424,9 @@
   <svelte:fragment slot="floating">
     <div class="fab-container">
       <Fab on:click={() => undefined} >
-        <Icon class="material-icons">settings</Icon>
+        <Icon class="material-icons">
+          settings
+        </Icon>
       </Fab>
     </div>
     <div class="fab-container">
@@ -429,7 +437,9 @@
     {#if isSecureCoin}
       <div class="fab-container">
         <Fab color="primary" on:click={() => undefined} >
-          <Icon class="material-icons">receipt</Icon>
+          <Icon class="material-icons">
+            receipt
+          </Icon>
         </Fab>
       </div>
     {/if}
