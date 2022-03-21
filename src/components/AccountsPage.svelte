@@ -2,6 +2,7 @@
   import type { AppState, AccountsModel } from '../app-state'
   import type { AccountDataForDisplay } from '../operations'
   import { amountToString } from '../format-amounts'
+  import { fade } from 'svelte/transition'
   import { tick, onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -175,7 +176,7 @@
 
   <svelte:fragment slot="floating">
     {#if visibleSearchBox}
-      <div class="search-box">
+      <div class="search-box" in:fade="{{ duration: 350 }}">
         <div style="padding-left: 16px; flex-grow: 1" >
           <Textfield
             variant="outlined"
