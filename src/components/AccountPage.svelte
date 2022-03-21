@@ -100,7 +100,7 @@
     return `${unitAmount} ${unit}`
   }
 
-  function changeTab(s: 'account' | 'coin' | 'sort' | 'ledger'): void {
+  function changeTab(s: AccountModel['tab']): void {
     duration = 350
     model.tab = s
   }
