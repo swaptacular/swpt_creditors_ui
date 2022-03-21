@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
   import type { CommittedTransferRecord, AccountFullData, PegBound } from '../operations'
+  import { fade } from 'svelte/transition'
   import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Paper, { Title, Content } from '@smui/paper'
@@ -22,6 +23,7 @@
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
 
+  let duration: number
   let scrollElement = document.documentElement
   let downloadLinkElement: HTMLAnchorElement
   let currentModel: AccountModel
@@ -97,12 +99,18 @@
     return `${unitAmount} ${unit}`
   }
 
+  function changeTab(s: 'account' | 'coin' | 'sort' | 'ledger'): void {
+    duration = 350
+    model.tab = s
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
 
   $: if (currentModel !== model) {
     currentModel = model
+    duration = 0
     sortRank = model.sortRank
     transfers = [...model.transfers]
     showLoadedTranfersButton = true
@@ -111,6 +119,7 @@
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
+  $: tab = model.tab
   $: data = model.accountData
   $: accountUri = data.account.uri
   $: display = data.display
@@ -219,24 +228,24 @@
     <Row style="height: 64px">
       <div class="buttons-box">
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={model.tab === 'account'} on:click={() => model.tab = 'account'}>
+          <IconButton class="material-icons" disabled={tab === 'account'} on:click={() => changeTab('account')}>
             account_balance
           </IconButton>
         </div>
         {#if isSecureCoin}
           <div class="icon-container">
-            <IconButton class="material-icons" disabled={model.tab === 'coin'} on:click={() => model.tab = 'coin'}>
+            <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
               qr_code_2
             </IconButton>
           </div>
         {/if}
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={model.tab === 'sort'} on:click={() => model.tab = 'sort'}>
+          <IconButton class="material-icons" disabled={tab === 'sort'} on:click={() => changeTab('sort')}>
             sort
           </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={model.tab === 'ledger'} on:click={() => model.tab = 'ledger'}>
+          <IconButton class="material-icons" disabled={tab === 'ledger'} on:click={() => changeTab('ledger')}>
             history
           </IconButton>
         </div>
@@ -247,70 +256,71 @@
   <svelte:fragment slot="content">
     <div class="empty-space"></div>
 
-    {#if model.tab === 'account'}
-      <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-        <Title>
-          {#if homepageUri}
-            <Wrapper>
-              <Chip chip="help" style="float: right; margin-left: 6px">
-                <Text>
-                  <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
-                    www
-                  </a>
-                </Text>
-              </Chip>
-              <Tooltip>
-                {homepageUri}
-              </Tooltip>
-            </Wrapper>
-          {/if}
-          {#if knownDebtor}
-            Account with "{debtorName}"
-          {:else}
-            Unconfirmed account with "{debtorName}"
-          {/if}
-        </Title>
-        <Content style="clear: both">
-          <div style="display: flex; flex-flow: row-reverse wrap">
-            <div class="amounts-box">
-              {#each pegBounds as pegBound, index}
-                <p class="amount">
-                  {#if index === 0}
-                    <span class:single-amount={pegBounds.length === 1}>
-                      {calcDisplayAmount(amount, pegBound)}
-                    </span>
-                  {:else}
-                    <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
-                      = {calcDisplayAmount(amount, pegBound)}
+    {#if tab === 'account'}
+      <div in:fade="{{ duration }}">
+        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+          <Title>
+            {#if homepageUri}
+              <Wrapper>
+                <Chip chip="help" style="float: right; margin-left: 6px">
+                  <Text>
+                    <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
+                      www
                     </a>
-                  {/if}
-                </p>
-              {/each}
-            </div>
-            {#if summary}
-              <blockquote class="summary-box">
-                {summary}
-              </blockquote>
+                  </Text>
+                </Chip>
+                <Tooltip>
+                  {homepageUri}
+                </Tooltip>
+              </Wrapper>
             {/if}
-          </div>
-          <ul>
-            <li>
-              The annual interest rate on this account is
-              {#if interestRate === 0}
-                0%.
-              {:else}
-                {interestRate.toFixed(3)}%.
+            {#if knownDebtor}
+              Account with "{debtorName}"
+            {:else}
+              Unconfirmed account with "{debtorName}"
+            {/if}
+          </Title>
+          <Content style="clear: both">
+            <div style="display: flex; flex-flow: row-reverse wrap">
+              <div class="amounts-box">
+                {#each pegBounds as pegBound, index}
+                  <p class="amount">
+                    {#if index === 0}
+                      <span class:single-amount={pegBounds.length === 1}>
+                        {calcDisplayAmount(amount, pegBound)}
+                      </span>
+                    {:else}
+                      <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+                        = {calcDisplayAmount(amount, pegBound)}
+                      </a>
+                    {/if}
+                  </p>
+                {/each}
+              </div>
+              {#if summary}
+                <blockquote class="summary-box">
+                  {summary}
+                </blockquote>
               {/if}
-            </li>
-            {#if scheduledForDeletion}
+            </div>
+            <ul>
               <li>
-                This account has been scheduled for deletion.
+                The annual interest rate on this account is
+                {#if interestRate === 0}
+                  0%.
+                {:else}
+                  {interestRate.toFixed(3)}%.
+                {/if}
               </li>
-            {/if}
-            {#if configError !== undefined}
-              <li>
-                {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
-                  No connection can be made to the servers that manage
+              {#if scheduledForDeletion}
+                <li>
+                  This account has been scheduled for deletion.
+                </li>
+              {/if}
+              {#if configError !== undefined}
+                <li>
+                  {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                    No connection can be made to the servers that manage
                   this currency. You will not be able to send or
                   receive money from this account, but you still can
                   peg other currencies to it.
@@ -326,92 +336,99 @@
               </li>
             {/if}
           </ul>
-        </Content>
-      </Paper>
-
-    {:else if model.tab === 'coin'}
-      <div class="qrcode-container">
-        <QrGenerator
-          value={digitalCoin}
-          size={320}
-          padding={28}
-          errorCorrection="L"
-          background="#FFFFFF"
-          color="#000000"
-          bind:dataUrl
-          />
-      </div>
-      <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>
-        download
-      </a>
-      <div class="text-container">
-        <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
-          <Title>
-            Digital coin for "{debtorName}"
-          </Title>
-          <Content>
-            <a href="{digitalCoin}" target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
-              The image above
-            </a>
-            (an ordinary QR code, indeed) uniquely identifies the
-            account's digital currency. Other people may want to scan
-            this image with their mobile devices, so that they can use
-            the currency too.
           </Content>
         </Paper>
       </div>
 
-    {:else if model.tab === 'sort'}
-      <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-        <Title>Sort rank for "{debtorName}"</Title>
-        <Content>
-          To select this account more easily among other accounts, you
-          may increase its sort rank. By doing so, you will push this
-          account closer to the top of the accounts list.
-        </Content>
-      </Paper>
-      <div class="text-container">
-        <FormField align="center" style="max-width: 400px; flex-grow: 1; display: flex; margin: 16px">
-          <Slider style="flex-grow: 1" min={0} max={10} step={1} bind:value={sortRank} />
-          <span slot="label" style="flex-grow: 0; padding: 8px 8px 8px 12px; font-size: 1.5em">
-            {sortRank}
-          </span>
-        </FormField>
+    {:else if tab === 'coin'}
+      <div in:fade="{{ duration }}">
+        <div class="qrcode-container">
+          <QrGenerator
+            value={digitalCoin}
+            size={320}
+            padding={28}
+            errorCorrection="L"
+            background="#FFFFFF"
+            color="#000000"
+            bind:dataUrl
+            />
+        </div>
+        <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>
+          download
+        </a>
+        <div class="text-container">
+          <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
+            <Title>
+              Digital coin for "{debtorName}"
+            </Title>
+            <Content>
+              <a href="{digitalCoin}" target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
+                The image above
+              </a>
+              (an ordinary QR code, indeed) uniquely identifies the
+              account's digital currency. Other people may want to scan
+              this image with their mobile devices, so that they can use
+              the currency too.
+            </Content>
+          </Paper>
+        </div>
       </div>
 
-    {:else if model.tab === 'ledger'}
-      {#if transfers.length === 0}
-        <p class="no-transfers">
-          There are no known transfers to/from this account.
-        </p>
-      {/if}
-      <LayoutGrid>
-        {#each transfers as transfer }
-          <Cell>
-            <CommittedTransferCard
-              {transfer}
-              pegBound={pegBounds[0]}
-              activate={() => showLedgerEntry(transfer.uri)}
-              />
+    {:else if tab === 'sort'}
+      <div in:fade="{{ duration }}">
+        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+          <Title>Sort rank for "{debtorName}"</Title>
+          <Content>
+            To select this account more easily among other accounts, you
+            may increase its sort rank. By doing so, you will push this
+            account closer to the top of the accounts list.
+          </Content>
+        </Paper>
+        <div class="text-container">
+          <FormField align="center" style="max-width: 400px; flex-grow: 1; display: flex; margin: 16px">
+            <Slider style="flex-grow: 1" min={0} max={10} step={1} bind:value={sortRank} />
+            <span slot="label" style="flex-grow: 0; padding: 8px 8px 8px 12px; font-size: 1.5em">
+              {sortRank}
+            </span>
+          </FormField>
+        </div>
+      </div>
+
+    {:else if tab === 'ledger'}
+      <div in:fade="{{ duration }}">
+        {#if transfers.length === 0}
+          <p class="no-transfers">
+            There are no known transfers to/from this account.
+          </p>
+        {/if}
+        <LayoutGrid>
+          {#each transfers as transfer }
+            <Cell>
+              <CommittedTransferCard
+                {transfer}
+                pegBound={pegBounds[0]}
+                activate={() => showLedgerEntry(transfer.uri)}
+                />
+            </Cell>
+          {/each}
+          <Cell span={12} style="text-align: cetner; visibility: {showLoadedTranfersButton ? 'visible' : 'hidden'}">
+            <Card>
+              <PrimaryAction on:click={loadTransfers}>
+                <CardContent>
+                  <div class="load-button">
+                    <span>
+                      Load older tranfers
+                    </span>
+                    <Icon class="material-icons">
+                      arrow_forward
+                    </Icon>
+                  </div>
+                </CardContent>
+              </PrimaryAction>
+            </Card>
           </Cell>
-        {/each}
-        <Cell span={12} style="text-align: cetner; visibility: {showLoadedTranfersButton ? 'visible' : 'hidden'}">
-          <Card>
-            <PrimaryAction on:click={loadTransfers}>
-              <CardContent>
-                <div class="load-button">
-                  <span>
-                    Load older tranfers
-                  </span>
-                  <Icon class="material-icons">
-                    arrow_forward
-                  </Icon>
-                </div>
-              </CardContent>
-            </PrimaryAction>
-          </Card>
-        </Cell>
-      </LayoutGrid>
+        </LayoutGrid>
+      </div>
     {/if}
   </svelte:fragment>
 
