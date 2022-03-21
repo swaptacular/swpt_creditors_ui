@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord
+  CommittedTransferRecord, AccountFullData
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -186,7 +186,7 @@ export type AccountModel = BasePageModel & {
   tab: 'account' | 'coin' | 'ledger' | 'sort',
   scrollTop?: number,
   scrollLeft?: number,
-  accountUri: string,
+  accountData: AccountFullData,
   sortRank: number,
   transfers: CommittedTransferRecord[],
   fetchTransfers: () => Promise<CommittedTransferRecord[] | undefined>,
@@ -850,54 +850,63 @@ export class AppState {
   }
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
-    // TODO: Add a real implementation.
-    const dummyTransfers: CommittedTransferRecord[] = Array(40).fill({
-      type: 'CommittedTransfer',
-      uri: '',
-      userId: 1,
-      account: {uri: ''},
-      sender: { type: 'AccountIdentity', uri: '' },
-      recipient: { type: 'AccountIdentity', uri: '' },
-      acquiredAmount: 1000n,
-      noteFormat: '',
-      note: 'Pretty simple and straight-forward right? \n\n\n\n `Ivan Ivanov Ivanov` says that this can be used for much more than just setting font-size however, and they can be used pretty much everywhere units are expected (padding, margin, width, height, max-width,…you get the picture!).',
-      committedAt: '2020-01-01T00:00:00Z',
-    })
-    const sleep = (milliseconds: number) => {
-      return new Promise(resolve => setTimeout(resolve, milliseconds))
-    }
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
       const sortRank = await this.uc.getAccountSortPriority(accountUri)
+      const accountData = this.accountsMap.getAccountFullData(accountUri)
       if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'AccountModel',
-          reload: () => { this.showAccount(accountUri, back) },
-          fetchTransfers: async () => {
-            // TODO: Get ~100 transfers from the local DB, and if
-            // there are not enough of them -- fetch some from the server.
-            let transfers: CommittedTransferRecord[] | undefined
-            await this.attempt(async () => {
-              await sleep(2000)
-              if (Math.random() > 0.2) {
-                transfers = dummyTransfers
-              } else {
-                throw new ServerSessionError()
-              }
-            }, {
-              alerts: [
-                [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-              ],
-            })
-            return transfers
-          },
-          tab: 'account',
-          transfers: dummyTransfers,  // TODO: get ~100 transfers from the local DB.
-          goBack,
-          accountUri,
-          sortRank,
-        })
+        if (accountData === undefined) {
+          this.showAccounts()
+        } else {
+          // TODO: Add a real implementation.
+          const sleep = (milliseconds: number) => {
+            return new Promise(resolve => setTimeout(resolve, milliseconds))
+          }
+          const dummyTransfers: CommittedTransferRecord[] = Array(40).fill({
+            type: 'CommittedTransfer',
+            uri: '',
+            userId: 1,
+            account: { uri: '' },
+            sender: { type: 'AccountIdentity', uri: '' },
+            recipient: { type: 'AccountIdentity', uri: '' },
+            acquiredAmount: 1000n,
+            noteFormat: '',
+            note: 'Pretty simple and straight-forward right? \n\n\n\n ' +
+              '`Ivan Ivanov Ivanov` says that this can be used for much ' +
+              'more than just setting font-size however, and they can ' +
+              'be used pretty much everywhere units are expected (padding' +
+              ', margin, width, height, max-width,…you get the picture!).',
+            committedAt: '2020-01-01T00:00:00Z',
+          })
+          this.pageModel.set({
+            type: 'AccountModel',
+            reload: () => { this.showAccount(accountUri, back) },
+            fetchTransfers: async () => {
+              // TODO: Get ~100 transfers from the local DB, and if
+              // there are not enough of them -- fetch some from the server.
+              let transfers: CommittedTransferRecord[] | undefined
+              await this.attempt(async () => {
+                await sleep(2000)
+                if (Math.random() > 0.2) {
+                  transfers = dummyTransfers
+                } else {
+                  throw new ServerSessionError()
+                }
+              }, {
+                alerts: [
+                  [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+                ],
+              })
+              return transfers
+            },
+            tab: 'account',
+            transfers: dummyTransfers,  // TODO: get ~100 transfers from the local DB.
+            goBack,
+            accountData,
+            sortRank,
+          })
+        }
       }
     })
   }

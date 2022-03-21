@@ -42,7 +42,7 @@
   async function saveSortRank(): Promise<void> {
     const save = async () => {
       const rank = sortRank
-      await app.setAccountSortPriority(model.accountUri, rank)
+      await app.setAccountSortPriority(accountUri, rank)
       saveSortRankPromise = undefined
       var m = model
       m.goBack = () => { app.showAccounts() }  // This ensures that the account list will be reloaded when going back.
@@ -97,17 +97,12 @@
     return `${unitAmount} ${unit}`
   }
 
-  function trowError(): never {
-    throw new Error('Can not obtain information about this account.')
-  }
-
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
 
   $: if (currentModel !== model) {
     currentModel = model
-    data = app.accountsMap.getAccountFullData(model.accountUri) ?? trowError()
     sortRank = model.sortRank
     transfers = [...model.transfers]
     showLoadedTranfersButton = true
@@ -116,6 +111,8 @@
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
+  $: data = model.accountData
+  $: accountUri = data.account.uri
   $: display = data.display
   $: knownDebtor = display.knownDebtor
   $: info = data.info
