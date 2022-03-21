@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveDebtorNameModel, ActionManager } from '../app-state'
+  import type { AppState, ApproveDebtorNameModel } from '../app-state'
   import type { ApproveDebtorNameActionWithId } from '../operations'
   import { tick } from 'svelte'
   import { amountToString } from '../format-amounts'
@@ -20,16 +20,19 @@
   export let model: ApproveDebtorNameModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApproveDebtorNameModel
-  let actionManager: ActionManager<ApproveDebtorNameActionWithId>
+  assert(model.display.debtorName !== undefined)
+
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
-
-  let debtorName: string
-
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
+  let debtorName = model.action.editedDebtorName
+  let uniqueDebtorName = isUniqueDebtorName(debtorName)
+  let unsetKnownDebtor = (
+    model.action.debtorName !== model.display.debtorName &&
+    model.display.knownDebtor &&
+    model.action.unsetKnownDebtor
+  )
   let invalidDebtorName: boolean | undefined
-  let uniqueDebtorName: boolean
-  let unsetKnownDebtor: boolean
 
   function createUpdatedAction(): ApproveDebtorNameActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
@@ -83,18 +86,6 @@
     }
   }
 
-  assert(model.display.debtorName !== undefined)
-  $: if (currentModel !== model) {
-    currentModel = model
-    actionManager = app.createActionManager(model.action, createUpdatedAction)
-    debtorName = model.action.editedDebtorName
-    uniqueDebtorName = isUniqueDebtorName(debtorName)
-    unsetKnownDebtor = (
-      model.action.debtorName !== model.display.debtorName &&
-      model.display.knownDebtor &&
-      model.action.unsetKnownDebtor
-    )
-  }
   $: action = model.action
   $: knownDebtor = model.display.knownDebtor
   $: oldName = model.display.debtorName ?? ''

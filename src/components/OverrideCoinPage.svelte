@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, OverrideCoinModel, ActionManager } from '../app-state'
+  import type { AppState, OverrideCoinModel } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -16,13 +16,11 @@
   export let model: OverrideCoinModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: OverrideCoinModel
-  let showKnownCoinList: boolean = false
-  let showNewCoinList: boolean = false
-  let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
-
-  let replace: 'yes' | 'no' = 'no'
+  let showKnownCoinList = false
+  let showNewCoinList = false
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
+  let replace: 'yes' | 'no' = model.action.editedReplaceCoin ? 'yes' : 'no'
 
   function createUpdatedAction(): ApprovePegActionWithId {
     return {
@@ -48,11 +46,6 @@
     }
   }
 
-  $: if (currentModel !== model) {
-    currentModel = model
-    actionManager = app.createActionManager(model.action, createUpdatedAction)
-    replace = model.action.editedReplaceCoin ? 'yes' : 'no'
-  }
   $: action = model.action
   $: editedReplaceCoin = replace === 'yes' || (replace === 'no' ? false : undefined)
   $: peggedDisplay = model.peggedAccountDisplay

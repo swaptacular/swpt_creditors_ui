@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveAmountDisplayModel, ActionManager } from '../app-state'
+  import type { AppState, ApproveAmountDisplayModel } from '../app-state'
   import type { ApproveAmountDisplayActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import { amountToString } from '../format-amounts'
@@ -19,15 +19,14 @@
   export let model: ApproveAmountDisplayModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: ApproveAmountDisplayModel
-  let actionManager: ActionManager<ApproveAmountDisplayActionWithId>
+  assert(model.display.debtorName !== undefined)
+
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let shakingElement: HTMLElement
   let openEnterPinDialog: boolean = false
-
-  let negligibleUnitAmount: string | number
-  let negligibleUnitAmountStep: string
-  let approved: 'yes' | 'no'
-
+  let negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
+  let negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
+  let approved: 'yes' | 'no' = model.action.state?.approved ?? 'no'
   let invalidNegligibleUnitAmount: boolean
 
   function createUpdatedAction(): ApproveAmountDisplayActionWithId {
@@ -76,14 +75,6 @@
     app.resolveApproveAmountDisplayAction(actionManager, model.display.latestUpdateId, pin, model.goBack)
   }
 
-  assert(model.display.debtorName !== undefined)
-  $: if (currentModel !== model) {
-    currentModel = model
-    actionManager = app.createActionManager(model.action, createUpdatedAction)
-    approved = model.action.state?.approved ?? 'no'
-    negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
-    negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
-  }
   $: action = model.action
   $: knownDebtor = model.display.knownDebtor
   $: debtorName = model.display.debtorName ?? ''

@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import type { CommittedTransferRecord, AccountFullData, PegBound } from '../operations'
+  import type { PegBound } from '../operations'
   import { fade } from 'svelte/transition'
   import { amountToString } from '../format-amounts'
-  import { onMount, tick } from "svelte"
+  import { onMount } from "svelte"
   import Paper, { Title, Content } from '@smui/paper'
   import Tooltip, { Wrapper } from '@smui/tooltip'
   import Chip, { Text } from '@smui/chips'
@@ -23,17 +23,15 @@
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
 
-  let show = true
-  let duration: number
-  let scrollElement = document.documentElement
+  const scrollElement = document.documentElement
   let downloadLinkElement: HTMLAnchorElement
-  let currentModel: AccountModel
   let dataUrl: string
-  let sortRank: number
+  let duration = 0
+  let showLoadedTranfersButton = true
+  let tab = model.tab
+  let transfers = [...model.transfers]
+  let sortRank = model.sortRank
   let saveSortRankPromise: Promise<number> | undefined
-  let transfers: CommittedTransferRecord[]
-  let showLoadedTranfersButton: boolean
-  let data: AccountFullData
 
   function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
     if (scrollElement) {
@@ -47,8 +45,13 @@
       const rank = sortRank
       await app.setAccountSortPriority(accountUri, rank)
       saveSortRankPromise = undefined
+
+      // An ugly hack: By modifying model's `goBack` property, we
+      // ensure that the account list will be reloaded when the user
+      // hits the back button. (The original `goBack` function would
+      // show the unmodified account list.)
       var m = model
-      m.goBack = () => { app.showAccounts() }  // This ensures that the account list will be reloaded when going back.
+      m.goBack = () => { app.showAccounts() }
       return rank
     }
     if (saveSortRankPromise) {
@@ -72,24 +75,25 @@
     }
   }
 
+  function createUpdatedModel(): AccountModel {
+    return {
+      ...model,
+      transfers,
+      sortRank,
+      tab,
+      scrollTop: scrollElement.scrollTop,
+      scrollLeft: scrollElement.scrollLeft,
+    }
+  }
+
   function showLedgerEntry(commitedTransferUri: string): void {
-    const m = model
-    const t = transfers
-    const scrollTop = scrollElement.scrollTop
-    const scrollLeft = scrollElement.scrollLeft
-    app.showLedgerEntry(commitedTransferUri, () => {
-      app.pageModel.set({ ...m, transfers: t, scrollTop, scrollLeft })
-    })
+    const m = createUpdatedModel()
+    app.showLedgerEntry(commitedTransferUri, () => app.pageModel.set(m))
   }
 
   function showAccount(accountUri: string): void {
-    const m = model
-    const t = transfers
-    const scrollTop = scrollElement.scrollTop
-    const scrollLeft = scrollElement.scrollLeft
-    app.showAccount(accountUri, () => {
-      app.pageModel.set({ ...m, transfers: t, scrollTop, scrollLeft })
-    })
+    const m = createUpdatedModel()
+    app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
   function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
@@ -100,36 +104,18 @@
     return `${unitAmount} ${unit}`
   }
 
-  function changeTab(s: AccountModel['tab']): void {
+  function changeTab(t: AccountModel['tab']): void {
     duration = 350
-    model.tab = s
-  }
-
-  async function showChagePageAnimation(): Promise<void> {
-    show = false
-    await tick()
-    show = true
+    tab = t
   }
 
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
 
-  $: if (currentModel !== model) {
-    if (currentModel !== undefined) {
-      showChagePageAnimation()
-    }
-    currentModel = model
-    duration = 0
-    sortRank = model.sortRank
-    transfers = [...model.transfers]
-    showLoadedTranfersButton = true
-    resetScroll(model.scrollTop, model.scrollLeft)
-  }
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
   }
-  $: tab = model.tab
   $: data = model.accountData
   $: accountUri = data.account.uri
   $: display = data.display
@@ -233,123 +219,122 @@
   }
 </style>
 
-{#if show}
-  <Page title="{debtorName}">
-    <svelte:fragment slot="app-bar">
-      <Row style="height: 64px">
-        <div class="buttons-box">
-          <div class="icon-container">
-            <IconButton class="material-icons" disabled={tab === 'account'} on:click={() => changeTab('account')}>
-              account_balance
-            </IconButton>
-          </div>
-          {#if isSecureCoin}
-            <div class="icon-container">
-              <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
-                qr_code_2
-              </IconButton>
-            </div>
-          {/if}
-          <div class="icon-container">
-            <IconButton class="material-icons" disabled={tab === 'sort'} on:click={() => changeTab('sort')}>
-              sort
-            </IconButton>
-          </div>
-          <div class="icon-container">
-            <IconButton class="material-icons" disabled={tab === 'ledger'} on:click={() => changeTab('ledger')}>
-              history
-            </IconButton>
-          </div>
+<Page title="{debtorName}">
+  <svelte:fragment slot="app-bar">
+    <Row style="height: 64px">
+      <div class="buttons-box">
+        <div class="icon-container">
+          <IconButton class="material-icons" disabled={tab === 'account'} on:click={() => changeTab('account')}>
+            account_balance
+          </IconButton>
         </div>
-      </Row>
-    </svelte:fragment>
+        {#if isSecureCoin}
+          <div class="icon-container">
+            <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
+              qr_code_2
+            </IconButton>
+          </div>
+        {/if}
+        <div class="icon-container">
+          <IconButton class="material-icons" disabled={tab === 'sort'} on:click={() => changeTab('sort')}>
+            sort
+          </IconButton>
+        </div>
+        <div class="icon-container">
+          <IconButton class="material-icons" disabled={tab === 'ledger'} on:click={() => changeTab('ledger')}>
+            history
+          </IconButton>
+        </div>
+      </div>
+    </Row>
+  </svelte:fragment>
 
-    <svelte:fragment slot="content">
-      <div class="empty-space"></div>
+  <svelte:fragment slot="content">
+    <div class="empty-space"></div>
 
-      {#if tab === 'account'}
-        <div in:fade="{{ duration }}">
-          <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-            <Title>
-              {#if homepageUri}
-                <Wrapper>
-                  <Chip chip="help" style="float: right; margin-left: 6px">
-                    <Text>
-                      <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
-                        www
+    {#if tab === 'account'}
+      <div in:fade="{{ duration }}">
+        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
+          <Title>
+            {#if homepageUri}
+              <Wrapper>
+                <Chip chip="help" style="float: right; margin-left: 6px">
+                  <Text>
+                    <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
+                      www
+                    </a>
+                  </Text>
+                </Chip>
+                <Tooltip>
+                  {homepageUri}
+                </Tooltip>
+              </Wrapper>
+            {/if}
+            {#if knownDebtor}
+              Account with "{debtorName}"
+            {:else}
+              Unconfirmed account with "{debtorName}"
+            {/if}
+          </Title>
+          <Content style="clear: both">
+            <div style="display: flex; flex-flow: row-reverse wrap">
+              <div class="amounts-box">
+                {#each pegBounds as pegBound, index}
+                  <p class="amount">
+                    {#if index === 0}
+                      <span class:single-amount={pegBounds.length === 1}>
+                        {calcDisplayAmount(amount, pegBound)}
+                      </span>
+                    {:else}
+                      <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+                        = {calcDisplayAmount(amount, pegBound)}
                       </a>
-                    </Text>
-                  </Chip>
-                  <Tooltip>
-                    {homepageUri}
-                  </Tooltip>
-                </Wrapper>
-              {/if}
-              {#if knownDebtor}
-                Account with "{debtorName}"
-              {:else}
-                Unconfirmed account with "{debtorName}"
-              {/if}
-            </Title>
-            <Content style="clear: both">
-              <div style="display: flex; flex-flow: row-reverse wrap">
-                <div class="amounts-box">
-                  {#each pegBounds as pegBound, index}
-                    <p class="amount">
-                      {#if index === 0}
-                        <span class:single-amount={pegBounds.length === 1}>
-                          {calcDisplayAmount(amount, pegBound)}
-                        </span>
-                      {:else}
-                        <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
-                          = {calcDisplayAmount(amount, pegBound)}
-                        </a>
-                      {/if}
-                    </p>
-                  {/each}
-                </div>
-                {#if summary}
-                  <blockquote class="summary-box">
-                    {summary}
-                  </blockquote>
-                {/if}
+                    {/if}
+                  </p>
+                {/each}
               </div>
-              <ul>
-                <li>
-                  The annual interest rate on this account is
-                  {#if interestRate === 0}
-                    0%.
-                  {:else}
-                    {interestRate.toFixed(3)}%.
-                  {/if}
-                </li>
-                {#if scheduledForDeletion}
-                  <li>
-                    This account has been scheduled for deletion.
-                  </li>
+              {#if summary}
+                <blockquote class="summary-box">
+                  {summary}
+                </blockquote>
+              {/if}
+            </div>
+            <ul>
+              <li>
+                The annual interest rate on this account is
+                {#if interestRate === 0}
+                  0%.
+                {:else}
+                  {interestRate.toFixed(3)}%.
                 {/if}
-                {#if configError !== undefined}
-                  <li>
-                    {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
-                      No connection can be made to the servers that manage
-                    this currency. You will not be able to send or
-                    receive money from this account, but you still can
-                    peg other currencies to it.
-                  {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
-                    This account has some configuration problem. Usually
-                    this means that temporarily, a connection can not be
-                    made to the servers that manage this currency.
-                  {:else}
-                    An unexpected account configuration problem has
-                    occurred:
-                    <span style="word-break: break-all">{configError}</span>.
-                  {/if}
+              </li>
+              {#if scheduledForDeletion}
+                <li>
+                  This account has been scheduled for deletion.
                 </li>
               {/if}
-            </ul>
-            </Content>
-          </Paper>
-        </div>
+              {#if configError !== undefined}
+                <li>
+                  {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
+                    No connection can be made to the servers that manage
+                  this currency. You will not be able to send or
+                  receive money from this account, but you still can
+                  peg other currencies to it.
+                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                  This account has some configuration problem. Usually
+                  this means that temporarily, a connection can not be
+                  made to the servers that manage this currency.
+                {:else}
+                  An unexpected account configuration problem has
+                  occurred:
+                  <span style="word-break: break-all">{configError}</span>.
+                {/if}
+              </li>
+            {/if}
+          </ul>
+          </Content>
+        </Paper>
+      </div>
 
     {:else if tab === 'coin'}
       <div in:fade="{{ duration }}">
@@ -443,28 +428,27 @@
     {/if}
   </svelte:fragment>
 
-    <svelte:fragment slot="floating">
+  <svelte:fragment slot="floating">
+    <div class="fab-container">
+      <Fab on:click={() => undefined} >
+        <Icon class="material-icons">
+          settings
+        </Icon>
+      </Fab>
+    </div>
+    <div class="fab-container">
+      <Fab on:click={() => undefined} >
+        <ExchangeSvgIcon />
+      </Fab>
+    </div>
+    {#if isSecureCoin}
       <div class="fab-container">
-        <Fab on:click={() => undefined} >
+        <Fab color="primary" on:click={() => undefined} >
           <Icon class="material-icons">
-            settings
+            receipt
           </Icon>
         </Fab>
       </div>
-      <div class="fab-container">
-        <Fab on:click={() => undefined} >
-          <ExchangeSvgIcon />
-        </Fab>
-      </div>
-      {#if isSecureCoin}
-        <div class="fab-container">
-          <Fab color="primary" on:click={() => undefined} >
-            <Icon class="material-icons">
-              receipt
-            </Icon>
-          </Fab>
-        </div>
-      {/if}
-    </svelte:fragment>
-  </Page>
-{/if}
+    {/if}
+  </svelte:fragment>
+</Page>

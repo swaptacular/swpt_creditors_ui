@@ -18,12 +18,11 @@
   export const scrollElement = document.documentElement
 
   let searchInput: HTMLInputElement
-  let currentModel: AccountsModel
-  let visibleSearchBox: boolean
-  let scanCoinDialog: boolean
-  let pendingFilterChange: boolean
-  let searchText: string
-  let filter: string
+  let scanCoinDialog = false
+  let visibleSearchBox = model.searchText !== undefined
+  let pendingFilterChange = false
+  let searchText = model.searchText ?? ''
+  let filter = searchText
 
   function showAccount(accountUri: string): void {
     const scrollTop = scrollElement.scrollTop
@@ -92,14 +91,6 @@
     }
   })
 
-  $: if (currentModel !== model) {
-    currentModel = model
-    scanCoinDialog = false
-    pendingFilterChange = false
-    filter = searchText = model.searchText ?? ''
-    visibleSearchBox = model.searchText !== undefined
-    resetScroll(model.scrollTop, model.scrollLeft)
-  }
   $: hasAccounts = model.accounts.length > 0
   $: shownAccounts = applyFilter(model.accounts, filter)
 </script>

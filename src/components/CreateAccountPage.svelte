@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, CreateAccountModel, ActionManager } from '../app-state'
+  import type { AppState, CreateAccountModel } from '../app-state'
   import type { CreateAccountActionWithId, ApprovePegActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
@@ -18,18 +18,15 @@
   export let model: CreateAccountModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: CreateAccountModel
-  let actionManager: ActionManager<CreateAccountActionWithId | ApprovePegActionWithId>
   let shakingElement: HTMLElement
-  let openEnterPinDialog: boolean = false
-
-  let debtorName: string
-  let negligibleUnitAmount: string | number
-  let negligibleUnitAmountStep: string
-
+  let openEnterPinDialog = false
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
+  let debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
+  let uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
+  let negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
+  let negligibleUnitAmountStep = formatAsUnitAmount(model.action.accountCreationState?.tinyNegligibleAmount)
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
-  let uniqueDebtorName: boolean
 
   function createUpdatedAction(): CreateAccountActionWithId | ApprovePegActionWithId {
     assert(data && action.accountCreationState)
@@ -99,14 +96,6 @@
     }
   }
 
-  $: if (currentModel !== model) {
-    currentModel = model
-    actionManager = app.createActionManager(model.action, createUpdatedAction)
-    debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
-    negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
-    negligibleUnitAmountStep = formatAsUnitAmount(model.action.accountCreationState?.tinyNegligibleAmount)
-    uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
-  }
   $: action = model.action
   $: pageTitle = action.actionType === 'CreateAccount' ? 'Confirm account' : 'Create peg account'
   $: data = model.createAccountData

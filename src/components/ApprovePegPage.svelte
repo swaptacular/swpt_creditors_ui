@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApprovePegModel, ActionManager } from '../app-state'
+  import type { AppState, ApprovePegModel } from '../app-state'
   import type { ApprovePegActionWithId } from '../operations'
   import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
@@ -25,12 +25,22 @@
 
   const MAX_AMOUNT = Number(9223372036854775807n)
 
-  let currentModel: ApprovePegModel
   let showCurrencies: boolean = false
-  let actionManager: ActionManager<ApprovePegActionWithId>
   let shakingElement: HTMLElement
-  let openEnterPinDialog: boolean = false
+  let openEnterPinDialog = false
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let approved: 'yes' | 'no' | ''
+
+  switch (model.action.editedApproval) {
+  case true:
+    approved = 'yes'
+    break
+  case false:
+    approved = 'no'
+    break
+  default:
+    approved = ''
+  }
 
   function createUpdatedAction(): ApprovePegActionWithId {
     return {
@@ -98,20 +108,6 @@
     }
   }
 
-  $: if (currentModel !== model) {
-    currentModel = model
-    actionManager = app.createActionManager(model.action, createUpdatedAction)
-    switch (model.action.editedApproval) {
-    case true:
-      approved = 'yes'
-      break
-    case false:
-      approved = 'no'
-      break
-    default:
-      approved = ''
-    }
-  }
   $: action = model.action
   $: exampleAmount = calcExampleAmount(peggedDisplay, pegDisplay, action.peg.exchangeRate)
   $: peggedDisplay = model.peggedAccountDisplay

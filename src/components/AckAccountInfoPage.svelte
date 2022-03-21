@@ -14,7 +14,8 @@
   export let model: AckAccountInfoModel
   export const snackbarBottom: string = "84px"
 
-  let currentModel: AckAccountInfoModel
+  assert(model.account.display.debtorName !== undefined)
+
   let showSummary: boolean = false
   let showLink: boolean = false
   let openEnterPinDialog: boolean = false
@@ -32,10 +33,6 @@
     app.acknowlegeAckAccountInfoAction(action, model.account, pinForPegRemoval, model.goBack)
   }
 
-  $: if (currentModel !== model) {
-    currentModel = model
-    assert(model.account.display.debtorName !== undefined)
-  }
   $: action = model.action
   $: knownDebtor = model.account.display.knownDebtor
   $: debtorName = model.account.display.debtorName

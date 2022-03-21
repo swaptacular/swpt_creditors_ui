@@ -45,6 +45,15 @@
       throw new Error('unknown page model type')
     }
   }
+  function getUniquePageComponent(pageModelType: string) {
+    const PageComponent = getPageComponent(pageModelType)
+
+    // Here we create a unique copy of the component,
+    // because <svelte:component> will destroy the old component and
+    // create a new one only when a different component (the `this`
+    // property).
+    return class extends PageComponent {}
+  }
   function hijackBackButton() {
     history.scrollRestoration = 'manual'
     history.pushState(++seqnum, '')
@@ -68,7 +77,7 @@
   })
 
   $: enusreOriginalAppState(app)
-  $: pageComponent = getPageComponent($pageModel.type)
+  $: pageComponent = getUniquePageComponent($pageModel.type)
 </script>
 
 <svelte:component this={pageComponent} model={$pageModel} {app} bind:snackbarBottom />
