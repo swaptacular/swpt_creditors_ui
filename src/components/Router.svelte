@@ -50,8 +50,8 @@
 
     // Here we create a unique copy of the component,
     // because <svelte:component> will destroy the old component and
-    // create a new one only when a different component (the `this`
-    // property).
+    // create a new one only when a different component has been
+    // passed (to the `this` property).
     return class extends PageComponent {}
   }
   function hijackBackButton() {
