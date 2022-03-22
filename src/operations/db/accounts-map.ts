@@ -139,6 +139,10 @@ export class AccountsMap {
     return this.objects.get(accountUri)
   }
 
+  getAccountUri(debtorIdentityUri: string): string | undefined {
+    return this.accounts.get(debtorIdentityUri)
+  }
+
   getAccountRecordsMatchingDebtorName(regex: RegExp): AccountRecord[] {
     let matchingAccountRecords: AccountRecord[] = []
     for (const accountUri of this.getAccountUrisMatchingDebtorName(regex)) {

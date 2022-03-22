@@ -224,13 +224,6 @@
                           approve this currency peg.
                         </li>
                       {/if}
-                      {#if data.isConfirmedAccount}
-                        <li>
-                          You have already confirmed, that you are
-                          certain about the real identity of the
-                          issuer of this currency.
-                        </li>
-                      {/if}
                     </ul>
                   </Content>
                 </Paper>
@@ -299,11 +292,7 @@
         </div>
         <div class="fab-container">
           <Fab color="primary" on:click={confirm} extended>
-            <Label>{action.actionType === 'CreateAccount'
-              ? (data.isConfirmedAccount ? 'Update' : 'Confirm')
-              : 'Create'
-              }
-            </Label>
+            <Label>{action.actionType === 'CreateAccount' ? 'Confirm' : 'Create'}</Label>
           </Fab>
         </div>
       </svelte:fragment>

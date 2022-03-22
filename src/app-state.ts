@@ -15,7 +15,7 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound, ServerSyncError
+  ResourceNotFound, ServerSyncError, parseCoinUri
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -124,7 +124,6 @@ export type CreateAccountData = {
   unit: string,
   amountDivisor: number,
   decimalPlaces: bigint,
-  isConfirmedAccount: boolean,
 }
 
 export type CreateAccountModel = BasePageModel & {
@@ -325,7 +324,16 @@ export class AppState {
   createCreateAccountAction(coinUri: string): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
-      const actionId = await this.uc.createCreateAccountAction(coinUri)
+      const [latestDebtorInfoUri, debtorIdentityUri] = parseCoinUri(coinUri)
+      const existingAccountUri = this.accountsMap.getAccountUri(debtorIdentityUri)
+      if (existingAccountUri !== undefined) {
+        const data = this.accountsMap.getAccountFullData(existingAccountUri)
+        if (data && data.display.knownDebtor && !data.config.scheduledForDeletion) {
+          this.showAccount(existingAccountUri)
+          return
+        }
+      }
+      const actionId = await this.uc.createCreateAccountAction(latestDebtorInfoUri, debtorIdentityUri)
       if (this.interactionId === interactionId) {
         this.showAction(actionId)
       }
@@ -405,7 +413,6 @@ export class AppState {
         unit: useDisplay ? (account.display.unit ?? '\u00A4') : debtorData.unit,
         amountDivisor: useDisplay ? account.display.amountDivisor : debtorData.amountDivisor,
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
-        isConfirmedAccount: useDisplay && account.display.knownDebtor && !account.config.scheduledForDeletion
       }
     }
     const initializeAccountCreationState = async (data: CreateAccountData): Promise<void> => {

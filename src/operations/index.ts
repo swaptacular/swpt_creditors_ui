@@ -39,6 +39,7 @@ import {
 } from '../payment-requests'
 
 export {
+  parseCoinUri,
   InvalidActionState,
   RecordDoesNotExist,
   IvalidPaymentRequest,
@@ -287,11 +288,8 @@ export class UserContext {
   }
 
   /* Add a new create account action record, and returns its action
-   * ID. The caller must be prepared this method to throw
-   * `InvalidCoinUri`. */
-  async createCreateAccountAction(coinUri: string): Promise<number> {
-    const [latestDebtorInfoUri, debtorIdentityUri] = parseCoinUri(coinUri)
-
+   * ID. */
+  async createCreateAccountAction(latestDebtorInfoUri: string, debtorIdentityUri: string): Promise<number> {
     return await createActionRecord({
       userId: this.userId,
       actionType: 'CreateAccount',
