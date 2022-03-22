@@ -25,21 +25,21 @@
 
   const MAX_AMOUNT = Number(9223372036854775807n)
 
-  let showCurrencies: boolean = false
+  let showCurrencies = false
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
-  let approved: 'yes' | 'no' | ''
+  let approved = getYesNoUnknown(model.action.editedApproval)
 
-  switch (model.action.editedApproval) {
-  case true:
-    approved = 'yes'
-    break
-  case false:
-    approved = 'no'
-    break
-  default:
-    approved = ''
+  function getYesNoUnknown(x?: boolean): 'yes' | 'no' | '' {
+    switch (x) {
+    case true:
+      return 'yes'
+    case false:
+      return 'no'
+    default:
+      return ''
+    }
   }
 
   function createUpdatedAction(): ApprovePegActionWithId {

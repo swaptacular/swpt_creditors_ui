@@ -23,9 +23,8 @@
 
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let shakingElement: HTMLElement
-  let openEnterPinDialog: boolean = false
+  let openEnterPinDialog = false
   let negligibleUnitAmount = formatAsUnitAmount(model.action.state?.editedNegligibleAmount)
-  let negligibleUnitAmountStep = formatAsUnitAmount(model.action.state?.tinyNegligibleAmount)
   let approved: 'yes' | 'no' = model.action.state?.approved ?? 'no'
   let invalidNegligibleUnitAmount: boolean
 
@@ -78,6 +77,7 @@
   $: action = model.action
   $: knownDebtor = model.display.knownDebtor
   $: debtorName = model.display.debtorName ?? ''
+  $: negligibleUnitAmountStep = formatAsUnitAmount(action.state?.tinyNegligibleAmount)
   $: oldAmountString = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
   $: oldUnitAmount = oldAmountString + ' ' + model.display.unit
   $: newAmountString = amountToString(model.availableAmount, action.amountDivisor, action.decimalPlaces)

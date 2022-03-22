@@ -23,7 +23,7 @@
   assert(model.display.debtorName !== undefined)
 
   let shakingElement: HTMLElement
-  let openEnterPinDialog: boolean = false
+  let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let debtorName = model.action.editedDebtorName
   let uniqueDebtorName = isUniqueDebtorName(debtorName)

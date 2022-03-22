@@ -24,7 +24,6 @@
   let debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
   let uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
   let negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
-  let negligibleUnitAmountStep = formatAsUnitAmount(model.action.accountCreationState?.tinyNegligibleAmount)
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
 
@@ -99,6 +98,7 @@
   $: action = model.action
   $: pageTitle = action.actionType === 'CreateAccount' ? 'Confirm account' : 'Create peg account'
   $: data = model.createAccountData
+  $: negligibleUnitAmountStep = formatAsUnitAmount(action.accountCreationState?.tinyNegligibleAmount)
   $: invalid = invalidDebtorName || !uniqueDebtorName || invalidNegligibleUnitAmount
 </script>
 
