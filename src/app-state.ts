@@ -424,7 +424,7 @@ export class AppState {
       const accountCreationState = {
         accountUri: data.account.uri,
         accountInitializationInProgress: false,
-        confirmed: false,
+        confirmed: useDisplay && account.display.knownDebtor,
         debtorData,
         debtorDataSource,
         hasDebtorInfo,
