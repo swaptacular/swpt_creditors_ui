@@ -144,12 +144,12 @@
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab on:click={() => alert('not implemented') }>
-        <Icon class="material-icons">history</Icon>
-      </Fab>
-    </div>
     {#if hasAccounts}
+      <div class="fab-container">
+        <Fab on:click={() => alert('not implemented') }>
+          <Icon class="material-icons">history</Icon>
+        </Fab>
+      </div>
       <div class="fab-container">
         <Fab color="primary" on:click={() => showMakePaymentDialog = true} >
           <Icon class="material-icons">local_atm</Icon>
