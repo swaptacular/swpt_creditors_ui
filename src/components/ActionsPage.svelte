@@ -149,11 +149,13 @@
         <Icon class="material-icons">history</Icon>
       </Fab>
     </div>
-    <div class="fab-container">
-      <Fab color="primary" on:click={() => showMakePaymentDialog = true} >
-        <Icon class="material-icons">local_atm</Icon>
-      </Fab>
-    </div>
+    {#if hasAccounts}
+      <div class="fab-container">
+        <Fab color="primary" on:click={() => showMakePaymentDialog = true} >
+          <Icon class="material-icons">local_atm</Icon>
+        </Fab>
+      </div>
+    {/if}
     <div class="fab-container">
       <Fab color="primary" on:click={() => app.showAccounts() } >
         <Icon class="material-icons">account_balance_wallet</Icon>
