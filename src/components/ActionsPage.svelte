@@ -51,6 +51,7 @@
   })
 
   $: actions = model.actions
+  $: hasAccounts = app.accountsMap.hasAccounts()
   $: [regularActions, foreignActions] = separateForeignActions($actions)
   $: hasRegularActions = regularActions.length > 0
   $: hasForeignActions = foreignActions.length > 0
@@ -80,13 +81,7 @@
         {/each}
       </LayoutGrid>
     {:else}
-      {#if !isANewbie}
-        <p class="no-actions">
-          Press
-          <Icon class="material-icons" style="vertical-align: middle">local_atm</Icon>
-          to issue money in circulation.
-        </p>
-      {:else}
+      {#if isANewbie && !hasAccounts}
         <LayoutGrid>
           <Cell>
             <Paper elevation={8} style="margin-bottom: 16px">
@@ -102,21 +97,29 @@
           <Cell>
             <Card>
               <CardContent>
-                A new digital currency have been created for
-                you. Before everybody can use it, you need to specify
-                some basic information about your currency &ndash the
-                currency name, the interest rate, and few other
-                things.
+                To acquire any digital currency, first you need to
+                create an account with it. To create an account with
+                the digital currency of your choice, you should scan
+                the QR code that identifies the currency. In
+                Swaptacular, the QR code that identifies a given
+                currency is called "the digital coin" for this
+                currency.
               </CardContent>
               <Actions fullBleed>
-                <Button on:click={() => alert('not implemented') }>
-                  <Label>Configure currency</Label>
+                <Button on:click={() => app.showAccounts() }>
+                  <Label>Create an account</Label>
                   <i class="material-icons" aria-hidden="true">arrow_forward</i>
                 </Button>
               </Actions>
             </Card>
           </Cell>
         </LayoutGrid>
+      {:else}
+        <p class="no-actions">
+          Press
+          <Icon class="material-icons" style="vertical-align: middle">local_atm</Icon>
+          to make a payment.
+        </p>
       {/if}
     {/if}
     {#if hasForeignActions}

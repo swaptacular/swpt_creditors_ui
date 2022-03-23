@@ -143,6 +143,10 @@ export class AccountsMap {
     return this.accounts.get(debtorIdentityUri)
   }
 
+  hasAccounts(): boolean {
+    return this.accounts.size > 0
+  }
+
   getAccountRecordsMatchingDebtorName(regex: RegExp): AccountRecord[] {
     let matchingAccountRecords: AccountRecord[] = []
     for (const accountUri of this.getAccountUrisMatchingDebtorName(regex)) {
