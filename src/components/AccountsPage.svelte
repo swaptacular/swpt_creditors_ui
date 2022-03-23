@@ -120,11 +120,16 @@
   .fab-container {
     margin: 16px 16px;
   }
-  .no-accounts {
-    --no-actions-color: #c4c4c4;
+  .no-matches {
     margin: 36px 18px 26px 18px;
     text-align: center;
-    color: var(--no-actions-color);
+    color: #c4c4c4;
+  }
+  .no-accounts {
+    margin: 36px 18px 26px 18px;
+    text-align: center;
+    color: #888;
+    font-size: 1.1em;
   }
 </style>
 
@@ -145,7 +150,7 @@
           {/each}
         </LayoutGrid>
       {:else}
-        <p class="no-accounts">
+        <p class="no-matches">
           There are no accounts matching the specified filter.
         </p>
       {/if}
