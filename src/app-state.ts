@@ -542,7 +542,7 @@ export class AppState {
       if (action.actionType === 'CreateAccount') {
         await this.uc.replaceActionRecord(action, null)
         if (this.interactionId === interactionId) {
-          this.showAccount(data.account.uri, () => { this.showActions() })
+          this.showAccount(data.account.uri)
         }
       } else {
         // The action type is `ApprovePeg`. The peg account creation
