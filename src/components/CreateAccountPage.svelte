@@ -10,6 +10,8 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
+  import FormField from '@smui/form-field'
+  import Checkbox from '@smui/checkbox'
   import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -21,6 +23,7 @@
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
+  let confirmed = model.action.accountCreationState?.confirmed === true
   let debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
   let uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
   let negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
@@ -34,6 +37,7 @@
       ...action,
       accountCreationState: {
         ...action.accountCreationState,
+        confirmed,
         editedDebtorName: debtorName,
         editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * limitAmountDivisor(data.amountDivisor),
       },
@@ -75,8 +79,7 @@
 
   function submit(pin: string): void {
     assert(data && action.accountCreationState)
-    const knownDebtor = action.actionType === 'CreateAccount'
-    app.approveAccountCreationAction(actionManager, data, pin, knownDebtor, model.goBack)
+    app.approveAccountCreationAction(actionManager, data, pin, isCreateAccountAction, model.goBack)
   }
 
   function isUniqueDebtorName(debtorName: string, action: CreateAccountActionWithId | ApprovePegActionWithId): boolean {
@@ -96,10 +99,16 @@
   }
 
   $: action = model.action
-  $: pageTitle = action.actionType === 'CreateAccount' ? 'Confirm account' : 'Create peg account'
+  $: isCreateAccountAction = action.actionType === 'CreateAccount'
+  $: pageTitle = isCreateAccountAction ? 'Confirm account' : 'Create peg account'
   $: data = model.createAccountData
   $: negligibleUnitAmountStep = formatAsUnitAmount(action.accountCreationState?.tinyNegligibleAmount)
-  $: invalid = invalidDebtorName || !uniqueDebtorName || invalidNegligibleUnitAmount
+  $: invalid = (
+    invalidDebtorName ||
+    !uniqueDebtorName ||
+    invalidNegligibleUnitAmount ||
+    (isCreateAccountAction && !confirmed)
+  )
 </script>
 
 <style>
@@ -109,6 +118,9 @@
   }
   li {
     margin-top: 0.5em;
+  }
+  strong {
+    font-weight: bold;
   }
   .summary {
     color: #888;
@@ -123,6 +135,9 @@
   .shaking-container {
     position: relative;
     overflow: hidden;
+  }
+  .warning {
+    margin-top: 16px;
   }
 
   @keyframes shake {
@@ -225,9 +240,31 @@
                         </li>
                       {/if}
                     </ul>
+                    {#if isCreateAccountAction}
+                      <p class="warning">
+                        <strong>Note:</strong> You must be certain
+                        about the real identity of the issuer of this
+                        currency. The dangers here are similar to the
+                        dangers when a stranger introduces you to an
+                        unknown foreign currency: You could be tricked
+                        by fraudsters!
+                      </p>
+                    {/if}
                   </Content>
                 </Paper>
               </Cell>
+
+              {#if isCreateAccountAction}
+                <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -14px 0 20px 0">
+                  <FormField>
+                    <Checkbox bind:checked={confirmed} />
+                      <span slot="label">
+                        I am certain about the real identity of the
+                        issuer of this currency.
+                      </span>
+                  </FormField>
+                </Cell>
+              {/if}
 
               <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                 <Textfield
@@ -292,7 +329,7 @@
         </div>
         <div class="fab-container">
           <Fab color="primary" on:click={confirm} extended>
-            <Label>{action.actionType === 'CreateAccount' ? 'Confirm' : 'Create'}</Label>
+            <Label>{isCreateAccountAction ? 'Confirm' : 'Create'}</Label>
           </Fab>
         </div>
       </svelte:fragment>

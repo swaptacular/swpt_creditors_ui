@@ -177,6 +177,7 @@ export type AccountCreationState = {
   debtorData: BaseDebtorData,
   debtorDataSource: DebtorDataSource,
   hasDebtorInfo: boolean,
+  confirmed: boolean,
   editedDebtorName: string,
   editedNegligibleAmount: number,
   tinyNegligibleAmount: number,
