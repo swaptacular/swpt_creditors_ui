@@ -138,7 +138,7 @@
 <style>
   ul {
     list-style: disc outside;
-    margin: 0.75em 1.25em 0 18px;
+    margin: 0.75em 1.25em 0 16px;
   }
   li {
     margin-top: 0.5em;
