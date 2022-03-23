@@ -22,6 +22,7 @@
 
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
+  let allowIntermediate = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let confirmed = model.action.accountCreationState?.confirmed === true
   let debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
@@ -69,6 +70,7 @@
   }
 
   function confirm(): void {
+    allowIntermediate = true
     uniqueDebtorName = isUniqueDebtorName(debtorName, action)
     if (invalid) {
       shakeForm()
@@ -242,12 +244,12 @@
                     </ul>
                     {#if isCreateAccountAction}
                       <p class="warning">
-                        <strong>Note:</strong> You must be certain
-                        about the real identity of the issuer of this
-                        currency. The dangers here are similar to the
-                        dangers when a stranger introduces you to an
-                        unknown foreign currency: You could be tricked
-                        by fraudsters!
+                        <strong>Note:</strong> You must confirm that
+                        you are certain about the real identity of the
+                        issuer of this currency. The dangers here are
+                        similar to the dangers when a stranger
+                        introduces you to an unknown foreign currency:
+                        You could be tricked by fraudsters!
                       </p>
                     {/if}
                   </Content>
@@ -257,7 +259,11 @@
               {#if isCreateAccountAction}
                 <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -14px 0 20px 0">
                   <FormField>
-                    <Checkbox bind:checked={confirmed} />
+                    <Checkbox
+                      bind:checked={confirmed}
+                      on:click={() => allowIntermediate = false}
+                      indeterminate={allowIntermediate && !confirmed}
+                      />
                       <span slot="label">
                         I am certain about the real identity of the
                         issuer of this currency.
