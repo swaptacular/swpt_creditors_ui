@@ -1,6 +1,6 @@
 import type {
   ActionRecord, ActionRecordWithId, ListQueryOptions, ApprovePegAction, ApproveAmountDisplayAction,
-  ApproveDebtorNameAction
+  ApproveDebtorNameAction, ConfigAccountAction
 } from './schema'
 
 import { Dexie } from 'dexie'
@@ -181,6 +181,23 @@ export async function createApproveAction(action: ApproveAction, overrideExistin
       }
     }
     return await createActionRecord(action)
+  })
+}
+
+export async function ensureUniqueAccountAction<T extends ConfigAccountAction>(
+  action: T,
+): Promise<T & ActionRecordWithId> {
+  const { accountUri, actionType } = action
+  return await db.transaction('rw', [db.wallets, db.actions], async () => {
+    const existingAction = await db.actions
+      .where({ accountUri })
+      .filter(a => a.actionType === actionType)
+      .first() as (T & ActionRecordWithId) | undefined
+    if (existingAction) {
+      return existingAction
+    }
+    await createActionRecord(action)  // adds the `actionId` field
+    return action as T & ActionRecordWithId
   })
 }
 

@@ -430,20 +430,20 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={() => undefined} >
+      <Fab on:click={() => app.createConfigAccountAction(accountUri)} >
         <Icon class="material-icons">
           settings
         </Icon>
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => undefined} >
+      <Fab on:click={() => alert('not implemented')} >
         <ExchangeSvgIcon />
       </Fab>
     </div>
     {#if isSecureCoin}
       <div class="fab-container">
-        <Fab color="primary" on:click={() => undefined} >
+        <Fab color="primary" on:click={() => alert('not implemented')} >
           <Icon class="material-icons">
             receipt
           </Icon>

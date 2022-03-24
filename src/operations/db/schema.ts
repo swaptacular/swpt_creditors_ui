@@ -149,6 +149,7 @@ export type ActionRecord =
   | ApproveAmountDisplayAction
   | ApproveDebtorNameAction
   | AckAccountInfoAction
+  | ConfigAccountAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -569,6 +570,21 @@ export type ApproveDebtorNameAction =
 export type ApproveDebtorNameActionWithId =
   & ActionRecordWithId
   & ApproveDebtorNameAction
+
+export type ConfigAccountAction =
+  & ActionData
+  & {
+    actionType: 'ConfigAccount',
+    accountUri: string,
+    editedDebtorName: string,
+    editedNegligibleAmount: number,
+    editedScheduledForDeletion: boolean,
+    editedApproveNewDisplay: boolean,
+  }
+
+export type ConfigAccountActionWithId =
+  & ActionRecordWithId
+  & ConfigAccountAction
 
 type TaskData =
   & UserReference

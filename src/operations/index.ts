@@ -4,7 +4,7 @@ import type {
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, PegBound
+  CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
@@ -24,7 +24,7 @@ import {
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
-  getAccountSortPriority, setAccountSortPriority
+  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -69,6 +69,7 @@ export type {
   ApproveDebtorNameActionWithId,
   ApproveAmountDisplayActionWithId,
   ApprovePegActionWithId,
+  ConfigAccountActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
@@ -225,6 +226,7 @@ export class UserContext {
   readonly obtainBaseDebtorData = obtainBaseDebtorData
   readonly getAccountSortPriority = getAccountSortPriority
   readonly setAccountSortPriority: (uri: string, priority: number) => Promise<void>
+  readonly ensureUniqueAccountAction = ensureUniqueAccountAction
 
   constructor(
     server: ServerSession,

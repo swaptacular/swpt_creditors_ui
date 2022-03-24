@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -100,6 +100,7 @@ export type PageModel =
   | ApproveAmountDisplayModel
   | OverrideCoinModel
   | ApprovePegModel
+  | ConfigAccountModel
   | AccountsModel
   | AccountModel
 
@@ -170,6 +171,11 @@ export type ApprovePegModel = BasePageModel & {
   pegDebtorName: string,
   peggedAccountDisplay: AccountDisplayRecord,
   exchangeLatestUpdateId: bigint,
+}
+
+export type ConfigAccountModel = BasePageModel & {
+  type: 'ConfigAccountModel',
+  action: ConfigAccountActionWithId,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -310,6 +316,9 @@ export class AppState {
               break
             case 'ApprovePeg':
               this.showCreateAccountAction(action, back)
+              break
+            case 'ConfigAccount':
+              this.showConfigAccountAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -842,6 +851,30 @@ export class AppState {
     })
   }
 
+  showConfigAccountAction(action: ConfigAccountActionWithId, back?: () => void): Promise<void> {
+    // TODO: add real implementation.
+
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    // const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'ConfigAccountModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+        })
+      }
+    }, {
+      alerts: [
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+      ],
+    })
+  }
+
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
@@ -927,6 +960,30 @@ export class AppState {
 
   async setAccountSortPriority(uri: string, priority: number): Promise<void> {
     await this.uc.setAccountSortPriority(uri, priority)
+  }
+
+  async createConfigAccountAction(accountUri: string): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const accountData = this.accountsMap.getAccountFullData(accountUri)
+      if (accountData === undefined) {
+        this.showAccounts()
+        return
+      }
+      const action = await this.uc.ensureUniqueAccountAction({
+        userId: this.uc.userId,
+        actionType: 'ConfigAccount',
+        createdAt: new Date(),
+        editedDebtorName: accountData.display.debtorName,
+        editedNegligibleAmount: accountData.config.negligibleAmount,
+        editedScheduledForDeletion: accountData.config.scheduledForDeletion,
+        editedApproveNewDisplay: false,
+        accountUri,
+      })
+      if (this.interactionId === interactionId) {
+        this.showAction(action.actionId)
+      }
+    })
   }
 
   initiatePayment(paymentRequestFile: Blob | Promise<Blob>): Promise<void> {
