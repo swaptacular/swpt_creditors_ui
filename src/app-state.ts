@@ -176,6 +176,11 @@ export type ApprovePegModel = BasePageModel & {
 export type ConfigAccountModel = BasePageModel & {
   type: 'ConfigAccountModel',
   action: ConfigAccountActionWithId,
+  tinyNegligibleAmount: number,
+  debtorIdentityUri: string,
+  debtorData: BaseDebtorData,
+  display: AccountDisplayRecord,
+  principal: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -856,17 +861,30 @@ export class AppState {
 
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
-    // const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      if (this.interactionId === interactionId) {
-        this.pageModel.set({
-          type: 'ConfigAccountModel',
-          reload: () => { this.showAction(action.actionId, back) },
-          goBack,
-          action,
-        })
+      const accountData = this.accountsMap.getAccountFullData(action.accountUri)
+      if (accountData) {
+        const { display, debtorData } = accountData
+        const tinyNegligibleAmount = calcSmallestDisplayableNumber(display.amountDivisor, display.decimalPlaces)
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'ConfigAccountModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            goBack,
+            action,
+            tinyNegligibleAmount,
+            display,
+            debtorData,
+            debtorIdentityUri: accountData.account.debtor.uri,
+            principal: accountData.ledger.principal,
+          })
+        }
+      } else {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
       }
     }, {
       alerts: [

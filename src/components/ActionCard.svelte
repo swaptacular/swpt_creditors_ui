@@ -27,6 +27,8 @@
       return 'Approve display'
     case 'ApproveDebtorName':
       return 'Approve name'
+    case 'ConfigAccount':
+      return 'Modify account'
     default:
       return 'Unknown action type'
     }
@@ -92,6 +94,12 @@
       case 'ApproveDebtorName': {
         const debtorName = getDebtorName(action.accountUri)
         return debtorName ? `Approve a new name for "${debtorName}".` : 'Approve a new name.'
+      }
+      case 'ConfigAccount': {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName
+          ? `Modify the basic configuration settings of your account with "${debtorName}".`
+          : 'Modify the basic configuration settings.'
       }
       default:
         return "Unknown action type"
