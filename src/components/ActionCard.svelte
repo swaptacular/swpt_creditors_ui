@@ -98,8 +98,8 @@
       case 'ConfigAccount': {
         const debtorName = getDebtorName(action.accountUri)
         return debtorName
-          ? `Modify the basic configuration settings of your account with "${debtorName}".`
-          : 'Modify the basic configuration settings.'
+          ? `Modify the configuration settings for your account with "${debtorName}".`
+          : 'Modify account configuration settings.'
       }
       default:
         return "Unknown action type"

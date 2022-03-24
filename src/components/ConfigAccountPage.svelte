@@ -110,8 +110,8 @@
 
 <style>
   ul {
-    list-style: '\2713\00A0' outside;
-    margin: 0.75em 1.25em 0 1.25em;
+    list-style: disc outside;
+    margin: 0.75em 1.25em 0 16px;
   }
   li {
     margin-top: 0.5em;
