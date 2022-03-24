@@ -184,9 +184,9 @@
                     </Wrapper>
                   {/if}
                   {#if knownDebtor}
-                    Account with "{debtorData.debtorName}"
+                    Account with "{display.debtorName}"
                   {:else}
-                    Unconfirmed account with "{debtorData.debtorName}"
+                    Unconfirmed account with "{display.debtorName}"
                   {/if}
                 </Title>
                 <Content style="clear: both">
