@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, ConfigAccountModel } from '../app-state'
   import type { ConfigAccountActionWithId } from '../operations'
-  import { limitAmountDivisor } from '../format-amounts'
+  import { limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -110,7 +110,8 @@
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
   $: unit = display.unit ?? '\u00A4'
-  $: negligibleUnitAmountStep = formatAsUnitAmount(model.tinyNegligibleAmount, amountDivisor, decimalPlaces)
+  $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
+  $: negligibleUnitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: invalid = (
     invalidDebtorName ||
     !uniqueDebtorName ||

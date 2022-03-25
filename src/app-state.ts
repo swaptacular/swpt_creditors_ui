@@ -177,7 +177,6 @@ export type ConfigAccountModel = BasePageModel & {
   type: 'ConfigAccountModel',
   action: ConfigAccountActionWithId,
   accountData: AccountFullData,
-  tinyNegligibleAmount: number,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -865,10 +864,6 @@ export class AppState {
       await this.uc.getAccount(action.accountUri)
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
-        const tinyNegligibleAmount = calcSmallestDisplayableNumber(
-          accountData.display.amountDivisor,
-          accountData.display.decimalPlaces,
-        )
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'ConfigAccountModel',
@@ -876,7 +871,6 @@ export class AppState {
             goBack,
             action,
             accountData,
-            tinyNegligibleAmount,
           })
         }
       } else {
