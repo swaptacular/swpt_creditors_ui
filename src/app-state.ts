@@ -342,7 +342,7 @@ export class AppState {
       const existingAccountUri = this.accountsMap.getAccountUri(debtorIdentityUri)
       if (existingAccountUri !== undefined) {
         const data = this.accountsMap.getAccountFullData(existingAccountUri)
-        if (data && data.display.knownDebtor && !data.config.scheduledForDeletion) {
+        if (data?.display.knownDebtor) {
           this.showAccount(existingAccountUri)
           return
         }

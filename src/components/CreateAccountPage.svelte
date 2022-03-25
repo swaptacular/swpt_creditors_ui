@@ -122,6 +122,7 @@
     margin-top: 0.5em;
   }
   strong {
+    font-size: 1.1em;
     font-weight: bold;
   }
   .summary {
@@ -221,7 +222,11 @@
                         <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
                       </Wrapper>
                     {/if}
-                    Account with "{data.debtorData.debtorName}"
+                    {#if data.account.display.debtorName === undefined}
+                      Account with "{data.debtorData.debtorName}"
+                    {:else}
+                      Existing account with "{data.debtorData.debtorName}"
+                    {/if}
                   </Title>
                   <Content style="clear: both">
                     {#if data.debtorData.summary}
