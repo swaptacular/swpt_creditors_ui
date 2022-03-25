@@ -1,12 +1,8 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import type { PegBound } from '../operations'
   import { fade } from 'svelte/transition'
-  import { amountToString } from '../format-amounts'
   import { onMount } from "svelte"
   import Paper, { Title, Content } from '@smui/paper'
-  import Tooltip, { Wrapper } from '@smui/tooltip'
-  import Chip, { Text } from '@smui/chips'
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab'
   import Slider from '@smui/slider'
@@ -18,6 +14,7 @@
   import QrGenerator from './QrGenerator.svelte'
   import CommittedTransferCard from './CommittedTransferCard.svelte'
   import ExchangeSvgIcon from './ExchangeSvgIcon.svelte'
+  import AccountInfo from './AccountInfo.svelte'
 
   export let app: AppState
   export let model: AccountModel
@@ -96,14 +93,6 @@
     app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
-  function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
-    const x = Number(amt) * pegBound.exchangeRate
-    const { amountDivisor, decimalPlaces } = pegBound.display
-    const unitAmount = amountToString(x, amountDivisor, decimalPlaces)
-    const unit = pegBound.display.unit
-    return `${unitAmount} ${unit}`
-  }
-
   function changeTab(t: AccountModel['tab']): void {
     duration = 350
     tab = t
@@ -126,7 +115,6 @@
   $: config = data.config
   $: scheduledForDeletion = config.scheduledForDeletion
   $: debtorData = data.debtorData
-  $: summary = debtorData.summary
   $: homepageUri = debtorData.debtorHomepage?.uri
   $: pegBounds = data.pegBounds
   $: amount = data.amount
@@ -142,26 +130,6 @@
   }
   li {
     margin-top: 0.5em;
-  }
-  .amounts-box {
-    flex: 0 0 20em;
-  }
-  .amount {
-    font-family: Courier,monospace;
-    font-size: 1.1em;
-    text-align: right;
-  }
-  .amount a {
-    color: rgb(0, 0, 238);
-    text-decoration: none;
-  }
-  .single-amount {
-    font-size: 1.1em;
-  }
-  .summary-box {
-    color: #888;
-    margin-top: 16px;
-    flex: 1 1 25em;
   }
   .download-link {
     display: none;
@@ -254,51 +222,23 @@
 
     {#if tab === 'account'}
       <div in:fade="{{ duration }}">
-        <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
-          <Title>
-            {#if homepageUri}
-              <Wrapper>
-                <Chip chip="help" style="float: right; margin-left: 6px">
-                  <Text>
-                    <a href={homepageUri} target="_blank" style="text-decoration: none; color: #666">
-                      www
-                    </a>
-                  </Text>
-                </Chip>
-                <Tooltip>
-                  {homepageUri}
-                </Tooltip>
-              </Wrapper>
-            {/if}
+        <AccountInfo
+          homepage={homepageUri}
+          summary={debtorData.summary}
+          {pegBounds}
+          {amount}
+          {showAccount}
+          style="margin: 24px 18px; word-break: break-word"
+          >
+          <svelte:fragment slot="title">
             {#if knownDebtor}
               Account with "{debtorName}"
             {:else}
               Unconfirmed account with "{debtorName}"
             {/if}
-          </Title>
-          <Content style="clear: both">
-            <div style="display: flex; flex-flow: row-reverse wrap">
-              <div class="amounts-box">
-                {#each pegBounds as pegBound, index}
-                  <p class="amount">
-                    {#if index === 0}
-                      <span class:single-amount={pegBounds.length === 1}>
-                        {calcDisplayAmount(amount, pegBound)}
-                      </span>
-                    {:else}
-                      <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
-                        = {calcDisplayAmount(amount, pegBound)}
-                      </a>
-                    {/if}
-                  </p>
-                {/each}
-              </div>
-              {#if summary}
-                <blockquote class="summary-box">
-                  {summary}
-                </blockquote>
-              {/if}
-            </div>
+          </svelte:fragment>
+
+          <svelte:fragment slot="content">
             <ul>
               <li>
                 The annual interest rate on this account is
@@ -316,24 +256,25 @@
               {#if configError !== undefined}
                 <li>
                   {#if configError === 'NO_CONNECTION_TO_DEBTOR'}
-                    No connection can be made to the servers that manage
-                  this currency. You will not be able to send or
-                  receive money from this account, but you still can
-                  peg other currencies to it.
-                {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
-                  This account has some configuration problem. Usually
-                  this means that temporarily, a connection can not be
-                  made to the servers that manage this currency.
-                {:else}
-                  An unexpected account configuration problem has
-                  occurred:
-                  <span style="word-break: break-all">{configError}</span>.
-                {/if}
-              </li>
-            {/if}
-          </ul>
-          </Content>
-        </Paper>
+                    No connection can be made to the servers that
+                    manage this currency. You will not be able to send
+                    or receive money from this account, but you still
+                    can peg other currencies to it.
+                  {:else if configError === 'CONFIGURATION_IS_NOT_EFFECTUAL'}
+                    This account has some configuration
+                    problem. Usually this means that temporarily, a
+                    connection can not be made to the servers that
+                    manage this currency.
+                  {:else}
+                    An unexpected account configuration problem has
+                    occurred:
+                    <span style="word-break: break-all">{configError}</span>.
+                  {/if}
+                </li>
+              {/if}
+            </ul>
+          </svelte:fragment>
+        </AccountInfo>
       </div>
 
     {:else if tab === 'coin'}

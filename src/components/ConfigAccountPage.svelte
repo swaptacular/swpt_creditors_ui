@@ -3,18 +3,16 @@
   import type { ConfigAccountActionWithId } from '../operations'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
-  import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
-  import Chip, { Text } from '@smui/chips'
-  import Tooltip, { Wrapper } from '@smui/tooltip'
   // import FormField from '@smui/form-field'
   // import Checkbox from '@smui/checkbox'
   import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
+  import AccountInfo from './AccountInfo.svelte'
 
   export let app: AppState
   export let model: ConfigAccountModel
@@ -27,8 +25,8 @@
   let uniqueDebtorName = isUniqueDebtorName(debtorName)
   let negligibleUnitAmount = formatAsUnitAmount(
     model.action.editedNegligibleAmount,
-    model.display.amountDivisor,
-    model.display.decimalPlaces,
+    model.accountData.display.amountDivisor,
+    model.accountData.display.decimalPlaces,
   )
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
@@ -86,20 +84,32 @@
     case 0:
       return true
     case 1:
-      return matchingAccounts[0].debtor.uri === model.debtorIdentityUri
+      return matchingAccounts[0].debtor.uri === debtorIdentityUri
     default:
       return false
     }
   }
 
+  function showAccount(accountUri: string): void {
+    actionManager.saveAndClose()
+    const m = {
+      ...model,
+      action: actionManager.currentValue,
+    }
+    app.showAccount(accountUri, () => app.pageModel.set(m))
+  }
+
   $: action = model.action
-  $: principal = model.principal
-  $: display = model.display
+  $: accountData = model.accountData
+  $: debtorData = accountData.debtorData
+  $: pegBounds = accountData.pegBounds
+  $: amount = accountData.amount
+  $: debtorIdentityUri = accountData.account.debtor.uri
+  $: display = accountData.display
   $: knownDebtor = display.knownDebtor
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
   $: unit = display.unit ?? '\u00A4'
-  $: debtorData = model.debtorData
   $: negligibleUnitAmountStep = formatAsUnitAmount(model.tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: invalid = (
     invalidDebtorName ||
@@ -109,20 +119,6 @@
 </script>
 
 <style>
-  ul {
-    list-style: disc outside;
-    margin: 0.75em 1.25em 0 16px;
-  }
-  li {
-    margin-top: 0.5em;
-  }
-  .summary {
-    color: #888;
-    margin-top: 16px;
-  }
-  .amount {
-    font-size: 1.1em;
-  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -165,44 +161,21 @@
           >
           <LayoutGrid>
             <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-                <Title>
-                  {#if debtorData.debtorHomepage}
-                    <Wrapper>
-                      <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
-                        <Text>
-                          <a
-                            href={debtorData.debtorHomepage.uri}
-                            target="_blank"
-                            style="text-decoration: none; color: #666"
-                            >
-                            www
-                          </a>
-                        </Text>
-                      </Chip>
-                      <Tooltip>{debtorData.debtorHomepage.uri}</Tooltip>
-                    </Wrapper>
-                  {/if}
+              <AccountInfo
+                homepage={debtorData.debtorHomepage?.uri}
+                summary={debtorData.summary}
+                {pegBounds}
+                {amount}
+                {showAccount}
+                >
+                <svelte:fragment slot="title">
                   {#if knownDebtor}
                     Account with "{display.debtorName}"
                   {:else}
                     Unconfirmed account with "{display.debtorName}"
                   {/if}
-                </Title>
-                <Content style="clear: both">
-                  {#if debtorData.summary}
-                    <blockquote class="summary">{debtorData.summary}</blockquote>
-                  {/if}
-                  <ul>
-                    <li>
-                      <em class="amount">
-                        {formatAsUnitAmount(principal, amountDivisor, decimalPlaces)}&nbsp;{unit}
-                      </em>
-                      are currently available in your account.
-                    </li>
-                  </ul>
-                </Content>
-              </Paper>
+                </svelte:fragment>
+              </AccountInfo>
             </Cell>
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>

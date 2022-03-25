@@ -1,0 +1,85 @@
+<script lang="ts">
+  import type { PegBound } from '../operations'
+
+  import { amountToString } from '../format-amounts'
+  import Chip, { Text } from '@smui/chips'
+  import Tooltip, { Wrapper } from '@smui/tooltip'
+  import Paper, { Title, Content } from '@smui/paper'
+
+  export let homepage: string | undefined
+  export let summary: string | undefined
+  export let amount: bigint = 0n
+  export let pegBounds: PegBound[] = []
+  export let showAccount: ((accountUri: string) => void) = () => {}
+  export let style: string = 'margin-top: 12px; margin-bottom: 24px; word-break: break-word'
+
+  function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
+    const x = Number(amt) * pegBound.exchangeRate
+    const { amountDivisor, decimalPlaces } = pegBound.display
+    const unitAmount = amountToString(x, amountDivisor, decimalPlaces)
+    const unit = pegBound.display.unit
+    return `${unitAmount} ${unit}`
+  }
+</script>
+
+<style>
+  .summary-box {
+    color: #888;
+    margin-top: 16px;
+    flex: 1 1 25em;
+  }
+  .amounts-box {
+    flex: 0 0 20em;
+  }
+  .amount {
+    font-family: Courier,monospace;
+    font-size: 1.1em;
+    text-align: right;
+  }
+  .amount a {
+    color: rgb(0, 0, 238);
+    text-decoration: none;
+  }
+  .single-amount {
+    font-size: 1.1em;
+  }
+</style>
+
+<Paper {style} elevation={6}>
+  <Title>
+    {#if homepage}
+      <Wrapper>
+        <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
+          <Text>
+            <a href={homepage} target="_blank" style="text-decoration: none; color: #666">www</a>
+          </Text>
+        </Chip>
+        <Tooltip>{homepage}</Tooltip>
+      </Wrapper>
+    {/if}
+    <slot name="title"></slot>
+  </Title>
+  <Content style="clear: both">
+    <div style="display: flex; flex-flow: row-reverse wrap">
+      <div class="amounts-box">
+        {#each pegBounds as pegBound, index}
+          <p class="amount">
+            {#if index === 0}
+              <span class:single-amount={pegBounds.length === 1}>
+                {calcDisplayAmount(amount, pegBound)}
+              </span>
+            {:else}
+              <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+                = {calcDisplayAmount(amount, pegBound)}
+              </a>
+            {/if}
+          </p>
+        {/each}
+      </div>
+      {#if summary}
+        <blockquote class="summary-box">{summary}</blockquote>
+      {/if}
+    </div>
+    <slot name="content"></slot>
+  </Content>
+</Paper>

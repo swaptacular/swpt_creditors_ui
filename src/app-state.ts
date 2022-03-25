@@ -176,11 +176,8 @@ export type ApprovePegModel = BasePageModel & {
 export type ConfigAccountModel = BasePageModel & {
   type: 'ConfigAccountModel',
   action: ConfigAccountActionWithId,
+  accountData: AccountFullData,
   tinyNegligibleAmount: number,
-  debtorIdentityUri: string,
-  debtorData: BaseDebtorData,
-  display: AccountDisplayRecord,
-  principal: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -867,19 +864,18 @@ export class AppState {
       interactionId = this.interactionId
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
-        const { display, debtorData } = accountData
-        const tinyNegligibleAmount = calcSmallestDisplayableNumber(display.amountDivisor, display.decimalPlaces)
+        const tinyNegligibleAmount = calcSmallestDisplayableNumber(
+          accountData.display.amountDivisor,
+          accountData.display.decimalPlaces,
+        )
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'ConfigAccountModel',
             reload: () => { this.showAction(action.actionId, back) },
             goBack,
             action,
+            accountData,
             tinyNegligibleAmount,
-            display,
-            debtorData,
-            debtorIdentityUri: accountData.account.debtor.uri,
-            principal: accountData.ledger.principal,
           })
         }
       } else {

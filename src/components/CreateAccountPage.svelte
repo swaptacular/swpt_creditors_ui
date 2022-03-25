@@ -8,13 +8,12 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
-  import Chip, { Text } from '@smui/chips'
-  import Tooltip, { Wrapper } from '@smui/tooltip'
   import FormField from '@smui/form-field'
   import Checkbox from '@smui/checkbox'
   import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
+  import AccountInfo from './AccountInfo.svelte'
 
   export let app: AppState
   export let model: CreateAccountModel
@@ -125,10 +124,6 @@
     font-size: 1.1em;
     font-weight: bold;
   }
-  .summary {
-    color: #888;
-    margin-top: 16px;
-  }
   .amount {
     font-size: 1.1em;
   }
@@ -204,34 +199,18 @@
             >
             <LayoutGrid>
               <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-                <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-                  <Title>
-                    {#if data.debtorData.debtorHomepage}
-                      <Wrapper>
-                        <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
-                          <Text>
-                            <a
-                              href={data.debtorData.debtorHomepage.uri}
-                              target="_blank"
-                              style="text-decoration: none; color: #666"
-                              >
-                              www
-                            </a>
-                          </Text>
-                        </Chip>
-                        <Tooltip>{data.debtorData.debtorHomepage.uri}</Tooltip>
-                      </Wrapper>
-                    {/if}
+                <AccountInfo
+                  homepage={data.debtorData.debtorHomepage?.uri}
+                  summary={data.debtorData.summary}
+                  >
+                  <svelte:fragment slot="title">
                     {#if data.account.display.debtorName === undefined}
                       Account with "{data.debtorData.debtorName}"
                     {:else}
                       Existing account with "{data.debtorData.debtorName}"
                     {/if}
-                  </Title>
-                  <Content style="clear: both">
-                    {#if data.debtorData.summary}
-                      <blockquote class="summary">{data.debtorData.summary}</blockquote>
-                    {/if}
+                  </svelte:fragment>
+                  <svelte:fragment slot="content">
                     <ul>
                       <li>
                         <em class="amount">
@@ -257,8 +236,8 @@
                         You could be tricked by fraudsters!
                       </p>
                     {/if}
-                  </Content>
-                </Paper>
+                  </svelte:fragment>
+                </AccountInfo>
               </Cell>
 
               {#if isCreateAccountAction}
