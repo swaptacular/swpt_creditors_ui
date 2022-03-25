@@ -862,6 +862,7 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
+      await this.uc.getAccount(action.accountUri)
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
         const tinyNegligibleAmount = calcSmallestDisplayableNumber(
@@ -884,7 +885,8 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE)],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
   }
