@@ -853,8 +853,6 @@ export class AppState {
   }
 
   showConfigAccountAction(action: ConfigAccountActionWithId, back?: () => void): Promise<void> {
-    // TODO: add real implementation.
-
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
