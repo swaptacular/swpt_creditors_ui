@@ -80,9 +80,7 @@
   }
 
   function submit(pin: string): void {
-    // TODO: implement
-    // app.approveAccountCreationAction(actionManager, data, pin, isCreateAccountAction, model.goBack)
-    pin
+    app.executeConfigAccountAction(actionManager, accountData, pin, model.goBack)
   }
 
   function isUniqueDebtorName(debtorName: string, debtorUri: string): boolean {

@@ -970,7 +970,7 @@ export class AppState {
     await this.uc.setAccountSortPriority(uri, priority)
   }
 
-  async createConfigAccountAction(accountUri: string): Promise<void> {
+  async createConfigAccountAction(accountUri: string, back?: () => void): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const accountData = this.accountsMap.getAccountFullData(accountUri)
@@ -990,7 +990,7 @@ export class AppState {
         accountUri,
       })
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId)
+        this.showAction(action.actionId, back)
       }
     })
   }

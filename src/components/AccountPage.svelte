@@ -88,9 +88,9 @@
     app.showLedgerEntry(commitedTransferUri, () => app.pageModel.set(m))
   }
 
-  function showAccount(accountUri: string): void {
+  function showAccount(uri: string): void {
     const m = createUpdatedModel()
-    app.showAccount(accountUri, () => app.pageModel.set(m))
+    app.showAccount(uri, () => app.pageModel.set(m))
   }
 
   function changeTab(t: AccountModel['tab']): void {
@@ -371,7 +371,7 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={() => app.createConfigAccountAction(accountUri)} >
+      <Fab on:click={() => app.createConfigAccountAction(accountUri, () => app.showAccount(accountUri))} >
         <Icon class="material-icons">
           settings
         </Icon>
