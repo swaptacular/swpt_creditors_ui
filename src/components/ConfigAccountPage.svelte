@@ -251,7 +251,7 @@
 
             <Cell>
               <FormField>
-                <Checkbox bind:checked={allowUnsafeDeletion} disabled={!scheduledForDeletion} />
+                <Checkbox bind:checked={allowUnsafeDeletion} disabled={!allowUnsafeDeletion && !scheduledForDeletion} />
                 <span slot="label">
                   Forced account deletion: the account will be deleted
                   irrespective of the remaining amount. Use this with
