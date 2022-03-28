@@ -10,7 +10,7 @@
   export let summary: string | undefined
   export let amount: bigint = 0n
   export let pegBounds: PegBound[] = []
-  export let showAccount: ((accountUri: string) => void) = () => {}
+  export let showAccount: ((accountUri: string) => void) | undefined = undefined
   export let style: string = 'margin-top: 12px; margin-bottom: 24px; word-break: break-word'
 
   function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
@@ -69,9 +69,13 @@
                 {calcDisplayAmount(amount, pegBound)}
               </span>
             {:else}
-              <a href="." target="_blank" on:click|preventDefault={() => showAccount(pegBound.accountUri)}>
+              {#if showAccount !== undefined}
+                <a href="." target="_blank" on:click|preventDefault={() => showAccount?.(pegBound.accountUri)}>
+                  = {calcDisplayAmount(amount, pegBound)}
+                </a>
+              {:else}
                 = {calcDisplayAmount(amount, pegBound)}
-              </a>
+              {/if}
             {/if}
           </p>
         {/each}

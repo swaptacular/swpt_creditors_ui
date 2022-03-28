@@ -96,15 +96,6 @@
     }
   }
 
-  function showAccount(accountUri: string): void {
-    actionManager.saveAndClose()
-    const m = {
-      ...model,
-      action: actionManager.currentValue,
-    }
-    app.showAccount(accountUri, () => app.pageModel.set(m))
-  }
-
   function verifyIfDisplayIsNonstandard(m: ConfigAccountModel): boolean {
     const standard = m.accountData.debtorData
     const { amountDivisor, decimalPlaces, unit } = m.accountData.display
@@ -186,7 +177,6 @@
                 summary={debtorData.summary}
                 {pegBounds}
                 {amount}
-                {showAccount}
                 >
                 <svelte:fragment slot="title">
                   {#if knownDebtor}
