@@ -478,6 +478,36 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  async executeConfigAccountAction(
+    action: ConfigAccountActionWithId,
+    displayLatestUpdateId: bigint,
+    configLatestUpdateId: bigint,
+    pin: string,
+  ): Promise<void> {
+    const account = await this.getAccount(action.accountUri)
+    if (account && account.display.debtorName !== undefined) {
+      // TODO: Process `action.approveNewDisplay`.
+
+      const config: AccountConfigV0 = {
+        ...account.config,
+        negligibleAmount: action.editedNegligibleAmount,
+        scheduledForDeletion: action.editedScheduledForDeletion,
+        allowUnsafeDeletion: action.editedAllowUnsafeDeletion,
+        latestUpdateId: configLatestUpdateId + 1n,
+        pin,
+      }
+      const display: AccountDisplayV0 = {
+        ...account.display,
+        debtorName: action.editedDebtorName,
+        latestUpdateId: displayLatestUpdateId + 1n,
+        pin,
+      }
+      await this.updateAccountObject(config)
+      await this.updateAccountObject(display)
+      await this.replaceActionRecord(action, null)
+    }
+  }
+
   async resolveCoinConflict(
     action: ApprovePegActionWithId,
     approve: boolean,
