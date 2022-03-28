@@ -35,6 +35,8 @@
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
 
+  const CONFIRM_MESSAGE = 'Forcing the deletion of this account will result in losing the remaining amount on it.'
+
   function createUpdatedAction(): ConfigAccountActionWithId {
     uniqueDebtorName = isUniqueDebtorName(debtorName, debtorIdentityUri)
     return {
@@ -71,10 +73,7 @@
     uniqueDebtorName = isUniqueDebtorName(debtorName, debtorIdentityUri)
     if (invalid) {
       shakeForm()
-    } else if (
-      !allowUnsafeDeletion ||
-      confirm('Forcing the deletion of this account will result in losing the remaining amount on it.')
-    ) {
+    } else if (!allowUnsafeDeletion || (allowUnsafeDeletion = confirm(CONFIRM_MESSAGE))) {
       openEnterPinDialog = true
     }
   }
