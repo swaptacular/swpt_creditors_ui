@@ -177,6 +177,7 @@ export type ConfigAccountModel = BasePageModel & {
   type: 'ConfigAccountModel',
   action: ConfigAccountActionWithId,
   accountData: AccountFullData,
+  backToAccount: () => void,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -856,6 +857,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const showActions = () => { this.showActions() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -866,7 +868,8 @@ export class AppState {
           this.pageModel.set({
             type: 'ConfigAccountModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack,
+            goBack: showActions,
+            backToAccount: goBack,
             action,
             accountData,
           })
@@ -892,6 +895,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
     const saveActionPromise = actionManager.saveAndClose()
     let action = actionManager.currentValue
 
@@ -907,12 +911,12 @@ export class AppState {
       checkAndGoBack()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }

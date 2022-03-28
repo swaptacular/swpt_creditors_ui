@@ -79,7 +79,7 @@
   }
 
   function submit(pin: string): void {
-    app.executeConfigAccountAction(actionManager, accountData, pin, model.goBack)
+    app.executeConfigAccountAction(actionManager, accountData, pin, model.backToAccount)
   }
 
   function isUniqueDebtorName(debtorName: string, debtorUri: string): boolean {
@@ -277,7 +277,7 @@
 
     <svelte:fragment slot="floating">
       <div class="fab-container">
-        <Fab on:click={() => actionManager.remove(model.goBack) } extended>
+        <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
           <Label>Cancel</Label>
         </Fab>
       </div>
