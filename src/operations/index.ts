@@ -486,8 +486,6 @@ export class UserContext {
   ): Promise<void> {
     const account = await this.getAccount(action.accountUri)
     if (account && account.display.debtorName !== undefined) {
-      // TODO: Process `action.approveNewDisplay`.
-
       const config: AccountConfigV0 = {
         ...account.config,
         negligibleAmount: action.editedNegligibleAmount,
@@ -504,8 +502,20 @@ export class UserContext {
       }
       await this.updateAccountObject(config)
       await this.updateAccountObject(display)
-      await this.replaceActionRecord(action, null)
+      if (action.approveNewDisplay) {
+        const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
+        await createApproveAction({
+          actionType: 'ApproveAmountDisplay',
+          createdAt: new Date(),
+          amountDivisor: debtorData.amountDivisor,
+          decimalPlaces: debtorData.decimalPlaces,
+          unit: debtorData.unit,
+          userId: this.userId,
+          accountUri: action.accountUri,
+        })
+      }
     }
+    await this.replaceActionRecord(action, null)
   }
 
   async resolveCoinConflict(

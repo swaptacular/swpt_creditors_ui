@@ -242,8 +242,8 @@
               <FormField>
                 <Checkbox bind:checked={scheduledForDeletion} />
                 <span slot="label">
-                  Scheduled for deletion. The account can not receive
-                  transfers, and will be deleted once the remaining
+                  Scheduled for deletion: the account can not receive
+                  payments, and will be deleted when the remaining
                   amount becomes negligible.
                 </span>
               </FormField>
@@ -253,7 +253,7 @@
               <FormField>
                 <Checkbox bind:checked={allowUnsafeDeletion} disabled={!scheduledForDeletion} />
                 <span slot="label">
-                  Force account deletion. The account will be deleted
+                  Forced account deletion: the account will be deleted
                   irrespective of the remaining amount. Use this with
                   extreme caution!
                 </span>
