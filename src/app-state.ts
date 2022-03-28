@@ -883,6 +883,35 @@ export class AppState {
     })
   }
 
+  executeConfigAccountAction(
+    actionManager: ActionManager<ConfigAccountActionWithId>,
+    accountData: AccountFullData,
+    pin: string,
+    back?: () => void,
+  ): Promise<void> {
+    // TODO: add real implementation.
+
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      action
+      accountData
+      pin
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
