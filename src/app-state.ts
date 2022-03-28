@@ -75,7 +75,7 @@ export type ActionManager<T> = {
   markDirty: () => void
   save: () => Promise<void>,
   saveAndClose: () => Promise<void>,
-  remove: () => Promise<void>,
+  remove: (back?: () => void) => Promise<void>,
 }
 
 let nextAlertId = 1
@@ -1093,13 +1093,10 @@ export class AppState {
       isClosed = true
       return savePromise
     }
-    const remove = async (): Promise<void> => {
+    const remove = async (back?: () => void): Promise<void> => {
       let interactionId: number
-      const showActions = () => {
-        if (this.interactionId === interactionId) {
-          this.showActions()
-        }
-      }
+      const goBack = back ?? (() => { this.showActions() })
+      const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
       const reloadAction = () => {
         if (this.interactionId === interactionId) {
           this.showAction(action.actionId)
@@ -1109,7 +1106,7 @@ export class AppState {
         interactionId = this.interactionId
         await store(latestValue)
         await this.uc.replaceActionRecord(latestValue, null)
-        showActions()
+        checkAndGoBack()
       }, {
         alerts: [
           [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
