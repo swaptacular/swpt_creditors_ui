@@ -985,7 +985,8 @@ export class AppState {
         editedDebtorName: accountData.display.debtorName,
         editedNegligibleAmount: accountData.config.negligibleAmount,
         editedScheduledForDeletion: accountData.config.scheduledForDeletion,
-        editedApproveNewDisplay: false,
+        editedAllowUnsafeDeletion: accountData.config.allowUnsafeDeletion,
+        approveNewDisplay: false,
         accountUri,
       })
       if (this.interactionId === interactionId) {

@@ -579,7 +579,8 @@ export type ConfigAccountAction =
     editedDebtorName: string,
     editedNegligibleAmount: number,
     editedScheduledForDeletion: boolean,
-    editedApproveNewDisplay: boolean,
+    editedAllowUnsafeDeletion: boolean,
+    approveNewDisplay: boolean,
   }
 
 export type ConfigAccountActionWithId =

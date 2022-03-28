@@ -7,8 +7,8 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
-  // import FormField from '@smui/form-field'
-  // import Checkbox from '@smui/checkbox'
+  import FormField from '@smui/form-field'
+  import Checkbox from '@smui/checkbox'
   import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -22,23 +22,28 @@
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let debtorName = model.action.editedDebtorName
-  let uniqueDebtorName = isUniqueDebtorName(debtorName)
+  let uniqueDebtorName = isUniqueDebtorName(debtorName, model.accountData.account.debtor.uri)
   let negligibleUnitAmount = formatAsUnitAmount(
     model.action.editedNegligibleAmount,
     model.accountData.display.amountDivisor,
     model.accountData.display.decimalPlaces,
   )
+  let scheduledForDeletion = model.action.editedScheduledForDeletion
+  let allowUnsafeDeletion = model.action.editedAllowUnsafeDeletion
+  let nonstandardDisplay = verifyIfDisplayIsNonstandard(model)
+  let preserveCurrentDisplay = !(nonstandardDisplay && model.action.approveNewDisplay)
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
 
   function createUpdatedAction(): ConfigAccountActionWithId {
-    uniqueDebtorName = isUniqueDebtorName(debtorName)
+    uniqueDebtorName = isUniqueDebtorName(debtorName, debtorIdentityUri)
     return {
       ...action,
       editedDebtorName: debtorName,
       editedNegligibleAmount: Math.max(0, Number(negligibleUnitAmount) || 0) * limitAmountDivisor(amountDivisor),
-      // editedScheduledForDeletion: boolean,
-      // editedApproveNewDisplay: boolean,
+      editedScheduledForDeletion: scheduledForDeletion,
+      editedAllowUnsafeDeletion: allowUnsafeDeletion,
+      approveNewDisplay: !preserveCurrentDisplay,
     }
   }
 
@@ -62,11 +67,14 @@
     }
   }
 
-  function confirm(): void {
-    uniqueDebtorName = isUniqueDebtorName(debtorName)
+  function modify(): void {
+    uniqueDebtorName = isUniqueDebtorName(debtorName, debtorIdentityUri)
     if (invalid) {
       shakeForm()
-    } else {
+    } else if (
+      !allowUnsafeDeletion ||
+      confirm('Forcing the deletion of this account will result in losing the remaining amount on it.')
+    ) {
       openEnterPinDialog = true
     }
   }
@@ -77,14 +85,14 @@
     pin
   }
 
-  function isUniqueDebtorName(debtorName: string): boolean {
+  function isUniqueDebtorName(debtorName: string, debtorUri: string): boolean {
     const nameRegex = new RegExp(`^${debtorName}$`, 'us')
     const matchingAccounts = app.accountsMap.getAccountRecordsMatchingDebtorName(nameRegex)
     switch (matchingAccounts.length) {
     case 0:
       return true
     case 1:
-      return matchingAccounts[0].debtor.uri === debtorIdentityUri
+      return matchingAccounts[0].debtor.uri === debtorUri
     default:
       return false
     }
@@ -97,6 +105,16 @@
       action: actionManager.currentValue,
     }
     app.showAccount(accountUri, () => app.pageModel.set(m))
+  }
+
+  function verifyIfDisplayIsNonstandard(m: ConfigAccountModel): boolean {
+    const standard = m.accountData.debtorData
+    const { amountDivisor, decimalPlaces, unit } = m.accountData.display
+    return (
+      amountDivisor !== standard.amountDivisor ||
+      decimalPlaces !== standard.decimalPlaces ||
+      unit !== standard.unit
+    )
   }
 
   $: action = model.action
@@ -117,6 +135,9 @@
     !uniqueDebtorName ||
     invalidNegligibleUnitAmount
   )
+  $: if (!scheduledForDeletion && allowUnsafeDeletion) {
+    allowUnsafeDeletion = false
+  }
 </script>
 
 <style>
@@ -229,6 +250,39 @@
                 </HelperText>
               </Textfield>
             </Cell>
+
+            <Cell>
+              <FormField>
+                <Checkbox bind:checked={scheduledForDeletion} />
+                <span slot="label">
+                  Scheduled for deletion. The account can not receive
+                  transfers, and will be deleted once the remaining
+                  amount becomes negligible.
+                </span>
+              </FormField>
+            </Cell>
+
+            <Cell>
+              <FormField>
+                <Checkbox bind:checked={allowUnsafeDeletion} disabled={!scheduledForDeletion} />
+                <span slot="label">
+                  Force account deletion. The account will be deleted
+                  irrespective of the remaining amount. Use this with
+                  extreme caution!
+                </span>
+              </FormField>
+            </Cell>
+
+            {#if nonstandardDisplay}
+              <Cell>
+                <FormField>
+                  <Checkbox bind:checked={preserveCurrentDisplay} />
+                  <span slot="label">
+                    Use a nonstandard way to display currency amounts.
+                  </span>
+                </FormField>
+              </Cell>
+            {/if}
           </LayoutGrid>
         </form>
       </div>
@@ -241,7 +295,7 @@
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab color="primary" on:click={confirm} extended>
+        <Fab color="primary" on:click={modify} extended>
           <Label>Modify</Label>
         </Fab>
       </div>
