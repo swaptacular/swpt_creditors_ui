@@ -178,6 +178,7 @@ export type ConfigAccountModel = BasePageModel & {
   action: ConfigAccountActionWithId,
   accountData: AccountFullData,
   backToAccount: () => void,
+  nonstandardDisplay: boolean,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -859,11 +860,36 @@ export class AppState {
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const showActions = () => { this.showActions() }
 
+    const detectNonstandardAmountDisplay = async (accountData: AccountFullData) => {
+      const { amountDivisor, decimalPlaces, unit } = accountData.debtorData
+      const display = accountData.display
+      let nonstandard = !(
+        display.amountDivisor === amountDivisor &&
+        display.decimalPlaces === decimalPlaces &&
+        display.unit === unit
+      )
+      if (nonstandard) {
+        // When the current amount display is nonstandard, but there
+        // is a corresponding "approve amount display" action, we
+        // consider this "good enough".
+        const actions = await this.uc.getActionRecords()
+        nonstandard = !actions.some(a => (
+          a.actionType === 'ApproveAmountDisplay' &&
+          a.accountUri === action.accountUri &&
+          a.amountDivisor === amountDivisor &&
+          a.decimalPlaces === decimalPlaces &&
+          a.unit === unit
+        ))
+      }
+      return nonstandard
+    }
+
     return this.attempt(async () => {
       interactionId = this.interactionId
       await this.uc.getAccount(action.accountUri)
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
+        const nonstandardDisplay = await detectNonstandardAmountDisplay(accountData)
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'ConfigAccountModel',
@@ -872,6 +898,7 @@ export class AppState {
             backToAccount: goBack,
             action,
             accountData,
+            nonstandardDisplay,
           })
         }
       } else {

@@ -30,8 +30,7 @@
   )
   let scheduledForDeletion = model.action.editedScheduledForDeletion
   let allowUnsafeDeletion = model.action.editedAllowUnsafeDeletion
-  let nonstandardDisplay = verifyIfDisplayIsNonstandard(model)
-  let preserveCurrentDisplay = !(nonstandardDisplay && model.action.approveNewDisplay)
+  let preserveCurrentDisplay = !(model.nonstandardDisplay && model.action.approveNewDisplay)
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
 
@@ -95,17 +94,8 @@
     }
   }
 
-  function verifyIfDisplayIsNonstandard(m: ConfigAccountModel): boolean {
-    const standard = m.accountData.debtorData
-    const { amountDivisor, decimalPlaces, unit } = m.accountData.display
-    return (
-      amountDivisor !== standard.amountDivisor ||
-      decimalPlaces !== standard.decimalPlaces ||
-      unit !== standard.unit
-    )
-  }
-
   $: action = model.action
+  $: nonstandardDisplay = model.nonstandardDisplay
   $: accountData = model.accountData
   $: debtorData = accountData.debtorData
   $: pegBounds = accountData.pegBounds
