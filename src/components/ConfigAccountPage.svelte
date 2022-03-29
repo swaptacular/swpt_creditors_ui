@@ -244,7 +244,8 @@
                 <Checkbox bind:checked={scheduledForDeletion} />
                 <span slot="label">
                   Scheduled for deletion: the account can not receive
-                  payments, and will be deleted when the remaining
+                  payments, and unless the currency is used as a peg,
+                  the account will be deleted once the remaining
                   amount becomes negligible.
                 </span>
               </FormField>

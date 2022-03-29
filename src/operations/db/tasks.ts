@@ -1,5 +1,5 @@
 import type { TaskRecordWithId, FetchDebtorInfoTask, DocumentRecord } from './schema'
-import type { AccountsMap } from  './accounts-map'
+import type { AccountsMap } from './accounts-map'
 
 import { Dexie } from 'dexie'
 import { db } from './schema'
@@ -115,6 +115,21 @@ export async function settleFetchDebtorInfoTask(
       task.scheduledFor = new Date(Date.now() + 1000 * backoffSeconds)
     })
   }
+}
+
+export async function putDeleteAccountTask(userId: number, accountUri: string): Promise<number> {
+  return await db.transaction('rw', [db.tasks], async () => {
+    await db.tasks
+      .where({ accountUri })
+      .filter(t => t.userId === userId && t.taskType === 'DeleteAccount')
+      .delete()
+    return await db.tasks.add({
+      taskType: 'DeleteAccount',
+      scheduledFor: new Date(),
+      userId,
+      accountUri,
+    })
+  })
 }
 
 const T_15M_SECONDS = 15 * 60

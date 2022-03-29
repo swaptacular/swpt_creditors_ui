@@ -24,7 +24,7 @@ import {
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
-  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction
+  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, putDeleteAccountTask
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -184,7 +184,8 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
           try {
             await server.delete(task.transferUri, { timeout })
           } catch (e: unknown) {
-            if (!(e instanceof HttpError && e.status === 404)) throw e  // Ignore 404 errors.
+            // Ignore 404 errors.
+            if (!(e instanceof HttpError && e.status === 404)) throw e
           }
           await removeTask(task.taskId)
         }
@@ -194,9 +195,20 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
           try {
             document = await fetchDebtorInfoDocument(task.iri, timeout)
           } catch (e: unknown) {
-            if (!(e instanceof DocumentFetchError)) throw e  // Ignore network errors.
+            // Ignore network errors.
+            if (!(e instanceof DocumentFetchError)) throw e
           }
           await settleFetchDebtorInfoTask(task, document)
+        }
+      case 'DeleteAccount':
+        return async (timeout) => {
+          try {
+            await server.delete(task.accountUri, { timeout })
+          } catch (e: unknown) {
+            // Ignore 403 and 404 errors.
+            if (!(e instanceof HttpError && (e.status === 403 || e.status === 404))) throw e
+          }
+          await removeTask(task.taskId)
         }
       default:
         throw new Error('unknown task type')  // This must never happen.
@@ -513,6 +525,15 @@ export class UserContext {
           userId: this.userId,
           accountUri: action.accountUri,
         })
+      }
+      if (action.editedAllowUnsafeDeletion) {
+        // TODO: Instead of directly creating the task here, make
+        // sure the task will be created by `update()`. Also, make
+        // sure that if `update()` deletes some accounts, at the
+        // the account list is up-to-date.
+        await putDeleteAccountTask(action.userId, action.accountUri)
+        const updateAccountsList = () => this.updateScheduler.schedule()
+        this.updateScheduler.schedule(updateAccountsList) // Execute pending tasks, and then update the accounts list.
       }
     }
     await this.replaceActionRecord(action, null)

@@ -598,6 +598,7 @@ type TaskData =
 export type TaskRecord =
   | DeleteTransferTask
   | FetchDebtorInfoTask
+  | DeleteAccountTask
 
 export type TaskRecordWithId =
   & TaskRecord
@@ -610,6 +611,10 @@ export type DeleteTransferTask =
     transferUri: string,
   }
 
+export type DeleteTransferTaskWithId =
+  & TaskRecordWithId
+  & DeleteTransferTask
+
 export type FetchDebtorInfoTask =
   & TaskData
   & {
@@ -620,9 +625,16 @@ export type FetchDebtorInfoTask =
     backoffSeconds: number,
   }
 
-export type DeleteTransferTaskWithId =
+export type DeleteAccountTask =
+  & TaskData
+  & {
+    taskType: 'DeleteAccount',
+    accountUri: string,
+  }
+
+export type DeleteAccountTaskWithId =
   & TaskRecordWithId
-  & DeleteTransferTask
+  & DeleteAccountTask
 
 class CreditorsDb extends Dexie {
   wallets: Dexie.Table<WalletRecord, number>

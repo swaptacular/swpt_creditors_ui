@@ -125,7 +125,7 @@
     font-weight: bold;
   }
   .amount {
-    font-size: 1.1em;
+    font-size: 1.05em;
   }
   .fab-container {
     margin: 16px 16px;
@@ -216,7 +216,7 @@
                         <em class="amount">
                           {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
                         </em>
-                        are currently available in your account.
+                        are available in your account.
                       </li>
                       {#if data.account.display.debtorName === undefined && data.debtorData.peg}
                         <li>
@@ -241,7 +241,7 @@
               </Cell>
 
               {#if isCreateAccountAction}
-                <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -14px 0 20px 0">
+                <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }} style="margin: -10px 0 30px 0">
                   <FormField>
                     <Checkbox
                       bind:checked={confirmed}
