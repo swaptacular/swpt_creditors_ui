@@ -228,6 +228,17 @@
               </Textfield>
             </Cell>
 
+            {#if nonstandardDisplay}
+              <Cell>
+                <FormField>
+                  <Checkbox bind:checked={preserveCurrentDisplay} />
+                  <span slot="label">
+                    Use a nonstandard way to display currency amounts.
+                  </span>
+                </FormField>
+              </Cell>
+            {/if}
+
             <Cell>
               <FormField>
                 <Checkbox bind:checked={scheduledForDeletion} />
@@ -249,17 +260,6 @@
                 </span>
               </FormField>
             </Cell>
-
-            {#if nonstandardDisplay}
-              <Cell>
-                <FormField>
-                  <Checkbox bind:checked={preserveCurrentDisplay} />
-                  <span slot="label">
-                    Use a nonstandard way to display currency amounts.
-                  </span>
-                </FormField>
-              </Cell>
-            {/if}
           </LayoutGrid>
         </form>
       </div>
