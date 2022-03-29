@@ -137,8 +137,10 @@ export async function update(server: ServerSession, userId: number, accountsMap:
   try {
     await sync(server, userId)
     await reviseOutdatedDebtorInfosIfNecessary(userId, accountsMap)
-    await executeReadyTasks(server, userId)
-
+    await createAccountDeletionTasksIfNecessary(userId, accountsMap)
+    if (await executeReadyTasks(server, userId)) {
+      await sync(server, userId)
+    }
   } catch (error: unknown) {
     let event
     switch (true) {
@@ -163,6 +165,15 @@ export async function update(server: ServerSession, userId: number, accountsMap:
   }
 }
 
+async function createAccountDeletionTasksIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
+  // TODO: add a real implementation. It should traverse the
+  // `accountsMap`, and call `await putDeleteAccountTask(userId, accountUri)`
+  // for every account that can be successfully deleted.
+  userId
+  accountsMap
+  putDeleteAccountTask
+}
+
 async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
   const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
   const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
@@ -176,7 +187,9 @@ async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap:
   localStorage.setItem(storage_key, now.toISOString())
 }
 
-async function executeReadyTasks(server: ServerSession, userId: number): Promise<void> {
+async function executeReadyTasks(server: ServerSession, userId: number): Promise<boolean> {
+  let resyncIsNeeded = false
+
   const createTaskExecutor = (task: TaskRecordWithId): ((timeout: number) => Promise<void>) => {
     switch (task.taskType) {
       case 'DeleteTransfer':
@@ -204,6 +217,7 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
         return async (timeout) => {
           try {
             await server.delete(task.accountUri, { timeout })
+            resyncIsNeeded = true
           } catch (e: unknown) {
             // Ignore 403 and 404 errors.
             if (!(e instanceof HttpError && (e.status === 403 || e.status === 404))) throw e
@@ -214,6 +228,7 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
         throw new Error('unknown task type')  // This must never happen.
     }
   }
+
   const limit = 100
   let tasks
   do {
@@ -222,6 +237,8 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
     const taskExecutors = tasks.map(task => createTaskExecutor(task))
     await Promise.all(taskExecutors.map(taskExecutor => taskExecutor(timeout)))
   } while (tasks.length >= limit)
+
+  return resyncIsNeeded
 }
 
 export class UserContext {
@@ -527,13 +544,7 @@ export class UserContext {
         })
       }
       if (action.editedAllowUnsafeDeletion) {
-        // TODO: Instead of directly creating the task here, make
-        // sure the task will be created by `update()`. Also, make
-        // sure that if `update()` deletes some accounts, at the
-        // the account list is up-to-date.
-        await putDeleteAccountTask(action.userId, action.accountUri)
-        const updateAccountsList = () => this.updateScheduler.schedule()
-        this.updateScheduler.schedule(updateAccountsList) // Execute pending tasks, and then update the accounts list.
+        this.updateScheduler.schedule()
       }
     }
     await this.replaceActionRecord(action, null)
