@@ -886,7 +886,6 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      await this.uc.getAccount(action.accountUri)
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
         const nonstandardDisplay = await detectNonstandardAmountDisplay(accountData)
@@ -907,7 +906,6 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
       ],
     })
@@ -1038,6 +1036,7 @@ export class AppState {
   async createConfigAccountAction(accountUri: string, back?: () => void): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
+      await this.uc.getAccount(accountUri)
       const accountData = this.accountsMap.getAccountFullData(accountUri)
       if (accountData === undefined) {
         this.showAccounts()
@@ -1057,6 +1056,10 @@ export class AppState {
       if (this.interactionId === interactionId) {
         this.showAction(action.actionId, back)
       }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+      ],
     })
   }
 
