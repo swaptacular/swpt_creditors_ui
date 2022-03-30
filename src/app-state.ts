@@ -548,7 +548,7 @@ export class AppState {
       if (crash_happened_at_the_end_of_previously_started_account_initialization) {
         await this.uc.finishAccountInitialization(action)
       } else if (isNewAccount) {
-        await this.uc.initializeNewAccount(action, data.account, true, pin)
+        await this.uc.initializeNewAccount(action, data.account, knownDebtor, pin)
       } else {
         await this.uc.confirmKnownAccount(action, data.account, pin, knownDebtor)
       }
