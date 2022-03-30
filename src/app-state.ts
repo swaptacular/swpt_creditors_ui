@@ -936,12 +936,12 @@ export class AppState {
       checkAndGoBack()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }
