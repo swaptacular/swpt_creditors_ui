@@ -553,6 +553,11 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* If `approve` is true, downloads the debtor info document for the
+   * peg currency, compares it with the known debtor info, and if
+   * necessary, creates an "AckAccountInfo" action. The caller must be
+   * prepared this method throw `ServerSessionError`, `InvalidDocument`,
+   * `DocumentFetchError`, `RecordDoesNotExist`. */
   async resolveCoinConflict(
     action: ApprovePegActionWithId,
     approve: boolean,
@@ -573,6 +578,9 @@ export class UserContext {
     return ackAccountInfoActionId
   }
 
+  /* Returns the known account data for the pegged account, but only *
+   * if it matches the peg described in the `ApprovePeg` action. If
+   * `expectedApprovalValue` is passed, it should match as well. */
   async validatePeggedAccount(
     action: ApprovePegActionWithId,
     pegAccountUri: string,
@@ -809,10 +817,8 @@ export class UserContext {
     return actionRecord as CreateTransferActionWithId
   }
 
-  async logout(): Promise<never> {
-    return await this.server.logout()
-  }
-
+  /* Returns the properly sorted list of configured accounts for the
+   * current user. */
   async getAccountsDataForDisplay(): Promise<AccountDataForDisplay[]> {
     const priorities = await getAccountSortPriorities(this.userId)
     const prioritiesMap = new Map(priorities.map(p => [p.uri, p.priority]))
@@ -834,6 +840,11 @@ export class UserContext {
         const nameB = (displayB.debtorName ?? '').toLowerCase()
         return nameA > nameB ? 1 : (nameA === nameB ? 0 : -1)
       })
+  }
+
+  /* Forgets authentication credentials, and goes to the login page. */
+  async logout(): Promise<never> {
+    return await this.server.logout()
   }
 
   private async validatePegAccount(action: ApprovePegActionWithId, pegAccountUri: string): Promise<boolean> {
