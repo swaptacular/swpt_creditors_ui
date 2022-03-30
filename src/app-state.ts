@@ -973,9 +973,7 @@ export class AppState {
       const timeout = calcParallelTimeout(configs.length)
       await Promise.all(configs.map(c => this.uc.forceAccountDeletion(c, pin, timeout)))
       let resolveUpdatePromise
-      const updatePromise = new Promise<void>((resolve, _) => {
-        resolveUpdatePromise = resolve
-      })
+      const updatePromise = new Promise(resolve => { resolveUpdatePromise = resolve })
       this.uc.scheduleUpdate(resolveUpdatePromise)
       await updatePromise
       checkAndShowAcounts()
