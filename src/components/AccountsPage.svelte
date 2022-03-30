@@ -102,7 +102,7 @@
 
 <style>
   .delete-link {
-    margin: 16px 0;
+    margin: 8px 0;
     font-family: Roboto,sans-serif;
     text-decoration: underline;
     color: #888;
