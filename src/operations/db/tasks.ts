@@ -117,18 +117,20 @@ export async function settleFetchDebtorInfoTask(
   }
 }
 
-export async function putDeleteAccountTask(userId: number, accountUri: string): Promise<number> {
-  return await db.transaction('rw', [db.tasks], async () => {
-    await db.tasks
+export async function ensureDeleteAccountTask(userId: number, accountUri: string): Promise<void> {
+  await db.transaction('rw', [db.tasks], async () => {
+    const existingTask = await db.tasks
       .where({ accountUri })
       .filter(t => t.userId === userId && t.taskType === 'DeleteAccount')
-      .delete()
-    return await db.tasks.add({
-      taskType: 'DeleteAccount',
-      scheduledFor: new Date(),
-      userId,
-      accountUri,
-    })
+      .first()
+    if (!existingTask) {
+      await db.tasks.add({
+        taskType: 'DeleteAccount',
+        scheduledFor: new Date(),
+        userId,
+        accountUri,
+      })
+    }
   })
 }
 

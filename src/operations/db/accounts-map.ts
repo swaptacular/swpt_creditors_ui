@@ -308,6 +308,49 @@ export class AccountsMap {
     return undefined
   }
 
+  getDeletableAccountUris(): string[] {
+    let deletableAccountUris: Set<string> = new Set()
+    const pegAccountUris = this.getPegAccountUris()
+    for (const uri of this.accounts.values()) {
+      const account = this.getObjectByUri(uri)
+      if (account) {
+        assert(account.type === 'Account')
+        const info = this.getObjectByUri(account.info.uri)
+        const config = this.getObjectByUri(account.config.uri)
+        if (info && config) {
+          assert(info.type === 'AccountInfo')
+          assert(config.type === 'AccountConfig')
+          if (
+            config.scheduledForDeletion &&
+            !pegAccountUris.has(account.uri) &&
+            (info.safeToDelete || config.allowUnsafeDeletion)
+          ) {
+            deletableAccountUris.add(account.uri)
+          }
+        }
+      }
+    }
+    return [...deletableAccountUris]
+  }
+
+  private getPegAccountUris(): Set<string> {
+    let uris: Set<string> = new Set()
+    for (const uri of this.accounts.values()) {
+      const account = this.getObjectByUri(uri)
+      if (account) {
+        assert(account.type === 'Account')
+        const exchange = this.getObjectByUri(account.exchange.uri)
+        if (exchange) {
+          assert(exchange.type === 'AccountExchange')
+          if (exchange.peg) {
+            uris.add(exchange.peg.account.uri)
+          }
+        }
+      }
+    }
+    return uris
+  }
+
   private addRecursivelyPeggedAccountUris(
     accountUris: Map<string, RecursiveSearchNodeData | undefined>,
     matchCoins: boolean = false,

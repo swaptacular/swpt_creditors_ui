@@ -24,7 +24,7 @@ import {
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
-  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, putDeleteAccountTask
+  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -166,12 +166,9 @@ export async function update(server: ServerSession, userId: number, accountsMap:
 }
 
 async function createAccountDeletionTasksIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
-  // TODO: add a real implementation. It should traverse the
-  // `accountsMap`, and call `await putDeleteAccountTask(userId, accountUri)`
-  // for every account that can be successfully deleted.
-  userId
-  accountsMap
-  putDeleteAccountTask
+  for (const accountUri of accountsMap.getDeletableAccountUris()) {
+    await ensureDeleteAccountTask(userId, accountUri)
+  }
 }
 
 async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
