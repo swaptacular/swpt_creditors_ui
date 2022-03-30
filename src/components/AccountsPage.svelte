@@ -18,7 +18,7 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
-  const MAX_UNNAMED_ACCOUNT_CONFIGS = 15
+  const MAX_UNNAMED_ACCOUNT_CONFIGS = 3
 
   let searchInput: HTMLInputElement
   let openEnterPinDialog = false
