@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, AccountConfigRecord
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -184,6 +184,7 @@ export type ConfigAccountModel = BasePageModel & {
 export type AccountsModel = BasePageModel & {
   type: 'AccountsModel',
   accounts: AccountDataForDisplay[],
+  unnamedAccountConfigs: AccountConfigRecord[],
   searchText?: string,
   scrollTop?: number,
   scrollLeft?: number,
@@ -950,14 +951,43 @@ export class AppState {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const accounts = await this.uc.getAccountsDataForDisplay()
+      const unnamedAccountConfigs = this.accountsMap.getUnnamedAccountConfigs()
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AccountsModel',
           reload: () => { this.showAccounts() },
           goBack: () => { this.showActions() },
           accounts,
+          unnamedAccountConfigs,
         })
       }
+    })
+  }
+
+  async deleteUnnamedAccountConfigs(configs: AccountConfigRecord[], pin: string): Promise<void> {
+    let interactionId: number
+    const checkAndShowAcounts = () => { if (this.interactionId === interactionId) this.showAccounts() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      for (const config of configs) {
+        await this.uc.forceAccountDeletion(config, pin)
+      }
+      let resolveUpdatePromise
+      const updatePromise = new Promise<void>((resolve, _) => {
+        resolveUpdatePromise = resolve
+      })
+      this.uc.scheduleUpdate(resolveUpdatePromise)
+      await updatePromise
+      checkAndShowAcounts()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowAcounts })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowAcounts })],
+      ],
     })
   }
 

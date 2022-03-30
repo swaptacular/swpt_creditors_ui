@@ -4,7 +4,7 @@ import type {
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId
+  CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
@@ -75,6 +75,7 @@ export type {
   AccountsMap,
   AccountRecord,
   AccountDisplayRecord,
+  AccountConfigRecord,
   AccountDataForDisplay,
   CommittedTransferRecord,
   AccountFullData,
@@ -504,6 +505,11 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
+  /* Updates account's configuration as the given action states. The
+   * caller must be prepared this method to throw
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
+   * `ServerSessionError`. */
   async executeConfigAccountAction(
     action: ConfigAccountActionWithId,
     displayLatestUpdateId: bigint,
@@ -541,7 +547,7 @@ export class UserContext {
         })
       }
       if (action.editedAllowUnsafeDeletion) {
-        this.updateScheduler.schedule()
+        this.scheduleUpdate()
       }
     }
     await this.replaceActionRecord(action, null)
@@ -758,6 +764,22 @@ export class UserContext {
     console.log(`Removed exchange peg for account ${exchange.account.uri}`)
   }
 
+  /* Updates account's configuration so that the account will be
+   * forcefully deleted. The caller must be prepared this method to
+   * throw `ConflictingUpdate`, `WrongPin`,`UnprocessableEntity`,
+   * `ResourceNotFound`, `ServerSessionError`. */
+  async forceAccountDeletion(configRecord: AccountConfigRecord, pin: string): Promise<void> {
+    const { userId, ...config } = configRecord  // Remove the `userId` field.
+    const updatedConfig: AccountConfigV0 = {
+      ...config,
+      scheduledForDeletion: true,
+      allowUnsafeDeletion: true,
+      latestUpdateId: config.latestUpdateId + 1n,
+      pin,
+    }
+    await this.updateAccountObject(updatedConfig)
+  }
+
   /* Reads a payment request, and adds and returns a new
    * create transfer action. May throw `IvalidPaymentRequest`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
@@ -871,10 +893,10 @@ export class UserContext {
         switch (e.status) {
           case 404:
             if (ignore404) return
-            this.updateScheduler.schedule()
+            this.scheduleUpdate()
             throw new ResourceNotFound()
           case 409:
-            this.updateScheduler.schedule()
+            this.scheduleUpdate()
             throw new ConflictingUpdate()
           case 403:
             throw new WrongPin()

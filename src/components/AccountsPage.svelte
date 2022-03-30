@@ -11,13 +11,17 @@
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import ScanCoinDialog from './ScanCoinDialog.svelte'
+  import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
   export let model: AccountsModel
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
+  const MAX_UNNAMED_ACCOUNT_CONFIGS = 15
+
   let searchInput: HTMLInputElement
+  let openEnterPinDialog = false
   let scanCoinDialog = false
   let visibleSearchBox = model.searchText !== undefined
   let pendingFilterChange = false
@@ -80,6 +84,10 @@
     return `${unitAmount} ${unit}`
   }
 
+  function deleteUnconfiguredAccounts(pin: string): void {
+    app.deleteUnnamedAccountConfigs(unnamedAccountConfigs, pin)
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
     if (visibleSearchBox) {
@@ -88,10 +96,17 @@
   })
 
   $: hasAccounts = model.accounts.length > 0
+  $: unnamedAccountConfigs = model.unnamedAccountConfigs
   $: shownAccounts = applyFilter(model.accounts, filter)
 </script>
 
 <style>
+  .delete-link {
+    margin: 16px 0;
+    font-family: Roboto,sans-serif;
+    text-decoration: underline;
+    color: #888;
+  }
   .search-box {
     padding: 12px 0 12px 0;
     width: 100%;
@@ -135,6 +150,8 @@
 
 <Page title="Accounts">
   <svelte:fragment slot="content">
+    <EnterPinDialog bind:open={openEnterPinDialog} performAction={deleteUnconfiguredAccounts} />
+
     {#if hasAccounts}
       {#if shownAccounts.length > 0 }
         <LayoutGrid style="word-break: break-word">
@@ -148,6 +165,21 @@
               </Card>
             </Cell>
           {/each}
+          {#if unnamedAccountConfigs.length > MAX_UNNAMED_ACCOUNT_CONFIGS}
+            <Cell>
+              <Card>
+                <PrimaryAction padded on:click={() => openEnterPinDialog = true}>
+                  <span class="delete-link">
+                    {#if unnamedAccountConfigs.length === 1}
+                      Delete 1 unconfigured account.
+                    {:else}
+                      Delete {unnamedAccountConfigs.length} unconfigured accounts.
+                    {/if}
+                  </span>
+                </PrimaryAction>
+              </Card>
+            </Cell>
+          {/if}
         </LayoutGrid>
       {:else}
         <p class="no-matches">

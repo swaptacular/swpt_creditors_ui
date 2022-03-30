@@ -308,6 +308,26 @@ export class AccountsMap {
     return undefined
   }
 
+  getUnnamedAccountConfigs(): AccountConfigRecord[] {
+    let unnamedAccountConfigs: Set<AccountConfigRecord> = new Set()
+    for (const uri of this.accounts.values()) {
+      const account = this.getObjectByUri(uri)
+      if (account) {
+        assert(account.type === 'Account')
+        const display = this.getObjectByUri(account.display.uri)
+        const config = this.getObjectByUri(account.config.uri)
+        if (display && config) {
+          assert(display.type === 'AccountDisplay')
+          assert(config.type === 'AccountConfig')
+          if (display.debtorName === undefined) {
+            unnamedAccountConfigs.add(config)
+          }
+        }
+      }
+    }
+    return [...unnamedAccountConfigs]
+  }
+
   getDeletableAccountUris(): string[] {
     let deletableAccountUris: Set<string> = new Set()
     const pegAccountUris = this.getPegAccountUris()
