@@ -874,8 +874,10 @@ export class UserContext {
         switch (e.status) {
           case 404:
             if (ignore404) return
+            this.updateScheduler.schedule()
             throw new ResourceNotFound()
           case 409:
+            this.updateScheduler.schedule()
             throw new ConflictingUpdate()
           case 403:
             throw new WrongPin()
