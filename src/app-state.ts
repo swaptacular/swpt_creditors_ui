@@ -15,7 +15,7 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound, ServerSyncError, parseCoinUri
+  ResourceNotFound, ServerSyncError, parseCoinUri, calcParallelTimeout
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -970,9 +970,8 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      for (const config of configs) {
-        await this.uc.forceAccountDeletion(config, pin)
-      }
+      const timeout = calcParallelTimeout(configs.length)
+      await Promise.all(configs.map(c => this.uc.forceAccountDeletion(c, pin, timeout)))
       let resolveUpdatePromise
       const updatePromise = new Promise<void>((resolve, _) => {
         resolveUpdatePromise = resolve

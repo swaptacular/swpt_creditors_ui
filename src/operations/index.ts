@@ -40,6 +40,7 @@ import {
 
 export {
   parseCoinUri,
+  calcParallelTimeout,
   InvalidActionState,
   RecordDoesNotExist,
   IvalidPaymentRequest,
@@ -776,7 +777,7 @@ export class UserContext {
    * forcefully deleted. The caller must be prepared this method to
    * throw `ConflictingUpdate`, `WrongPin`,`UnprocessableEntity`,
    * `ResourceNotFound`, `ServerSessionError`. */
-  async forceAccountDeletion(configRecord: AccountConfigRecord, pin: string): Promise<void> {
+  async forceAccountDeletion(configRecord: AccountConfigRecord, pin: string, timeout?: number): Promise<void> {
     const { userId, ...config } = configRecord  // Remove the `userId` field.
     const updatedConfig: AccountConfigV0 = {
       ...config,
@@ -785,7 +786,7 @@ export class UserContext {
       latestUpdateId: config.latestUpdateId + 1n,
       pin,
     }
-    await this.updateAccountObject(updatedConfig)
+    await this.updateAccountObject(updatedConfig, { timeout, ignore404: true })
   }
 
   /* Reads a payment request, and adds and returns a new
