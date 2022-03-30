@@ -171,9 +171,12 @@
                 <PrimaryAction padded on:click={() => openEnterPinDialog = true}>
                   <span class="delete-link">
                     {#if unnamedAccountConfigs.length === 1}
-                      Delete 1 unconfigured account.
+                      Delete 1 unconfirmed account, which is not
+                      properly configured.
                     {:else}
-                      Delete {unnamedAccountConfigs.length} unconfigured accounts.
+                      Delete {unnamedAccountConfigs.length}
+                      unconfirmed accounts, which are not properly
+                      configured.
                     {/if}
                   </span>
                 </PrimaryAction>
