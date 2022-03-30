@@ -661,6 +661,7 @@ export class UserContext {
       negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       latestUpdateId: account.config.latestUpdateId + 1n,
       scheduledForDeletion: false,
+      allowUnsafeDeletion: false,
       pin,
     }
     const display: AccountDisplayV0 = {
@@ -727,6 +728,7 @@ export class UserContext {
       ...account.config,
       negligibleAmount: action.accountCreationState.editedNegligibleAmount,
       scheduledForDeletion: false,
+      allowUnsafeDeletion: false,
       latestUpdateId: account.config.latestUpdateId + 1n,
       pin,
     }
