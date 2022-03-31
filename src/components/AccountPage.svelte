@@ -229,7 +229,7 @@
           {amount}
           {showAccount}
           elevation={12}
-          style="margin: 28px 18px; word-break: break-word"
+          style="margin: 24px 18px; word-break: break-word"
           >
           <svelte:fragment slot="title">
             {#if knownDebtor}
