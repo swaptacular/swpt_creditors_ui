@@ -17,7 +17,7 @@
   export const snackbarBottom: string = '84px'
   export const scrollElement = document.documentElement
 
-  const MAX_UNNAMED_ACCOUNT_CONFIGS = 3
+  const MAX_UNNAMED_ACCOUNT_CONFIGS = 4
 
   let searchInput: HTMLInputElement
   let scanCoinDialog = false
@@ -147,16 +147,6 @@
     {#if hasAccounts}
       {#if shownAccounts.length > 0 }
         <LayoutGrid style="word-break: break-word">
-          {#each shownAccounts as account }
-            <Cell>
-              <Card>
-                <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
-                  <p class="name" class:confirmed={account.display.knownDebtor}>{account.display.debtorName}</p>
-                  <p class="amount">{calcDisplayAmount(account)}</p>
-                </PrimaryAction>
-              </Card>
-            </Cell>
-          {/each}
           {#if unnamedAccountUris.length > MAX_UNNAMED_ACCOUNT_CONFIGS}
             <Cell>
               <Card>
@@ -175,6 +165,16 @@
               </Card>
             </Cell>
           {/if}
+          {#each shownAccounts as account }
+            <Cell>
+              <Card>
+                <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
+                  <p class="name" class:confirmed={account.display.knownDebtor}>{account.display.debtorName}</p>
+                  <p class="amount">{calcDisplayAmount(account)}</p>
+                </PrimaryAction>
+              </Card>
+            </Cell>
+          {/each}
         </LayoutGrid>
       {:else}
         <p class="no-matches">
