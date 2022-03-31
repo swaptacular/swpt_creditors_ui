@@ -11,6 +11,7 @@
   export let amount: bigint = 0n
   export let pegBounds: PegBound[] = []
   export let showAccount: ((accountUri: string) => void) | undefined = undefined
+  export let elevation = 6
   export let style: string = 'margin-top: 12px; margin-bottom: 24px; word-break: break-word'
 
   function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
@@ -45,7 +46,7 @@
   }
 </style>
 
-<Paper {style} elevation={6}>
+<Paper {style} {elevation}>
   <Title>
     {#if homepage}
       <Wrapper>

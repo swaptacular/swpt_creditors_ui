@@ -126,7 +126,7 @@
 <style>
   ul {
     list-style: disc outside;
-    margin: 0.75em 1.25em 0 16px;
+    margin: 1.25em 0 0.75em 16px;
   }
   li {
     margin-top: 0.5em;
@@ -180,7 +180,7 @@
     text-align: center;
   }
   .empty-space {
-    height: 64px;
+    height: 56px;
   }
   .fab-container {
     margin: 16px 16px;
@@ -189,7 +189,7 @@
 
 <Page title="{debtorName}">
   <svelte:fragment slot="app-bar">
-    <Row style="height: 64px">
+    <Row style="height: 56px">
       <div class="buttons-box">
         <div class="icon-container">
           <IconButton class="material-icons" disabled={tab === 'account'} on:click={() => changeTab('account')}>
@@ -228,7 +228,8 @@
           {pegBounds}
           {amount}
           {showAccount}
-          style="margin: 24px 18px; word-break: break-word"
+          elevation={12}
+          style="margin: 28px 18px; word-break: break-word"
           >
           <svelte:fragment slot="title">
             {#if knownDebtor}
