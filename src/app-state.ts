@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, AccountConfigRecord
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId
 } from './operations'
 import type { BaseDebtorData } from './debtor-info'
 
@@ -184,7 +184,7 @@ export type ConfigAccountModel = BasePageModel & {
 export type AccountsModel = BasePageModel & {
   type: 'AccountsModel',
   accounts: AccountDataForDisplay[],
-  unnamedAccountConfigs: AccountConfigRecord[],
+  unnamedAccountUris: string[],
   searchText?: string,
   scrollTop?: number,
   scrollLeft?: number,
@@ -951,27 +951,27 @@ export class AppState {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const accounts = await this.uc.getAccountsDataForDisplay()
-      const unnamedAccountConfigs = this.accountsMap.getUnnamedAccountConfigs()
+      const unnamedAccountUris = this.accountsMap.getUnnamedAccountUris()
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AccountsModel',
           reload: () => { this.showAccounts() },
           goBack: () => { this.showActions() },
           accounts,
-          unnamedAccountConfigs,
+          unnamedAccountUris,
         })
       }
     })
   }
 
-  async deleteUnnamedAccountConfigs(configs: AccountConfigRecord[], pin: string): Promise<void> {
+  async deleteUnnamedAccountUris(uris: string[]): Promise<void> {
     let interactionId: number
     const checkAndShowAcounts = () => { if (this.interactionId === interactionId) this.showAccounts() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      const timeout = calcParallelTimeout(configs.length)
-      await Promise.all(configs.map(c => this.uc.forceAccountDeletion(c, pin, timeout)))
+      const timeout = calcParallelTimeout(uris.length)
+      await Promise.all(uris.map(uri => this.uc.deleteUnnamedAccount(uri, timeout)))
       let resolveUpdatePromise
       const updatePromise = new Promise(resolve => { resolveUpdatePromise = resolve })
       this.uc.scheduleUpdate(resolveUpdatePromise)

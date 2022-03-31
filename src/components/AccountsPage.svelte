@@ -11,7 +11,6 @@
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import ScanCoinDialog from './ScanCoinDialog.svelte'
-  import EnterPinDialog from './EnterPinDialog.svelte'
 
   export let app: AppState
   export let model: AccountsModel
@@ -21,7 +20,6 @@
   const MAX_UNNAMED_ACCOUNT_CONFIGS = 3
 
   let searchInput: HTMLInputElement
-  let openEnterPinDialog = false
   let scanCoinDialog = false
   let visibleSearchBox = model.searchText !== undefined
   let pendingFilterChange = false
@@ -84,10 +82,6 @@
     return `${unitAmount} ${unit}`
   }
 
-  function deleteUnconfiguredAccounts(pin: string): void {
-    app.deleteUnnamedAccountConfigs(unnamedAccountConfigs, pin)
-  }
-
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
     if (visibleSearchBox) {
@@ -96,7 +90,7 @@
   })
 
   $: hasAccounts = model.accounts.length > 0
-  $: unnamedAccountConfigs = model.unnamedAccountConfigs
+  $: unnamedAccountUris = model.unnamedAccountUris
   $: shownAccounts = applyFilter(model.accounts, filter)
 </script>
 
@@ -150,8 +144,6 @@
 
 <Page title="Accounts">
   <svelte:fragment slot="content">
-    <EnterPinDialog bind:open={openEnterPinDialog} performAction={deleteUnconfiguredAccounts} />
-
     {#if hasAccounts}
       {#if shownAccounts.length > 0 }
         <LayoutGrid style="word-break: break-word">
@@ -165,16 +157,16 @@
               </Card>
             </Cell>
           {/each}
-          {#if unnamedAccountConfigs.length > MAX_UNNAMED_ACCOUNT_CONFIGS}
+          {#if unnamedAccountUris.length > MAX_UNNAMED_ACCOUNT_CONFIGS}
             <Cell>
               <Card>
-                <PrimaryAction padded on:click={() => openEnterPinDialog = true}>
+                <PrimaryAction padded on:click={() => app.deleteUnnamedAccountUris(unnamedAccountUris)}>
                   <span class="delete-link">
-                    {#if unnamedAccountConfigs.length === 1}
+                    {#if unnamedAccountUris.length === 1}
                       Delete 1 unconfirmed account, which is not
                       properly configured.
                     {:else}
-                      Delete {unnamedAccountConfigs.length}
+                      Delete {unnamedAccountUris.length}
                       unconfirmed accounts, which are not properly
                       configured.
                     {/if}

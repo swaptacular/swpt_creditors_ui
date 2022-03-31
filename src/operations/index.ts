@@ -779,16 +779,13 @@ export class UserContext {
    * forcefully deleted. The caller must be prepared this method to
    * throw `ConflictingUpdate`, `WrongPin`,`UnprocessableEntity`,
    * `ResourceNotFound`, `ServerSessionError`. */
-  async forceAccountDeletion(configRecord: AccountConfigRecord, pin: string, timeout?: number): Promise<void> {
-    const { userId, ...config } = configRecord  // Remove the `userId` field.
-    const updatedConfig: AccountConfigV0 = {
-      ...config,
-      scheduledForDeletion: true,
-      allowUnsafeDeletion: true,
-      latestUpdateId: config.latestUpdateId + 1n,
-      pin,
+  async deleteUnnamedAccount(accountUri: string, timeout?: number): Promise<void> {
+    try {
+      await this.server.delete(accountUri, { timeout, attemptLogin: true })
+    } catch (e: unknown) {
+      // Ignore 403 and 404 errors.
+      if (!(e instanceof HttpError && (e.status === 403 || e.status === 404))) throw e
     }
-    await this.updateAccountObject(updatedConfig, { timeout, ignore404: true })
   }
 
   /* Reads a payment request, and adds and returns a new
