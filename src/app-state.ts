@@ -10,13 +10,13 @@ import type {
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
+import { calcSmallestDisplayableNumber } from './format-amounts'
 import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
   ResourceNotFound, ServerSyncError, parseCoinUri, InvalidDocument
 } from './operations'
-import { calcSmallestDisplayableNumber } from './format-amounts'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | (() => void)][],
