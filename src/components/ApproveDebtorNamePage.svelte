@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { AppState, ApproveDebtorNameModel } from '../app-state'
   import type { ApproveDebtorNameActionWithId } from '../operations'
-  import { tick } from 'svelte'
   import { amountToString } from '../format-amounts'
+  import { tick } from 'svelte'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -12,7 +12,6 @@
   import Radio from '@smui/radio'
   import FormField from '@smui/form-field'
   import Checkbox from '@smui/checkbox'
-
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 

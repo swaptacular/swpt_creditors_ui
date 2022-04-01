@@ -1,15 +1,10 @@
 <script lang="ts">
-  import { fly, fade } from 'svelte/transition'
-  import { onMount, getContext } from 'svelte'
-  import type { Writable } from 'svelte/store'
   import type { AppState } from '../app-state'
+  import type { Writable } from 'svelte/store'
   import { logout } from '../operations'
-  import TopAppBar, {
-    Row,
-    Section,
-    Title,
-    AutoAdjust,
-  } from '@smui/top-app-bar'
+  import { onMount, getContext } from 'svelte'
+  import { fly, fade } from 'svelte/transition'
+  import TopAppBar, { Row, Section, Title, AutoAdjust } from '@smui/top-app-bar'
   import IconButton from '@smui/icon-button'
   import Alerts from './Alerts.svelte'
   import Hourglass from './Hourglass.svelte'

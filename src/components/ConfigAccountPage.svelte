@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, ConfigAccountModel } from '../app-state'
   import type { ConfigAccountActionWithId } from '../operations'
-  import { limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
+  import { amountToString, limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -9,7 +9,6 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import FormField from '@smui/form-field'
   import Checkbox from '@smui/checkbox'
-  import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
   import AccountInfo from './AccountInfo.svelte'

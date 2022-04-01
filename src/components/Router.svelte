@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { setContext, onMount } from 'svelte'
   import type { AppState } from '../app-state'
+  import { setContext, onMount } from 'svelte'
   import CreateAccountPage from './CreateAccountPage.svelte'
   import AckAccountInfoPage from './AckAccountInfoPage.svelte'
   import ApproveDebtorNamePage from './ApproveDebtorNamePage.svelte'

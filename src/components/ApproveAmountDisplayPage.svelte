@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { AppState, ApproveAmountDisplayModel } from '../app-state'
   import type { ApproveAmountDisplayActionWithId } from '../operations'
-  import { limitAmountDivisor } from '../format-amounts'
-  import { amountToString } from '../format-amounts'
+  import { limitAmountDivisor, amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -11,7 +10,6 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import Radio from '@smui/radio'
   import FormField from '@smui/form-field'
-
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
 

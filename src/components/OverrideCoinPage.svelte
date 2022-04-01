@@ -7,8 +7,8 @@
   import Radio from '@smui/radio'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import FormField from '@smui/form-field'
-  import Dialog from './Dialog.svelte'
   import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
+  import Dialog from './Dialog.svelte'
   import Page from './Page.svelte'
   import LinkPopup from './LinkPopup.svelte'
 

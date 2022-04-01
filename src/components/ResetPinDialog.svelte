@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import type { Writable } from 'svelte/store'
+  import { logout } from '../operations'
   import { getContext } from 'svelte'
   import { Title, Content } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
@@ -8,7 +9,6 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
-  import { logout } from '../operations'
 
   export let app: AppState
 

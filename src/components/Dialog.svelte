@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
-  import Dialog from '@smui/dialog'
   import { onDestroy, getContext } from 'svelte'
+  import Dialog from '@smui/dialog'
 
   export let open: boolean = false
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import { fade } from 'svelte/transition'
   import { onMount } from "svelte"
+  import { fade } from 'svelte/transition'
   import Paper, { Title, Content } from '@smui/paper'
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab'

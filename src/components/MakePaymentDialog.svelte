@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { getContext } from 'svelte'
   import type { AppState } from '../app-state'
   import { HAS_LOADED_PAYMENT_REQUEST_KEY } from '../app-state'
+  import { getContext } from 'svelte'
   import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
   import QrScanner from './QrScanner.svelte'
