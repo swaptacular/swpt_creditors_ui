@@ -564,7 +564,7 @@ export class AppState {
       } else if (isNewAccount) {
         await this.uc.initializeNewAccount(action, data.account, knownDebtor, pin)
       } else {
-        await this.uc.confirmKnownAccount(action, data.account, pin, knownDebtor)
+        await this.uc.confirmInitializedAccount(action, data.account, pin, knownDebtor)
       }
       if (action.actionType === 'CreateAccount') {
         await this.uc.replaceActionRecord(action, null)

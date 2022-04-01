@@ -724,10 +724,10 @@ export class UserContext {
   }
 
   /* Update the display and config records of an already initialized
-   * (known) account. The caller must be prepared this method to throw
+   * account. The caller must be prepared this method to throw
    * `RecordDoesNotExist`, `ConflictingUpdate`, `WrongPin`,
    * `UnprocessableEntity`, `ServerSessionError`. */
-  async confirmKnownAccount(
+  async confirmInitializedAccount(
     action: CreateAccountActionWithId | ApprovePegActionWithId,
     account: AccountV0,
     pin: string,
