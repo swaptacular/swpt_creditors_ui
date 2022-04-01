@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PegBound } from '../operations'
+  import type { PegBound } from '../app-state'
   import { amountToString } from '../format-amounts'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'

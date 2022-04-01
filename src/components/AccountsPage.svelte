@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, AccountsModel } from '../app-state'
-  import type { AccountDataForDisplay } from '../operations'
+  import type { AppState, AccountsModel, AccountDataForDisplay } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { tick, onMount } from "svelte"
   import { fade } from 'svelte/transition'

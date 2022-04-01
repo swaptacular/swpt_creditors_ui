@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, ActionsModel } from '../app-state'
-  import type { ActionRecordWithId } from '../operations'
+  import type { AppState, ActionsModel, ActionRecordWithId } from '../app-state'
   import { IS_A_NEWBIE_KEY } from '../app-state'
   import { onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';

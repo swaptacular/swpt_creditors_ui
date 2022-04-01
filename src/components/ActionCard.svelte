@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState } from '../app-state'
-  import type { ActionRecordWithId } from '../operations'
+  import type { AppState, ActionRecordWithId } from '../app-state'
   import { getContext } from 'svelte'
   import Button, { Label } from '@smui/button'
   import Card, { Content, Actions } from '@smui/card'

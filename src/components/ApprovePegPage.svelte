@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApprovePegModel } from '../app-state'
-  import type { ApprovePegActionWithId } from '../operations'
+  import type { AppState, ApprovePegModel, ApprovePegActionWithId } from '../app-state'
   import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, ConfigAccountModel } from '../app-state'
-  import type { ConfigAccountActionWithId } from '../operations'
+  import type { AppState, ConfigAccountModel, ConfigAccountActionWithId } from '../app-state'
   import { amountToString, limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'

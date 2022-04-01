@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, CreateAccountModel } from '../app-state'
-  import type { CreateAccountActionWithId, ApprovePegActionWithId } from '../operations'
+  import type { AppState, CreateAccountModel, CreateAccountActionWithId, ApprovePegActionWithId } from '../app-state'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'

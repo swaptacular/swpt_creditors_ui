@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CommittedTransferRecord, PegBound } from '../operations'
+  import type { CommittedTransferRecord, PegBound } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
   import Card, { PrimaryAction, Content } from '@smui/card'

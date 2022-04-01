@@ -4,7 +4,7 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -62,6 +62,18 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
+
+export type {
+  ActionRecordWithId,
+  CreateAccountActionWithId,
+  ApprovePegActionWithId,
+  ApproveAmountDisplayActionWithId,
+  ApproveDebtorNameActionWithId,
+  ConfigAccountActionWithId,
+  CommittedTransferRecord,
+  PegBound,
+  AccountDataForDisplay,
+}
 
 export type AlertOptions = {
   continue?: () => void,

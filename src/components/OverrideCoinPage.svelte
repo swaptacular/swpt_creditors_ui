@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, OverrideCoinModel } from '../app-state'
-  import type { ApprovePegActionWithId } from '../operations'
+  import type { AppState, OverrideCoinModel, ApprovePegActionWithId } from '../app-state'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveDebtorNameModel } from '../app-state'
-  import type { ApproveDebtorNameActionWithId } from '../operations'
+  import type { AppState, ApproveDebtorNameModel, ApproveDebtorNameActionWithId } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { tick } from 'svelte'
   import Fab, { Label } from '@smui/fab'

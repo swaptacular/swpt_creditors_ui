@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, ApproveAmountDisplayModel } from '../app-state'
-  import type { ApproveAmountDisplayActionWithId } from '../operations'
+  import type { AppState, ApproveAmountDisplayModel, ApproveAmountDisplayActionWithId } from '../app-state'
   import { limitAmountDivisor, amountToString } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
