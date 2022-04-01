@@ -10,12 +10,11 @@ import type {
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
-import { calcSmallestDisplayableNumber } from './format-amounts'
 import {
-  obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
-  WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound, ServerSyncError, parseCoinUri, InvalidDocument
+  obtainUserContext, parseCoinUri, calcSmallestDisplayableNumber, UserContext, AuthenticationError,
+  ServerSessionError, IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError,
+  RecordDoesNotExist, WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError,
+  PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, IS_A_NEWBIE_KEY
 } from './operations'
 
 type AttemptOptions = {

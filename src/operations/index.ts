@@ -15,6 +15,7 @@ import type { BaseDebtorData } from '../debtor-info'
 import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
+import { calcSmallestDisplayableNumber } from '../format-amounts'
 import { InvalidDocument } from '../debtor-info'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
@@ -41,6 +42,7 @@ import {
 
 export {
   parseCoinUri,
+  calcSmallestDisplayableNumber,
   InvalidDocument,
   InvalidActionState,
   RecordDoesNotExist,
