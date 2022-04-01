@@ -238,6 +238,10 @@ export class AppState {
     return this.uc.accountsMap
   }
 
+  async logout(): Promise<never> {
+    return await this.uc.logout()
+  }
+
   fetchDataFromServer(callback?: () => void): Promise<void> {
     let interactionId = this.interactionId
     const executeCallbackAfterUpdate = () => new Promise(resolve => {

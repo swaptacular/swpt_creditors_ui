@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import type { Writable } from 'svelte/store'
-  import { logout } from '../operations'
   import { onMount, getContext } from 'svelte'
   import { fly, fade } from 'svelte/transition'
   import TopAppBar, { Row, Section, Title, AutoAdjust } from '@smui/top-app-bar'
@@ -19,7 +18,7 @@
 
   function confirmLogout() {
     if (confirm('You will be logged out. To use the application again, you will have to log in.')) {
-      logout()
+      app.logout()
     }
   }
   function update(): void {

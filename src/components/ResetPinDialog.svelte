@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import type { Writable } from 'svelte/store'
-  import { logout } from '../operations'
   import { getContext } from 'svelte'
   import { Title, Content } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
@@ -57,7 +56,7 @@
     close()
     alert('Using your wallet in PIN-reset mode is not safe. You will be ' +
           'logged out. To use the application again, you will have to log in.')
-    logout()
+    app.logout()
   }
 </script>
 
@@ -153,7 +152,7 @@
               <Label>Save</Label>
             </Button>
             <!-- The type="button" is necessary to prevent form submitting.-->
-            <Button type="button" on:click={() => logout()}>
+            <Button type="button" on:click={() => app.logout()}>
               <Label>Log out</Label>
             </Button>
           </p>
