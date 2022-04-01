@@ -40,7 +40,6 @@ import {
 
 export {
   parseCoinUri,
-  calcParallelTimeout,
   InvalidActionState,
   RecordDoesNotExist,
   IvalidPaymentRequest,
@@ -775,17 +774,19 @@ export class UserContext {
     console.log(`Removed exchange peg for account ${exchange.account.uri}`)
   }
 
-  /* Updates account's configuration so that the account will be
-   * forcefully deleted. The caller must be prepared this method to
-   * throw `ConflictingUpdate`, `WrongPin`,`UnprocessableEntity`,
-   * `ResourceNotFound`, `ServerSessionError`. */
-  async deleteUnnamedAccount(accountUri: string, timeout?: number): Promise<void> {
-    try {
-      await this.server.delete(accountUri, { timeout, attemptLogin: true })
-    } catch (e: unknown) {
-      // Ignore 403 and 404 errors.
-      if (!(e instanceof HttpError && (e.status === 403 || e.status === 404))) throw e
+  /* Try to delete the given account URIs. The caller must be prepared
+   * this method to throw `ServerSessionError`. */
+  async deleteUnnamedAccounts(accountUris: string[]): Promise<void> {
+    const timeout = calcParallelTimeout(accountUris.length)
+    const deleteAccount = async (accountUri: string) => {
+      try {
+        await this.server.delete(accountUri, { timeout, attemptLogin: true })
+      } catch (e: unknown) {
+        // Ignore 403 and 404 errors.
+        if (!(e instanceof HttpError && (e.status === 403 || e.status === 404))) throw e
+      }
     }
+    await Promise.all(accountUris.map(uri => deleteAccount(uri)))
   }
 
   /* Reads a payment request, and adds and returns a new

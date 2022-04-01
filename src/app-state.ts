@@ -15,7 +15,7 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound, ServerSyncError, parseCoinUri, calcParallelTimeout
+  ResourceNotFound, ServerSyncError, parseCoinUri
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { InvalidDocument } from './debtor-info'
@@ -970,8 +970,7 @@ export class AppState {
 
     return this.attempt(async () => {
       interactionId = this.interactionId
-      const timeout = calcParallelTimeout(uris.length)
-      await Promise.all(uris.map(uri => this.uc.deleteUnnamedAccount(uri, timeout)))
+      this.uc.deleteUnnamedAccounts(uris)
       let resolveUpdatePromise
       const updatePromise = new Promise(resolve => { resolveUpdatePromise = resolve })
       this.uc.scheduleUpdate(resolveUpdatePromise)
@@ -980,10 +979,6 @@ export class AppState {
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowAcounts })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowAcounts })],
       ],
     })
   }
