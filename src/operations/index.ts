@@ -15,6 +15,7 @@ import type { BaseDebtorData } from '../debtor-info'
 import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
+import { InvalidDocument } from '../debtor-info'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
   HttpResponse, HttpError
@@ -40,6 +41,7 @@ import {
 
 export {
   parseCoinUri,
+  InvalidDocument,
   InvalidActionState,
   RecordDoesNotExist,
   IvalidPaymentRequest,
@@ -80,6 +82,7 @@ export type {
   CommittedTransferRecord,
   AccountFullData,
   PegBound,
+  BaseDebtorData,
 }
 
 export class ConflictingUpdate extends Error {

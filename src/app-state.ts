@@ -4,9 +4,8 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData
 } from './operations'
-import type { BaseDebtorData } from './debtor-info'
 
 import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
@@ -15,10 +14,9 @@ import {
   obtainUserContext, UserContext, AuthenticationError, ServerSessionError, IS_A_NEWBIE_KEY,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, RecordDoesNotExist,
   WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError, PegDisplayMismatch,
-  ResourceNotFound, ServerSyncError, parseCoinUri
+  ResourceNotFound, ServerSyncError, parseCoinUri, InvalidDocument
 } from './operations'
 import { calcSmallestDisplayableNumber } from './format-amounts'
-import { InvalidDocument } from './debtor-info'
 
 type AttemptOptions = {
   alerts?: [Function, Alert | (() => void)][],
