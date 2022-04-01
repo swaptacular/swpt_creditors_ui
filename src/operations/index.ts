@@ -32,15 +32,14 @@ import {
 } from './db-sync'
 import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
-  calcParallelTimeout, parseCoinUri, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument,
-  obtainBaseDebtorData, getDataFromDebtorInfo
+  calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
+  getDataFromDebtorInfo
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
 } from '../payment-requests'
 
 export {
-  parseCoinUri,
   InvalidDocument,
   InvalidActionState,
   RecordDoesNotExist,
@@ -111,6 +110,25 @@ export class PegDisplayMismatch extends Error {
 
 export class ServerSyncError extends Error {
   name = 'ServerSyncError'
+}
+
+/* Splits the coin URI (scanned from the QR code) into "debtor info
+ * uri" and "debtor identity URI". The caller must be prepared this
+ * function to throw `InvalidCoinUri`. */
+export function parseCoinUri(coinUri: string): [string, string] {
+  let latestDebtorInfoUri, debtorIdentityUri
+  try {
+    const url = new URL(coinUri)
+    const { href, hash } = url
+    latestDebtorInfoUri = href.slice(0, href.lastIndexOf(hash))
+    debtorIdentityUri = hash.slice(1)
+  } catch {
+    throw new InvalidCoinUri()
+  }
+  if (`${latestDebtorInfoUri}#${debtorIdentityUri}` !== coinUri) {
+    throw new InvalidCoinUri()
+  }
+  return [latestDebtorInfoUri, debtorIdentityUri]
 }
 
 /* Logs out the user and redirects to home, never resolves. */

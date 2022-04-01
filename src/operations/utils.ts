@@ -185,22 +185,6 @@ async function* iterPaginatedList<OriginalItem, TransformedItem>(
   yield* iterPages(server, list.first, transformItem)
 }
 
-export function parseCoinUri(coinUri: string): [string, string] {
-  let latestDebtorInfoUri, debtorIdentityUri
-  try {
-    const url = new URL(coinUri)
-    const { href, hash } = url
-    latestDebtorInfoUri = href.slice(0, href.lastIndexOf(hash))
-    debtorIdentityUri = hash.slice(1)
-  } catch {
-    throw new InvalidCoinUri()
-  }
-  if (`${latestDebtorInfoUri}#${debtorIdentityUri}` !== coinUri) {
-    throw new InvalidCoinUri()
-  }
-  return [latestDebtorInfoUri, debtorIdentityUri]
-}
-
 export async function getDataFromDebtorInfo(debtorInfo: DebtorInfoV0, debtorIdentityUri: string): Promise<DebtorData> {
   const document = await fetchDebtorInfoDocument(debtorInfo.iri)
   if (!await putDocumentRecord(document)) {
