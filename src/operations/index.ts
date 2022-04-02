@@ -400,8 +400,9 @@ export class UserContext {
   }
 
   /* Changes the display name (and possibly clears `knownDebtor`) as
-   * the given action states. The caller must be prepared this method
-   * to throw `RecordDoesNotExist`, `ConflictingUpdate`,
+   * the given action states. Deletes the action on success. The
+   * caller must be prepared this method to throw
+   * `RecordDoesNotExist`, `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
    * `ServerSessionError`. */
   async resolveApproveDebtorNameAction(
@@ -432,8 +433,9 @@ export class UserContext {
   }
 
   /* Changes the amount display settings as the given action
-   * states. The caller must be prepared this method to throw
-   * `RecordDoesNotExist`, `ConflictingUpdate`, `ResourceNotFound`,
+   * states. Deletes the action on success. The caller must be
+   * prepared this method to throw `RecordDoesNotExist`,
+   * `ConflictingUpdate`, `ResourceNotFound`,
    * `WrongPin`,`UnprocessableEntity`, `ServerSyncError`,
    * `ServerSessionError`. */
   async resolveApproveAmountDisplayAction(
@@ -477,26 +479,32 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
-  /* Saves the the peg in account's exchange record. The caller must
-   * be prepared this method to throw `CircularPegError`,
+  /* Tries to ensure that the peg described in the given action is
+   * approved or disapproved, depending on the value of the `approved`
+   * parameter. Deletes the action on success. The caller must be
+   * prepared this method to throw `CircularPegError`,
    * `PegDisplayMismatch`, `RecordDoesNotExist`, `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`, `ServerSyncError`,
-   * `ServerSessionError`.
-   */
+   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
+   * `ServerSyncError`, * `ServerSessionError`. */
   async resolveApprovePegAction(
     action: ApprovePegActionWithId,
-    approve: boolean,
+    approved: boolean,
     pegAccountUri: string,
     exchangeLatestUpdateId: bigint,
     pin: string | undefined,
   ): Promise<void> {
+    // When the user's PIN is not passed, we can not change the status
+    // of the peg. Instead, we must verify that the  current peg status matches
+    // the expected peg status (`approved`).
+    const expectedApprovalStatus = pin !== undefined ? undefined : approved
+
     await this.sync()
     const { accountUri, peg } = action
-    const expectedApprovalValue = pin !== undefined ? undefined : approve
-    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApprovalValue)
+    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApprovalStatus)
     if (peggedAccountData === undefined) {
       throw new RecordDoesNotExist()
     }
+
     if (pin !== undefined) {
       const { userId, ...exchange } = peggedAccountData.exchange  // Remove the `userId` field.
       let updatedExchange: AccountExchangeV0 = {
@@ -505,8 +513,13 @@ export class UserContext {
         latestUpdateId: exchangeLatestUpdateId + 1n,
         pin,
       }
-      if (approve) {
+      if (approved) {
         if (!await this.validatePegAccount(action, pegAccountUri)) {
+          // When the peg account can not be validated, chances are
+          // that the user has made the wrong choice when resolving a
+          // coin conflict (resolving a coin conflict sets
+          // `ignoreCoinMismatch` to true). Therefore, the user should
+          // be given a chance to make the correct choice.
           await this.replaceActionRecord(action, { ...action, ignoreCoinMismatch: false })
           throw new PegDisplayMismatch()
         }
@@ -602,13 +615,15 @@ export class UserContext {
     return ackAccountInfoActionId
   }
 
-  /* Returns the known account data for the pegged account, but only *
-   * if it matches the peg described in the `ApprovePeg` action. If
-   * `expectedApprovalValue` is passed, it should match as well. */
+  /* Returns the known account data for the pegged account, but only
+   * when the peg declared in the given approve peg action matches the
+   * peg declared by the issuer. If `expectedApprovalStatus` is
+   * passed, an the current peg approval status does not match the
+   * given value, `undefined` will be returned. */
   async validatePeggedAccount(
     action: ApprovePegActionWithId,
     pegAccountUri: string,
-    expectedApprovalValue?: boolean,
+    expectedApprovalStatus?: boolean,
   ): Promise<KnownAccountData | undefined> {
     const peggedAccountData = await this.getKnownAccountData(action.accountUri)
     if (peggedAccountData) {
@@ -621,7 +636,7 @@ export class UserContext {
       )
       if (
         !equal(action.peg, knownPeg) ||
-        !(expectedApprovalValue === undefined || approval === expectedApprovalValue)
+        !(expectedApprovalStatus === undefined || approval === expectedApprovalStatus)
       ) {
         return undefined
       }
