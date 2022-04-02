@@ -292,8 +292,9 @@ export class UserContext {
     this.setAccountSortPriority = setAccountSortPriority.bind(undefined, this.userId)
   }
 
-  /* The caller must be prepared this method to throw
-   * `ServerSessionError` or `AuthenticationError`. */
+  /* Redirects to the login page if the user is not authenticated. The
+   * caller must be prepared this method to throw `ServerSessionError`
+   * or `AuthenticationError`. */
   async ensureAuthenticated(): Promise<void> {
     const entrypoint = await this.server.entrypointPromise
     if (entrypoint === undefined) {
@@ -307,7 +308,7 @@ export class UserContext {
     }
   }
 
-  /* Resets users PIN. The caller must be prepared this method to
+  /* Resets user's PIN. The caller must be prepared this method to
    * throw `ServerSessionError`. */
   async resetPin(newPin: string): Promise<void> {
     const pinInfoUri = this.walletRecord.pinInfo.uri
@@ -337,7 +338,7 @@ export class UserContext {
     }
   }
 
-  /* Add a new create account action record, and returns its action
+  /* Adds a new create account action record, and returns its action
    * ID. */
   async createCreateAccountAction(latestDebtorInfoUri: string, debtorIdentityUri: string): Promise<number> {
     return await createActionRecord({
@@ -349,8 +350,8 @@ export class UserContext {
     })
   }
 
-  /* Make an HTTP request to obtain the most recent version of the
-   * account, and return it. The caller must be prepared this method
+  /* Makes an HTTP request to obtain the most recent version of the
+   * account, and returns it. The caller must be prepared this method
    * to throw `ServerSessionError`. */
   async getAccount(accountUri: string): Promise<AccountV0 | undefined> {
     let response
@@ -365,36 +366,35 @@ export class UserContext {
     return account
   }
 
-  /* Ensures that the account (accountUri) exists, and
-   * `account.display.debtorName` is not undefined. Returns account's
-   * known data on success, or `undefined` on failure.
-   */
+  /* Searches the local database for a named account (`debtorName !==
+   * undefined`) with the given `accountUri`. Returns the account's
+   * data on success, or `undefined` on failure. */
   async getKnownAccountData(accountUri: string): Promise<KnownAccountData | undefined> {
     const account = await getAccountRecord(accountUri)
     if (account === undefined) {
       return undefined
     }
-    const display = await getAccountObjectRecord(account.display.uri) as AccountDisplayRecord | undefined
-    if (display?.debtorName === undefined) {
-      return undefined
-    }
-    const knowledge = await getAccountObjectRecord(account.knowledge.uri) as AccountKnowledgeRecord | undefined
-    if (knowledge === undefined) {
-      return undefined
-    }
-    const exchange = await getAccountObjectRecord(account.exchange.uri) as AccountExchangeRecord | undefined
-    if (exchange === undefined) {
-      return undefined
-    }
-    const ledger = await getAccountObjectRecord(account.ledger.uri) as AccountLedgerRecord | undefined
-    if (ledger === undefined) {
-      return undefined
-    }
     assert(account.type === 'Account')
+
+    const display = await getAccountObjectRecord(account.display.uri)
+    if (display === undefined) {
+      return undefined
+    }
     assert(display.type === 'AccountDisplay')
+    if (display.debtorName === undefined) {
+      return undefined
+    }
+
+    const knowledge = await getAccountObjectRecord(account.knowledge.uri)
+    const exchange = await getAccountObjectRecord(account.exchange.uri)
+    const ledger = await getAccountObjectRecord(account.ledger.uri)
+    if (!(knowledge && exchange && ledger)) {
+      return undefined
+    }
     assert(knowledge.type === 'AccountKnowledge')
     assert(exchange.type === 'AccountExchange')
     assert(ledger.type === 'AccountLedger')
+
     const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
     return { account, display, knowledge, exchange, ledger, debtorData }
   }
@@ -416,6 +416,9 @@ export class UserContext {
       account.display.debtorName !== undefined &&
       getBaseDebtorDataFromAccoutKnowledge(account.knowledge).debtorName === action.debtorName
     ) {
+      if (account.display.latestUpdateId !== displayLatestUpdateId) {
+        throw new RecordDoesNotExist()
+      }
       const display: AccountDisplayV0 = {
         ...account.display,
         debtorName: action.editedDebtorName,
@@ -465,7 +468,7 @@ export class UserContext {
         amountDivisor: action.amountDivisor,
         decimalPlaces: action.decimalPlaces,
         unit: action.unit,
-        latestUpdateId: account.display.latestUpdateId + 1n,
+        latestUpdateId: displayLatestUpdateId + 1n,
         pin,
       }
       await this.updateAccountObject(config)
