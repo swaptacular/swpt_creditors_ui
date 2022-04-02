@@ -542,11 +542,11 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
-  /* Updates account's configuration as the given action states. The
-   * caller must be prepared this method to throw
-   * `RecordDoesNotExist`, `ConflictingUpdate`,
-   * `WrongPin`,`UnprocessableEntity`, `ResourceNotFound`,
-   * `ServerSessionError`. */
+  /* Updates account's configuration as the given action
+   * states. Deletes the action on success. The caller must be
+   * prepared this method to throw `RecordDoesNotExist`,
+   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
+   * `ResourceNotFound`, `ServerSessionError`. */
   async executeConfigAccountAction(
     action: ConfigAccountActionWithId,
     displayLatestUpdateId: bigint,
@@ -571,6 +571,7 @@ export class UserContext {
       }
       await this.updateAccountObject(config)
       await this.updateAccountObject(display)
+
       if (action.approveNewDisplay) {
         const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
         await createApproveAction({
@@ -590,18 +591,20 @@ export class UserContext {
     await this.replaceActionRecord(action, null)
   }
 
-  /* If `approve` is true, downloads the debtor info document for the
-   * peg currency, compares it with the known debtor info, and if
-   * necessary, creates an "AckAccountInfo" action. The caller must be
-   * prepared this method throw `ServerSessionError`, `InvalidDocument`,
+  /* Resolves a coin conflict arising from the given action. Deletes
+   * the action on success. If `approved` is true, downloads the
+   * debtor info document for the peg currency, compares it with the
+   * known debtor info, and if necessary, creates a new
+   * "AckAccountInfo" action. The caller must be prepared this method
+   * throw `ServerSessionError`, `InvalidDocument`,
    * `DocumentFetchError`, `RecordDoesNotExist`. */
   async resolveCoinConflict(
     action: ApprovePegActionWithId,
-    approve: boolean,
+    approved: boolean,
     pegAccountUri: string,
   ): Promise<number | undefined> {
     let ackAccountInfoActionId
-    if (approve) {
+    if (approved) {
       // Before we get the not-so-reliable debtor data from the coin
       // link, we make a "last chance" attempt to obtain reliable
       // debtor info directly from the server.
@@ -644,9 +647,10 @@ export class UserContext {
     return peggedAccountData
   }
 
-  /* Create an account if necessary. Return the most recent version of
-   * the account. The caller must be prepared this method to throw
-   * `InvalidCoinUri` or `ServerSessionError`. */
+  /* Creates an account with the given debtor (`debtorIdentityUri`) if
+   * it does not exist already. In both cases, returns the most recent
+   * version of the account. The caller must be prepared this method
+   * to throw `InvalidCoinUri` or `ServerSessionError`. */
   async ensureAccountExists(debtorIdentityUri: string): Promise<AccountV0> {
     let response
     try {
@@ -665,7 +669,7 @@ export class UserContext {
     return account
   }
 
-  /* Initialize new account's knowledge, config and display
+  /* Initializes new account's knowledge, config and display
    * records. The caller must be prepared this method to throw
    * `RecordDoesNotExist`, `ConflictingUpdate`,
    * `WrongPin`,`UnprocessableEntity`, `ServerSessionError`. */
@@ -718,10 +722,10 @@ export class UserContext {
     await this.finishAccountInitialization(action)
   }
 
-  /* Finalize the initialization of a new account and remove the
-   * corresponding create account action. The caller must be prepared
-   * this method to throw `RecordDoesNotExist`.
-   */
+  /* Finalizes the initialization of a new account. (Sets the
+   * `accountInitializationInProgress` field of the passed action to
+   * `false`). The caller must be prepared this method to throw
+   * `RecordDoesNotExist`. */
   async finishAccountInitialization(action: CreateAccountActionWithId | ApprovePegActionWithId): Promise<void> {
     assert(action.accountCreationState)
     assert(action.accountCreationState.accountInitializationInProgress)
@@ -741,9 +745,10 @@ export class UserContext {
     await this.setInitializationInProgressFlag(action, false)
   }
 
-  /* Update the display and config records of an already initialized
-   * account. The caller must be prepared this method to throw
-   * `RecordDoesNotExist`, `ConflictingUpdate`, `WrongPin`,
+  /* Updates the display and config records of an already initialized
+   * account. (Sets the `accountInitializationInProgress` field of the
+   * passed action to `false`). The caller must be prepared this method
+   * to throw `RecordDoesNotExist`, `ConflictingUpdate`, `WrongPin`,
    * `UnprocessableEntity`, `ServerSessionError`. */
   async confirmInitializedAccount(
     action: CreateAccountActionWithId | ApprovePegActionWithId,
@@ -775,9 +780,10 @@ export class UserContext {
     await this.setInitializationInProgressFlag(action, false)
   }
 
-  /* Updates account's knowledge. May throw `ConflictingUpdate` or
-   * `ServerSessionError`.  (Normally, `WrongPin` and
-   * `UnprocessableEntity` should never be thrown.) */
+  /* Updates account's knowledge as the given action states. Deletes
+   * the action on success. The caller must be prepared this method to
+   * throw `ConflictingUpdate` or `ServerSessionError`. (Normally,
+   * `WrongPin` and `UnprocessableEntity` should never be thrown.) */
   async updateAccountKnowledge(action: AckAccountInfoActionWithId, account: AccountV0): Promise<void> {
     assert(action.userId === this.userId)
     const oldDebtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge, false)
@@ -800,8 +806,9 @@ export class UserContext {
     await this.updateAccountObject(updatedKnowledge)
   }
 
-  /* Remove account's exchange peg. May throw `ConflictingUpdate`,
-   * `WrongPin`, `UnprocessableEntity`, `ServerSessionError`. */
+  /* Removes account's exchange peg. The caller must be prepared this
+   * method to throw `ConflictingUpdate`, `WrongPin`,
+   * `UnprocessableEntity`, `ServerSessionError`. */
   async removePeg(exchange: AccountExchangeV0, pin: string, timeout?: number): Promise<void> {
     const updatedExchange: AccountExchangeV0 = {
       ...exchange,
