@@ -950,8 +950,8 @@ export class UserContext {
       if (e instanceof HttpError) {
         switch (e.status) {
           case 404:
-            if (ignore404) return
             this.scheduleUpdate()
+            if (ignore404) return
             throw new ResourceNotFound()
           case 409:
             this.scheduleUpdate()
