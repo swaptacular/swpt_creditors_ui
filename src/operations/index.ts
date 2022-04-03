@@ -412,23 +412,22 @@ export class UserContext {
   ): Promise<void> {
     assert(action.userId === this.userId)
     const account = await this.getAccount(action.accountUri)
-    if (
+    if (!(
       account &&
       account.display.debtorName !== undefined &&
+      account.display.latestUpdateId === displayLatestUpdateId &&
       getBaseDebtorDataFromAccoutKnowledge(account.knowledge).debtorName === action.debtorName
-    ) {
-      if (account.display.latestUpdateId !== displayLatestUpdateId) {
-        throw new RecordDoesNotExist()
-      }
-      const display: AccountDisplayV0 = {
-        ...account.display,
-        debtorName: action.editedDebtorName,
-        knownDebtor: account.display.knownDebtor && !action.unsetKnownDebtor,
-        latestUpdateId: displayLatestUpdateId + 1n,
-        pin,
-      }
-      await this.updateAccountObject(display)
+    )) {
+      throw new RecordDoesNotExist()
     }
+    const display: AccountDisplayV0 = {
+      ...account.display,
+      debtorName: action.editedDebtorName,
+      knownDebtor: account.display.knownDebtor && !action.unsetKnownDebtor,
+      latestUpdateId: displayLatestUpdateId + 1n,
+      pin,
+    }
+    await this.updateAccountObject(display)
     await this.replaceActionRecord(action, null)
   }
 
@@ -447,35 +446,34 @@ export class UserContext {
     assert(action.state !== undefined)
     const account = await this.getAccount(action.accountUri)
     let debtorData: BaseDebtorData
-    if (
+    if (!(
       account &&
       account.display.debtorName !== undefined &&
+      account.display.latestUpdateId === displayLatestUpdateId &&
       (debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)) &&
       debtorData.amountDivisor === action.amountDivisor &&
       debtorData.decimalPlaces === action.decimalPlaces &&
       debtorData.unit === action.unit
-    ) {
-      if (account.display.latestUpdateId !== displayLatestUpdateId) {
-        throw new RecordDoesNotExist()
-      }
-      await this.removeExistingPegs(action.accountUri, pin)
-      const config: AccountConfigV0 = {
-        ...account.config,
-        negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
-        latestUpdateId: account.config.latestUpdateId + 1n,
-        pin,
-      }
-      const display: AccountDisplayV0 = {
-        ...account.display,
-        amountDivisor: action.amountDivisor,
-        decimalPlaces: action.decimalPlaces,
-        unit: action.unit,
-        latestUpdateId: displayLatestUpdateId + 1n,
-        pin,
-      }
-      await this.updateAccountObject(config)
-      await this.updateAccountObject(display)
+    )) {
+      throw new RecordDoesNotExist()
     }
+    await this.removeExistingPegs(action.accountUri, pin)
+    const config: AccountConfigV0 = {
+      ...account.config,
+      negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
+      latestUpdateId: account.config.latestUpdateId + 1n,
+      pin,
+    }
+    const display: AccountDisplayV0 = {
+      ...account.display,
+      amountDivisor: action.amountDivisor,
+      decimalPlaces: action.decimalPlaces,
+      unit: action.unit,
+      latestUpdateId: displayLatestUpdateId + 1n,
+      pin,
+    }
+    await this.updateAccountObject(config)
+    await this.updateAccountObject(display)
     await this.replaceActionRecord(action, null)
   }
 
