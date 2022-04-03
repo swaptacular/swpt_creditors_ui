@@ -58,7 +58,7 @@
 
   function confirm(): void {
     uniqueDebtorName = isUniqueDebtorName(debtorName)
-    if (invalid) {
+    if (invalidDebtorName || !uniqueDebtorName) {
       shakeForm()
     } else if (debtorName === oldName && !unsetKnownDebtor) {
       actionManager.remove()
@@ -93,7 +93,6 @@
   $: availableAmount = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
   $: amountUnit = model.display.unit
   $: showConfusedCheckbox = knownDebtor && changedName
-  $: invalid = invalidDebtorName || !uniqueDebtorName
 </script>
 
 <style>
