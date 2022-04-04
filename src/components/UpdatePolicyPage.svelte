@@ -1,6 +1,8 @@
 <script lang="ts">
-  import type { AppState, UpdatePolicyModel, UpdatePolicyActionWithId } from '../app-state'
-  import { amountToString, limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
+  import type { AppState, UpdatePolicyModel, UpdatePolicyActionWithId, PegBound } from '../app-state'
+  import {
+    amountToString, limitAmountDivisor, calcPegExampleAmount, calcSmallestDisplayableNumber
+  } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -35,8 +37,8 @@
   let invalidMinPrincipalUnitAmount: boolean
   let invalidMaxPrincipalUnitAmount: boolean
 
-  function amountToBigint(amount: number | string): bigint {
-    const x = Math.max(0, Number(amount) || 0) * limitAmountDivisor(amountDivisor)
+  function amountToBigint(amount: number | string, divisor: number): bigint {
+    const x = Math.max(0, Number(amount) || 0) * limitAmountDivisor(divisor)
     return BigInt(Math.ceil(x))
   }
   
@@ -60,6 +62,15 @@
       amount = BigInt(Math.ceil(amount))
     }
     return amountToString(amount, amountDivisor, decimalPlaces)
+  }
+
+  function calcExampleAmount(pegBounds: PegBound[]): bigint {
+    if (pegBounds.length < 2) {
+      return 0n
+    }
+    const [pegged, peg] = pegBounds
+    const amount = calcPegExampleAmount(pegged.display, peg.display, peg.exchangeRate)
+    return BigInt(Math.ceil(amount))
   }
 
   function shakeForm(): void {
@@ -87,7 +98,7 @@
   $: accountData = model.accountData
   $: debtorData = accountData.debtorData
   $: pegBounds = accountData.pegBounds
-  $: amount = accountData.amount
+  $: amount = calcExampleAmount(pegBounds)
   $: display = accountData.display
   $: knownDebtor = display.knownDebtor
   $: amountDivisor = display.amountDivisor
@@ -98,8 +109,8 @@
   $: usesStandardPeg = model.usesStandardPeg
   $: usesNonstandardPeg = model.usesNonstandardPeg
   $: ignoresDeclaredPeg = model.ignoresDeclaredPeg
-  $: minPrincipal = amountToBigint(minPrincipalUnitAmount)
-  $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount)
+  $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor)
+  $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor)
   $: invalid = (
     invalidMinPrincipalUnitAmount ||
     invalidMaxPrincipalUnitAmount  ||
@@ -153,7 +164,7 @@
               <AccountInfo
                 homepage={debtorData.debtorHomepage?.uri}
                 summary={debtorData.summary}
-                {pegBounds}
+                pegBounds={amount > 0n ? pegBounds : []}
                 {amount}
                 >
                 <svelte:fragment slot="title">

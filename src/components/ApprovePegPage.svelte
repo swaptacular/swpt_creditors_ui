@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, ApprovePegModel, ApprovePegActionWithId } from '../app-state'
-  import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
+  import { amountToString, calcPegExampleAmount, MAX_AMOUNT } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -13,16 +13,9 @@
   import EnterPinDialog from './EnterPinDialog.svelte'
   import LinkPopup from './LinkPopup.svelte'
 
-  type Display = {
-    amountDivisor: number,
-    decimalPlaces: bigint,
-  }
-
   export let app: AppState
   export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
-
-  const MAX_AMOUNT = Number(9223372036854775807n)
 
   let showCurrencies = false
   let shakingElement: HTMLElement
@@ -58,17 +51,6 @@
       // The choice has been altered, so PIN is required.
       openEnterPinDialog = true
     }
-  }
-
-  function calcExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): number {
-    let exampleAmount: number
-    let prec = 4n  // We want our example to have a precision of at least 4 decimal places.
-    const minPegAmount = calcSmallestDisplayableNumber(pegDisplay.amountDivisor, pegDisplay.decimalPlaces - prec)
-    do {
-      exampleAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces - prec)
-      prec++
-    } while (exampleAmount * exchangeRate < minPegAmount)
-    return Math.min(exampleAmount, MAX_AMOUNT)
   }
 
   function calcFinalUnitAmount(accountUri: string, amount: number): string | undefined {
@@ -108,7 +90,7 @@
   }
 
   $: action = model.action
-  $: exampleAmount = calcExampleAmount(peggedDisplay, pegDisplay, action.peg.exchangeRate)
+  $: exampleAmount = calcPegExampleAmount(peggedDisplay, pegDisplay, action.peg.exchangeRate)
   $: peggedDisplay = model.peggedAccountDisplay
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor

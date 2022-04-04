@@ -1,7 +1,13 @@
-const MAX_INT64 = (1n << 63n) - 1n
-const MIN_INT64 = -MAX_INT64 - 1n
+export const MAX_INT64 = (1n << 63n) - 1n
+export const MIN_INT64 = -MAX_INT64 - 1n
+export const MAX_AMOUNT = Number(MAX_INT64)
 const MIN_AMOUNT_DIVISOR = 1e-99
 const MAX_AMOUNT_DIVISOR = 1e99
+
+type Display = {
+  amountDivisor: number,
+  decimalPlaces: bigint,
+}
 
 export function limitAmountDivisor(amountDivisor: number): number {
   assert(amountDivisor >= 0)
@@ -44,6 +50,17 @@ export function amountToString(
   }
   return scientificToRegular(s)
 }
+
+export function calcPegExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): number {
+    let exampleAmount: number
+    let prec = 4n  // We want our example to have a precision of at least 4 decimal places.
+    const minPegAmount = calcSmallestDisplayableNumber(pegDisplay.amountDivisor, pegDisplay.decimalPlaces - prec)
+    do {
+      exampleAmount = calcSmallestDisplayableNumber(peggedDisplay.amountDivisor, peggedDisplay.decimalPlaces - prec)
+      prec++
+    } while (exampleAmount * exchangeRate < minPegAmount)
+    return Math.min(exampleAmount, MAX_AMOUNT)
+  }
 
 function scientificToRegular(scientific: string): string {
   let [mantissa, exponent = '0'] = scientific.toLowerCase().split('e')
