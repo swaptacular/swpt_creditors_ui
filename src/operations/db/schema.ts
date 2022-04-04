@@ -150,6 +150,7 @@ export type ActionRecord =
   | ApproveDebtorNameAction
   | AckAccountInfoAction
   | ConfigAccountAction
+  | UpdatePolicyAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -586,6 +587,23 @@ export type ConfigAccountAction =
 export type ConfigAccountActionWithId =
   & ActionRecordWithId
   & ConfigAccountAction
+
+export type UpdatePolicyAction =
+  & ActionData
+  & {
+    actionType: 'UpdatePolicy',
+    accountUri: string,
+    editedMinPrincipal: bigint,
+    editedMaxPrincipal: bigint,
+    editedUseNonstandardPeg: boolean,
+    editedIgnoreDeclaredPeg: boolean,
+    editedReviseApprovedPeg: boolean,
+    approveNewPeg: boolean,
+  }
+
+export type UpdatePolicyActionWithId =
+  & ActionRecordWithId
+  & UpdatePolicyAction
 
 type TaskData =
   & UserReference

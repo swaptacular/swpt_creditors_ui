@@ -4,7 +4,8 @@ import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound
+  CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
+  UpdatePolicyActionWithId
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -71,6 +72,7 @@ export type {
   ApproveAmountDisplayActionWithId,
   ApproveDebtorNameActionWithId,
   ConfigAccountActionWithId,
+  UpdatePolicyActionWithId,
   CommittedTransferRecord,
   PegBound,
   AccountDataForDisplay,
@@ -111,6 +113,7 @@ export type PageModel =
   | OverrideCoinModel
   | ApprovePegModel
   | ConfigAccountModel
+  | UpdatePolicyModel
   | AccountsModel
   | AccountModel
 
@@ -189,6 +192,16 @@ export type ConfigAccountModel = BasePageModel & {
   accountData: AccountFullData,
   backToAccount: () => void,
   nonstandardDisplay: boolean,
+}
+
+export type UpdatePolicyModel =  BasePageModel & {
+  type: 'UpdatePolicyModel',
+  action: UpdatePolicyActionWithId,
+  accountData: AccountFullData,
+  backToAccount: () => void,
+  usesStandardPeg: boolean,
+  usesNonstandardPeg: boolean,
+  ignoresDeclaredPeg: boolean,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -337,6 +350,9 @@ export class AppState {
               break
             case 'ConfigAccount':
               this.showConfigAccountAction(action, back)
+              break
+            case 'UpdatePolicy':
+              this.showUpdatePolicyAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -961,6 +977,112 @@ export class AppState {
     })
   }
 
+  showUpdatePolicyAction(action: UpdatePolicyActionWithId, back?: () => void): Promise<void> {
+    // TODO: add a real implementation.
+
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const showActions = () => { this.showActions() }
+
+    const detectPegStatus = async (accountData: AccountFullData) => {
+      let pegStatus = {
+        usesStandardPeg: false,
+        usesNonstandardPeg: false,
+        ignoresDeclaredPeg: false,
+      }
+      const { amountDivisor, decimalPlaces, unit } = accountData.debtorData
+      const display = accountData.display
+      let nonstandard = !(
+        display.amountDivisor === amountDivisor &&
+        display.decimalPlaces === decimalPlaces &&
+        display.unit === unit
+      )
+      if (nonstandard) {
+        // When the current amount display is nonstandard, but there
+        // is a corresponding "approve amount display" action, we
+        // consider this "good enough".
+        const actions = await this.uc.getActionRecords()
+        nonstandard = !actions.some(a => (
+          a.actionType === 'ApproveAmountDisplay' &&
+          a.accountUri === action.accountUri &&
+          a.amountDivisor === amountDivisor &&
+          a.decimalPlaces === decimalPlaces &&
+          a.unit === unit
+        ))
+      }
+      return pegStatus
+    }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const accountData = this.accountsMap.getAccountFullData(action.accountUri)
+      if (accountData) {
+        const { usesStandardPeg, usesNonstandardPeg, ignoresDeclaredPeg } = await detectPegStatus(accountData)
+        if (this.interactionId === interactionId) {
+          this.pageModel.set({
+            type: 'UpdatePolicyModel',
+            reload: () => { this.showAction(action.actionId, back) },
+            goBack: showActions,
+            backToAccount: goBack,
+            action,
+            accountData,
+            usesStandardPeg,
+            usesNonstandardPeg,
+            ignoresDeclaredPeg,
+          })
+        }
+      } else {
+        await this.uc.replaceActionRecord(action, null)
+        checkAndGoBack()
+      }
+    }, {
+      alerts: [
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  executeUpdatePolicyAction(
+    actionManager: ActionManager<UpdatePolicyActionWithId>,
+    accountData: AccountFullData,
+    pin: string,
+    back?: () => void,
+  ): Promise<void> {
+    // TODO: add a real implementation.
+
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+    const saveActionPromise = actionManager.saveAndClose()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      action
+      accountData
+      pin
+      // await this.uc.executeConfigAccountAction(
+      //   action,
+      //   accountData.display.latestUpdateId,
+      //   accountData.config.latestUpdateId,
+      //   pin,
+      // )
+      checkAndGoBack()
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
+        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
+        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+      ],
+    })
+  }
+
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
@@ -1087,6 +1209,41 @@ export class AppState {
         editedScheduledForDeletion: accountData.config.scheduledForDeletion,
         editedAllowUnsafeDeletion: accountData.config.allowUnsafeDeletion,
         approveNewDisplay: false,
+        accountUri,
+      })
+      if (this.interactionId === interactionId) {
+        this.showAction(action.actionId, back)
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+      ],
+    })
+  }
+
+  async createUpdatePolicyAction(accountUri: string, back?: () => void): Promise<void> {
+    // TODO: Add a real implementation.
+
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      await this.uc.getAccount(accountUri)
+      const accountData = this.accountsMap.getAccountFullData(accountUri)
+      if (accountData === undefined) {
+        this.showAccounts()
+        return
+      }
+      const minPrincipal = accountData.exchange.minPrincipal
+      const maxPrincipal = accountData.exchange.maxPrincipal
+      const action = await this.uc.ensureUniqueAccountAction({
+        userId: this.uc.userId,
+        actionType: 'UpdatePolicy',
+        createdAt: new Date(),
+        editedMinPrincipal: minPrincipal >= 0n ? minPrincipal : 0n,
+        editedMaxPrincipal: maxPrincipal >= 0n ? maxPrincipal : 0n,
+        editedUseNonstandardPeg: true,
+        editedIgnoreDeclaredPeg: true,
+        editedReviseApprovedPeg: false,
+        approveNewPeg: false,  // TODO: check for existing approve peg action?
         accountUri,
       })
       if (this.interactionId === interactionId) {

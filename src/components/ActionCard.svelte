@@ -28,6 +28,8 @@
       return 'Approve name'
     case 'ConfigAccount':
       return 'Modify account'
+    case 'UpdatePolicy':
+      return 'Modify policy'
     default:
       return 'Unknown action type'
     }
@@ -99,6 +101,12 @@
         return debtorName
           ? `Modify the configuration settings for your account with "${debtorName}".`
           : 'Modify account configuration settings.'
+      }
+      case 'UpdatePolicy': {
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName
+          ? `Modify the exchange policy for your account with "${debtorName}".`
+          : 'Modify exchange policy.'
       }
       default:
         return "Unknown action type"

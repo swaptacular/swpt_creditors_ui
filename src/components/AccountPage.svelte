@@ -379,7 +379,7 @@
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => alert('not implemented')} >
+      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, () => app.showAccount(accountUri))} >
         <ExchangeSvgIcon />
       </Fab>
     </div>

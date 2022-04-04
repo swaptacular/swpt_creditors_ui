@@ -8,6 +8,7 @@
   import OverrideCoinPage from './OverrideCoinPage.svelte'
   import ApprovePegPage from './ApprovePegPage.svelte'
   import ConfigAccountPage from './ConfigAccountPage.svelte'
+  import UpdatePolicyPage from './UpdatePolicyPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
   import AccountPage from './AccountPage.svelte'
@@ -38,6 +39,8 @@
       return ApprovePegPage
     case 'ConfigAccountModel':
       return ConfigAccountPage
+    case 'UpdatePolicyModel':
+      return UpdatePolicyPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

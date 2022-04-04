@@ -4,7 +4,8 @@ import type {
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
-  CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord
+  CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
+  UpdatePolicyActionWithId
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
@@ -71,6 +72,7 @@ export type {
   ApproveAmountDisplayActionWithId,
   ApprovePegActionWithId,
   ConfigAccountActionWithId,
+  UpdatePolicyActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,

@@ -1,6 +1,6 @@
 import type {
   ActionRecord, ActionRecordWithId, ListQueryOptions, ApprovePegAction, ApproveAmountDisplayAction,
-  ApproveDebtorNameAction, ConfigAccountAction
+  ApproveDebtorNameAction, ConfigAccountAction, UpdatePolicyAction
 } from './schema'
 
 import { Dexie } from 'dexie'
@@ -184,7 +184,7 @@ export async function createApproveAction(action: ApproveAction, overrideExistin
   })
 }
 
-export async function ensureUniqueAccountAction<T extends ConfigAccountAction>(
+export async function ensureUniqueAccountAction<T extends ConfigAccountAction | UpdatePolicyAction>(
   action: T,
 ): Promise<T & ActionRecordWithId> {
   const { accountUri, actionType } = action
