@@ -1222,8 +1222,6 @@ export class AppState {
   }
 
   async createUpdatePolicyAction(accountUri: string, back?: () => void): Promise<void> {
-    // TODO: Add a real implementation.
-
     return this.attempt(async () => {
       const interactionId = this.interactionId
       await this.uc.getAccount(accountUri)
@@ -1232,18 +1230,17 @@ export class AppState {
         this.showAccounts()
         return
       }
-      const minPrincipal = accountData.exchange.minPrincipal
-      const maxPrincipal = accountData.exchange.maxPrincipal
+      const { minPrincipal, maxPrincipal, policy } = accountData.exchange
       const action = await this.uc.ensureUniqueAccountAction({
         userId: this.uc.userId,
         actionType: 'UpdatePolicy',
         createdAt: new Date(),
-        editedMinPrincipal: minPrincipal >= 0n ? minPrincipal : 0n,
-        editedMaxPrincipal: maxPrincipal >= 0n ? maxPrincipal : 0n,
+        editedPolicy: policy,
+        editedMinPrincipal: minPrincipal,
+        editedMaxPrincipal: maxPrincipal,
         editedUseNonstandardPeg: true,
         editedIgnoreDeclaredPeg: true,
         editedReviseApprovedPeg: false,
-        approveNewPeg: false,  // TODO: check for existing approve peg action?
         accountUri,
       })
       if (this.interactionId === interactionId) {

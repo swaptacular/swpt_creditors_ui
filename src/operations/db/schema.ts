@@ -593,12 +593,12 @@ export type UpdatePolicyAction =
   & {
     actionType: 'UpdatePolicy',
     accountUri: string,
+    editedPolicy: string | undefined
     editedMinPrincipal: bigint,
     editedMaxPrincipal: bigint,
     editedUseNonstandardPeg: boolean,
     editedIgnoreDeclaredPeg: boolean,
     editedReviseApprovedPeg: boolean,
-    approveNewPeg: boolean,
   }
 
 export type UpdatePolicyActionWithId =

@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { AppState, UpdatePolicyModel, UpdatePolicyActionWithId, PegBound } from '../app-state'
   import {
-    amountToString, limitAmountDivisor, calcPegExampleAmount, calcSmallestDisplayableNumber
+    amountToString, limitAmountDivisor, calcPegExampleAmount, calcSmallestDisplayableNumber,
+    MIN_INT64, MAX_INT64
   } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -21,13 +22,14 @@
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
+  let policy = model.action.editedPolicy ?? 'off'
   let minPrincipalUnitAmount = formatAsUnitAmount(
-    model.action.editedMinPrincipal,
+    model.action.editedMinPrincipal < 0n ? undefined : model.action.editedMinPrincipal,
     model.accountData.display.amountDivisor,
     model.accountData.display.decimalPlaces,
   )
   let maxPrincipalUnitAmount = formatAsUnitAmount(
-    model.action.editedMaxPrincipal,
+    model.action.editedMaxPrincipal >= MAX_INT64 ? undefined : model.action.editedMaxPrincipal,
     model.accountData.display.amountDivisor,
     model.accountData.display.decimalPlaces,
   )
@@ -37,14 +39,25 @@
   let invalidMinPrincipalUnitAmount: boolean
   let invalidMaxPrincipalUnitAmount: boolean
 
-  function amountToBigint(amount: number | string, divisor: number): bigint {
-    const x = Math.max(0, Number(amount) || 0) * limitAmountDivisor(divisor)
-    return BigInt(Math.ceil(x))
+  function amountToBigint(amount: number | string, divisor: number, missing: bigint): bigint {
+    let result = missing
+    if (amount !== '') {
+      let x = Number(amount)
+      if (Number.isFinite(x)) {
+        x = Math.max(0, x) * limitAmountDivisor(divisor)
+        result = BigInt(Math.ceil(x))
+        if (result > MAX_INT64) {
+          result = MAX_INT64
+        }
+      }
+    }
+    return result
   }
-  
+
   function createUpdatedAction(): UpdatePolicyActionWithId {
     return {
       ...action,
+      editedPolicy: policy === 'off' ? undefined : policy,
       editedMinPrincipal: minPrincipal,
       editedMaxPrincipal: maxPrincipal,
       editedUseNonstandardPeg: useNonstandardPeg,
@@ -109,8 +122,8 @@
   $: usesStandardPeg = model.usesStandardPeg
   $: usesNonstandardPeg = model.usesNonstandardPeg
   $: ignoresDeclaredPeg = model.ignoresDeclaredPeg
-  $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor)
-  $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor)
+  $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
+  $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
   $: invalid = (
     invalidMinPrincipalUnitAmount ||
     invalidMaxPrincipalUnitAmount  ||
@@ -179,7 +192,6 @@
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
-                required
                 variant="outlined"
                 type="number"
                 input$min={0}
@@ -207,7 +219,6 @@
 
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
-                required
                 variant="outlined"
                 type="number"
                 input$min={0}
