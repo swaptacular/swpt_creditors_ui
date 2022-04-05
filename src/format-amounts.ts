@@ -1,6 +1,7 @@
 export const MAX_INT64 = (1n << 63n) - 1n
 export const MIN_INT64 = -MAX_INT64 - 1n
-export const MAX_AMOUNT = Number(MAX_INT64)
+
+const MAX_AMOUNT = Number(MAX_INT64)
 const MIN_AMOUNT_DIVISOR = 1e-99
 const MAX_AMOUNT_DIVISOR = 1e99
 

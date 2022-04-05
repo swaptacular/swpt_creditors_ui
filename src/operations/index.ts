@@ -17,6 +17,7 @@ import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import { InvalidDocument } from '../debtor-info'
+import { MIN_INT64 } from '../format-amounts'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
   HttpResponse, HttpError
@@ -421,6 +422,16 @@ export class UserContext {
       getBaseDebtorDataFromAccoutKnowledge(account.knowledge).debtorName === action.debtorName
     )) {
       throw new RecordDoesNotExist()
+    }
+    if (action.unsetKnownDebtor) {
+      const exchange: AccountExchangeV0 = {
+        ...account.exchange,
+        minPrincipal: MIN_INT64,
+        maxPrincipal: 0n,
+        latestUpdateId: account.exchange.latestUpdateId + 1n,
+        pin,
+      }
+      await this.updateAccountObject(exchange)
     }
     const display: AccountDisplayV0 = {
       ...account.display,

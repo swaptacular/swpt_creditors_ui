@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, ApprovePegModel, ApprovePegActionWithId } from '../app-state'
-  import { amountToString, calcPegExampleAmount, MAX_AMOUNT } from '../format-amounts'
+  import { amountToString, calcPegExampleAmount, MAX_INT64 } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -16,6 +16,8 @@
   export let app: AppState
   export let model: ApprovePegModel
   export const snackbarBottom: string = "84px"
+
+  const MAX_AMOUNT = Number(MAX_INT64)
 
   let showCurrencies = false
   let shakingElement: HTMLElement

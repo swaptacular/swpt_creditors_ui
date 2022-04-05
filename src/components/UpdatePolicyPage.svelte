@@ -10,6 +10,7 @@
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
   import FormField from '@smui/form-field'
+  import Radio from '@smui/radio'
   import Checkbox from '@smui/checkbox'
   import Page from './Page.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -22,14 +23,14 @@
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
-  let policy = model.action.editedPolicy ?? 'off'
+  let policy = calcInitialPolicy(model)
   let minPrincipalUnitAmount = formatAsUnitAmount(
-    model.action.editedMinPrincipal < 0n ? undefined : model.action.editedMinPrincipal,
+    calcInitialMinPrincipal(model),
     model.accountData.display.amountDivisor,
     model.accountData.display.decimalPlaces,
   )
   let maxPrincipalUnitAmount = formatAsUnitAmount(
-    model.action.editedMaxPrincipal >= MAX_INT64 ? undefined : model.action.editedMaxPrincipal,
+    calcInitialMaxPrincipal(model),
     model.accountData.display.amountDivisor,
     model.accountData.display.decimalPlaces,
   )
@@ -46,12 +47,40 @@
       if (Number.isFinite(x)) {
         x = Math.max(0, x) * limitAmountDivisor(divisor)
         result = BigInt(Math.ceil(x))
-        if (result > MAX_INT64) {
-          result = MAX_INT64
+        if (result >= MAX_INT64) {
+          result = MAX_INT64 - 1n
         }
       }
     }
     return result
+  }
+
+  function calcInitialPolicy(model: UpdatePolicyModel): 'conservative' | 'off' {
+    const s = model.action.editedPolicy
+    if (s === undefined) return 'off'
+    else return 'conservative'
+  }
+
+  function calcInitialMinPrincipal(model: UpdatePolicyModel): bigint | undefined {
+    const n = model.action.editedMinPrincipal
+    if (n < 0n) return undefined
+    else return n
+  }
+
+  function calcInitialMaxPrincipal(model: UpdatePolicyModel): bigint | undefined {
+    const n = model.action.editedMaxPrincipal
+    if (n >= MAX_INT64) return undefined
+    else if (n < 0n) return 0n
+    else return n
+  }
+
+  function removeInvalidValues(): void {
+    if (invalidMinPrincipalUnitAmount) {
+      minPrincipalUnitAmount = ''
+    }
+    if (erroneousMaxPrinciple) {
+      maxPrincipalUnitAmount = ''
+    }
   }
 
   function createUpdatedAction(): UpdatePolicyActionWithId {
@@ -122,16 +151,19 @@
   $: usesStandardPeg = model.usesStandardPeg
   $: usesNonstandardPeg = model.usesNonstandardPeg
   $: ignoresDeclaredPeg = model.ignoresDeclaredPeg
+  $: disabledExchanges = policy === 'off'
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
-  $: invalid = (
-    invalidMinPrincipalUnitAmount ||
-    invalidMaxPrincipalUnitAmount  ||
-    minPrincipal > maxPrincipal
-  )
+  $: missingMaxPrincipal = !disabledExchanges && maxPrincipal === MAX_INT64
+  $: smallMaxPrincipal = maxPrincipal < minPrincipal
+  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || missingMaxPrincipal || smallMaxPrincipal
+  $: invalid = invalidMinPrincipalUnitAmount || erroneousMaxPrinciple
 </script>
 
 <style>
+  .radio-group > :global(*) {
+    margin: 0 0.2em;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -190,12 +222,43 @@
               </AccountInfo>
             </Cell>
 
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <div class="radio-group">
+                <FormField>
+                  <Radio
+                    bind:group={policy}
+                    on:click={removeInvalidValues}
+                    value="off"
+                    touch
+                    disabled={false}
+                    />
+                  <span slot="label">
+                    No not allow automatic exchanges.
+                  </span>
+                </FormField>
+                <FormField>
+                  <Radio
+                    bind:group={policy}
+                    value="conservative"
+                    touch
+                    disabled={false}
+                    />
+                  <span slot="label">
+                    Automatically buy and sell this currency, so that
+                    the available amount stays within the defined
+                    limits.
+                  </span>
+                </FormField>
+              </div>
+            </Cell>
+
             <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
               <Textfield
                 variant="outlined"
                 type="number"
                 input$min={0}
                 input$step={unitAmountStep}
+                disabled={disabledExchanges}
                 style="width: 100%"
                 withTrailingIcon={invalidMinPrincipalUnitAmount}
                 bind:value={minPrincipalUnitAmount}
@@ -210,7 +273,7 @@
                 </svelte:fragment>
                 <HelperText slot="helper" persistent>
                   The available amount should not fall below this
-                  value. This limit applies only to automatic
+                  value. The limit applies only to automatic
                   exchanges, and will be enforced on "best effort"
                   bases.
                 </HelperText>
@@ -223,23 +286,24 @@
                 type="number"
                 input$min={0}
                 input$step={unitAmountStep}
+                disabled={disabledExchanges}
                 style="width: 100%"
-                withTrailingIcon={invalidMaxPrincipalUnitAmount}
+                withTrailingIcon={erroneousMaxPrinciple}
                 bind:value={maxPrincipalUnitAmount}
                 bind:invalid={invalidMaxPrincipalUnitAmount}
                 label="Maximum amount"
                 suffix="{unit.slice(0, 10)}"
                 >
                 <svelte:fragment slot="trailingIcon">
-                  {#if invalidMaxPrincipalUnitAmount}
+                  {#if erroneousMaxPrinciple}
                     <TextfieldIcon class="material-icons">error</TextfieldIcon>
                   {/if}
                 </svelte:fragment>
                 <HelperText slot="helper" persistent>
                   The available amount should not exceed this
-                  value. This limit applies only to automatic
+                  value. The limit applies only to automatic
                   exchanges, and will be enforced on "best effort"
-                  bases. The value must be greater or equal than the
+                  bases. This value must be greater or equal than the
                   "Minumum amount" value.
                 </HelperText>
               </Textfield>
