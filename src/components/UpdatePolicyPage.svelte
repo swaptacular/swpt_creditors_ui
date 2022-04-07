@@ -4,6 +4,7 @@
     amountToString, limitAmountDivisor, calcPegExampleAmount, calcSmallestDisplayableNumber,
     MIN_INT64, MAX_INT64
   } from '../format-amounts'
+  import { slide } from 'svelte/transition'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -24,55 +25,13 @@
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let policy = calcInitialPolicy(model)
-  let minPrincipalUnitAmount = formatAsUnitAmount(
-    calcInitialMinPrincipal(model),
-    model.accountData.display.amountDivisor,
-    model.accountData.display.decimalPlaces,
-  )
-  let maxPrincipalUnitAmount = formatAsUnitAmount(
-    calcInitialMaxPrincipal(model),
-    model.accountData.display.amountDivisor,
-    model.accountData.display.decimalPlaces,
-  )
+  let minPrincipalUnitAmount = calcInitialMinPrincipalUnitAmount(model)
+  let maxPrincipalUnitAmount = calcInitialMaxPrincipalUnitAmount(model)
   let useNonstandardPeg = model.action.editedUseNonstandardPeg
   let ignoreDeclaredPeg = model.action.editedIgnoreDeclaredPeg
   let reviseApprovedPeg = model.action.editedReviseApprovedPeg
   let invalidMinPrincipalUnitAmount: boolean | undefined
   let invalidMaxPrincipalUnitAmount: boolean | undefined
-
-  function amountToBigint(amount: any, divisor: number, missing: bigint): bigint {
-    let result = missing
-    if (amount !== '') {
-      let x = Number(amount)
-      if (Number.isFinite(x)) {
-        x = Math.max(0, x) * limitAmountDivisor(divisor)
-        result = BigInt(Math.ceil(x))
-        if (result >= MAX_INT64) {
-          result = MAX_INT64 - 1n
-        }
-      }
-    }
-    return result
-  }
-
-  function calcInitialPolicy(model: UpdatePolicyModel): 'conservative' | 'off' {
-    const s = model.action.editedPolicy
-    if (s === undefined) return 'off'
-    else return 'conservative'
-  }
-
-  function calcInitialMinPrincipal(model: UpdatePolicyModel): bigint | undefined {
-    const n = model.action.editedMinPrincipal
-    if (n < 0n) return undefined
-    else return n
-  }
-
-  function calcInitialMaxPrincipal(model: UpdatePolicyModel): bigint | undefined {
-    const n = model.action.editedMaxPrincipal
-    if (n >= MAX_INT64) return undefined
-    else if (n < 0n) return 0n
-    else return n
-  }
 
   function createUpdatedAction(): UpdatePolicyActionWithId {
     return {
@@ -97,6 +56,32 @@
     return amountToString(amount, amountDivisor, decimalPlaces)
   }
 
+  function calcInitialMinPrincipalUnitAmount(model: UpdatePolicyModel): string {
+    let n: bigint | undefined = model.action.editedMinPrincipal
+    if (n < 0n) {
+      n = undefined
+    }
+    return formatAsUnitAmount(n, model.accountData.display.amountDivisor, model.accountData.display.decimalPlaces)
+  }
+
+  function calcInitialMaxPrincipalUnitAmount(model: UpdatePolicyModel): string {
+    let n: bigint | undefined = model.action.editedMaxPrincipal
+    if (n >= MAX_INT64) {
+      n = undefined
+    } else if (n < 0n) {
+      n = 0n
+    }
+    return formatAsUnitAmount(n, model.accountData.display.amountDivisor, model.accountData.display.decimalPlaces)
+  }
+
+  function calcInitialPolicy(model: UpdatePolicyModel): 'off' | 'conservative' {
+    if (model.action.editedPolicy === undefined) {
+      return 'off'
+    } else {
+      return 'conservative'
+    }
+  }
+
   function calcExampleAmount(pegBounds: PegBound[]): bigint {
     if (pegBounds.length < 2) {
       return 0n
@@ -104,6 +89,21 @@
     const [pegged, peg] = pegBounds
     const amount = calcPegExampleAmount(pegged.display, peg.display, peg.exchangeRate)
     return BigInt(Math.ceil(amount))
+  }
+
+  function amountToBigint(amount: any, divisor: number, missing: bigint): bigint {
+    let result = missing
+    if (amount !== '') {
+      let x = Number(amount)
+      if (Number.isFinite(x)) {
+        x = Math.max(0, x) * limitAmountDivisor(divisor)
+        result = BigInt(Math.ceil(x))
+        if (result >= MAX_INT64) {
+          result = MAX_INT64 - 1n
+        }
+      }
+    }
+    return result
   }
 
   function shakeForm(): void {
@@ -212,94 +212,6 @@
               </AccountInfo>
             </Cell>
 
-            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-              <div class="radio-group">
-                <FormField>
-                  <Radio
-                    bind:group={policy}
-                    value="off"
-                    touch
-                    disabled={false}
-                    />
-                  <span slot="label">
-                    Do not allow automatic exchanges.
-                  </span>
-                </FormField>
-                <FormField>
-                  <Radio
-                    bind:group={policy}
-                    value="conservative"
-                    touch
-                    disabled={false}
-                    />
-                  <span slot="label">
-                    Allow automatic buying and selling of this
-                    currency, so that the available amount stays
-                    within the defined limits.
-                  </span>
-                </FormField>
-              </div>
-            </Cell>
-
-            {#if !disabledExchanges}
-              <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-                <Textfield
-                  required
-                  variant="outlined"
-                  type="number"
-                  input$min={0}
-                  input$step={unitAmountStep}
-                  style="width: 100%"
-                  withTrailingIcon={invalidMinPrincipalUnitAmount}
-                  bind:value={minPrincipalUnitAmount}
-                  bind:invalid={invalidMinPrincipalUnitAmount}
-                  label="Minumum amount"
-                  suffix="{unit.slice(0, 10)}"
-                  >
-                  <svelte:fragment slot="trailingIcon">
-                    {#if invalidMinPrincipalUnitAmount}
-                      <TextfieldIcon class="material-icons">error</TextfieldIcon>
-                    {/if}
-                  </svelte:fragment>
-                  <HelperText slot="helper" persistent>
-                    The available amount should not fall below this
-                    value. The limit applies only to automatic
-                    exchanges, and will be enforced on "best effort"
-                    bases.
-                  </HelperText>
-                </Textfield>
-              </Cell>
-
-              <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
-                <Textfield
-                  required
-                  variant="outlined"
-                  type="number"
-                  input$min={0}
-                  input$step={unitAmountStep}
-                  style="width: 100%"
-                  withTrailingIcon={erroneousMaxPrinciple}
-                  bind:value={maxPrincipalUnitAmount}
-                  bind:invalid={invalidMaxPrincipalUnitAmount}
-                  label="Maximum amount"
-                  suffix="{unit.slice(0, 10)}"
-                  >
-                  <svelte:fragment slot="trailingIcon">
-                    {#if erroneousMaxPrinciple}
-                      <TextfieldIcon class="material-icons">error</TextfieldIcon>
-                    {/if}
-                  </svelte:fragment>
-                  <HelperText slot="helper" persistent>
-                    The available amount should not exceed this
-                    value. The limit applies only to automatic
-                    exchanges, and will be enforced on "best effort"
-                    bases. This value must be greater or equal than the
-                    "Minumum amount" value.
-                  </HelperText>
-                </Textfield>
-              </Cell>
-            {/if}
-
             {#if usesNonstandardPeg}
               <Cell>
                 <FormField>
@@ -332,7 +244,101 @@
                 </FormField>
               </Cell>
             {/if}
+
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <div class="radio-group">
+                <FormField>
+                  <Radio
+                    bind:group={policy}
+                    value="off"
+                    touch
+                    disabled={false}
+                    />
+                  <span slot="label">
+                    Do not allow automatic exchanges.
+                  </span>
+                </FormField>
+                <FormField>
+                  <Radio
+                    bind:group={policy}
+                    value="conservative"
+                    touch
+                    disabled={false}
+                    />
+                  <span slot="label">
+                    Allow automatic buying and selling of this
+                    currency so that, if possible, the available
+                    amount stays within the defined limits.
+                  </span>
+                </FormField>
+              </div>
+            </Cell>
           </LayoutGrid>
+
+          <div style="height: 400px">
+            {#if !disabledExchanges}
+              <div in:slide={{ duration: 250 }} out:slide={{ duration: 250 }}>
+                <LayoutGrid>
+                  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+                    <Textfield
+                      required
+                      variant="outlined"
+                      type="number"
+                      input$min={0}
+                      input$step={unitAmountStep}
+                      style="width: 100%"
+                      withTrailingIcon={invalidMinPrincipalUnitAmount}
+                      bind:value={minPrincipalUnitAmount}
+                      bind:invalid={invalidMinPrincipalUnitAmount}
+                      label="Minumum amount"
+                      suffix="{unit.slice(0, 10)}"
+                      >
+                      <svelte:fragment slot="trailingIcon">
+                        {#if invalidMinPrincipalUnitAmount}
+                          <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                        {/if}
+                      </svelte:fragment>
+                      <HelperText slot="helper" persistent>
+                        The available amount should not fall below this
+                        value. The limit applies only to automatic
+                        exchanges, and will be enforced on "best effort"
+                        bases.
+                      </HelperText>
+                    </Textfield>
+                  </Cell>
+
+                  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+                    <Textfield
+                      required
+                      variant="outlined"
+                      type="number"
+                      input$min={0}
+                      input$step={unitAmountStep}
+                      style="width: 100%"
+                      withTrailingIcon={erroneousMaxPrinciple}
+                      bind:value={maxPrincipalUnitAmount}
+                      bind:invalid={invalidMaxPrincipalUnitAmount}
+                      label="Maximum amount"
+                      suffix="{unit.slice(0, 10)}"
+                      >
+                      <svelte:fragment slot="trailingIcon">
+                        {#if erroneousMaxPrinciple}
+                          <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                        {/if}
+                      </svelte:fragment>
+                      <HelperText slot="helper" persistent>
+                        The available amount should not exceed this
+                        value. The limit applies only to automatic
+                        exchanges, and will be enforced on "best effort"
+                        bases. This value must be greater or equal than the
+                        "Minumum amount" value.
+                      </HelperText>
+                    </Textfield>
+                  </Cell>
+                </LayoutGrid>
+              </div>
+            {/if}
+          </div>
         </form>
       </div>
     </svelte:fragment>
