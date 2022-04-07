@@ -281,7 +281,7 @@
 
           <div style="height: 400px">
             {#if !disabledExchanges}
-              <div in:slide={{ duration: 250 }} out:slide={{ duration: 250 }}>
+              <div in:slide={{ duration: 250 }} out:slide|local={{ duration: 250 }}>
                 <LayoutGrid>
                   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                     <Textfield
