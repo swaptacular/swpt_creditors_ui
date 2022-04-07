@@ -115,6 +115,11 @@
     }
   }
 
+  async function enableExchanges(): Promise<void> {
+    invalidMinPrincipalUnitAmount = undefined
+    invalidMaxPrincipalUnitAmount = undefined
+  }
+
   function modify(): void {
     if (invalid) {
       shakeForm()
@@ -252,7 +257,6 @@
                     bind:group={policy}
                     value="off"
                     touch
-                    disabled={false}
                     />
                   <span slot="label">
                     Do not allow automatic exchanges.
@@ -261,9 +265,9 @@
                 <FormField>
                   <Radio
                     bind:group={policy}
+                    on:click={enableExchanges}
                     value="conservative"
                     touch
-                    disabled={false}
                     />
                   <span slot="label">
                     Allow automatic buying and selling of this
