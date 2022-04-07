@@ -17,7 +17,7 @@ import equal from 'fast-deep-equal'
 import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import { InvalidDocument } from '../debtor-info'
-import { MIN_INT64 } from '../format-amounts'
+import { MIN_INT64, MAX_INT64 } from '../format-amounts'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
   HttpResponse, HttpError
@@ -597,6 +597,62 @@ export class UserContext {
       }
       if (action.editedAllowUnsafeDeletion) {
         this.scheduleUpdate()
+      }
+    }
+    await this.replaceActionRecord(action, null)
+  }
+
+  /* Updates account's exchange policy as the given action
+   * states. Deletes the action on success. The caller must be
+   * prepared this method to throw `RecordDoesNotExist`,
+   * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
+   * `ResourceNotFound`, `ServerSessionError`. */
+  async executeUpdatePolicyAction(
+    action: UpdatePolicyActionWithId,
+    exchangeLatestUpdateId: bigint,
+    pin: string,
+  ): Promise<void> {
+    const account = await this.getAccount(action.accountUri)
+    if (account && account.display.debtorName !== undefined) {
+      let minPrincipal, maxPrincipal
+      if (action.editedPolicy === undefined) {
+        minPrincipal = MIN_INT64
+        maxPrincipal = MAX_INT64
+      } else {
+        minPrincipal = action.editedMinPrincipal
+        maxPrincipal = action.editedMinPrincipal
+      }
+      const exchange: AccountExchangeV0 = {
+        ...account.exchange,
+        policy: action.editedPolicy,
+        latestUpdateId: exchangeLatestUpdateId + 1n,
+        minPrincipal,
+        maxPrincipal,
+        pin,
+      }
+      if (action.editedUseNonstandardPeg === false) {
+        exchange.peg = undefined
+      }
+      await this.updateAccountObject(exchange)
+
+      // TODO: check knownDebtor, and do not allow automatic exchanges
+      // for unknown debtors.
+
+      if (action.editedReviseApprovedPeg === true || action.editedIgnoreDeclaredPeg === false) {
+        const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
+        if (debtorData.peg) {
+          await createApproveAction({
+            actionType: 'ApprovePeg',
+            createdAt: new Date(),
+            userId: this.userId,
+            accountUri: action.accountUri,
+            onlyTheCoinHasChanged: false,
+            ignoreCoinMismatch: false,
+            alreadyHasApproval: action.editedReviseApprovedPeg === true ? undefined: false,
+            editedApproval: action.editedReviseApprovedPeg === true ? true : undefined,
+            peg: debtorData.peg,
+          })
+        }
       }
     }
     await this.replaceActionRecord(action, null)

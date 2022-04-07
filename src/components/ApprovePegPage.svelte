@@ -60,7 +60,7 @@
     const bound = bounds[bounds.length - 1]
     if (bound && bound.accountUri !== accountUri) {
       const finalUnitAmount = amountToString(
-        BigInt(Math.min(amount * bound.exchangeRate, MAX_AMOUNT)),
+        BigInt(Math.round(Math.min(amount * bound.exchangeRate, MAX_AMOUNT))),
         bound.display.amountDivisor,
         bound.display.decimalPlaces,
       ) + ' ' + bound.display.unit

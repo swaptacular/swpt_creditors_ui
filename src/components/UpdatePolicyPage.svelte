@@ -135,7 +135,7 @@
   }
 
   function submit(pin: string): void {
-    app.executeUpdatePolicyAction(actionManager, accountData, pin, model.backToAccount)
+    app.executeUpdatePolicyAction(actionManager, accountData.exchange.latestUpdateId, pin, model.backToAccount)
   }
 
   $: action = model.action
@@ -161,7 +161,7 @@
 
 <style>
   .radio-group > :global(*) {
-    margin: 0 3px 0 6px;
+    margin: 0 0.2em;
   }
   .fab-container {
     margin: 16px 16px;

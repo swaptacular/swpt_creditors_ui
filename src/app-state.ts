@@ -1038,12 +1038,10 @@ export class AppState {
 
   executeUpdatePolicyAction(
     actionManager: ActionManager<UpdatePolicyActionWithId>,
-    accountData: AccountFullData,
+    exchangeLatestUpdateId: bigint,
     pin: string,
     back?: () => void,
   ): Promise<void> {
-    // TODO: add a real implementation.
-
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
@@ -1054,15 +1052,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      action
-      accountData
-      pin
-      // await this.uc.executeConfigAccountAction(
-      //   action,
-      //   accountData.display.latestUpdateId,
-      //   accountData.config.latestUpdateId,
-      //   pin,
-      // )
+      await this.uc.executeUpdatePolicyAction(action, exchangeLatestUpdateId, pin)
       checkAndGoBack()
     }, {
       alerts: [
