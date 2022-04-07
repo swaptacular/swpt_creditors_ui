@@ -118,6 +118,12 @@
   async function enableExchanges(): Promise<void> {
     invalidMinPrincipalUnitAmount = undefined
     invalidMaxPrincipalUnitAmount = undefined
+    if (typeof minPrincipalUnitAmount !== 'number' && typeof minPrincipalUnitAmount !== 'string') {
+      minPrincipalUnitAmount = ''
+    }
+    if (typeof maxPrincipalUnitAmount !== 'number' && typeof maxPrincipalUnitAmount !== 'string') {
+      maxPrincipalUnitAmount = ''
+    }
   }
 
   function modify(): void {
@@ -144,9 +150,7 @@
   $: unit = display.unit ?? '\u00A4'
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
-  $: usesStandardPeg = model.usesStandardPeg
-  $: usesNonstandardPeg = model.usesNonstandardPeg
-  $: ignoresDeclaredPeg = model.ignoresDeclaredPeg
+  $: pegStatus = model.pegStatus
   $: disabledExchanges = policy === 'off'
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
@@ -157,7 +161,7 @@
 
 <style>
   .radio-group > :global(*) {
-    margin: 0 0.2em;
+    margin: 0 3px 0 6px;
   }
   .fab-container {
     margin: 16px 16px;
@@ -217,9 +221,9 @@
               </AccountInfo>
             </Cell>
 
-            {#if usesNonstandardPeg}
-              <Cell>
-                <FormField>
+            {#if pegStatus === 'UsesNonstandardPeg'}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <FormField style="margin-bottom: 12px">
                   <Checkbox bind:checked={useNonstandardPeg} />
                   <span slot="label">
                     Use a nonstandard currency peg.
@@ -228,9 +232,9 @@
               </Cell>
             {/if}
 
-            {#if ignoresDeclaredPeg}
-              <Cell>
-                <FormField>
+            {#if pegStatus === 'IgnoresDeclaredPeg'}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <FormField style="margin-bottom: 12px">
                   <Checkbox bind:checked={ignoreDeclaredPeg} />
                   <span slot="label">
                     Ignore the currency peg declared by the issuer.
@@ -239,9 +243,9 @@
               </Cell>
             {/if}
 
-            {#if usesStandardPeg}
-              <Cell>
-                <FormField>
+            {#if pegStatus === 'UsesStandardPeg'}
+              <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                <FormField style="margin-bottom: 12px">
                   <Checkbox bind:checked={reviseApprovedPeg} />
                   <span slot="label">
                     Revise the approved currency peg.
@@ -279,7 +283,7 @@
             </Cell>
           </LayoutGrid>
 
-          <div style="height: 400px">
+          <div style="height: 400px; margin-top: -12px">
             {#if !disabledExchanges}
               <div in:slide={{ duration: 250 }} out:slide|local={{ duration: 250 }}>
                 <LayoutGrid>

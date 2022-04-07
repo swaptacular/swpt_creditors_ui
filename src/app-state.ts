@@ -194,14 +194,12 @@ export type ConfigAccountModel = BasePageModel & {
   nonstandardDisplay: boolean,
 }
 
-export type UpdatePolicyModel =  BasePageModel & {
+export type UpdatePolicyModel = BasePageModel & {
   type: 'UpdatePolicyModel',
   action: UpdatePolicyActionWithId,
   accountData: AccountFullData,
+  pegStatus: 'UsesNoPeg' | 'UsesStandardPeg' | 'UsesNonstandardPeg' | 'IgnoresDeclaredPeg'
   backToAccount: () => void,
-  usesStandardPeg: boolean,
-  usesNonstandardPeg: boolean,
-  ignoresDeclaredPeg: boolean,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -978,47 +976,44 @@ export class AppState {
   }
 
   showUpdatePolicyAction(action: UpdatePolicyActionWithId, back?: () => void): Promise<void> {
-    // TODO: add a real implementation.
-
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const showActions = () => { this.showActions() }
 
     const detectPegStatus = async (accountData: AccountFullData) => {
-      let pegStatus = {
-        usesStandardPeg: false,
-        usesNonstandardPeg: false,
-        ignoresDeclaredPeg: false,
+      const actions = await this.uc.getActionRecords()
+      const existingApprovePegAction = actions.some(a => (
+        a.actionType === 'ApprovePeg' &&
+        a.accountUri === action.accountUri
+      ))
+      const usedPeg = accountData.exchange.peg
+      const declaredPeg = accountData.debtorData.peg
+      if (usedPeg) {
+        const usedPegAccount = this.accountsMap.getObjectByUri(usedPeg.account.uri)
+        if (usedPegAccount) {
+          assert(usedPegAccount.type === 'Account')
+          if (
+            declaredPeg &&
+            declaredPeg.exchangeRate === usedPeg.exchangeRate &&
+            declaredPeg.debtorIdentity.uri === usedPegAccount.debtor.uri
+          ) {
+            return 'UsesStandardPeg' as const
+          }
+        }
+        return 'UsesNonstandardPeg' as const
+      } else if (declaredPeg && !existingApprovePegAction) {
+        return 'IgnoresDeclaredPeg' as const
+      } else {
+        return 'UsesNoPeg' as const
       }
-      const { amountDivisor, decimalPlaces, unit } = accountData.debtorData
-      const display = accountData.display
-      let nonstandard = !(
-        display.amountDivisor === amountDivisor &&
-        display.decimalPlaces === decimalPlaces &&
-        display.unit === unit
-      )
-      if (nonstandard) {
-        // When the current amount display is nonstandard, but there
-        // is a corresponding "approve amount display" action, we
-        // consider this "good enough".
-        const actions = await this.uc.getActionRecords()
-        nonstandard = !actions.some(a => (
-          a.actionType === 'ApproveAmountDisplay' &&
-          a.accountUri === action.accountUri &&
-          a.amountDivisor === amountDivisor &&
-          a.decimalPlaces === decimalPlaces &&
-          a.unit === unit
-        ))
-      }
-      return pegStatus
     }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData) {
-        const { usesStandardPeg, usesNonstandardPeg, ignoresDeclaredPeg } = await detectPegStatus(accountData)
+        const pegStatus = await detectPegStatus(accountData)
         if (this.interactionId === interactionId) {
           this.pageModel.set({
             type: 'UpdatePolicyModel',
@@ -1027,9 +1022,7 @@ export class AppState {
             backToAccount: goBack,
             action,
             accountData,
-            usesStandardPeg,
-            usesNonstandardPeg,
-            ignoresDeclaredPeg,
+            pegStatus,
           })
         }
       } else {
