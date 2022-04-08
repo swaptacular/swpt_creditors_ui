@@ -261,7 +261,7 @@
                 <FormField style="margin-bottom: 12px">
                   <Checkbox bind:checked={reviseApprovedPeg} />
                   <span slot="label">
-                    Revise the approved currency peg.
+                    Revise the already approved currency peg.
                   </span>
                 </FormField>
               </Cell>
@@ -289,7 +289,7 @@
                     />
                   <span slot="label">
                     Allow automatic buying and selling of this
-                    currency so that, if possible, the available
+                    currency, so that if possible, the available
                     amount stays within the defined limits.
                   </span>
                 </FormField>
@@ -321,10 +321,10 @@
                         {/if}
                       </svelte:fragment>
                       <HelperText slot="helper" persistent>
-                        The available amount should not fall below this
-                        value. The limit applies only to automatic
-                        exchanges, and will be enforced on "best effort"
-                        bases.
+                        The available amount should not fall below
+                        this value. The limit applies only to
+                        automatic exchanges, and will be enforced on
+                        "best effort" basis.
                       </HelperText>
                     </Textfield>
                   </Cell>
@@ -351,9 +351,9 @@
                       <HelperText slot="helper" persistent>
                         The available amount should not exceed this
                         value. The limit applies only to automatic
-                        exchanges, and will be enforced on "best effort"
-                        bases. This value must be greater or equal than the
-                        "Minumum amount" value.
+                        exchanges, and will be enforced on "best
+                        effort" basis. This value must be greater or
+                        equal than the "Minumum amount" value.
                       </HelperText>
                     </Textfield>
                   </Cell>
