@@ -982,31 +982,37 @@ export class AppState {
     const showActions = () => { this.showActions() }
 
     const detectPegStatus = async (accountData: AccountFullData) => {
-      const actions = await this.uc.getActionRecords()
-      const existingApprovePegAction = actions.some(a => (
-        a.actionType === 'ApprovePeg' &&
-        a.accountUri === action.accountUri
-      ))
+      const standardPeg = accountData.debtorData.peg
       const usedPeg = accountData.exchange.peg
-      const declaredPeg = accountData.debtorData.peg
       if (usedPeg) {
-        const usedPegAccount = this.accountsMap.getObjectByUri(usedPeg.account.uri)
-        if (usedPegAccount) {
-          assert(usedPegAccount.type === 'Account')
+        // Check whether the used peg is the same as the standard peg.
+        const usedPegAccountData = this.accountsMap.getAccountFullData(usedPeg.account.uri)
+        if (usedPegAccountData) {
+          const { display, account: { debtor } } = usedPegAccountData
           if (
-            declaredPeg &&
-            declaredPeg.exchangeRate === usedPeg.exchangeRate &&
-            declaredPeg.debtorIdentity.uri === usedPegAccount.debtor.uri
+            standardPeg !== undefined &&
+            standardPeg.exchangeRate === usedPeg.exchangeRate &&
+            standardPeg.debtorIdentity.uri === debtor.uri &&
+            standardPeg.display.amountDivisor === display.amountDivisor &&
+            standardPeg.display.decimalPlaces === display.decimalPlaces &&
+            standardPeg.display.unit === display.unit
           ) {
             return 'UsesStandardPeg' as const
           }
         }
         return 'UsesNonstandardPeg' as const
-      } else if (declaredPeg && !existingApprovePegAction) {
-        return 'IgnoresDeclaredPeg' as const
-      } else {
-        return 'UsesNoPeg' as const
+      } else if (standardPeg) {
+        // Check whether the standard peg has been ignored.
+        const actions = await this.uc.getActionRecords()
+        const existingApprovePegAction = actions.some(a => (
+          a.actionType === 'ApprovePeg' &&
+          a.accountUri === action.accountUri
+        ))
+        if (!existingApprovePegAction) {
+          return 'IgnoresDeclaredPeg' as const
+        }
       }
+      return 'UsesNoPeg' as const
     }
 
     return this.attempt(async () => {
