@@ -21,6 +21,9 @@
   export let model: UpdatePolicyModel
   export const snackbarBottom: string = "84px"
 
+  const ANIMATION_DURATION = 250
+
+  let duration: number = 0
   let shakingElement: HTMLElement
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
@@ -116,6 +119,7 @@
   }
 
   async function enableExchanges(): Promise<void> {
+    duration = ANIMATION_DURATION
     invalidMinPrincipalUnitAmount = undefined
     invalidMaxPrincipalUnitAmount = undefined
     if (typeof minPrincipalUnitAmount !== 'number' && typeof minPrincipalUnitAmount !== 'string') {
@@ -259,6 +263,7 @@
                 <FormField>
                   <Radio
                     bind:group={policy}
+                    on:click={() => duration = ANIMATION_DURATION}
                     value="off"
                     touch
                     />
@@ -285,7 +290,7 @@
 
           <div style="height: 400px; margin-top: -12px">
             {#if !disabledExchanges}
-              <div in:slide={{ duration: 250 }} out:slide|local={{ duration: 250 }}>
+              <div in:slide={{ duration }} out:slide|local={{ duration }}>
                 <LayoutGrid>
                   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                     <Textfield

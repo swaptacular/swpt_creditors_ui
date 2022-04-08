@@ -115,6 +115,10 @@ export class ServerSyncError extends Error {
   name = 'ServerSyncError'
 }
 
+export class BuyingFromUnknownDebtor extends Error {
+  name = 'BuyingFromUnknownDebtor'
+}
+
 /* Splits the coin URI (scanned from the QR code) into "debtor info
  * uri" and "debtor identity URI". The caller must be prepared this
  * function to throw `InvalidCoinUri`. */
@@ -606,7 +610,8 @@ export class UserContext {
    * states. Deletes the action on success. The caller must be
    * prepared this method to throw `RecordDoesNotExist`,
    * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
-   * `ResourceNotFound`, `ServerSessionError`. */
+   * `ResourceNotFound`, `ServerSessionError`,
+   * `BuyingFromUnknownDebtor`. */
   async executeUpdatePolicyAction(
     action: UpdatePolicyActionWithId,
     exchangeLatestUpdateId: bigint,
@@ -621,7 +626,10 @@ export class UserContext {
         maxPrincipal = MAX_INT64
       } else {
         minPrincipal = action.editedMinPrincipal
-        maxPrincipal = action.editedMinPrincipal
+        maxPrincipal = action.editedMaxPrincipal
+        if (!account.display.knownDebtor && maxPrincipal > 0n) {
+          throw new BuyingFromUnknownDebtor()
+        }
       }
       const exchange: AccountExchangeV0 = {
         ...account.exchange,
@@ -635,9 +643,6 @@ export class UserContext {
         exchange.peg = undefined
       }
       await this.updateAccountObject(exchange)
-
-      // TODO: check knownDebtor, and do not allow automatic exchanges
-      // for unknown debtors.
 
       if (action.editedReviseApprovedPeg === true || action.editedIgnoreDeclaredPeg === false) {
         const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
