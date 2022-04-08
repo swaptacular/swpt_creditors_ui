@@ -511,7 +511,7 @@ export class UserContext {
 
     await this.sync()
     const { accountUri, peg } = action
-    const peggedAccountData = await this.validatePeggedAccount(action, accountUri, expectedApprovalStatus)
+    const peggedAccountData = await this.validatePeggedAccount(action, pegAccountUri, expectedApprovalStatus)
     if (peggedAccountData === undefined) {
       throw new RecordDoesNotExist()
     }
