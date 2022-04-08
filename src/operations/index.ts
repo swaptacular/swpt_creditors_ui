@@ -615,11 +615,11 @@ export class UserContext {
   async executeUpdatePolicyAction(
     action: UpdatePolicyActionWithId,
     exchangeLatestUpdateId: bigint,
-    pin: string,
+    pin: string | undefined,
   ): Promise<number | undefined> {
     let approvePegActionId: number | undefined
-    const account = await this.getAccount(action.accountUri)
-    if (account && account.display.debtorName !== undefined) {
+
+    const checkLimits = (knownDebtor: boolean) => {
       let minPrincipal, maxPrincipal
       if (action.editedPolicy === undefined) {
         minPrincipal = MIN_INT64
@@ -627,24 +627,42 @@ export class UserContext {
       } else {
         minPrincipal = action.editedMinPrincipal
         maxPrincipal = action.editedMaxPrincipal
-        if (!account.display.knownDebtor && maxPrincipal > 0n) {
+        if (!knownDebtor && maxPrincipal > 0n) {
           throw new BuyingFromUnknownDebtor()
         }
       }
-      const exchange: AccountExchangeV0 = {
-        ...account.exchange,
-        policy: action.editedPolicy,
-        latestUpdateId: exchangeLatestUpdateId + 1n,
-        minPrincipal,
-        maxPrincipal,
-        pin,
-      }
-      if (action.editedUseNonstandardPeg === false) {
-        exchange.peg = undefined
-      }
-      await this.updateAccountObject(exchange)
+      assert(minPrincipal <= maxPrincipal)
+      return [minPrincipal, maxPrincipal]
+    }
 
-      if (action.editedReviseApprovedPeg === true || action.editedIgnoreDeclaredPeg === false) {
+    const account = await this.getAccount(action.accountUri)
+    if (account && account.display.debtorName !== undefined) {
+      const [minPrincipal, maxPrincipal] = checkLimits(account.display.knownDebtor)
+      const removeNonstandardPeg = !action.editedUseNonstandardPeg
+      const thereAreChanges = (
+        account.exchange.policy !== action.editedPolicy ||
+        account.exchange.minPrincipal !== minPrincipal ||
+        account.exchange.maxPrincipal !== maxPrincipal ||
+        removeNonstandardPeg
+      )
+      if (thereAreChanges) {
+        if (pin === undefined) {
+          throw new RecordDoesNotExist()
+        }
+        const exchange: AccountExchangeV0 = {
+          ...account.exchange,
+          policy: action.editedPolicy,
+          latestUpdateId: exchangeLatestUpdateId + 1n,
+          minPrincipal,
+          maxPrincipal,
+          pin,
+        }
+        if (removeNonstandardPeg) {
+          exchange.peg = undefined
+        }
+        await this.updateAccountObject(exchange)
+      }
+      if (action.editedReviseApprovedPeg || !action.editedIgnoreDeclaredPeg) {
         const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
         if (debtorData.peg) {
           approvePegActionId = await createApproveAction({

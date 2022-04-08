@@ -62,8 +62,8 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
   + 'changes in the peg currency. Then, you may try to approve the peg '
   + 'again, or decide to not approve it.'
 
-export const BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE = "Automatic buying of unconfirmed "
-  + "accout's currency is not allowed."
+export const BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE = 'Automatic buying of the currency '
+  + "of an unconfirmed account is not allowed."
 
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
@@ -1049,7 +1049,7 @@ export class AppState {
   executeUpdatePolicyAction(
     actionManager: ActionManager<UpdatePolicyActionWithId>,
     exchangeLatestUpdateId: bigint,
-    pin: string,
+    pin: string | undefined,
     back?: () => void,
   ): Promise<void> {
     let interactionId: number
@@ -1073,7 +1073,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE)],
+        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE, { continue: checkAndShowActions })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],

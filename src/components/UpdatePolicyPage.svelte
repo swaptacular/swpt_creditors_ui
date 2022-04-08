@@ -133,12 +133,14 @@
   function modify(): void {
     if (invalid) {
       shakeForm()
-    } else {
+    } else if (requirePin) {
       openEnterPinDialog = true
+    } else {
+      submit()
     }
   }
 
-  function submit(pin: string): void {
+  function submit(pin?: string): void {
     app.executeUpdatePolicyAction(actionManager, accountData.exchange.latestUpdateId, pin, model.backToAccount)
   }
 
@@ -160,6 +162,13 @@
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
   $: smallMaxPrincipal = maxPrincipal < minPrincipal
   $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || smallMaxPrincipal
+  $: removeNonstandardPeg = !useNonstandardPeg
+  $: requirePin = (
+    removeNonstandardPeg ||
+    (accountData.exchange.policy ?? 'off') !== policy ||
+    accountData.exchange.minPrincipal !== minPrincipal ||
+    accountData.exchange.maxPrincipal !== maxPrincipal
+  )
   $: invalid = !disabledExchanges && (invalidMinPrincipalUnitAmount || erroneousMaxPrinciple)
 </script>
 
