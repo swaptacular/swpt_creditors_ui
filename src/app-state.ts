@@ -565,7 +565,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -719,7 +719,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -803,7 +803,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -835,7 +835,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -867,7 +867,7 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -954,7 +954,7 @@ export class AppState {
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -1056,7 +1056,7 @@ export class AppState {
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
-    const saveActionPromise = actionManager.saveAndClose()
+    const saveActionPromise = actionManager.save()
     let action = actionManager.currentValue
 
     return this.attempt(async () => {
@@ -1073,7 +1073,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE, { continue: checkAndShowActions })],
+        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE)],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
