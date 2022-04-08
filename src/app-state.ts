@@ -1052,8 +1052,12 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.executeUpdatePolicyAction(action, exchangeLatestUpdateId, pin)
-      checkAndGoBack()
+      const actionId = await this.uc.executeUpdatePolicyAction(action, exchangeLatestUpdateId, pin)
+      if (actionId) {
+        if (this.interactionId === interactionId) this.showAction(actionId)
+      } else {
+        checkAndGoBack()
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],

@@ -611,7 +611,8 @@ export class UserContext {
     action: UpdatePolicyActionWithId,
     exchangeLatestUpdateId: bigint,
     pin: string,
-  ): Promise<void> {
+  ): Promise<number | undefined> {
+    let approvePegActionId: number | undefined
     const account = await this.getAccount(action.accountUri)
     if (account && account.display.debtorName !== undefined) {
       let minPrincipal, maxPrincipal
@@ -641,21 +642,22 @@ export class UserContext {
       if (action.editedReviseApprovedPeg === true || action.editedIgnoreDeclaredPeg === false) {
         const debtorData = getBaseDebtorDataFromAccoutKnowledge(account.knowledge)
         if (debtorData.peg) {
-          await createApproveAction({
+          approvePegActionId = await createApproveAction({
             actionType: 'ApprovePeg',
             createdAt: new Date(),
             userId: this.userId,
             accountUri: action.accountUri,
             onlyTheCoinHasChanged: false,
             ignoreCoinMismatch: false,
-            alreadyHasApproval: action.editedReviseApprovedPeg === true ? undefined: false,
-            editedApproval: action.editedReviseApprovedPeg === true ? true : undefined,
+            alreadyHasApproval: action.editedReviseApprovedPeg,
+            editedApproval: action.editedReviseApprovedPeg ? true : undefined,
             peg: debtorData.peg,
           })
         }
       }
     }
     await this.replaceActionRecord(action, null)
+    return approvePegActionId
   }
 
   /* Resolves a coin conflict arising from the given action. Deletes
