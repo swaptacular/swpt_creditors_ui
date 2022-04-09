@@ -159,7 +159,7 @@
   $: pegStatus = model.pegStatus
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
-  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || maxPrincipal < minPrincipal
+  $: erroneousMaxPrincipleUnitAmount = invalidMaxPrincipalUnitAmount || maxPrincipal < minPrincipal
   $: removeNonstandardPeg = !useNonstandardPeg
   $: requirePin = (
     removeNonstandardPeg ||
@@ -167,7 +167,7 @@
     accountData.exchange.minPrincipal !== minPrincipal ||
     accountData.exchange.maxPrincipal !== maxPrincipal
   )
-  $: invalid = policy !== '' && (invalidMinPrincipalUnitAmount || erroneousMaxPrinciple)
+  $: invalid = policy !== '' && (invalidMinPrincipalUnitAmount || erroneousMaxPrincipleUnitAmount)
 </script>
 
 <style>
@@ -335,14 +335,14 @@
                       input$min={0}
                       input$step={unitAmountStep}
                       style="width: 100%"
-                      withTrailingIcon={erroneousMaxPrinciple}
+                      withTrailingIcon={erroneousMaxPrincipleUnitAmount}
                       bind:value={maxPrincipalUnitAmount}
                       bind:invalid={invalidMaxPrincipalUnitAmount}
                       label="Maximum amount"
                       suffix="{amountSuffix}"
                       >
                       <svelte:fragment slot="trailingIcon">
-                        {#if erroneousMaxPrinciple}
+                        {#if erroneousMaxPrincipleUnitAmount}
                           <TextfieldIcon class="material-icons">error</TextfieldIcon>
                         {/if}
                       </svelte:fragment>
