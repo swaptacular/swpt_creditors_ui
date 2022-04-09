@@ -628,7 +628,7 @@ export class UserContext {
   ): Promise<number | undefined> {
     let approvePegActionId: number | undefined
 
-    const checkLimits = (knownDebtor: boolean) => {
+    const checkLimits = () => {
       let minPrincipal, maxPrincipal
       if (action.editedPolicy === undefined) {
         minPrincipal = MIN_INT64
@@ -636,7 +636,7 @@ export class UserContext {
       } else {
         minPrincipal = action.editedMinPrincipal
         maxPrincipal = action.editedMaxPrincipal
-        if (!knownDebtor && maxPrincipal > 0n) {
+        if (!action.secureCoin && maxPrincipal > 0n) {
           throw new BuyingFromUnknownDebtor()
         }
       }
@@ -646,7 +646,7 @@ export class UserContext {
 
     const account = await this.getAccount(action.accountUri)
     if (account && account.display.debtorName !== undefined) {
-      const [minPrincipal, maxPrincipal] = checkLimits(account.display.knownDebtor)
+      const [minPrincipal, maxPrincipal] = checkLimits()
       const removeNonstandardPeg = !action.editedUseNonstandardPeg
       const thereAreChanges = (
         account.exchange.policy !== action.editedPolicy ||

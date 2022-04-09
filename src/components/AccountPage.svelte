@@ -379,7 +379,7 @@
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, () => app.showAccount(accountUri))} >
+      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, isSecureCoin,() => app.showAccount(accountUri))} >
         <ExchangeSvgIcon />
       </Fab>
     </div>

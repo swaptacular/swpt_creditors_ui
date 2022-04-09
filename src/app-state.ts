@@ -63,7 +63,9 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
   + 'again, or decide to not approve it.'
 
 export const BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE = 'Automatic buying is not allowed '
-  + "for unconfirmed accounts."
+  + 'for this account. Note that this might be only a temporary problem, if the '
+  + 'account has been confirmed just a while ago, or you have not acknowledged '
+  + 'the latest changes in the account.'
 
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
@@ -1219,7 +1221,7 @@ export class AppState {
     })
   }
 
-  async createUpdatePolicyAction(accountUri: string, back?: () => void): Promise<void> {
+  async createUpdatePolicyAction(accountUri: string, secureCoin: boolean, back?: () => void): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       await this.uc.getAccount(accountUri)
@@ -1239,6 +1241,7 @@ export class AppState {
         editedUseNonstandardPeg: true,
         editedIgnoreDeclaredPeg: true,
         editedReviseApprovedPeg: false,
+        secureCoin,
         accountUri,
       })
       if (this.interactionId === interactionId) {
