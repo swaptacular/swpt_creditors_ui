@@ -707,7 +707,7 @@ export type AccountExchange = {
   /**
    * The principal amount on the account should not fall below this
    * value. Note that this limit applies only for automatic exchanges,
-   * and is enforced on "best effort" bases.
+   * and is enforced on "best effort" basis.
    *
    * Note: For new accounts the value of this field will be
    * `-9223372036854775808`.
@@ -720,7 +720,7 @@ export type AccountExchange = {
   /**
    * The principal amount on the account should not exceed this
    * value. Note that this limit applies only for automatic exchanges,
-   * and is enforced on "best effort" bases. The value of this field
+   * and is enforced on "best effort" basis. The value of this field
    * must be greater or equal than the value of the `minPrincipal`
    * field.
    *
