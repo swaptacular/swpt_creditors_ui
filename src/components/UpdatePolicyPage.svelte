@@ -113,7 +113,7 @@
     }
   }
 
-  async function enableExchanges(): Promise<void> {
+  function enableExchanges(): void {
     invalidMinPrincipalUnitAmount = undefined
     invalidMaxPrincipalUnitAmount = undefined
     if (typeof minPrincipalUnitAmount !== 'number' && typeof minPrincipalUnitAmount !== 'string') {
