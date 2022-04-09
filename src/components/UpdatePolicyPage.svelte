@@ -21,8 +21,9 @@
   export let model: UpdatePolicyModel
   export const snackbarBottom: string = "84px"
 
+  const duration = 250
+
   let shakingElement: HTMLElement
-  let duration = 0
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let policy: '' | 'conservative' = model.action.editedPolicy === undefined ? '' : 'conservative'
@@ -112,12 +113,7 @@
     }
   }
 
-  function enableAnimation(): void {
-    duration = 250
-  }
-
   async function enableExchanges(): Promise<void> {
-    enableAnimation()
     invalidMinPrincipalUnitAmount = undefined
     invalidMaxPrincipalUnitAmount = undefined
     if (typeof minPrincipalUnitAmount !== 'number' && typeof minPrincipalUnitAmount !== 'string') {
@@ -270,7 +266,6 @@
                 <FormField>
                   <Radio
                     bind:group={policy}
-                    on:click={enableAnimation}
                     value=""
                     touch
                     />
@@ -297,7 +292,7 @@
 
           <div style="height: 400px; margin-top: -12px">
             {#if policy !== ''}
-              <div in:slide={{ duration }} out:slide|local={{ duration }}>
+              <div in:slide|local={{ duration }} out:slide|local={{ duration }}>
                 <LayoutGrid>
                   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                     <Textfield
