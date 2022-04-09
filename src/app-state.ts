@@ -65,7 +65,7 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
 export const BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE = 'Automatic buying is not allowed '
   + 'for this account. Note that this might be only a temporary problem, if the '
   + 'account has been confirmed just a while ago, or you have not acknowledged '
-  + 'the latest changes in the account.'
+  + 'the latest changes in the account yet.'
 
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
