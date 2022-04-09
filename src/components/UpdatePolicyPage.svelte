@@ -151,7 +151,9 @@
   $: knownDebtor = display.knownDebtor
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
+  $: debtorName = display.debtorName
   $: unit = display.unit ?? '\u00A4'
+  $: amountSuffix = unit.slice(0, 10)
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: pegStatus = model.pegStatus
@@ -224,9 +226,9 @@
                 >
                 <svelte:fragment slot="title">
                   {#if knownDebtor}
-                    Exchange policy for "{display.debtorName}"
+                    Exchange policy for "{debtorName}"
                   {:else}
-                    Exchange policy for "{display.debtorName}" (unconfirmed account)
+                    Exchange policy for "{debtorName}" (unconfirmed account)
                   {/if}
                 </svelte:fragment>
               </AccountInfo>
@@ -311,7 +313,7 @@
                       bind:value={minPrincipalUnitAmount}
                       bind:invalid={invalidMinPrincipalUnitAmount}
                       label="Minumum amount"
-                      suffix="{unit.slice(0, 10)}"
+                      suffix="{amountSuffix}"
                       >
                       <svelte:fragment slot="trailingIcon">
                         {#if invalidMinPrincipalUnitAmount}
@@ -339,7 +341,7 @@
                       bind:value={maxPrincipalUnitAmount}
                       bind:invalid={invalidMaxPrincipalUnitAmount}
                       label="Maximum amount"
-                      suffix="{unit.slice(0, 10)}"
+                      suffix="{amountSuffix}"
                       >
                       <svelte:fragment slot="trailingIcon">
                         {#if erroneousMaxPrinciple}
