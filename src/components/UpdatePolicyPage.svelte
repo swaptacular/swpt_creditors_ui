@@ -88,8 +88,8 @@
     return 0n
   }
 
-  function amountToBigint(amount: unknown, divisor: number, missing: bigint): bigint {
-    let result = missing
+  function amountToBigint(amount: unknown, divisor: number, defaultValue: bigint): bigint {
+    let result = defaultValue
     if (amount !== '') {
       let x = Number(amount)
       if (Number.isFinite(x)) {
@@ -158,8 +158,8 @@
   $: disabledExchanges = policy === ''
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
-  $: smallMaxPrincipal = maxPrincipal < minPrincipal
-  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || smallMaxPrincipal
+  $: tooSmallMaxPrincipal = maxPrincipal < minPrincipal
+  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || tooSmallMaxPrincipal
   $: removeNonstandardPeg = !useNonstandardPeg
   $: requirePin = (
     removeNonstandardPeg ||
