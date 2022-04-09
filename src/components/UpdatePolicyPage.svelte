@@ -21,15 +21,13 @@
   export let model: UpdatePolicyModel
   export const snackbarBottom: string = "84px"
 
-  const ANIMATION_DURATION = 250
-
-  let duration: number = 0
   let shakingElement: HTMLElement
+  let duration = 0
   let openEnterPinDialog = false
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
-  let policy = calcInitialPolicy(model)
-  let minPrincipalUnitAmount = calcInitialMinPrincipalUnitAmount(model)
-  let maxPrincipalUnitAmount = calcInitialMaxPrincipalUnitAmount(model)
+  let policy: '' | 'conservative' = model.action.editedPolicy === undefined ? '' : 'conservative'
+  let minPrincipalUnitAmount: unknown = calcInitialMinPrincipalUnitAmount(model)
+  let maxPrincipalUnitAmount: unknown = calcInitialMaxPrincipalUnitAmount(model)
   let useNonstandardPeg = model.action.editedUseNonstandardPeg
   let ignoreDeclaredPeg = model.action.editedIgnoreDeclaredPeg
   let reviseApprovedPeg = model.action.editedReviseApprovedPeg
@@ -48,7 +46,11 @@
     }
   }
 
-  function formatAsUnitAmount(amount: bigint | number | undefined, amountDivisor: number, decimalPlaces: bigint): string {
+  function formatAsUnitAmount(
+    amount: bigint | number | undefined,
+    amountDivisor: number,
+    decimalPlaces: bigint,
+  ): string {
     if (amount === undefined) {
       return ''
     }
@@ -77,24 +79,16 @@
     return formatAsUnitAmount(n, model.accountData.display.amountDivisor, model.accountData.display.decimalPlaces)
   }
 
-  function calcInitialPolicy(model: UpdatePolicyModel): '' | 'conservative' {
-    if (model.action.editedPolicy === undefined) {
-      return ''
-    } else {
-      return 'conservative'
-    }
-  }
-
   function calcExampleAmount(pegBounds: PegBound[]): bigint {
-    if (pegBounds.length < 2) {
-      return 0n
+    if (pegBounds.length >= 2) {
+      const [pegged, peg] = pegBounds
+      const amount = calcPegExampleAmount(pegged.display, peg.display, peg.exchangeRate)
+      return BigInt(Math.ceil(amount))
     }
-    const [pegged, peg] = pegBounds
-    const amount = calcPegExampleAmount(pegged.display, peg.display, peg.exchangeRate)
-    return BigInt(Math.ceil(amount))
+    return 0n
   }
 
-  function amountToBigint(amount: any, divisor: number, missing: bigint): bigint {
+  function amountToBigint(amount: unknown, divisor: number, missing: bigint): bigint {
     let result = missing
     if (amount !== '') {
       let x = Number(amount)
@@ -118,8 +112,12 @@
     }
   }
 
+  function enableAnimation(): void {
+    duration = 250
+  }
+
   async function enableExchanges(): Promise<void> {
-    duration = ANIMATION_DURATION
+    enableAnimation()
     invalidMinPrincipalUnitAmount = undefined
     invalidMaxPrincipalUnitAmount = undefined
     if (typeof minPrincipalUnitAmount !== 'number' && typeof minPrincipalUnitAmount !== 'string') {
@@ -272,7 +270,7 @@
                 <FormField>
                   <Radio
                     bind:group={policy}
-                    on:click={() => duration = ANIMATION_DURATION}
+                    on:click={enableAnimation}
                     value=""
                     touch
                     />

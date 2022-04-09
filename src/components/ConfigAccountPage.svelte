@@ -46,7 +46,11 @@
     }
   }
 
-  function formatAsUnitAmount(amount: bigint | number | undefined, amountDivisor: number, decimalPlaces: bigint): string {
+  function formatAsUnitAmount(
+    amount: bigint | number | undefined,
+    amountDivisor: number,
+    decimalPlaces: bigint,
+  ): string {
     if (amount === undefined) {
       return ''
     }
