@@ -39,7 +39,7 @@
   function createUpdatedAction(): UpdatePolicyActionWithId {
     return {
       ...action,
-      editedPolicy: policy === 'off' ? undefined : policy,
+      editedPolicy: policy === '' ? undefined : policy,
       editedMinPrincipal: minPrincipal,
       editedMaxPrincipal: maxPrincipal,
       editedUseNonstandardPeg: useNonstandardPeg,
@@ -77,9 +77,9 @@
     return formatAsUnitAmount(n, model.accountData.display.amountDivisor, model.accountData.display.decimalPlaces)
   }
 
-  function calcInitialPolicy(model: UpdatePolicyModel): 'off' | 'conservative' {
+  function calcInitialPolicy(model: UpdatePolicyModel): '' | 'conservative' {
     if (model.action.editedPolicy === undefined) {
-      return 'off'
+      return ''
     } else {
       return 'conservative'
     }
@@ -157,7 +157,7 @@
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: pegStatus = model.pegStatus
-  $: disabledExchanges = policy === 'off'
+  $: disabledExchanges = policy === ''
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
   $: smallMaxPrincipal = maxPrincipal < minPrincipal
@@ -165,7 +165,7 @@
   $: removeNonstandardPeg = !useNonstandardPeg
   $: requirePin = (
     removeNonstandardPeg ||
-    (accountData.exchange.policy ?? 'off') !== policy ||
+    (accountData.exchange.policy ?? '') !== policy ||
     accountData.exchange.minPrincipal !== minPrincipal ||
     accountData.exchange.maxPrincipal !== maxPrincipal
   )
@@ -273,7 +273,7 @@
                   <Radio
                     bind:group={policy}
                     on:click={() => duration = ANIMATION_DURATION}
-                    value="off"
+                    value=""
                     touch
                     />
                   <span slot="label">
