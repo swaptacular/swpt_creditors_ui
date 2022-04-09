@@ -431,7 +431,7 @@ export class UserContext {
       const exchange: AccountExchangeV0 = {
         ...account.exchange,
         minPrincipal: MIN_INT64,
-        maxPrincipal: 0n,
+        maxPrincipal: account.exchange.policy !== undefined ? 0n : MAX_INT64,
         latestUpdateId: account.exchange.latestUpdateId + 1n,
         pin,
       }
@@ -464,6 +464,7 @@ export class UserContext {
     const account = await this.getAccount(action.accountUri)
     let debtorData: BaseDebtorData
     if (!(
+      action.state.approved === 'yes' &&
       account &&
       account.display.debtorName !== undefined &&
       account.display.latestUpdateId === displayLatestUpdateId &&
@@ -475,6 +476,13 @@ export class UserContext {
       throw new RecordDoesNotExist()
     }
     await this.removeExistingPegs(action.accountUri, pin)
+    const exchange: AccountExchangeV0 = {
+      ...account.exchange,
+      minPrincipal: MIN_INT64,
+      maxPrincipal: account.exchange.policy !== undefined ? 0n : MAX_INT64,
+      latestUpdateId: account.exchange.latestUpdateId + 1n,
+      pin,
+    }
     const config: AccountConfigV0 = {
       ...account.config,
       negligibleAmount: Math.max(action.state.editedNegligibleAmount, account.config.negligibleAmount),
@@ -489,6 +497,7 @@ export class UserContext {
       latestUpdateId: displayLatestUpdateId + 1n,
       pin,
     }
+    await this.updateAccountObject(exchange)
     await this.updateAccountObject(config)
     await this.updateAccountObject(display)
     await this.replaceActionRecord(action, null)
