@@ -157,11 +157,9 @@
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: pegStatus = model.pegStatus
-  $: disabledExchanges = policy === ''
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
-  $: tooSmallMaxPrincipal = maxPrincipal < minPrincipal
-  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || tooSmallMaxPrincipal
+  $: erroneousMaxPrinciple = invalidMaxPrincipalUnitAmount || maxPrincipal < minPrincipal
   $: removeNonstandardPeg = !useNonstandardPeg
   $: requirePin = (
     removeNonstandardPeg ||
@@ -169,7 +167,7 @@
     accountData.exchange.minPrincipal !== minPrincipal ||
     accountData.exchange.maxPrincipal !== maxPrincipal
   )
-  $: invalid = !disabledExchanges && (invalidMinPrincipalUnitAmount || erroneousMaxPrinciple)
+  $: invalid = policy !== '' && (invalidMinPrincipalUnitAmount || erroneousMaxPrinciple)
 </script>
 
 <style>
@@ -298,7 +296,7 @@
           </LayoutGrid>
 
           <div style="height: 400px; margin-top: -12px">
-            {#if !disabledExchanges}
+            {#if policy !== ''}
               <div in:slide={{ duration }} out:slide|local={{ duration }}>
                 <LayoutGrid>
                   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
