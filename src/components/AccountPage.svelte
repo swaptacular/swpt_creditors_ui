@@ -119,7 +119,6 @@
   $: pegBounds = data.pegBounds
   $: amount = data.amount
   $: debtorName = display.debtorName
-  $: isSecureCoin = data.secureCoin
   $: digitalCoin = `${debtorData.latestDebtorInfo.uri}#${data.account.debtor.uri}`
 </script>
 
@@ -196,7 +195,7 @@
             account_balance
           </IconButton>
         </div>
-        {#if isSecureCoin}
+        {#if data.secureCoin}
           <div class="icon-container">
             <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
               qr_code_2
@@ -383,14 +382,12 @@
         <ExchangeSvgIcon />
       </Fab>
     </div>
-    {#if isSecureCoin}
-      <div class="fab-container">
-        <Fab color="primary" on:click={() => alert('not implemented')} >
-          <Icon class="material-icons">
-            receipt
-          </Icon>
-        </Fab>
-      </div>
-    {/if}
+    <div class="fab-container">
+      <Fab color="primary" on:click={() => alert('not implemented')} >
+        <Icon class="material-icons">
+          receipt
+        </Icon>
+      </Fab>
+    </div>
   </svelte:fragment>
 </Page>
