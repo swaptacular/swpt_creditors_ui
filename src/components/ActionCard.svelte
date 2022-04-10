@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState, ActionRecordWithId } from '../app-state'
   import { getContext } from 'svelte'
+  import { fly } from 'svelte/transition'
   import Button, { Label } from '@smui/button'
   import Card, { Content, Actions } from '@smui/card'
 
@@ -114,12 +115,14 @@
   }
 </script>
 
-<Card>
-  <Content style="word-break: break-word">{getDescription(action)}</Content>
-  <Actions fullBleed>
-    <Button {color} on:click={show}>
-      <Label>{getButtonLabel(action)}</Label>
-      <i class="material-icons" aria-hidden="true">arrow_forward</i>
-    </Button>
-  </Actions>
-</Card>
+<div in:fly|local="{{ x: -350, duration: 1000 }}">
+  <Card>
+    <Content style="word-break: break-word">{getDescription(action)}</Content>
+    <Actions fullBleed>
+      <Button {color} on:click={show}>
+        <Label>{getButtonLabel(action)}</Label>
+        <i class="material-icons" aria-hidden="true">arrow_forward</i>
+      </Button>
+    </Actions>
+  </Card>
+</div>
