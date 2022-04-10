@@ -628,42 +628,47 @@ export class UserContext {
   ): Promise<number | undefined> {
     let approvePegActionId: number | undefined
 
-    const checkLimits = () => {
-      let minPrincipal, maxPrincipal
-      if (action.editedPolicy === undefined) {
-        minPrincipal = MIN_INT64
-        maxPrincipal = MAX_INT64
+    const calcNewPolicy = (oldPolicy: string | undefined, oldMinPrincipal: bigint, isSecureCoin: boolean) => {
+      const newPolicy = action.editedPolicy
+      let newMinPrincipal, newMaxPrincipal
+      if (newPolicy === undefined) {
+        newMinPrincipal = MIN_INT64
+        newMaxPrincipal = MAX_INT64
       } else {
-        minPrincipal = action.editedMinPrincipal
-        maxPrincipal = action.editedMaxPrincipal
-        if (!action.secureCoin && maxPrincipal > 0n) {
+        newMinPrincipal = action.editedMinPrincipal
+        newMaxPrincipal = action.editedMaxPrincipal
+        if (!isSecureCoin && (oldPolicy === undefined || newMinPrincipal > oldMinPrincipal)) {
+          this.scheduleUpdate()
           throw new BuyingFromUnknownDebtor()
         }
       }
-      assert(minPrincipal <= maxPrincipal)
-      return [minPrincipal, maxPrincipal]
+      assert(MIN_INT64 <= newMinPrincipal)
+      assert(newMinPrincipal <= newMaxPrincipal)
+      assert(newMaxPrincipal <= MAX_INT64)
+      return { newPolicy, newMinPrincipal, newMaxPrincipal }
     }
 
     const account = await this.getAccount(action.accountUri)
     if (account && account.display.debtorName !== undefined) {
-      const [minPrincipal, maxPrincipal] = checkLimits()
+      const secureCoin = this.accountsMap.getAccountFullData(action.accountUri)?.secureCoin ?? false
+      const { policy, minPrincipal, maxPrincipal } = account.exchange
+      const { newPolicy, newMinPrincipal, newMaxPrincipal } = calcNewPolicy(policy, minPrincipal, secureCoin)
       const removeNonstandardPeg = !action.editedUseNonstandardPeg
-      const thereAreChanges = (
-        account.exchange.policy !== action.editedPolicy ||
-        account.exchange.minPrincipal !== minPrincipal ||
-        account.exchange.maxPrincipal !== maxPrincipal ||
+      if (
+        newPolicy !== policy ||
+        newMinPrincipal !== minPrincipal ||
+        newMaxPrincipal !== maxPrincipal ||
         removeNonstandardPeg
-      )
-      if (thereAreChanges) {
+      ) {
         if (pin === undefined) {
           throw new RecordDoesNotExist()
         }
         const exchange: AccountExchangeV0 = {
           ...account.exchange,
-          policy: action.editedPolicy,
+          policy: newPolicy,
+          minPrincipal: newMinPrincipal,
+          maxPrincipal: newMaxPrincipal,
           latestUpdateId: exchangeLatestUpdateId + 1n,
-          minPrincipal,
-          maxPrincipal,
           pin,
         }
         if (removeNonstandardPeg) {

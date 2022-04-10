@@ -593,7 +593,6 @@ export type UpdatePolicyAction =
   & {
     actionType: 'UpdatePolicy',
     accountUri: string,
-    secureCoin: boolean,
     editedPolicy: string | undefined
     editedMinPrincipal: bigint,
     editedMaxPrincipal: bigint,
