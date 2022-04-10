@@ -772,6 +772,16 @@ export class UserContext {
     }
     const account = makeAccount(response)
     await storeObject(this.userId, account)
+    if (response.status === 201) {
+      // When a new account has been created, chances are that very soon
+      // an update in the account's info will come, and the user will
+      // generally be interested to see this information as soon as
+      // possible. Therefore, we schedule several consecutive server
+      // checks, hoping that one of them will get the update.
+      this.scheduleUpdate(90)
+      this.scheduleUpdate(30)
+      this.scheduleUpdate(15)
+    }
     return account
   }
 
