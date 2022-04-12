@@ -108,7 +108,7 @@ export async function removeActionRecord(actionId: number): Promise<void> {
               ).delete()
             }
           }
-          verifyAccountKnowledge(action.accountUri)
+          await verifyAccountKnowledge(action.accountUri)
           break
         default:
         // Do nothing more.
