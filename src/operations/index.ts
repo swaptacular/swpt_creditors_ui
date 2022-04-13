@@ -5,7 +5,7 @@ import type {
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
-  UpdatePolicyActionWithId
+  UpdatePolicyActionWithId, PaymentRequestActionWithId
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
@@ -74,6 +74,7 @@ export type {
   ApprovePegActionWithId,
   ConfigAccountActionWithId,
   UpdatePolicyActionWithId,
+  PaymentRequestActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
@@ -354,6 +355,20 @@ export class UserContext {
       createdAt: new Date(),
       latestDebtorInfoUri,
       debtorIdentityUri,
+    })
+  }
+
+  /* Adds a new payment request action record, and returns its action
+   * ID. */
+  async createPaymentRequestAction(accountUri: string): Promise<number> {
+    // TODO: Add a real implementation.
+
+    return await createActionRecord({
+      userId: this.userId,
+      actionType: 'PaymentRequest',
+      createdAt: new Date(),
+      accountUri,
+      editedAmount: 0n,
     })
   }
 

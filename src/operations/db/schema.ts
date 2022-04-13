@@ -151,6 +151,7 @@ export type ActionRecord =
   | AckAccountInfoAction
   | ConfigAccountAction
   | UpdatePolicyAction
+  | PaymentRequestAction
 
 export type ActionRecordWithId =
   & ActionRecord
@@ -604,6 +605,18 @@ export type UpdatePolicyAction =
 export type UpdatePolicyActionWithId =
   & ActionRecordWithId
   & UpdatePolicyAction
+
+export type PaymentRequestAction =
+  & ActionData
+  & {
+    actionType: 'PaymentRequest',
+    accountUri: string,
+    editedAmount: bigint,
+  }
+
+export type PaymentRequestActionWithId =
+  & ActionRecordWithId
+  & PaymentRequestAction
 
 type TaskData =
   & UserReference

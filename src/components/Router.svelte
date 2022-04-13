@@ -9,6 +9,7 @@
   import ApprovePegPage from './ApprovePegPage.svelte'
   import ConfigAccountPage from './ConfigAccountPage.svelte'
   import UpdatePolicyPage from './UpdatePolicyPage.svelte'
+  import PaymentRequestPage from './PaymentRequestPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
   import AccountPage from './AccountPage.svelte'
@@ -41,6 +42,8 @@
       return ConfigAccountPage
     case 'UpdatePolicyModel':
       return UpdatePolicyPage
+    case 'PaymentRequestModel':
+      return PaymentRequestPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

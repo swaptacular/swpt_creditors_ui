@@ -93,6 +93,10 @@
     app.showAccount(uri, () => app.pageModel.set(m))
   }
 
+  function showThisAccount(): void {
+    app.showAccount(accountUri)
+  }
+
   function changeTab(t: AccountModel['tab']): void {
     duration = 350
     tab = t
@@ -378,12 +382,12 @@
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, () => app.showAccount(accountUri))} >
+      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, showThisAccount)} >
         <ExchangeSvgIcon />
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab color="primary" on:click={() => alert('not implemented')} >
+      <Fab color="primary" on:click={() => app.createPaymentRequestAction(accountUri, showThisAccount)} >
         <Icon class="material-icons">
           receipt
         </Icon>

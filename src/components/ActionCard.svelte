@@ -31,6 +31,8 @@
       return 'Modify account'
     case 'UpdatePolicy':
       return 'Modify policy'
+    case 'PaymentRequest':
+      return 'Request payment'
     default:
       return 'Unknown action type'
     }
@@ -108,6 +110,13 @@
         return debtorName
           ? `Modify the exchange policy for your account with "${debtorName}".`
           : 'Modify exchange policy.'
+      }
+      case 'PaymentRequest': {
+        // TODO: Compose a better description.
+        const debtorName = getDebtorName(action.accountUri)
+        return debtorName
+          ? `Request a payment in "${debtorName}".`
+          : 'Request a payment.'
       }
       default:
         return "Unknown action type"
