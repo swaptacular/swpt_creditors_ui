@@ -611,7 +611,10 @@ export type PaymentRequestAction =
   & {
     actionType: 'PaymentRequest',
     accountUri: string,
-    editedAmount: bigint,
+    editedAmount: bigint | undefined,
+    editedPayeeName: string,
+    editedDeadline: string,
+    editedNote: string,
   }
 
 export type PaymentRequestActionWithId =

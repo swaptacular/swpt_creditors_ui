@@ -8,6 +8,9 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
+  import CharacterCounter from '@smui/textfield/character-counter/index'
+  import Paper, { Title, Content } from '@smui/paper'
+  import Chip, { Text } from '@smui/chips'
   import Page from './Page.svelte'
 
   export let app: AppState
@@ -17,12 +20,20 @@
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let unitAmount: unknown = calcInitialUnitAmount(model)
+  let payeeName: string = model.action.editedPayeeName
+  let deadline: string = model.action.editedDeadline
+  let note: string = model.action.editedNote
   let invalidUnitAmount: boolean | undefined
+  let invalidPayeeName: boolean | undefined
+  let invalidDeadline: boolean | undefined
 
   function createUpdatedAction(): PaymentRequestActionWithId {
     return {
       ...action,
       editedAmount: amountToBigint(unitAmount, amountDivisor),
+      editedPayeeName: payeeName,
+      editedDeadline: deadline,
+      editedNote: note,
     }
   }
 
@@ -43,14 +54,14 @@
 
   function calcInitialUnitAmount(model: PaymentRequestModel): string {
     let n: bigint | undefined = model.action.editedAmount
-    if (n <= 0n) {
+    if (n !== undefined && n < 0n) {
       n = undefined
     }
     return formatAsUnitAmount(n, model.accountData.display.amountDivisor, model.accountData.display.decimalPlaces)
   }
 
-  function amountToBigint(amount: unknown, divisor: number): bigint {
-    let result = 0n
+  function amountToBigint(amount: unknown, divisor: number): bigint | undefined {
+    let result
     if (amount !== '') {
       let x = Number(amount)
       if (Number.isFinite(x)) {
@@ -90,6 +101,7 @@
   }
 
   $: action = model.action
+  $: accountUri = action.accountUri
   $: accountData = model.accountData
   $: display = accountData.display
   // $: knownDebtor = display.knownDebtor
@@ -97,7 +109,6 @@
   $: decimalPlaces = display.decimalPlaces
   // $: debtorName = display.debtorName
   $: unit = display.unit ?? '\u00A4'
-  $: minUnitAmount = unitAmountStep
   $: amountSuffix = unit.slice(0, 10)
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
@@ -145,18 +156,42 @@
           >
 
           <LayoutGrid>
-            <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+                <Title>
+                  <Chip chip="account" style="float: right; margin-left: 6px">
+                    <Text>
+                      <a
+                        href="."
+                        style="text-decoration: none; color: #666"
+                        on:click|preventDefault={() => app.showAccount(accountUri, () => app.showAction(action.actionId))}
+                        >
+                        account
+                      </a>
+                    </Text>
+                  </Chip>
+                  Payment via "Evgeni Pandurski"
+                </Title>
+                <Content style="clear: both">
+                  To receive a payment, you should fill a payment
+                  request, and then show the generated QR code to the
+                  payer.
+                </Content>
+              </Paper>
+            </Cell>
+
+            <Cell>
               <Textfield
                 required
                 variant="outlined"
                 type="number"
-                input$min={minUnitAmount}
+                input$min={0}
                 input$step={unitAmountStep}
                 style="width: 100%"
                 withTrailingIcon={invalidUnitAmount}
                 bind:value={unitAmount}
                 bind:invalid={invalidUnitAmount}
-                label="Requested amount"
+                label="Amount"
                 suffix="{amountSuffix}"
                 >
                 <svelte:fragment slot="trailingIcon">
@@ -165,10 +200,71 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText slot="helper" persistent>
-                  The available amount should not fall below
-                  this value. The limit applies only to
-                  automatic exchanges, and will be enforced on
-                  "best effort" basis.
+                  The amount to be paid. You may enter "0" here, to
+                  create a general payment request.
+                </HelperText>
+              </Textfield>
+            </Cell>
+
+            <Cell>
+              <Textfield
+                required
+                variant="outlined"
+                style="width: 100%"
+                input$maxlength="40"
+                input$spellcheck="false"
+                bind:invalid={invalidPayeeName}
+                bind:value={payeeName}
+                label="Payee name"
+                >
+                <svelte:fragment slot="trailingIcon">
+                  {#if invalidPayeeName}
+                    <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                  {/if}
+                </svelte:fragment>
+                <HelperText slot="helper" persistent>
+                  The name of the recipient of the payment. This will
+                  be your name, most of the time.
+                </HelperText>
+              </Textfield>
+            </Cell>
+
+            <Cell>
+              <Textfield
+                variant="outlined"
+                style="width: 100%"
+                type="datetime-local"
+                bind:invalid={invalidDeadline}
+                bind:value={deadline}
+                label="Deadline"
+                >
+                <svelte:fragment slot="trailingIcon">
+                  {#if invalidDeadline}
+                    <TextfieldIcon class="material-icons">error</TextfieldIcon>
+                  {/if}
+                </svelte:fragment>
+                <HelperText slot="helper" persistent>
+                  The payment must be completed before that moment
+                  (optional).
+                </HelperText>
+              </Textfield>
+            </Cell>
+
+            <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+              <Textfield
+                textarea
+                variant="outlined"
+                input$maxlength="500"
+                style="width: 100%"
+                bind:value={note}
+                label="Payment reason"
+                >
+                <CharacterCounter slot="internalCounter">0 / 500</CharacterCounter>
+                <HelperText slot="helper" persistent>
+                  This field may contain any information that you want
+                  the payer to see, before making the
+                  payment. Generally, it should describe the reason
+                  for the payment (optional).
                 </HelperText>
               </Textfield>
             </Cell>
