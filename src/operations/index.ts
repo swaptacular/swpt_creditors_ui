@@ -368,6 +368,7 @@ export class UserContext {
       actionType: 'PaymentRequest',
       createdAt: new Date(),
       accountUri,
+      sealed: false,
       editedAmount: undefined,
       editedPayeeName: '',
       editedDeadline: '',
