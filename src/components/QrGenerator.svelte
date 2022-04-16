@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import QRious from 'qrious'
 
   const QRcode = new QRious()
@@ -22,20 +22,26 @@
       size,
       value,
     })
-
     dataUrl = QRcode.toDataURL('image/png')
   }
 
   $: {
-    if(value) {
+    if (value) {
       generateQrCode()
     }
   }
 
   onMount(() => {
-    generateQrCode()
+    if (dataUrl === undefined) {
+      generateQrCode()
+    }
   })
 
+  onDestroy(() => {
+    if (dataUrl !== undefined) {
+      URL.revokeObjectURL(dataUrl)
+    }
+  })
 </script>
 
 <img src={dataUrl} alt={value} class={className}/>
