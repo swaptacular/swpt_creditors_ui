@@ -82,7 +82,6 @@
   }
 
   onMount(() => {
-    resetScroll(model.scrollTop, model.scrollLeft)
     if (visibleSearchBox) {
       searchInput?.focus()
     }
@@ -141,7 +140,7 @@
   }
 </style>
 
-<Page title="Accounts">
+<Page title="Accounts" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
   <svelte:fragment slot="content">
     {#if hasAccounts}
       {#if shownAccounts.length > 0 }

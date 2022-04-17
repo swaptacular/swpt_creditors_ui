@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
   import { Alert } from '../app-state'
-  import { onMount } from "svelte"
   import { fade } from 'svelte/transition'
   import Paper, { Title, Content } from '@smui/paper'
   import { Row } from '@smui/top-app-bar'
@@ -30,13 +29,6 @@
   let transfers = [...model.transfers]
   let sortRank = model.sortRank
   let saveSortRankPromise: Promise<number> | undefined
-
-  function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
-    if (scrollElement) {
-      scrollElement.scrollTop = scrollTop
-      scrollElement.scrollLeft = scrollLeft
-    }
-  }
 
   async function saveSortRank(): Promise<void> {
     const save = async () => {
@@ -114,10 +106,6 @@
       app.createPaymentRequestAction(accountUri)
     }
   }
-
-  onMount(() => {
-    resetScroll(model.scrollTop, model.scrollLeft)
-  })
 
   $: if (sortRank !== model.sortRank) {
     saveSortRank()
@@ -204,7 +192,7 @@
   }
 </style>
 
-<Page title="{debtorName}">
+<Page title="{debtorName}" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
   <svelte:fragment slot="app-bar">
     <Row style="height: 56px">
       <div class="buttons-box">
@@ -389,7 +377,7 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={() => app.createConfigAccountAction(accountUri, () => app.showAccount(accountUri))} >
+      <Fab on:click={() => app.createConfigAccountAction(accountUri, showThisAccount)} >
         <Icon class="material-icons">
           settings
         </Icon>

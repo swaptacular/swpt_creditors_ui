@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { AppState, ActionsModel, ActionRecordWithId } from '../app-state'
   import { IS_A_NEWBIE_KEY } from '../app-state'
-  import { onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import ActionCard from './ActionCard.svelte'
@@ -39,15 +38,11 @@
   function showAction(actionId: number): void {
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
+    const m = { ...model, scrollTop, scrollLeft }
     app.showAction(actionId, () => {
-      app.pageModel.set({ ...model, scrollTop, scrollLeft })
+      app.pageModel.set(m)
     })
   }
-
-  onMount(() => {
-    scrollElement.scrollTop = model.scrollTop ?? scrollElement.scrollTop
-    scrollElement.scrollLeft = model.scrollLeft ?? scrollElement.scrollLeft
-  })
 
   $: actions = model.actions
   $: hasAccounts = app.accountsMap.hasAccounts()
@@ -69,7 +64,7 @@
   }
 </style>
 
-<Page title="Actions">
+<Page title="Actions" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft} >
   <svelte:fragment slot="content">
     {#if hasRegularActions }
       <LayoutGrid>
