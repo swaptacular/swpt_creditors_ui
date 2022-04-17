@@ -3,6 +3,7 @@
   import {
     amountToString, limitAmountDivisor, calcSmallestDisplayableNumber, MAX_INT64
   } from '../format-amounts'
+  import { generatePayment0TransferNote } from '../payment-requests'
   import { onDestroy } from 'svelte'
   import Fab, { Icon, Label } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
@@ -10,7 +11,6 @@
   import Textfield from '@smui/textfield'
   import TextfieldIcon from '@smui/textfield/icon'
   import HelperText from '@smui/textfield/helper-text/index'
-  import CharacterCounter from '@smui/textfield/character-counter/index'
   import Paper, { Title, Content } from '@smui/paper'
   import Chip, { Text } from '@smui/chips'
   import QrGenerator from './QrGenerator.svelte'
@@ -20,6 +20,8 @@
   export let model: PaymentRequestModel
   export const snackbarBottom: string = "84px"
   export const scrollElement = document.documentElement
+
+  const utf8encoder = new TextEncoder()
 
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
@@ -37,6 +39,11 @@
 
   let imageDataUrl: string = ''
   let textDataUrl: string = ''
+  let emptyPayment0TransferNote = generatePayment0TransferNote({
+    payeeName: '',
+    payeeReference: '',
+    description: { contentFormat: '', content: '' },
+  })
 
   function createUpdatedAction(): PaymentRequestActionWithId {
     return {
@@ -102,6 +109,21 @@
     return textDataUrl = URL.createObjectURL(blob)
   }
 
+  function getByteLength(s: string): number {
+    return utf8encoder.encode(s).length
+  }
+
+  function calcNoteBytesLimit(noteMaxBytes: bigint, payeeName: string): number {
+    return (
+      + Number(noteMaxBytes)
+      - emptyPayment0TransferNote.length
+      - getByteLength(payeeName)
+      - 36  // This is the number of bytes in the generated payee reference.
+      - 1   // The link-format ('.') could be used instead of the default text format ('').
+      - 44  // Some bytes must be left unused, so that another UUID reference can be added.
+    )
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -135,11 +157,14 @@
   $: action = model.action
   $: accountUri = action.accountUri
   $: accountData = model.accountData
+  $: noteBytesLimit = calcNoteBytesLimit(accountData.info.noteMaxBytes, payeeName)
+  $: noteBytes = getByteLength(note)
+  $: noteTooLong = noteBytes > noteBytesLimit
+  $: erroneousNote = invalidNote || noteTooLong
   $: display = accountData.display
-  // $: knownDebtor = display.knownDebtor
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
-  // $: debtorName = display.debtorName
+  $: debtorName = display.debtorName
   $: unit = display.unit ?? '\u00A4'
   $: amountSuffix = unit.slice(0, 10)
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
@@ -147,7 +172,7 @@
   $: paymentRequest = 'Demo payement request'.repeat(5)
   $: imageFileName = 'payment-request.png'
   $: textFileName = 'payment-request.pr0'
-  $: invalid = invalidUnitAmount || invalidPayeeName || invalidDeadline || invalidNote
+  $: invalid = invalidUnitAmount || invalidPayeeName || invalidDeadline || erroneousNote
   $: {
     generateDataUrl(paymentRequest)
   }
@@ -266,7 +291,7 @@
                     </a>
                   </Text>
                 </Chip>
-                Payment via "Evgeni Pandurski"
+                Payment via "{debtorName}"
               </Title>
               <Content>
                 <a href="qr" target="_blank" on:click|preventDefault={() => downloadImageElement?.click()}>
@@ -302,7 +327,7 @@
                         </a>
                       </Text>
                     </Chip>
-                    Payment via "Evgeni Pandurski"
+                    Payment via "{debtorName}"
                   </Title>
                   <Content style="clear: both">
                     To receive a payment, you should fill a payment
@@ -392,7 +417,9 @@
                   bind:value={note}
                   label="Payment reason"
                   >
-                  <CharacterCounter slot="internalCounter">0 / 500</CharacterCounter>
+                  <div class="mdc-text-field-character-counter" slot="internalCounter">
+                    {noteBytes} / {noteBytesLimit}
+                  </div>
                   <HelperText slot="helper" persistent>
                     This field may contain any information that you want
                     the payer to see, before making the
