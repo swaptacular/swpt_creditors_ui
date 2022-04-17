@@ -119,6 +119,7 @@
       scrollElement.scrollTop = 0
       scrollElement.scrollLeft = 0
       actionManager.save()
+      app.setDefaultPayeeName(payeeName)
     } else {
       submit()
     }

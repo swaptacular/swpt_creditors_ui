@@ -27,7 +27,8 @@ import {
   createActionRecord, getActionRecord, AccountsMap, RecordDoesNotExist, replaceActionRecord,
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
-  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask
+  getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
+  getDefaultPayeeName, setDefaultPayeeName
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -282,6 +283,7 @@ export class UserContext {
   readonly obtainBaseDebtorData = obtainBaseDebtorData
   readonly getAccountSortPriority = getAccountSortPriority
   readonly setAccountSortPriority: (uri: string, priority: number) => Promise<void>
+  readonly setDefaultPayeeName: (payeeName: string) => Promise<void>
   readonly ensureUniqueAccountAction = ensureUniqueAccountAction
 
   constructor(
@@ -298,6 +300,7 @@ export class UserContext {
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
     this.getActionRecords = getActionRecords.bind(undefined, this.userId)
     this.setAccountSortPriority = setAccountSortPriority.bind(undefined, this.userId)
+    this.setDefaultPayeeName = setDefaultPayeeName.bind(undefined, this.userId)
   }
 
   /* Redirects to the login page if the user is not authenticated. The
@@ -361,8 +364,7 @@ export class UserContext {
   /* Adds a new payment request action record, and returns its action
    * ID. */
   async createPaymentRequestAction(accountUri: string): Promise<number> {
-    // TODO: Add a real implementation.
-
+    const defaultPayeeName = await getDefaultPayeeName(this.userId)
     return await createActionRecord({
       userId: this.userId,
       actionType: 'PaymentRequest',
@@ -370,7 +372,7 @@ export class UserContext {
       accountUri,
       sealed: false,
       editedAmount: undefined,
-      editedPayeeName: '',
+      editedPayeeName: defaultPayeeName,
       editedDeadline: '',
       editedNote: '',
     })

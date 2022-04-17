@@ -1094,26 +1094,13 @@ export class AppState {
     })
   }
 
-  createPaymentRequestAction(accountUri: string, back?: () => void): Promise<void> {
-    // TODO: Add real implementation.
-
-    let interactionId: number
-    const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
-
+  createPaymentRequestAction(accountUri: string): Promise<void> {
     return this.attempt(async () => {
-      interactionId = this.interactionId
+      const interactionId = this.interactionId
       const actionId = await this.uc.createPaymentRequestAction(accountUri)
       if (this.interactionId === interactionId) {
         this.showAction(actionId)
       }
-    }, {
-      alerts: [
-        // TODO: These are wrong!
-        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-      ],
     })
   }
 
@@ -1255,6 +1242,10 @@ export class AppState {
 
   async setAccountSortPriority(uri: string, priority: number): Promise<void> {
     await this.uc.setAccountSortPriority(uri, priority)
+  }
+
+  async setDefaultPayeeName(payeeName: string): Promise<void> {
+    await this.uc.setDefaultPayeeName(payeeName)
   }
 
   async createConfigAccountAction(accountUri: string, back?: () => void): Promise<void> {

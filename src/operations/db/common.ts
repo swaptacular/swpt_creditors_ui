@@ -60,6 +60,15 @@ export async function updateWalletRecord(walletRecord: WalletRecordWithId): Prom
   assert(updated === 1)
 }
 
+export async function getDefaultPayeeName(userId: number): Promise<string> {
+  const defaultPayeeName = await db.defaultPayeeNames.get(userId)
+  return defaultPayeeName?.payeeName ?? ''
+}
+
+export async function setDefaultPayeeName(userId: number, payeeName: string): Promise<void> {
+  await db.defaultPayeeNames.put({ userId, payeeName })
+}
+
 export async function getDocumentRecord(uri: string): Promise<DocumentRecord | undefined> {
   return await db.documents.get(uri)
 }

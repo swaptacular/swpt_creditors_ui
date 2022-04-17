@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
+  import { Alert } from '../app-state'
   import { onMount } from "svelte"
   import { fade } from 'svelte/transition'
   import Paper, { Title, Content } from '@smui/paper'
@@ -102,6 +103,18 @@
     tab = t
   }
 
+  function receipt():void {
+    if (!(secureCoin && data.info.identity)) {
+      app.addAlert(new Alert('Requesting payments is not allowed '
+        + 'for this account. This may be just a temporary condition, if the '
+        + 'account has been created only recently, or you have not acknowledged '
+        + 'the latest changes in the account.'
+      ))
+    } else {
+      app.createPaymentRequestAction(accountUri)
+    }
+  }
+
   onMount(() => {
     resetScroll(model.scrollTop, model.scrollLeft)
   })
@@ -110,6 +123,7 @@
     saveSortRank()
   }
   $: data = model.accountData
+  $: secureCoin = data.secureCoin
   $: accountUri = data.account.uri
   $: display = data.display
   $: knownDebtor = display.knownDebtor
@@ -199,7 +213,7 @@
             account_balance
           </IconButton>
         </div>
-        {#if data.secureCoin}
+        {#if secureCoin}
           <div class="icon-container">
             <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
               qr_code_2
@@ -386,12 +400,14 @@
         <ExchangeSvgIcon />
       </Fab>
     </div>
-    <div class="fab-container">
-      <Fab color="primary" on:click={() => app.createPaymentRequestAction(accountUri, showThisAccount)} >
-        <Icon class="material-icons">
-          receipt
-        </Icon>
-      </Fab>
-    </div>
+    {#if secureCoin}
+      <div class="fab-container">
+        <Fab color="primary" on:click={receipt} >
+          <Icon class="material-icons">
+            receipt
+          </Icon>
+        </Fab>
+      </div>
+    {/if}
   </svelte:fragment>
 </Page>

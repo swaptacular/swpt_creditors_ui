@@ -141,6 +141,10 @@ export type AccountSortPriority =
   & UserReference
   & { priority: number }
 
+export type DefaultPayeeName =
+  & UserReference
+  & { payeeName: string }
+
 export type ActionRecord =
   | CreateTransferAction
   | AbortTransferAction
@@ -677,6 +681,7 @@ class CreditorsDb extends Dexie {
   accounts: Dexie.Table<AccountRecord, string>
   accountObjects: Dexie.Table<AccountObjectRecord, string>
   accountPriorities: Dexie.Table<AccountSortPriority, string>
+  defaultPayeeNames: Dexie.Table<DefaultPayeeName, number>
   committedTransfers: Dexie.Table<CommittedTransferRecord, string>
   transfers: Dexie.Table<TransferRecord, string>
   ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
@@ -693,6 +698,7 @@ class CreditorsDb extends Dexie {
       accounts: 'uri,userId',
       accountObjects: 'uri,userId,account.uri',
       accountPriorities: 'uri,userId',
+      defaultPayeeNames: 'userId',
 
       // Committed transfers are objects that belong to a specific
       // account, but we will have lots of them, and in order to keep
@@ -721,6 +727,7 @@ class CreditorsDb extends Dexie {
     this.accounts = this.table('accounts')
     this.accountObjects = this.table('accountObjects')
     this.accountPriorities = this.table('accountPriorities')
+    this.defaultPayeeNames = this.table('defaultPayeeNames')
     this.committedTransfers = this.table('committedTransfers')
     this.transfers = this.table('transfers')
     this.ledgerEntries = this.table('ledgerEntries')
@@ -736,6 +743,7 @@ class CreditorsDb extends Dexie {
       this.accounts,
       this.accountObjects,
       this.accountPriorities,
+      this.defaultPayeeNames,
       this.committedTransfers,
       this.transfers,
       this.ledgerEntries,
