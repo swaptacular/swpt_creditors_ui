@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, ActionRecordWithId } from '../app-state'
+  import { amountToString } from '../format-amounts'
   import { getContext } from 'svelte'
   import { fly, fade } from 'svelte/transition'
   import Button, { Label } from '@smui/button'
@@ -50,6 +51,11 @@
       }
     }
     return debtorName
+  }
+
+  function removeEndingDot(s: string): string {
+    const lastDotIndex = s.search(/\.\s*$/u)
+    return lastDotIndex > 0 ? s.slice(0, lastDotIndex) : s
   }
 
   function getDescription(action: ActionRecordWithId): string {
@@ -112,11 +118,25 @@
           : 'Modify exchange policy.'
       }
       case 'PaymentRequest': {
-        // TODO: Compose a better description.
         const debtorName = getDebtorName(action.accountUri)
-        return debtorName
-          ? `Request a payment in "${debtorName}".`
-          : 'Request a payment.'
+        if (!debtorName) {
+          return 'Request payment.'
+        }
+        if (!action.sealed) {
+          return `Request payment via "${debtorName}".`
+        } else {
+          const n = 120  // number of characters to show from the payment note.
+          const s = action.editedNote
+          const nonemptyNote = /\S/u.test(s)
+          const note = nonemptyNote ? (s.length <= n ? `: ${removeEndingDot(s)}` : `: ${s.slice(0, n)}..`) : ''
+          const display = app.accountsMap.getAccountDisplay(action.accountUri)
+          if (action.editedAmount && display) {
+            const unitAmount = amountToString(action.editedAmount, display.amountDivisor, display.decimalPlaces)
+            return `Request ${unitAmount} ${display.unit} via "${debtorName}"${note}.`
+          } else {
+            return `Request payment via "${debtorName}"${note}.`
+          }
+        }
       }
       default:
         return "Unknown action type"

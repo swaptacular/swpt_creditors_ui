@@ -333,7 +333,7 @@
                   </svelte:fragment>
                   <HelperText slot="helper" persistent>
                     The amount to be paid. You may enter "0" here, to
-                    create a general payment request.
+                    create a generic payment request.
                   </HelperText>
                 </Textfield>
               </Cell>

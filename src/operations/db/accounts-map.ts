@@ -308,6 +308,21 @@ export class AccountsMap {
     return undefined
   }
 
+  getAccountDisplay(accountUri: string): AccountDisplayRecord | undefined {
+    const account = this.getObjectByUri(accountUri)
+    if (account) {
+      assert(account.type === 'Account')
+      const display = this.getObjectByUri(account.display.uri)
+      if (display) {
+        assert(display.type === 'AccountDisplay')
+        if (display.debtorName !== undefined) {
+          return display
+        }
+      }
+    }
+    return undefined
+  }
+
   getUnnamedAccountUris(): string[] {
     let unnamedAccountUris: Set<string> = new Set()
     for (const uri of this.accounts.values()) {
