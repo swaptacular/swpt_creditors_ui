@@ -124,6 +124,13 @@
     )
   }
 
+  function resetScroll(scrollTop: number = 0, scrollLeft: number = 0) {
+    if (scrollElement) {
+      scrollElement.scrollTop = scrollTop
+      scrollElement.scrollLeft = scrollLeft
+    }
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -133,15 +140,29 @@
     }
   }
 
+  function createUpdatedModel(): PaymentRequestModel {
+    actionManager.save()
+    return {
+      ...model,
+      action: actionManager.currentValue,
+      scrollTop: scrollElement.scrollTop,
+      scrollLeft: scrollElement.scrollLeft,
+    }
+  }
+
+  function showAccount(): void {
+    const m = createUpdatedModel()
+    app.showAccount(accountUri, () => app.pageModel.set(m))
+  }
+
   function request(): void {
     if (invalid) {
       shakeForm()
     } else if (!sealed) {
       sealed = true
-      scrollElement.scrollTop = 0
-      scrollElement.scrollLeft = 0
       actionManager.save()
       app.setDefaultPayeeName(payeeName)
+      resetScroll()
     } else {
       submit()
     }
@@ -246,7 +267,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Request payment">
+  <Page title="Request payment" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
     <svelte:fragment slot="app-bar">
       {#if sealed}
         <Row style="height: 56px">
@@ -282,11 +303,7 @@
               <Title>
                 <Chip chip="account" style="float: right; margin-left: 6px">
                   <Text>
-                    <a
-                      href="."
-                      style="text-decoration: none; color: #666"
-                      on:click|preventDefault={() => app.showAccount(accountUri, () => app.showAction(action.actionId))}
-                      >
+                    <a href="." style="text-decoration: none; color: #666" on:click|preventDefault={showAccount}>
                       account
                     </a>
                   </Text>
@@ -318,11 +335,7 @@
                   <Title>
                     <Chip chip="account" style="float: right; margin-left: 6px">
                       <Text>
-                        <a
-                          href="."
-                          style="text-decoration: none; color: #666"
-                          on:click|preventDefault={() => app.showAccount(accountUri, () => app.showAction(action.actionId))}
-                          >
+                        <a href="." style="text-decoration: none; color: #666" on:click|preventDefault={showAccount}>
                           account
                         </a>
                       </Text>

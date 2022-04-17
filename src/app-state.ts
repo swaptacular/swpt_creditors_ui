@@ -214,6 +214,8 @@ export type PaymentRequestModel = BasePageModel & {
   type: 'PaymentRequestModel',
   action: PaymentRequestActionWithId,
   accountData: AccountFullData,
+  scrollTop?: number,
+  scrollLeft?: number,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -1110,7 +1112,6 @@ export class AppState {
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
-    const showActions = () => { this.showActions() }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1120,7 +1121,7 @@ export class AppState {
           this.pageModel.set({
             type: 'PaymentRequestModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack: showActions,
+            goBack,
             action,
             accountData,
           })
