@@ -84,6 +84,7 @@
     justify-content: center;
   }
   .qrcode-container {
+    width: 100%;
     text-align: center;
   }
   .qrcode-container :global(img) {
