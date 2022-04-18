@@ -340,7 +340,7 @@ export class AppState {
     })
   }
 
-  showAction(actionId: number, back?: () => void): Promise<void> {
+  showAction(actionId: number, back?: () => void, options?: object): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const action = await this.uc.getActionRecord(actionId)
@@ -363,10 +363,10 @@ export class AppState {
               this.showCreateAccountAction(action, back)
               break
             case 'ConfigAccount':
-              this.showConfigAccountAction(action, back)
+              this.showConfigAccountAction(action, back, options)
               break
             case 'UpdatePolicy':
-              this.showUpdatePolicyAction(action, back)
+              this.showUpdatePolicyAction(action, back, options)
               break
             case 'PaymentRequest':
               this.showPaymentRequestAction(action, back)
@@ -902,11 +902,16 @@ export class AppState {
     })
   }
 
-  showConfigAccountAction(action: ConfigAccountActionWithId, back?: () => void): Promise<void> {
+  showConfigAccountAction(
+    action: ConfigAccountActionWithId,
+    back?: () => void,
+    options?: { backToAccount?: () => void },
+  ): Promise<void> {
     let interactionId: number
-    const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const showActions = () => { this.showActions() }
+    const goBack = back ?? showActions
+    const backToAccount = options?.backToAccount ?? showActions
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     const detectNonstandardAmountDisplay = async (accountData: AccountFullData) => {
       const { amountDivisor, decimalPlaces, unit } = accountData.debtorData
@@ -941,8 +946,8 @@ export class AppState {
           this.pageModel.set({
             type: 'ConfigAccountModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack: showActions,
-            backToAccount: goBack,
+            goBack,
+            backToAccount,
             action,
             accountData,
             nonstandardDisplay,
@@ -994,11 +999,17 @@ export class AppState {
     })
   }
 
-  showUpdatePolicyAction(action: UpdatePolicyActionWithId, back?: () => void): Promise<void> {
+  showUpdatePolicyAction(
+    action: UpdatePolicyActionWithId,
+    back?: () => void,
+    options?: { backToAccount?: () => void },
+  ): Promise<void> {
+    console.log(back)
     let interactionId: number
-    const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const showActions = () => { this.showActions() }
+    const goBack = back ?? showActions
+    const backToAccount = options?.backToAccount ?? showActions
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     const detectPegStatus = async (accountData: AccountFullData) => {
       const standardPeg = accountData.debtorData.peg
@@ -1043,8 +1054,8 @@ export class AppState {
           this.pageModel.set({
             type: 'UpdatePolicyModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack: showActions,
-            backToAccount: goBack,
+            goBack,
+            backToAccount,
             action,
             accountData,
             pegStatus,
@@ -1270,7 +1281,7 @@ export class AppState {
         accountUri,
       })
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId, back)
+        this.showAction(action.actionId, undefined, { backToAccount: back })
       }
     }, {
       alerts: [
@@ -1302,7 +1313,7 @@ export class AppState {
         accountUri,
       })
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId, back)
+        this.showAction(action.actionId, undefined, { backToAccount: back })
       }
     }, {
       alerts: [
