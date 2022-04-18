@@ -37,7 +37,7 @@
     const origClassName = shakingElement.className
     if (!origClassName.endsWith(shakingSuffix)) {
       shakingElement.className += shakingSuffix
-      setTimeout(() => { shakingElement.className = origClassName }, 1000)
+      setTimeout(() => { shakingElement && (shakingElement.className = origClassName) }, 1000)
     }
   }
   function submit(e: Event): void {
