@@ -27,16 +27,6 @@
   let downloadTextElement: HTMLAnchorElement
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
-  let unitAmount: unknown = calcInitialUnitAmount(model)
-  let payeeName: string = model.action.editedPayeeName
-  let deadline: string = model.action.editedDeadline
-  let note: string = model.action.editedNote
-  let sealed: boolean = model.action.sealed
-  let invalidUnitAmount: boolean | undefined
-  let invalidPayeeName: boolean | undefined
-  let invalidDeadline: boolean | undefined
-  let invalidNote: boolean | undefined
-
   let imageDataUrl: string = ''
   let textDataUrl: string = ''
   let emptyPayment0TransferNote = generatePayment0TransferNote({
@@ -44,6 +34,17 @@
     payeeReference: '',
     description: { contentFormat: '', content: '' },
   })
+  let noteMaxBytes = model.accountData.info.noteMaxBytes
+  let payeeNameMaxChars = Math.max(0, Math.min(40, calcNoteBytesLimit(noteMaxBytes, '') / 4))
+  let unitAmount: unknown = calcInitialUnitAmount(model)
+  let payeeName: string = model.action.editedPayeeName.slice(0, payeeNameMaxChars)
+  let deadline: string = model.action.editedDeadline
+  let note: string = model.action.editedNote
+  let sealed: boolean = model.action.sealed
+  let invalidUnitAmount: boolean | undefined
+  let invalidPayeeName: boolean | undefined
+  let invalidDeadline: boolean | undefined
+  let invalidNote: boolean | undefined
 
   function createUpdatedAction(): PaymentRequestActionWithId {
     return {
@@ -178,7 +179,7 @@
   $: action = model.action
   $: accountUri = action.accountUri
   $: accountData = model.accountData
-  $: noteBytesLimit = calcNoteBytesLimit(accountData.info.noteMaxBytes, payeeName)
+  $: noteBytesLimit = calcNoteBytesLimit(noteMaxBytes, payeeName)
   $: noteBytes = getByteLength(note)
   $: noteTooLong = noteBytes > noteBytesLimit
   $: erroneousNote = invalidNote || noteTooLong
@@ -381,7 +382,7 @@
                   required
                   variant="outlined"
                   style="width: 100%"
-                  input$maxlength="40"
+                  input$maxlength={payeeNameMaxChars}
                   input$spellcheck="false"
                   bind:invalid={invalidPayeeName}
                   bind:value={payeeName}
@@ -431,7 +432,7 @@
                   label="Payment reason"
                   >
                   <div class="mdc-text-field-character-counter" slot="internalCounter">
-                    {noteBytes} / {noteBytesLimit}
+                    {noteBytes} / {noteBytesLimit} bytes
                   </div>
                   <HelperText slot="helper" persistent>
                     This field may contain any information that you want

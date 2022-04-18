@@ -96,7 +96,7 @@
   }
 
   function receipt():void {
-    if (!(secureCoin && data.info.identity)) {
+    if (!(secureCoin && data.info.identity && data.info.noteMaxBytes >= 150n)) {
       app.addAlert(new Alert('Requesting payments is not allowed '
         + 'for this account. This may be just a temporary condition, if the '
         + 'account has been created only recently, or you have not acknowledged '
