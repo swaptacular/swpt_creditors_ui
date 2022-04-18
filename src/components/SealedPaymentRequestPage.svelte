@@ -51,8 +51,9 @@
   $: unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
   $: unit = display.unit ?? '\u00a4'
   $: payeeName = action.editedPayeeName
-  $: imageFileName = 'payment-request.png'
-  $: textFileName = 'payment-request.pr0'
+  $: fileName = `${debtorName} - ${action.payeeReference.slice(0, 8)}`
+  $: imageFileName = `${fileName}.png`
+  $: textFileName = `${fileName}.pr0`
 </script>
 
 <style>
