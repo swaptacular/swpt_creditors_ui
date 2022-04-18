@@ -16,6 +16,10 @@
 
   assert(model.action.sealed)
 
+  const paymentRequestBytes = new TextEncoder().encode(model.paymentRequest).length
+  const approxPixelCount = Math.sqrt(paymentRequestBytes * 12 + 21 * 21)
+  const qrPadding = Math.ceil(270 / approxPixelCount)
+
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action)
@@ -84,8 +88,8 @@
     justify-content: center;
   }
   .qrcode-container {
-    width: 100%;
     text-align: center;
+    padding: var(--qr-padding);
   }
   .qrcode-container :global(img) {
     width: 100%;
@@ -130,11 +134,10 @@
     <svelte:fragment slot="content">
       <div slot="content">
         <div class="empty-space"></div>
-        <div class="qrcode-container">
+        <div class="qrcode-container" style="--qr-padding: {qrPadding}vw">
           <QrGenerator
             value={model.paymentRequest}
-            size={320}
-            padding={28}
+            size={Math.ceil(32 * approxPixelCount)}
             errorCorrection="L"
             background="#FFFFFF"
             color="#000000"
@@ -148,7 +151,7 @@
           download
         </a>
         <div class="text-container">
-          <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
+          <Paper elevation={8} style="margin: 0 16px 24px 16px; word-break: break-word">
             <Title>
               <Chip chip="account" style="float: right; margin-left: 6px">
                 <Text>
