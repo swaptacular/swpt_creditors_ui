@@ -371,6 +371,7 @@ export class UserContext {
       createdAt: new Date(),
       accountUri,
       sealed: false,
+      payeeReference: uuidv4(),
       editedAmount: undefined,
       editedPayeeName: defaultPayeeName,
       editedDeadline: '',

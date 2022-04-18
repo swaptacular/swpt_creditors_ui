@@ -31,8 +31,8 @@
   let textDataUrl: string = ''
   let emptyPayment0TransferNote = generatePayment0TransferNote({
     payeeName: '',
-    payeeReference: '',
-    description: { contentFormat: '', content: '' },
+    payeeReference: model.action.payeeReference,
+    description: { contentFormat: '.', content: '' },
   })
   let noteMaxBytes = model.accountData.info.noteMaxBytes
   let payeeNameMaxChars = Math.max(0, Math.min(40, calcNoteBytesLimit(noteMaxBytes, '') / 4))
@@ -119,9 +119,7 @@
       + Number(noteMaxBytes)
       - emptyPayment0TransferNote.length
       - getByteLength(payeeName)
-      - 36  // This is the number of bytes in the generated payee reference.
-      - 1   // The link-format ('.') could be used instead of the default text format ('').
-      - 44  // Some bytes must be left unused, so that another UUID reference can be added.
+      - 44  // Some bytes must be left unused, so that other info can be added.
     )
   }
 

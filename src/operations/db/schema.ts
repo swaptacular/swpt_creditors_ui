@@ -616,6 +616,7 @@ export type PaymentRequestAction =
     actionType: 'PaymentRequest',
     accountUri: string,
     sealed: boolean,
+    payeeReference: string,
     editedAmount: bigint | undefined,
     editedPayeeName: string,
     editedDeadline: string,
@@ -718,7 +719,7 @@ class CreditorsDb extends Dexie {
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
 
-      actions: '++actionId,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
+      actions: '++actionId,&payeeReference,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
       tasks: '++taskId,[userId+scheduledFor],transferUri,accountUri',
     })
 
