@@ -18,7 +18,6 @@
 
   const paymentRequestBytes = new TextEncoder().encode(model.paymentRequest).length
   const approxPixelCount = Math.sqrt(paymentRequestBytes * 12 + 21 * 21)
-  const qrPadding = Math.ceil(270 / approxPixelCount)
 
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
@@ -89,7 +88,6 @@
   }
   .qrcode-container {
     text-align: center;
-    padding: var(--qr-padding);
   }
   .qrcode-container :global(img) {
     width: 100%;
@@ -134,10 +132,11 @@
     <svelte:fragment slot="content">
       <div slot="content">
         <div class="empty-space"></div>
-        <div class="qrcode-container" style="--qr-padding: {qrPadding}vw">
+        <div class="qrcode-container">
           <QrGenerator
             value={model.paymentRequest}
             size={Math.ceil(32 * approxPixelCount)}
+            padding={4 * 32}
             errorCorrection="L"
             background="#FFFFFF"
             color="#000000"
