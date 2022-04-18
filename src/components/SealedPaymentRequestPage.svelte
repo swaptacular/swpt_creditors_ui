@@ -16,9 +16,6 @@
 
   assert(model.action.sealed)
 
-  const paymentRequestBytes = new TextEncoder().encode(model.paymentRequest).length
-  const approxPixelCount = Math.sqrt(paymentRequestBytes * 12 + 21 * 21)
-
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action)
@@ -133,15 +130,7 @@
       <div slot="content">
         <div class="empty-space"></div>
         <div class="qrcode-container">
-          <QrGenerator
-            value={model.paymentRequest}
-            size={Math.ceil(32 * approxPixelCount)}
-            padding={4 * 32}
-            errorCorrection="L"
-            background="#FFFFFF"
-            color="#000000"
-            bind:dataUrl={imageDataUrl}
-            />
+          <QrGenerator value={model.paymentRequest} bind:dataUrl={imageDataUrl} />
         </div>
         <a class="download-link" href={imageDataUrl} download={imageFileName} bind:this={downloadImageElement}>
           download

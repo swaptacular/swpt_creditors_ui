@@ -286,15 +286,7 @@
     {:else if tab === 'coin'}
       <div in:fade="{{ duration }}">
         <div class="qrcode-container">
-          <QrGenerator
-            value={digitalCoin}
-            size={320}
-            padding={28}
-            errorCorrection="L"
-            background="#FFFFFF"
-            color="#000000"
-            bind:dataUrl
-            />
+          <QrGenerator value={digitalCoin} bind:dataUrl />
         </div>
         <a class="download-link" href={dataUrl} download={`${debtorName}.png`} bind:this={downloadLinkElement}>
           download
