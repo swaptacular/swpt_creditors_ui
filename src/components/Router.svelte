@@ -10,6 +10,7 @@
   import ConfigAccountPage from './ConfigAccountPage.svelte'
   import UpdatePolicyPage from './UpdatePolicyPage.svelte'
   import PaymentRequestPage from './PaymentRequestPage.svelte'
+  import SealedPaymentRequestPage from './SealedPaymentRequestPage.svelte'
   import ActionsPage from './ActionsPage.svelte'
   import AccountsPage from './AccountsPage.svelte'
   import AccountPage from './AccountPage.svelte'
@@ -44,6 +45,8 @@
       return UpdatePolicyPage
     case 'PaymentRequestModel':
       return PaymentRequestPage
+    case 'SealedPaymentRequestModel':
+      return SealedPaymentRequestPage
     case 'ActionsModel':
       return ActionsPage
     case 'AccountsModel':

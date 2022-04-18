@@ -12,6 +12,7 @@ import equal from 'fast-deep-equal'
 import { liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import { calcSmallestDisplayableNumber } from './format-amounts'
+import { generatePr0Blob } from './payment-requests'
 import {
   obtainUserContext, parseCoinUri, UserContext, AuthenticationError, ServerSessionError,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError,
@@ -122,6 +123,7 @@ export type PageModel =
   | ConfigAccountModel
   | UpdatePolicyModel
   | PaymentRequestModel
+  | SealedPaymentRequestModel
   | AccountsModel
   | AccountModel
 
@@ -216,6 +218,11 @@ export type PaymentRequestModel = BasePageModel & {
   accountData: AccountFullData,
   scrollTop?: number,
   scrollLeft?: number,
+}
+
+export type SealedPaymentRequestModel = Omit<PaymentRequestModel, 'type'> & {
+  type: 'SealedPaymentRequestModel',
+  paymentRequest: string,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -1118,24 +1125,50 @@ export class AppState {
   }
 
   showPaymentRequestAction(action: PaymentRequestActionWithId, back?: () => void): Promise<void> {
-    // TODO: Add real implementation.
-
     let interactionId: number
     const goBack = back ?? (() => { this.showActions() })
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+    const reload = () => { this.showAction(action.actionId, back) }
+    const isValidHttpUrl = (s: string): boolean => {
+      let url
+      try {
+        url = new URL(s)
+      } catch {
+        return false
+      }
+      return url.protocol === "http:" || url.protocol === "https:"
+    }
 
     return this.attempt(async () => {
       interactionId = this.interactionId
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
-      if (accountData) {
-        if (this.interactionId === interactionId) {
-          this.pageModel.set({
-            type: 'PaymentRequestModel',
-            reload: () => { this.showAction(action.actionId, back) },
-            goBack,
-            action,
-            accountData,
+      if (accountData && accountData.info.identity) {
+        if (action.sealed) {
+          const deadline = new Date(action.editedDeadline)
+          const isLink = isValidHttpUrl(action.editedNote)
+          const pr0Blob = generatePr0Blob({
+            accountUri: accountData.info.identity.uri,
+            amount: action.editedAmount || 0n,
+            payeeName: action.editedPayeeName,
+            payeeReference: action.payeeReference,
+            deadline: deadline.getTime() ? deadline : undefined,
+            description: {
+              contentFormat: isLink ? '.' : '',
+              content: isLink ? action.editedNote.trim() : action.editedNote,
+            },
           })
+          const paymentRequest = await pr0Blob.text()
+          if (this.interactionId === interactionId) {
+            this.pageModel.set({
+              type: 'SealedPaymentRequestModel', reload, goBack, action, accountData, paymentRequest,
+            })
+          }
+        } else {
+          if (this.interactionId === interactionId) {
+            this.pageModel.set({
+              type: 'PaymentRequestModel', reload, goBack, action, accountData,
+            })
+          }
         }
       } else {
         await this.uc.replaceActionRecord(action, null)
@@ -1144,6 +1177,27 @@ export class AppState {
     }, {
       alerts: [
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+      ],
+    })
+  }
+
+  sealPaymentRequestAction(actionManager: ActionManager<PaymentRequestActionWithId>): Promise<void> {
+    let interactionId: number
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) this.showActions() }
+    const saveActionPromise = actionManager.save()
+    let action = actionManager.currentValue
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      await this.uc.replaceActionRecord(action, action = { ...action, sealed: true })
+      await this.uc.setDefaultPayeeName(action.editedPayeeName)
+      if (this.interactionId === interactionId) {
+        this.showAction(action.actionId)
+      }
+    }, {
+      alerts: [
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -1254,10 +1308,6 @@ export class AppState {
 
   async setAccountSortPriority(uri: string, priority: number): Promise<void> {
     await this.uc.setAccountSortPriority(uri, priority)
-  }
-
-  async setDefaultPayeeName(payeeName: string): Promise<void> {
-    await this.uc.setDefaultPayeeName(payeeName)
   }
 
   async createConfigAccountAction(accountUri: string, back?: () => void): Promise<void> {
