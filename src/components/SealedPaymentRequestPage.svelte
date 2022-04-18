@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, SealedPaymentRequestModel } from '../app-state'
+  import { amountToString } from '../format-amounts'
   import { onDestroy } from 'svelte'
   import Fab, { Icon } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
@@ -43,7 +44,13 @@
   $: accountData = model.accountData
   $: display = accountData.display
   $: debtorName = display.debtorName
-  $: paymentRequest = 'Demo payement request'.repeat(5)
+  $: amountDivisor = display.amountDivisor
+  $: decimalPlaces = display.decimalPlaces
+  $: amount = action.editedAmount ?? 0n
+  $: deadline = new Date(action.editedDeadline)
+  $: unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+  $: unit = display.unit ?? '\u00a4'
+  $: payeeName = action.editedPayeeName
   $: imageFileName = 'payment-request.png'
   $: textFileName = 'payment-request.pr0'
 </script>
@@ -125,7 +132,7 @@
         <div class="empty-space"></div>
         <div class="qrcode-container">
           <QrGenerator
-            value={paymentRequest}
+            value={model.paymentRequest}
             size={320}
             padding={28}
             errorCorrection="L"
@@ -156,10 +163,18 @@
               <a href="qr" target="_blank" on:click|preventDefault={() => downloadImageElement?.click()}>
                 The QR code above
               </a>
-              describes a request 500.00 EUR to be paid to "Ivan
-              Ivanov" before 1/1/2000.
-              {#if true}
-                <pre>xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</pre>
+              {#if amount === 0n}
+                represents a generic payment request from "{payeeName}".
+              {:else}
+                represents a request {unitAmount} {unit} to be paid to "{payeeName}".
+              {/if}
+
+              {#if deadline.getTime()}
+                The deadline for this payment is {deadline.toLocaleString()}.
+              {/if}
+
+              {#if action.editedNote}
+                <pre>{action.editedNote}</pre>
               {/if}
             </Content>
           </Paper>
