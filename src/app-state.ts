@@ -216,6 +216,7 @@ export type PaymentRequestModel = BasePageModel & {
   type: 'PaymentRequestModel',
   action: PaymentRequestActionWithId,
   accountData: AccountFullData,
+  backToAccount: () => void,
   scrollTop?: number,
   scrollLeft?: number,
 }
@@ -376,7 +377,7 @@ export class AppState {
               this.showUpdatePolicyAction(action, back, options)
               break
             case 'PaymentRequest':
-              this.showPaymentRequestAction(action, back)
+              this.showPaymentRequestAction(action, back, options)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -1114,19 +1115,25 @@ export class AppState {
     })
   }
 
-  createPaymentRequestAction(accountUri: string): Promise<void> {
+  createPaymentRequestAction(accountUri: string, backToAccount?: () => void): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const actionId = await this.uc.createPaymentRequestAction(accountUri)
       if (this.interactionId === interactionId) {
-        this.showAction(actionId)
+        this.showAction(actionId, undefined, { backToAccount })
       }
     })
   }
 
-  showPaymentRequestAction(action: PaymentRequestActionWithId, back?: () => void): Promise<void> {
+  showPaymentRequestAction(
+    action: PaymentRequestActionWithId,
+    back?: () => void,
+    options?: { backToAccount?: () => void },
+  ): Promise<void> {
     let interactionId: number
-    const goBack = back ?? (() => { this.showActions() })
+    const showActions = () => { this.showActions() }
+    const goBack = back ?? showActions
+    const backToAccount = options?.backToAccount ?? showActions
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const reload = () => { this.showAction(action.actionId, back) }
     const isValidHttpUrl = (s: string): boolean => {
@@ -1160,13 +1167,15 @@ export class AppState {
           const paymentRequest = await pr0Blob.text()
           if (this.interactionId === interactionId) {
             this.pageModel.set({
-              type: 'SealedPaymentRequestModel', reload, goBack, action, accountData, paymentRequest,
+              type: 'SealedPaymentRequestModel',
+              reload, goBack, backToAccount, action, accountData, paymentRequest,
             })
           }
         } else {
           if (this.interactionId === interactionId) {
             this.pageModel.set({
-              type: 'PaymentRequestModel', reload, goBack, action, accountData,
+              type: 'PaymentRequestModel',
+              reload, goBack, backToAccount, action, accountData,
             })
           }
         }

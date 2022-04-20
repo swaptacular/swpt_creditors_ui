@@ -103,7 +103,7 @@
         + 'the latest changes in the account.'
       ))
     } else {
-      app.createPaymentRequestAction(accountUri)
+      app.createPaymentRequestAction(accountUri, showThisAccount)
     }
   }
 
