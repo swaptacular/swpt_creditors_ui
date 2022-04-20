@@ -141,7 +141,7 @@
           download
         </a>
         <div class="text-container">
-          <Paper elevation={8} style="margin: 0 16px 24px 16px; word-break: break-word">
+          <Paper elevation={8} style="margin: 0 16px 24px 16px; max-width: 600px; word-break: break-word">
             <Title>
               <Chip chip="account" style="float: right; margin-left: 6px">
                 <Text>
