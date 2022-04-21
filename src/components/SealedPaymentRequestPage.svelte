@@ -4,10 +4,13 @@
   import { onDestroy } from 'svelte'
   import Fab, { Icon } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
+  import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Paper, { Title, Content } from '@smui/paper'
+  import Button, { Label } from '@smui/button'
   import Chip, { Text } from '@smui/chips'
   import QrGenerator from './QrGenerator.svelte'
   import Page from './Page.svelte'
+  import Dialog from './Dialog.svelte'
 
   export let app: AppState
   export let model: SealedPaymentRequestModel
@@ -16,6 +19,7 @@
 
   assert(model.action.sealedAt !== undefined)
 
+  let showConfirmDialog = false
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action)
@@ -176,6 +180,31 @@
           </Paper>
         </div>
       </div>
+
+      {#if showConfirmDialog}
+        <Dialog
+          open
+          scrimClickAction=""
+          aria-labelledby="confirm-delete-dialog-title"
+          aria-describedby="confirm-delete-dialog-content"
+          on:MDCDialog:closed={() => showConfirmDialog = false}
+          >
+          <DialogTitle id="confirm-delete-dialog-title">Delete payment request</DialogTitle>
+          <DialogContent id="confirm-delete-dialog-content">
+            If you delete this payment request, you will no longer be
+            able to watch the corresponding incoming payments. Are you
+            sure that you want to do this?
+          </DialogContent>
+          <Actions>
+            <Button>
+              <Label>No</Label>
+            </Button>
+            <Button default use={[InitialFocus]} on:click={() => actionManager.remove()}>
+              <Label>Yes</Label>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
@@ -185,7 +214,7 @@
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab color="primary" on:click={() => actionManager.remove() }>
+        <Fab color="primary" on:click={() => showConfirmDialog = true}>
           <Icon class="material-icons">close</Icon>
         </Fab>
       </div>
