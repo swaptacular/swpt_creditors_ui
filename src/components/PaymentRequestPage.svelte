@@ -18,7 +18,7 @@
   export const snackbarBottom: string = "84px"
   export const scrollElement = document.documentElement
 
-  assert(!model.action.sealed)
+  assert(model.action.sealedAt === undefined)
   const utf8encoder = new TextEncoder()
   const emptyNoteBytes = getByteLength(generatePayment0TransferNote({
     payeeName: '',

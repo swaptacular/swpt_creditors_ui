@@ -615,7 +615,7 @@ export type PaymentRequestAction =
   & {
     actionType: 'PaymentRequest',
     accountUri: string,
-    sealed: boolean,
+    sealedAt?: Date,
     payeeReference: string,
     editedAmount: bigint | undefined,
     editedPayeeName: string,

@@ -1150,7 +1150,7 @@ export class AppState {
       interactionId = this.interactionId
       const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       if (accountData && accountData.info.identity) {
-        if (action.sealed) {
+        if (action.sealedAt !== undefined) {
           const deadline = new Date(action.editedDeadline)
           const isLink = isValidHttpUrl(action.editedNote)
           const pr0Blob = generatePr0Blob({
@@ -1199,7 +1199,7 @@ export class AppState {
     return this.attempt(async () => {
       interactionId = this.interactionId
       await saveActionPromise
-      await this.uc.replaceActionRecord(action, action = { ...action, sealed: true })
+      await this.uc.replaceActionRecord(action, action = { ...action, sealedAt: new Date() })
       await this.uc.setDefaultPayeeName(action.editedPayeeName)
       if (this.interactionId === interactionId) {
         this.showAction(action.actionId)

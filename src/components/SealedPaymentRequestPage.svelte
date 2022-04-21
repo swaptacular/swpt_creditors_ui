@@ -14,7 +14,7 @@
   export const snackbarBottom: string = "84px"
   export const scrollElement = document.documentElement
 
-  assert(model.action.sealed)
+  assert(model.action.sealedAt !== undefined)
 
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
@@ -41,6 +41,7 @@
 
   $: action = model.action
   $: accountUri = action.accountUri
+  $: sealedAt = action.sealedAt
   $: accountData = model.accountData
   $: display = accountData.display
   $: debtorName = display.debtorName
@@ -162,8 +163,10 @@
                 represents a request {unitAmount} {unit} to be paid to "{payeeName}".
               {/if}
 
+              The request has been created at {sealedAt?.toLocaleString()}.
+
               {#if deadline.getTime()}
-                The deadline for this payment is {deadline.toLocaleString()}.
+                The deadline for the payment is {deadline.toLocaleString()}.
               {/if}
 
               {#if action.editedNote}

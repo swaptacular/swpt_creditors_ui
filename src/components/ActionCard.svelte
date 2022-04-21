@@ -122,7 +122,7 @@
         if (!debtorName) {
           return 'Request payment.'
         }
-        if (!action.sealed) {
+        if (action.sealedAt === undefined) {
           return `Request payment via "${debtorName}".`
         } else {
           const n = 120  // number of characters to show from the payment note.
