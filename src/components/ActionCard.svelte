@@ -128,7 +128,9 @@
           const n = 120  // number of characters to show from the payment note.
           const s = action.editedNote
           const nonemptyNote = /\S/u.test(s)
-          const note = nonemptyNote ? (s.length <= n ? `: ${removeEndingDot(s)}` : `: ${s.slice(0, n)}..`) : ''
+          const note = nonemptyNote
+            ? (s.length <= n ? `: ${removeEndingDot(s)}` : `: ${s.slice(0, n)}..`)
+            : `: ${action.sealedAt.toLocaleString()}`
           const display = app.accountsMap.getAccountDisplay(action.accountUri)
           if (action.editedAmount && display) {
             const unitAmount = amountToString(action.editedAmount, display.amountDivisor, display.decimalPlaces)
