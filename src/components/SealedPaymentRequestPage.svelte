@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, SealedPaymentRequestModel } from '../app-state'
   import { amountToString } from '../format-amounts'
-  import { onDestroy } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import Fab, { Icon } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
@@ -11,6 +11,7 @@
   import QrGenerator from './QrGenerator.svelte'
   import Page from './Page.svelte'
   import Dialog from './Dialog.svelte'
+  import DoneSvgIcon from './DoneSvgIcon.svelte'
 
   export let app: AppState
   export let model: SealedPaymentRequestModel
@@ -19,12 +20,19 @@
 
   assert(model.action.sealedAt !== undefined)
 
+  let doneIcon: HTMLElement
   let showConfirmDialog = false
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action)
   let imageDataUrl: string = ''
   let textDataUrl: string = URL.createObjectURL(new Blob([model.paymentRequest]))
+
+  function rotateDoneIcon(): void {
+    if (done && doneIcon) {
+      doneIcon.className += ' rotate'
+    }
+  }
 
   function showAccount(): void {
     const m = {
@@ -41,11 +49,13 @@
     }
   }
 
+  onMount(rotateDoneIcon)
   onDestroy(revokeTextDataUrl)
 
   $: action = model.action
   $: accountUri = action.accountUri
   $: sealedAt = action.sealedAt
+  $: done = true
   $: accountData = model.accountData
   $: display = accountData.display
   $: debtorName = display.debtorName
@@ -63,7 +73,7 @@
 
 <style>
   .empty-space {
-    height: 56px;
+    height: 72px;
   }
   pre {
     color: #888;
@@ -83,6 +93,27 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden;
+  }
+  .received-amount-container {
+    flex-grow: 1;
+    margin-left: 10px;
+    word-break: break-word;
+  }
+  .received-text {
+    font-size: 13px;
+    font-family: Roboto,sans-serif;
+    color: #888;
+  }
+  .received-amount {
+    margin-top: 5px;
+    font-size: 22px;
+    font-family: Courier,monospace;
+  }
+  .received-icon {
+    flex-grow: 0;
+    width: 60px;
+    padding-right: 6px;
   }
   .text-container {
     display: flex;
@@ -104,22 +135,13 @@
     margin: 16px 16px;
   }
 
-  @keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    10% { transform: translate(-1px, -2px) rotate(-1deg); }
-    20% { transform: translate(-3px, 0px) rotate(1deg); }
-    30% { transform: translate(3px, 2px) rotate(0deg); }
-    40% { transform: translate(1px, -1px) rotate(1deg); }
-    50% { transform: translate(-1px, 2px) rotate(-1deg); }
-    60% { transform: translate(-3px, 1px) rotate(0deg); }
-    70% { transform: translate(3px, 1px) rotate(-1deg); }
-    80% { transform: translate(-1px, -1px) rotate(1deg); }
-    90% { transform: translate(1px, 2px) rotate(0deg); }
-    100% { transform: translate(1px, -2px) rotate(-1deg); }
+  @keyframes rotate {
+    0% { transform: scale(0.3, 0.3) rotate(0deg); }
+    100% { transform: scale(1, 1) rotate(720deg); }
   }
 
-  :global(.shaking-block) {
-    animation: shake 0.5s;
+  :global(.rotate) {
+    animation: rotate 0.8s;
     animation-iteration-count: 1;
   }
 </style>
@@ -127,8 +149,17 @@
 <div>
   <Page title="Request payment" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
     <svelte:fragment slot="app-bar">
-      <Row style="height: 56px">
+      <Row style="height: 72px">
         <div class="received-box">
+          <div class="received-amount-container">
+            <div class="received-text">received</div>
+            <div class="received-amount">10000000.00 EUR</div>
+          </div>
+          <div bind:this={doneIcon} class="received-icon">
+            {#if done}
+              <DoneSvgIcon />
+            {/if}
+          </div>
         </div>
       </Row>
     </svelte:fragment>
@@ -192,7 +223,7 @@
           <DialogTitle id="confirm-delete-dialog-title">Delete payment request</DialogTitle>
           <DialogContent id="confirm-delete-dialog-content">
             If you delete this payment request, you will no longer be
-            able to watch the corresponding incoming payments. Are you
+            able to watch the corresponding received payments. Are you
             sure that you want to do this?
           </DialogContent>
           <Actions>
