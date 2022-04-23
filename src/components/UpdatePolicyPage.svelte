@@ -91,7 +91,9 @@
       let x = Number(amount)
       if (Number.isFinite(x)) {
         x = Math.max(0, x) * limitAmountDivisor(divisor)
-        result = BigInt(Math.ceil(x))
+        const floor = BigInt(Math.floor(x))
+        const ceil = BigInt(Math.ceil(x))
+        result = ceil > defaultValue ? floor : ceil
         if (result >= MAX_INT64) {
           result = MAX_INT64 - 1n
         }
