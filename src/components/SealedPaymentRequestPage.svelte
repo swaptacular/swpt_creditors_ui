@@ -14,6 +14,7 @@
   import DoneSvgIcon from './DoneSvgIcon.svelte'
 
   export let app: AppState
+  const { pageModel } = app
   export let model: SealedPaymentRequestModel
   export const snackbarBottom: string = "84px"
   export const scrollElement = document.documentElement
@@ -41,6 +42,10 @@
       scrollLeft: scrollElement.scrollLeft,
     }
     app.showAccount(accountUri, () => app.pageModel.set(m))
+  }
+
+  function update(): void {
+    app.fetchDataFromServer(() => $pageModel.reload())
   }
 
   function revokeTextDataUrl() {
@@ -224,7 +229,7 @@
           <DialogContent id="confirm-delete-dialog-content">
             If you delete this payment request, you will no longer be
             able to watch the corresponding payments. Are you sure
-            that you want to do this?
+            you want to do this?
           </DialogContent>
           <Actions>
             <Button>
@@ -242,6 +247,11 @@
       <div class="fab-container">
         <Fab on:click={() => downloadTextElement.click()}>
           <Icon class="material-icons">download</Icon>
+        </Fab>
+      </div>
+      <div class="fab-container">
+        <Fab on:click={update}>
+          <Icon class="material-icons">sync</Icon>
         </Fab>
       </div>
       <div class="fab-container">
