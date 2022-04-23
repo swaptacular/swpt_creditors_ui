@@ -47,10 +47,6 @@
     if (amount === undefined) {
       return ''
     }
-    if (typeof amount === 'number') {
-      assert(Number.isFinite(amount))
-      amount = BigInt(Math.ceil(amount))
-    }
     return amountToString(
       amount,
       model.createAccountData?.amountDivisor ?? 1,
