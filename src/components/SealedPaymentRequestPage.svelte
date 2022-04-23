@@ -223,8 +223,8 @@
           <DialogTitle id="confirm-delete-dialog-title">Delete payment request</DialogTitle>
           <DialogContent id="confirm-delete-dialog-content">
             If you delete this payment request, you will no longer be
-            able to watch the corresponding received payments. Are you
-            sure that you want to do this?
+            able to watch the corresponding payments. Are you sure
+            that you want to do this?
           </DialogContent>
           <Actions>
             <Button>
