@@ -17,7 +17,9 @@
   on:MDCDialog:closed={() => app.dismissAlert(alerts[0])}
   >
   <Title id="alert-title">Error</Title>
-  <Content id="alert-content">{alerts[0].message}</Content>
+  <Content id="alert-content" style="word-break: break-word">
+    {alerts[0].message}
+  </Content>
   <Actions>
     <Button>
       <Label>OK</Label>

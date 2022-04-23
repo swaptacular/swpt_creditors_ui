@@ -4,6 +4,7 @@
     amountToString, limitAmountDivisor, calcSmallestDisplayableNumber, MAX_INT64
   } from '../format-amounts'
   import { generatePayment0TransferNote } from '../payment-requests'
+  import { Alert } from '../app-state'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -41,7 +42,7 @@
   function createUpdatedAction(): PaymentRequestActionWithId {
     return {
       ...action,
-      editedAmount: amountToBigint(unitAmount, amountDivisor),
+      editedAmount: requestedAmount,
       editedPayeeName: payeeName,
       editedDeadline: deadline,
       editedNote: note,
@@ -125,6 +126,12 @@
   function request(): void {
     if (invalid) {
       shakeForm()
+    } else if (requestedAmount && requestedAmount < 3 * Math.max(negligibleAmount, 1)) {
+      app.addAlert(new Alert(
+        'The requested amount is too small. It should be at least three '
+        + 'times bigger than the negligible amount for this account '
+        + `(${negligibleUnitAmount} ${unit}).`
+      ))
     } else {
       app.sealPaymentRequestAction(actionManager)
     }
@@ -145,6 +152,9 @@
   $: amountSuffix = unit.slice(0, 10)
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
+  $: requestedAmount = amountToBigint(unitAmount, amountDivisor)
+  $: negligibleAmount = accountData.config.negligibleAmount
+  $: negligibleUnitAmount = formatAsUnitAmount(negligibleAmount, amountDivisor, decimalPlaces)
   $: invalid = invalidUnitAmount || invalidPayeeName || invalidDeadline || erroneousNote
 </script>
 
