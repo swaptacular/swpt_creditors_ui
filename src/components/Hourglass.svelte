@@ -16,5 +16,5 @@
 </style>
 
 <div class="centered">
-  <CircularProgress style="height: 32px; width: 32px;" indeterminate />
+  <CircularProgress style="height: 48px; width: 48px;" indeterminate />
 </div>
