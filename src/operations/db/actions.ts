@@ -42,6 +42,7 @@ export async function createActionRecord(action: ActionRecord): Promise<number> 
     if (action.actionType === 'PaymentRequest') {
       await db.expectedPayments.add({
         userId: action.userId,
+        accountUri: action.accountUri,
         payeeReference: action.payeeReference,
         receivedAmount: 0n,
       })
@@ -168,7 +169,7 @@ export async function getExpectedPaymentAmount(payeeReference: string): Promise<
 
 export async function createApproveAction(action: ApproveAction, overrideExisting: boolean = true): Promise<number> {
   const { accountUri, actionType } = action
-  return await db.transaction('rw', [db.wallets, db.actions], async () => {
+  return await db.transaction('rw', [db.wallets, db.actions, db.expectedPayments], async () => {
     const existingActionQuery = db.actions
       .where({ accountUri })
       .filter(a => a.actionType === actionType)
@@ -206,7 +207,7 @@ export async function ensureUniqueAccountAction<T extends ConfigAccountAction | 
   action: T,
 ): Promise<T & ActionRecordWithId> {
   const { accountUri, actionType } = action
-  return await db.transaction('rw', [db.wallets, db.actions], async () => {
+  return await db.transaction('rw', [db.wallets, db.actions, db.expectedPayments], async () => {
     const existingAction = await db.actions
       .where({ accountUri })
       .filter(a => a.actionType === actionType)

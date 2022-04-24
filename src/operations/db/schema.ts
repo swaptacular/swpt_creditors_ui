@@ -148,6 +148,7 @@ export type DefaultPayeeName =
 export type ExpectedPayment =
   & UserReference
   & {
+    accountUri: string,
     payeeReference: string,
     receivedAmount: bigint,
   }
@@ -708,7 +709,7 @@ class CreditorsDb extends Dexie {
       accountObjects: 'uri,userId,account.uri',
       accountPriorities: 'uri,userId',
       defaultPayeeNames: 'userId',
-      expectedPayments: 'payeeReference,userId',
+      expectedPayments: 'payeeReference,userId,accountUri',
 
       // Committed transfers are objects that belong to a specific
       // account, but we will have lots of them, and in order to keep

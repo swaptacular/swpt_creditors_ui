@@ -34,7 +34,16 @@ export async function getAccountObjectRecord(objectUri: string): Promise<Account
 }
 
 export async function deleteAccount(accountUri: string): Promise<void> {
-  const tables = [db.accounts, db.accountObjects, db.ledgerEntries, db.committedTransfers, db.actions, db.tasks]
+  const tables = [
+    db.accounts,
+    db.accountObjects,
+    db.ledgerEntries,
+    db.committedTransfers,
+    db.accountPriorities,
+    db.expectedPayments,
+    db.actions,
+    db.tasks,
+  ]
   await db.transaction('rw', tables, async () => {
     await db.accounts.delete(accountUri)
     await db.committedTransfers.where({ 'account.uri': accountUri }).delete()
@@ -42,6 +51,8 @@ export async function deleteAccount(accountUri: string): Promise<void> {
     for (const accountObjectUri of accountObjectUris) {
       await deleteAccountObject(accountObjectUri)
     }
+    await db.accountPriorities.where({ uri: accountUri }).delete()
+    await db.expectedPayments.where({ accountUri }).delete()
     await db.actions.where({ accountUri }).delete()
     await db.tasks.where({ accountUri }).delete()
   })
