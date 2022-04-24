@@ -9,12 +9,21 @@ import { Dexie } from 'dexie'
 import { db } from './schema'
 import { verifyAccountKnowledge } from './common'
 import { removeActionRecord } from './actions'
+import { parseTransferNote } from '../../payment-requests'
 
 export async function storeCommittedTransferRecord(record: CommittedTransferRecord): Promise<void> {
-  await db.transaction('rw', [db.accounts, db.committedTransfers], async () => {
-    const accountQuery = db.accounts.where({ uri: record.account.uri })
+  await db.transaction('rw', [db.accounts, db.committedTransfers, db.expectedPayments], async () => {
+    const accountUri = record.account.uri
+    const accountQuery = db.accounts.where({ uri: accountUri })
     const hasAccount = await accountQuery.count() > 0
     if (hasAccount) {
+      if (record.acquiredAmount > 0n && !await db.committedTransfers.get(record.uri)) {
+        const paymentInfo = parseTransferNote(record)
+        await db.expectedPayments
+          .where({ payeeReference: paymentInfo.payeeReference })
+          .filter(ep => ep.userId === record.userId && ep.accountUri === accountUri)
+          .modify(ep => { ep.receivedAmount += record.acquiredAmount })
+      }
       await db.committedTransfers.put(record)
     } else {
       console.log(
