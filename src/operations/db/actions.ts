@@ -35,9 +35,16 @@ export async function getActionRecord(actionId: number): Promise<ActionRecordWit
  * field, and it will be added automatically. */
 export async function createActionRecord(action: ActionRecord): Promise<number> {
   if (action.actionId !== undefined) throw new Error('actionId must be undefined')
-  return await db.transaction('rw', [db.wallets, db.actions], async () => {
+  return await db.transaction('rw', [db.wallets, db.actions, db.expectedPayments], async () => {
     if (!await isInstalledUser(action.userId)) {
       throw new UserDoesNotExist()
+    }
+    if (action.actionType === 'PaymentRequest') {
+      await db.expectedPayments.add({
+        userId: action.userId,
+        payeeReference: action.payeeReference,
+        receivedAmount: 0n,
+      })
     }
     return await db.actions.add(action)
   })
@@ -110,6 +117,12 @@ export async function removeActionRecord(actionId: number): Promise<void> {
           }
           await verifyAccountKnowledge(action.accountUri)
           break
+        case 'PaymentRequest':
+          await db.expectedPayments
+            .where({ payeeReference: action.payeeReference })
+            .filter(ep => ep.userId === action.userId)
+            .delete()
+          break
         default:
         // Do nothing more.
       }
@@ -146,6 +159,11 @@ export async function replaceActionRecord(original: ActionRecordWithId, replacem
       }
     }
   })
+}
+
+export async function getExpectedPaymentAmount(payeeReference: string): Promise<bigint> {
+  const expectedPayment = await db.expectedPayments.where({ payeeReference }).first()
+  return expectedPayment ? expectedPayment.receivedAmount : 0n
 }
 
 export async function createApproveAction(action: ApproveAction, overrideExisting: boolean = true): Promise<number> {

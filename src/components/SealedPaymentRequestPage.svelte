@@ -58,18 +58,21 @@
   onDestroy(revokeTextDataUrl)
 
   $: action = model.action
+  $: paidAmount = model.paidAmount
   $: accountUri = action.accountUri
   $: sealedAt = action.sealedAt
-  $: done = true
   $: accountData = model.accountData
   $: display = accountData.display
   $: debtorName = display.debtorName
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
+  $: paidUnitAmount = amountToString(paidAmount, amountDivisor, decimalPlaces)
   $: amount = action.editedAmount ?? 0n
+  $: done = amount > 0n && amount <= paidAmount
   $: deadline = new Date(action.editedDeadline)
   $: unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
   $: unit = display.unit ?? '\u00a4'
+  $: amountSuffix = unit.slice(0, 10)
   $: payeeName = action.editedPayeeName
   $: fileName = `${debtorName} - ${action.payeeReference.slice(0, 8)}`
   $: imageFileName = `${fileName}.png`
@@ -158,7 +161,7 @@
         <div class="received-box">
           <div class="received-amount-container">
             <div class="received-text">received</div>
-            <div class="received-amount">10000000.00 EUR</div>
+            <div class="received-amount">{paidUnitAmount} {amountSuffix}</div>
           </div>
           <div bind:this={doneIcon} class="received-icon">
             {#if done}

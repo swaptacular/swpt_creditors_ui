@@ -224,6 +224,7 @@ export type PaymentRequestModel = BasePageModel & {
 export type SealedPaymentRequestModel = Omit<PaymentRequestModel, 'type'> & {
   type: 'SealedPaymentRequestModel',
   paymentRequest: string,
+  paidAmount: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -1165,10 +1166,11 @@ export class AppState {
             },
           })
           const paymentRequest = await pr0Blob.text()
+          const paidAmount = await this.uc.getExpectedPaymentAmount(action.payeeReference)
           if (this.interactionId === interactionId) {
             this.pageModel.set({
               type: 'SealedPaymentRequestModel',
-              reload, goBack, backToAccount, action, accountData, paymentRequest,
+              reload, goBack, backToAccount, action, accountData, paymentRequest, paidAmount,
             })
           }
         } else {
