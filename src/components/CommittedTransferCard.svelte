@@ -32,7 +32,6 @@
   $: rationale = transfer.rationale
   $: paymentInfo = parseTransferNote(transfer)
   $: payeeName = paymentInfo.payeeName
-  $: payeeReference = paymentInfo.payeeReference
   $: description = paymentInfo.description
   $: briefContent = calcBrief(paymentInfo.description.content)
   $: amount = transfer.acquiredAmount
@@ -74,12 +73,8 @@
         <span>{displayAmount}</span>
         {#if rationale === 'interest'}
           interest payment
-        {:else if amount < 0}
-          {#if payeeName}
-            to "{payeeName}"
-          {:else if payeeReference}
-            toward "{payeeReference}"
-          {/if}
+        {:else if amount < 0 && payeeName}
+          paid to "{payeeName}"
         {/if}
       </p>
       <p class="transfer-note">
