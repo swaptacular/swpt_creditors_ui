@@ -1258,63 +1258,91 @@ export class AppState {
   }
 
   async showAccount(accountUri: string, back?: () => void): Promise<void> {
+    const accountData = this.accountsMap.getAccountFullData(accountUri)
+    if (accountData === undefined) {
+      this.showAccounts()
+      return
+    }
+
     return this.attempt(async () => {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
       const sortRank = await this.uc.getAccountSortPriority(accountUri)
-      const accountData = this.accountsMap.getAccountFullData(accountUri)
-      if (this.interactionId === interactionId) {
-        if (accountData === undefined) {
-          this.showAccounts()
-        } else {
-          // TODO: Add a real implementation.
-          const sleep = (milliseconds: number) => {
-            return new Promise(resolve => setTimeout(resolve, milliseconds))
-          }
-          const dummyTransfers: CommittedTransferRecord[] = Array(40).fill({
+      let transfers = []
+      let before = accountData.ledger.nextEntryId
+      const limit = 100  // the maximum number of ledger entries to show initially
+      const ledgerEntries = await this.uc.getLedgerEntries(accountData.ledger.uri, { limit, before })
+      for (const { entryId, acquiredAmount, addedAt, transfer } of ledgerEntries) {
+        let committedTransfer: CommittedTransferRecord | undefined
+        if (entryId + 1n !== before) break
+        if (transfer) {
+          committedTransfer = await this.uc.getCommittedTransfer(transfer.uri)
+        }
+        if (!committedTransfer) {
+          committedTransfer = {
             type: 'CommittedTransfer',
             uri: '',
             userId: 1,
-            account: { uri: '' },
+            account: { uri: accountData.account.uri },
             sender: { type: 'AccountIdentity', uri: '' },
             recipient: { type: 'AccountIdentity', uri: '' },
-            acquiredAmount: 1000n,
             noteFormat: '',
-            note: 'Pretty simple and straight-forward right? \n\n\n\n ' +
-              '`Ivan Ivanov Ivanov` says that this can be used for much ' +
-              'more than just setting font-size however, and they can ' +
-              'be used pretty much everywhere units are expected (padding' +
-              ', margin, width, height, max-width,…you get the picture!).',
-            committedAt: '2020-01-01T00:00:00Z',
-          })
-          this.pageModel.set({
-            type: 'AccountModel',
-            reload: () => { this.showAccount(accountUri, back) },
-            fetchTransfers: async () => {
-              // TODO: Get ~100 transfers from the local DB, and if
-              // there are not enough of them -- fetch some from the server.
-              let transfers: CommittedTransferRecord[] | undefined
-              await this.attempt(async () => {
-                await sleep(2000)
-                if (Math.random() > 0.2) {
-                  transfers = dummyTransfers
-                } else {
-                  throw new ServerSessionError()
-                }
-              }, {
-                alerts: [
-                  [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-                ],
-              })
-              return transfers
-            },
-            tab: 'account',
-            transfers: dummyTransfers,  // TODO: get ~100 transfers from the local DB.
-            goBack,
-            accountData,
-            sortRank,
-          })
+            note: '',
+            committedAt: addedAt,
+            acquiredAmount,
+          }
         }
+        transfers.push(committedTransfer)
+        before = entryId
+      }
+      if (this.interactionId === interactionId) {
+        // TODO: Add a real implementation.
+        const sleep = (milliseconds: number) => {
+          return new Promise(resolve => setTimeout(resolve, milliseconds))
+        }
+        const dummyTransfers: CommittedTransferRecord[] = Array(ledgerEntries.length).fill({
+          type: 'CommittedTransfer',
+          uri: '',
+          userId: 1,
+          account: { uri: '' },
+          sender: { type: 'AccountIdentity', uri: '' },
+          recipient: { type: 'AccountIdentity', uri: '' },
+          acquiredAmount: 1000n,
+          noteFormat: '',
+          note: 'Pretty simple and straight-forward right? \n\n\n\n ' +
+            '`Ivan Ivanov Ivanov` says that this can be used for much ' +
+            'more than just setting font-size however, and they can ' +
+            'be used pretty much everywhere units are expected (padding' +
+            ', margin, width, height, max-width,…you get the picture!).',
+          committedAt: '2020-01-01T00:00:00Z',
+        })
+        this.pageModel.set({
+          type: 'AccountModel',
+          reload: () => { this.showAccount(accountUri, back) },
+          fetchTransfers: async () => {
+            // TODO: Get ~100 transfers from the local DB, and if
+            // there are not enough of them -- fetch some from the server.
+            let transfers: CommittedTransferRecord[] | undefined
+            await this.attempt(async () => {
+              await sleep(2000)
+              if (Math.random() > 0.2) {
+                transfers = dummyTransfers
+              } else {
+                throw new ServerSessionError()
+              }
+            }, {
+              alerts: [
+                [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+              ],
+            })
+            return transfers
+          },
+          tab: 'account',
+          transfers,
+          goBack,
+          accountData,
+          sortRank,
+        })
       }
     })
   }

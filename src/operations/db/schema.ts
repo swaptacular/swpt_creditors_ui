@@ -23,6 +23,13 @@ export type ListQueryOptions = {
   latestFirst?: boolean,
 }
 
+export type LedgerEntriesQueryOptions = {
+  before?: bigint,
+  after?: bigint,
+  limit?: number,
+  latestFirst?: boolean,
+}
+
 type UserReference = {
   userId: number,
 }
@@ -130,7 +137,10 @@ export type TransferRecord =
 export type LedgerEntryRecord =
   & UserReference
   & LedgerEntryV0
-  & { id?: number }  // an autoincremented ID
+  & {
+    id?: number, // an autoincremented ID
+    entryIdString: string, // the `entryId` field as a string (to avoid using bigint IndexedDB keys).
+  }
 
 export type DocumentRecord =
   & ResourceReference
@@ -724,7 +734,7 @@ class CreditorsDb extends Dexie {
       // "fake-indexeddb", which we use for testing, does not support
       // compound primary keys.
       transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,&[ledger.uri+entryId],userId',
+      ledgerEntries: '++id,&[ledger.uri+entryIdString],userId',
 
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',

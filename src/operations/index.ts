@@ -28,7 +28,7 @@ import {
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
-  getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount
+  getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -283,6 +283,8 @@ export class UserContext {
   readonly obtainBaseDebtorData = obtainBaseDebtorData
   readonly getAccountSortPriority = getAccountSortPriority
   readonly getExpectedPaymentAmount = getExpectedPaymentAmount
+  readonly getLedgerEntries = getLedgerEntries
+  readonly getCommittedTransfer = getCommittedTransfer
   readonly setAccountSortPriority: (uri: string, priority: number) => Promise<void>
   readonly setDefaultPayeeName: (payeeName: string) => Promise<void>
   readonly ensureUniqueAccountAction = ensureUniqueAccountAction

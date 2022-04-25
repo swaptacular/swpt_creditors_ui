@@ -2,7 +2,7 @@ import type { CommittedTransferRecord, LedgerEntryRecord, AccountSortPriority } 
 import type { AccountV0 } from '../canonical-objects'
 import type {
   AccountInfoRecord, AccountLedgerRecord, AccountExchangeRecord, AccountKnowledgeRecord,
-  AccountConfigRecord, AccountDisplayRecord, AccountRecord, AccountObjectRecord
+  AccountConfigRecord, AccountDisplayRecord, AccountRecord, AccountObjectRecord, LedgerEntriesQueryOptions
 } from './schema'
 
 import { Dexie } from 'dexie'
@@ -193,4 +193,39 @@ export async function getAccountSortPriority(uri: string): Promise<number> {
 
 export async function setAccountSortPriority(userId: number, uri: string, priority: number): Promise<void> {
   await db.accountPriorities.put({ userId, uri, priority })
+}
+
+export async function getLedgerEntries(
+  ledgerUri: string,
+  options: LedgerEntriesQueryOptions = {},
+): Promise<LedgerEntryRecord[]> {
+  let {
+    before = Dexie.maxKey as any,
+    after = Dexie.minKey as any,
+    limit = 1e9,
+    latestFirst = true,
+  } = options
+  if (typeof before === 'bigint') {
+    before = getEntryIdString(before)
+  }
+  if (typeof after === 'bigint') {
+    after = getEntryIdString(after)
+  }
+  let collection = db.ledgerEntries
+    .where('[ledger.uri+entryIdString]')
+    .between([ledgerUri, after], [ledgerUri, before], false, false)
+    .limit(limit)
+  if (latestFirst) {
+    collection = collection.reverse()
+  }
+  return await collection.toArray()
+}
+
+export async function getCommittedTransfer(uri: string): Promise<CommittedTransferRecord | undefined> {
+  return await db.committedTransfers.get(uri)
+}
+
+export function getEntryIdString(entryId: bigint): string {
+  assert(entryId > 0n)
+  return entryId.toString().padStart(19, '0')
 }

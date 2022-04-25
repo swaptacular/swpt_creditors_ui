@@ -1082,7 +1082,7 @@ export type LedgerEntry = {
 
   /** The new principal amount on the account, as it is after the
    * transfer. Unless a principal overflow has occurred, the new
-   * principal amount will be equal to `aquiredAmount` plus the old
+   * principal amount will be equal to `acquiredAmount` plus the old
    * principal amount. */
   principal: bigint;
 
@@ -1097,7 +1097,7 @@ export type LedgerEntry = {
 
   /** The amount added to the account's principal. Can be a positive
    * number (an increase), a negative number (a decrease), or zero. */
-  aquiredAmount: bigint;
+  acquiredAmount: bigint;
 
   /** The moment at which the entry was added to the ledger. */
   addedAt: string;

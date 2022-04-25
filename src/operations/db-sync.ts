@@ -17,7 +17,7 @@ import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
   resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
-  postAccountsMapMessage, verifyAccountKnowledge
+  postAccountsMapMessage, verifyAccountKnowledge, getEntryIdString
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
@@ -558,7 +558,9 @@ async function fetchRelatedData(
       return new PreparedUpdate(async () => {
         await reviseLogObjectRecord(accountLedgerRecord, updateInfo)
         for (const ledgerEntry of newLedgerEntries) {
-          await storeLedgerEntryRecord({ ...ledgerEntry, userId })
+          assert(ledgerEntry.entryId > 0n)
+          const entryIdString = getEntryIdString(ledgerEntry.entryId)
+          await storeLedgerEntryRecord({ ...ledgerEntry, userId, entryIdString })
         }
       }, relatedUpdates)
     }
