@@ -74,7 +74,7 @@
   $: unit = display.unit ?? '\u00a4'
   $: amountSuffix = unit.slice(0, 10)
   $: payeeName = action.editedPayeeName
-  $: fileName = `${debtorName} - ${action.payeeReference.slice(0, 8)}`
+  $: fileName = amount ? action.payeeReference : debtorName
   $: imageFileName = `${fileName}.png`
   $: textFileName = `${fileName}.pr0`
 </script>
