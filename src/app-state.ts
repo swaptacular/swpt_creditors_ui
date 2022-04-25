@@ -686,7 +686,9 @@ export class AppState {
       await this.uc.replaceActionRecord(action, action = { ...action, acknowledged: true })
       await this.uc.updateAccountKnowledge(action, account)
       assert(await this.uc.getActionRecord(action.actionId) === undefined)
-      checkAndGoBack()
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
@@ -750,7 +752,9 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       await this.uc.resolveApproveDebtorNameAction(action, displayLatestUpdateId, pin)
-      checkAndGoBack()
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
@@ -834,7 +838,9 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       await this.uc.resolveApproveAmountDisplayAction(action, displayLatestUpdateId, pin)
-      checkAndGoBack()
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
     }, {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
@@ -866,7 +872,9 @@ export class AppState {
       interactionId = this.interactionId
       await saveActionPromise
       await this.uc.resolveApprovePegAction(action, approve, pegAccountUri, exchangeLatestUpdateId, pin)
-      checkAndGoBack()
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
     }, {
       alerts: [
         [CircularPegError, new Alert(CIRCULAR_PEG_MESSAGE)],
