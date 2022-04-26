@@ -77,7 +77,7 @@
         {:else if amount < 0 && payeeName}
           paid to "{payeeName}"
         {:else if amount > 0 && payeeReference}
-          toward "{payeeReference}"
+          toward "{payeeReference.slice(0, 36)}"
         {/if}
       </p>
       <p class="transfer-note">
