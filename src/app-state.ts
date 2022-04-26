@@ -1021,7 +1021,6 @@ export class AppState {
     back?: () => void,
     options?: { backToAccount?: () => void },
   ): Promise<void> {
-    console.log(back)
     let interactionId: number
     const showActions = () => { this.showActions() }
     const goBack = back ?? showActions
