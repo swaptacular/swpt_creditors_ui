@@ -117,8 +117,8 @@ export class ServerSyncError extends Error {
   name = 'ServerSyncError'
 }
 
-export class BuyingFromUnknownDebtor extends Error {
-  name = 'BuyingFromUnknownDebtor'
+export class BuyingIsForbidden extends Error {
+  name = 'BuyingIsForbidden'
 }
 
 /* Splits the coin URI (scanned from the QR code) into "debtor info
@@ -644,7 +644,7 @@ export class UserContext {
    * prepared this method to throw `RecordDoesNotExist`,
    * `ConflictingUpdate`, `WrongPin`, `UnprocessableEntity`,
    * `ResourceNotFound`, `ServerSessionError`,
-   * `BuyingFromUnknownDebtor`. */
+   * `BuyingIsForbidden`. */
   async executeUpdatePolicyAction(
     action: UpdatePolicyActionWithId,
     exchangeLatestUpdateId: bigint,
@@ -652,7 +652,12 @@ export class UserContext {
   ): Promise<number | undefined> {
     let approvePegActionId: number | undefined
 
-    const calcNewPolicy = (oldPolicy: string | undefined, oldMinPrincipal: bigint, isSecureCoin: boolean) => {
+    const calcNewPolicy = (
+      oldPolicy: string | undefined,
+      oldMinPrincipal: bigint,
+      accountData: AccountFullData | undefined,
+    ) => {
+      const forbidBuying = accountData?.secureCoin !== true || accountData.config.scheduledForDeletion
       const newPolicy = action.editedPolicy
       let newMinPrincipal, newMaxPrincipal
       if (newPolicy === undefined) {
@@ -661,9 +666,9 @@ export class UserContext {
       } else {
         newMinPrincipal = action.editedMinPrincipal
         newMaxPrincipal = action.editedMaxPrincipal
-        if (!isSecureCoin && (oldPolicy === undefined || newMinPrincipal > oldMinPrincipal)) {
+        if (forbidBuying && (oldPolicy === undefined || newMinPrincipal > oldMinPrincipal)) {
           this.scheduleUpdate()
-          throw new BuyingFromUnknownDebtor()
+          throw new BuyingIsForbidden()
         }
       }
       assert(MIN_INT64 <= newMinPrincipal)
@@ -674,9 +679,9 @@ export class UserContext {
 
     const account = await this.getAccount(action.accountUri)
     if (account && account.display.debtorName !== undefined) {
-      const secureCoin = this.accountsMap.getAccountFullData(action.accountUri)?.secureCoin ?? false
+      const accountData = this.accountsMap.getAccountFullData(action.accountUri)
       const { policy, minPrincipal, maxPrincipal } = account.exchange
-      const { newPolicy, newMinPrincipal, newMaxPrincipal } = calcNewPolicy(policy, minPrincipal, secureCoin)
+      const { newPolicy, newMinPrincipal, newMaxPrincipal } = calcNewPolicy(policy, minPrincipal, accountData)
       const removeNonstandardPeg = !action.editedUseNonstandardPeg
       if (
         newPolicy !== policy ||

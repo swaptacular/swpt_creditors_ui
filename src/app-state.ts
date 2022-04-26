@@ -17,7 +17,7 @@ import {
   obtainUserContext, parseCoinUri, UserContext, AuthenticationError, ServerSessionError,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError,
   RecordDoesNotExist, WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError,
-  PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, BuyingFromUnknownDebtor,
+  PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, BuyingIsForbidden,
   IS_A_NEWBIE_KEY
 } from './operations'
 
@@ -63,7 +63,7 @@ export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the is
   + 'changes in the peg currency. Then, you may try to approve the peg '
   + 'again, or decide to not approve it.'
 
-export const BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE = 'Automatic buying is not allowed '
+export const BUYING_IS_FORBIDDEN_MESSAGE = 'Automatic buying is not allowed '
   + 'for this account. This may be just a temporary condition, if the '
   + 'account has been created only recently, or you have not acknowledged '
   + 'the latest changes in the account.'
@@ -1116,7 +1116,7 @@ export class AppState {
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
         [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
         [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [BuyingFromUnknownDebtor, new Alert(BUYING_FROM_UNKNOWN_DEBTOR_MESSAGE, { continue: checkAndShowActions })],
+        [BuyingIsForbidden, new Alert(BUYING_IS_FORBIDDEN_MESSAGE, { continue: checkAndShowActions })],
         [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
