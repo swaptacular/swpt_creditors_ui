@@ -76,7 +76,7 @@
           interest payment
         {:else if amount < 0 && payeeName}
           paid to "{payeeName}"
-        {:else if amount > 0 && payeeReference}
+        {:else if amount > 0 && payeeReference && transfer.noteFormat !== '.'}
           toward "{payeeReference.slice(0, 36)}"
         {/if}
       </p>
