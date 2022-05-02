@@ -1267,7 +1267,7 @@ export class AppState {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
       const sortRank = await this.uc.getAccountSortPriority(accountUri)
-      let [transfers, before] = await this.uc.getCommittedTransfers(accountData, undefined, 1)
+      let [transfers, before] = await this.uc.getCommittedTransfers(accountData)
 
       if (this.interactionId === interactionId) {
         this.pageModel.set({
@@ -1277,10 +1277,11 @@ export class AppState {
             let fetchedTransfers: CommittedTransferRecord[] | undefined
             await this.attempt(async () => {
               let committedTransfers: CommittedTransferRecord[]
-              [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before, 1)
+              [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before)
               if (committedTransfers.length === 0) {
-                await this.uc.fetchCommittedTransfers(accountData, before, 1);
-                [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before, 1)
+                // Fetch from server and retry.
+                await this.uc.fetchCommittedTransfers(accountData, before);
+                [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before)
               }
               fetchedTransfers = committedTransfers
             }, {

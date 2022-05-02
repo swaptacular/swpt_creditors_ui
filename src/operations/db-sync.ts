@@ -544,7 +544,13 @@ async function fetchRelatedData(
       const accountLedgerRecord: AccountLedgerRecord = { ...obj, userId }
       const existingAccountLedgerRecord = existingRecord as AccountLedgerRecord | undefined
       const latestEntryId = (existingAccountLedgerRecord ?? accountLedgerRecord).nextEntryId - 1n
-      const newLedgerEntries = await fetchNewLedgerEntries(server, accountLedgerRecord, latestEntryId, timeout)
+      const newLedgerEntries = await fetchNewLedgerEntries(
+        server,
+        accountLedgerRecord.entries.first,
+        accountLedgerRecord.nextEntryId,
+        latestEntryId,
+        timeout,
+      )
       const relatedUpdates: UpdateInfo[] = newLedgerEntries
         .filter(entry => entry.transfer !== undefined)
         .map(entry => {

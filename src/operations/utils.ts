@@ -1,7 +1,7 @@
 import type { DocumentRecord, DebtorDataSource } from './db'
 import type { DebtorData, BaseDebtorData } from '../debtor-info'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
-import type { AccountV0, TransferV0, LedgerEntryV0, AccountLedgerV0, DebtorInfoV0 } from './canonical-objects'
+import type { AccountV0, TransferV0, LedgerEntryV0, DebtorInfoV0 } from './canonical-objects'
 
 import { HttpError } from './server'
 import {
@@ -75,30 +75,32 @@ export async function settleAndIgnore404<T>(responsePromises: Promise<HttpRespon
 
 export async function fetchNewLedgerEntries(
   server: ServerSession,
-  accountLedger: AccountLedgerV0,
-  latestEntryId: bigint,
-  timeout: number,
+  firstUri: string,  // the URI of the first page containing ledger entries
+  knownEntryId: bigint,  // the ID of the earliest known entry
+  stopEntryId: bigint,  // the ID of the latest uninteresting entry
+  timeout?: number,
 ): Promise<LedgerEntryV0[]> {
   let newLedgerEntries: LedgerEntryV0[] = []
-  let iteratedId = accountLedger.nextEntryId
 
   // NOTE: The entries are iterated in reverse-chronological order
   // (bigger entryIds go first).
-  if (latestEntryId + 1n < iteratedId) {
-    const first = new URL(accountLedger.entries.first)
-    first.searchParams.append('stop', String(latestEntryId))
+  if (stopEntryId + 1n < knownEntryId) {
+    const first = new URL(firstUri)
+    first.searchParams.append('stop', String(stopEntryId))
     try {
       for await (const entry of iterLedgerEntries(server, first.href, timeout)) {
         const { entryId } = entry
-        assert(entryId < iteratedId)
-        if (iteratedId - entryId !== 1n) {
+        if (entryId >= knownEntryId) {
+          continue  // This is an alredy known entry.
+        }
+        if (knownEntryId - entryId !== 1n) {
           break  // There are missing entries.
         }
-        if (entryId <= latestEntryId) {
-          break  // This is an already known entry.
+        if (entryId <= stopEntryId) {
+          break  // This is an uninteresting entry.
         }
         newLedgerEntries.push(entry)
-        iteratedId = entryId
+        knownEntryId = entryId
       }
     } catch (e: unknown) {
       if (e instanceof HttpError && e.status === 404) { /* The account seems to have been deleted. */ }
@@ -151,7 +153,7 @@ type Page<ItemsType> = {
 const iterLedgerEntries = (
   server: ServerSession,
   firstPageUri: string,
-  timeout: number,
+  timeout?: number,
 ) => iterPages(server, firstPageUri, makeLedgerEntry, timeout)
 
 async function* iterPages<OriginalItem, TransformedItem>(

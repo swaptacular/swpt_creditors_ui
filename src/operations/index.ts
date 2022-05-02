@@ -28,7 +28,8 @@ import {
   InvalidActionState, createApproveAction, getBaseDebtorDataFromAccoutKnowledge, reviseOutdatedDebtorInfos,
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
-  getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer
+  getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
+  getEntryIdString, storeLedgerEntryRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -36,7 +37,7 @@ import {
 import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
-  getDataFromDebtorInfo
+  getDataFromDebtorInfo, fetchNewLedgerEntries
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -1034,14 +1035,25 @@ export class UserContext {
       })
   }
 
+  /* Tries to fetch unknown committed transfers for a given account
+   * from the server. `before` must be the ID of the earliest known
+   * ledger entry. The caller must be prepared this method to throw
+   * `ServerSessionError`. */
   async fetchCommittedTransfers(
     accountData: AccountFullData,
     before: bigint,
     limit: number = MAX_COMMITTED_TRANSFERS_FETCH_COUNT,
   ): Promise<void> {
-    // TODO: load older ledger entries from the ledger record
-    // accountData.ledger.entries.first
-    const ledgerEntries = await getLedgerEntries(accountData.ledger.uri, { before, limit })
+    let first = new URL(accountData.ledger.entries.first)
+    first.searchParams.set('prev', before.toString())
+    const stop = before - BigInt(limit) - 1n
+    const ledgerEntries = await fetchNewLedgerEntries(this.server, first.href, before, stop > 0n ? stop : 0n)
+    const userId = this.userId
+    for (const ledgerEntry of ledgerEntries) {
+      assert(ledgerEntry.entryId > 0n)
+      const entryIdString = getEntryIdString(ledgerEntry.entryId)
+      await storeLedgerEntryRecord({ ...ledgerEntry, userId, entryIdString })
+    }
     const timeout = calcParallelTimeout(ledgerEntries.length)
     await Promise.all(ledgerEntries.map(entry => this.fetchCommittedTransfer(entry.transfer?.uri, timeout)))
   }
