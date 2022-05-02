@@ -8,7 +8,8 @@ import type {
 } from './db'
 import type {
   PinInfoV0, CreditorV0, WalletV0, AccountV0, TransferV0, LogEntryV0, TransferResultV0, LogObject,
-  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0
+  AccountConfigV0, AccountDisplayV0, AccountKnowledgeV0, AccountExchangeV0, AccountLedgerV0,
+  CommittedTransferV0
 } from './canonical-objects'
 
 import { v4 as uuidv4 } from 'uuid';
@@ -83,7 +84,8 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
  * server. */
 export async function storeObject(
   userId: number,
-  obj: TransferV0 | AccountV0 | AccountConfigV0 | AccountDisplayV0 | AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0
+  obj: TransferV0 | AccountV0 | AccountConfigV0 | AccountDisplayV0 |
+    AccountKnowledgeV0 | AccountExchangeV0 | PinInfoV0 | CommittedTransferV0
 ): Promise<void> {
   switch (obj.type) {
     case 'Transfer':

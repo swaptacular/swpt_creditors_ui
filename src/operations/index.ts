@@ -1,4 +1,4 @@
-import type { PinInfo, Account, DebtorIdentity } from './server'
+import type { PinInfo, Account, DebtorIdentity, CommittedTransfer } from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
@@ -8,7 +8,7 @@ import type {
   UpdatePolicyActionWithId, PaymentRequestActionWithId
 } from './db'
 import type {
-  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0
+  AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
 } from './canonical-objects'
 import type { UserResetMessage } from './db-sync'
 import type { BaseDebtorData } from '../debtor-info'
@@ -269,6 +269,8 @@ async function executeReadyTasks(server: ServerSession, userId: number): Promise
   return resyncIsNeeded
 }
 
+const MAX_COMMITTED_TRANSFERS_FETCH_COUNT = 30
+
 export class UserContext {
   private server: ServerSession
   private updateScheduler: UpdateScheduler
@@ -283,8 +285,6 @@ export class UserContext {
   readonly obtainBaseDebtorData = obtainBaseDebtorData
   readonly getAccountSortPriority = getAccountSortPriority
   readonly getExpectedPaymentAmount = getExpectedPaymentAmount
-  readonly getLedgerEntries = getLedgerEntries
-  readonly getCommittedTransfer = getCommittedTransfer
   readonly setAccountSortPriority: (uri: string, priority: number) => Promise<void>
   readonly setDefaultPayeeName: (payeeName: string) => Promise<void>
   readonly ensureUniqueAccountAction = ensureUniqueAccountAction
@@ -1034,6 +1034,64 @@ export class UserContext {
       })
   }
 
+  async fetchCommittedTransfers(
+    accountData: AccountFullData,
+    before: bigint,
+    limit: number = MAX_COMMITTED_TRANSFERS_FETCH_COUNT,
+  ): Promise<void> {
+    // TODO: load older ledger entries from the ledger record
+    // accountData.ledger.entries.first
+    const ledgerEntries = await getLedgerEntries(accountData.ledger.uri, { before, limit })
+    const timeout = calcParallelTimeout(ledgerEntries.length)
+    await Promise.all(ledgerEntries.map(entry => this.fetchCommittedTransfer(entry.transfer?.uri, timeout)))
+  }
+
+  /* Returns an array of sequentially committed transfers, plus the
+   * ledger entry ID of the earliest transfer in the list. If the
+   * returned list is empty, the value of the passed `before` ledger
+   * entry ID will be returned (it defaults to the ID of the latest
+   * ledger entry). This function will not try to make any network
+   * requests. */
+  async getCommittedTransfers(
+    accountData: AccountFullData,
+    before: bigint = accountData.ledger.nextEntryId,
+    limit: number = MAX_COMMITTED_TRANSFERS_FETCH_COUNT,
+  ): Promise<[CommittedTransferRecord[], bigint]> {
+    const dummyAccountIdentity = { type: 'AccountIdentity', uri: '' }
+    const accountIdentity = accountData.info.identity ?? dummyAccountIdentity
+    const accountObjectReference = { uri: accountData.account.uri }
+    const createDummyTransfer = (acquiredAmount: bigint, committedAt: string): CommittedTransferRecord => {
+      const accountIsTheSender = acquiredAmount < 0n
+      return {
+        type: 'CommittedTransfer',
+        uri: '',
+        userId: this.userId,
+        account: accountObjectReference,
+        sender: accountIsTheSender ? accountIdentity : dummyAccountIdentity,
+        recipient: accountIsTheSender ? dummyAccountIdentity : accountIdentity,
+        noteFormat: '',
+        note: '',
+        acquiredAmount,
+        committedAt,
+      }
+    }
+    let committedTransfers = []
+    const ledgerEntries = await getLedgerEntries(accountData.ledger.uri, { before, limit })
+    for (const { entryId, acquiredAmount, addedAt, transfer } of ledgerEntries) {
+      if (entryId + 1n !== before) break
+      let committedTransfer: CommittedTransferRecord | undefined
+      if (transfer) {
+        committedTransfer = await getCommittedTransfer(transfer.uri)
+        if (!committedTransfer) break
+      } else {
+        committedTransfer = createDummyTransfer(acquiredAmount, addedAt)
+      }
+      committedTransfers.push(committedTransfer)
+      before = entryId
+    }
+    return [committedTransfers, before]
+  }
+
   /* Forgets authentication credentials, and goes to the login page. */
   async logout(): Promise<never> {
     return await this.server.logout()
@@ -1116,6 +1174,21 @@ export class UserContext {
   private async fetchPinInfo(pinInfoUri: string): Promise<PinInfo> {
     const response = await this.server.get(pinInfoUri) as HttpResponse<PinInfo>
     return response.data
+  }
+
+  private async fetchCommittedTransfer(uri: string | undefined, timeout?: number): Promise<void> {
+    if (uri !== undefined) {
+      let response
+      try {
+        response = await this.server.get(uri, { timeout, attemptLogin: true }) as HttpResponse<CommittedTransfer>
+      } catch (e: unknown) {
+        if (e instanceof HttpError && e.status === 404) return  /* ignore */
+        throw e
+      }
+      const committedTransferObject = makeLogObject(response) as CommittedTransferV0
+      assert(committedTransferObject.type === 'CommittedTransfer')
+      await storeObject(this.userId, committedTransferObject)
+    }
   }
 
   private async sync(): Promise<void> {
