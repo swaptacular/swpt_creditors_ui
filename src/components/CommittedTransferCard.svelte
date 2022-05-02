@@ -61,7 +61,7 @@
   .transfer-note {
     word-break: break-word;
     font-family: Roboto,sans-serif;
-    margin-top: 6px;
+    margin-top: 10px;
     color: #888;
   }
 </style>
