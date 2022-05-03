@@ -1047,7 +1047,8 @@ export class UserContext {
     let first = new URL(accountData.ledger.entries.first)
     first.searchParams.set('prev', before.toString())
     const stop = before - BigInt(limit) - 1n
-    const ledgerEntries = await fetchNewLedgerEntries(this.server, first.href, before, stop > 0n ? stop : 0n)
+    const ledgerEntries = await fetchNewLedgerEntries(
+      this.server, first.href, before, stop > 0n ? stop : 0n, { attemptLogin: true })
     const userId = this.userId
     for (const ledgerEntry of ledgerEntries) {
       assert(ledgerEntry.entryId > 0n)

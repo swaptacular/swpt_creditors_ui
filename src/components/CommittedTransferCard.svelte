@@ -21,7 +21,7 @@
   }
   
   function calcBrief(s: string): string {
-    const MAX_LENGTH = 160
+    const MAX_LENGTH = 120
     return (
       s.length <= MAX_LENGTH
         ? s

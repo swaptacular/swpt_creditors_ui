@@ -78,7 +78,7 @@ export async function fetchNewLedgerEntries(
   firstUri: string,  // the URI of the first page containing ledger entries
   knownEntryId: bigint,  // the ID of the earliest known entry
   stopEntryId: bigint,  // the ID of the latest uninteresting entry
-  timeout?: number,
+  options: { timeout?: number, attemptLogin?: boolean } = {},
 ): Promise<LedgerEntryV0[]> {
   let newLedgerEntries: LedgerEntryV0[] = []
 
@@ -88,7 +88,7 @@ export async function fetchNewLedgerEntries(
     const first = new URL(firstUri)
     first.searchParams.append('stop', String(stopEntryId))
     try {
-      for await (const entry of iterLedgerEntries(server, first.href, timeout)) {
+      for await (const entry of iterLedgerEntries(server, first.href, options)) {
         const { entryId } = entry
         if (entryId >= knownEntryId) {
           continue  // This is an alredy known entry.
@@ -153,17 +153,17 @@ type Page<ItemsType> = {
 const iterLedgerEntries = (
   server: ServerSession,
   firstPageUri: string,
-  timeout?: number,
-) => iterPages(server, firstPageUri, makeLedgerEntry, timeout)
+  options: { timeout?: number, attemptLogin?: boolean } = {},
+) => iterPages(server, firstPageUri, makeLedgerEntry, options)
 
 async function* iterPages<OriginalItem, TransformedItem>(
   server: ServerSession,
   next: string,
   transformItem: (item: OriginalItem, pageUrl: string) => TransformedItem,
-  timeout?: number,
+  options: { timeout?: number, attemptLogin?: boolean } = {},
 ): AsyncIterable<TransformedItem> {
   do {
-    const pageResponse = await server.get(next, { timeout }) as HttpResponse<Page<OriginalItem>>
+    const pageResponse = await server.get(next, options) as HttpResponse<Page<OriginalItem>>
     const pageUrl = pageResponse.url
     const data = pageResponse.data
     assert(data.next === undefined || typeof data.next === 'string')
