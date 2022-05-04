@@ -7,6 +7,7 @@
   export let transfer: ExtendedLedgerEntry
   export let pegBound: PegBound
   export let activate: () => void
+  assert(transfer.ledgerEntry.transfer === undefined || transfer.committedTransfer !== undefined)
 
   const dumyPaymentInfo = {
     payeeName: '',
