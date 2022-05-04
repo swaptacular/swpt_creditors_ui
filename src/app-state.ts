@@ -127,6 +127,7 @@ export type PageModel =
   | SealedPaymentRequestModel
   | AccountsModel
   | AccountModel
+  | LedgerEntryModel
 
 type BasePageModel = {
   type: string,
@@ -246,6 +247,12 @@ export type AccountModel = BasePageModel & {
   sortRank: number,
   transfers: ExtendedLedgerEntry[],
   fetchTransfers: () => Promise<ExtendedLedgerEntry[] | undefined>,
+}
+
+export type LedgerEntryModel = BasePageModel & {
+  type: 'LedgerEntryModel',
+  accountData: AccountFullData,
+  ledgerEntry: ExtendedLedgerEntry,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -1303,10 +1310,40 @@ export class AppState {
   }
 
   async showLedgerEntry(accountUri: string, entryId: bigint, back?: () => void): Promise<void> {
-    accountUri
-    entryId
-    this.showActions(back)
-    // TODO: implement.
+    let interactionId: number
+    const goBack = back ?? (() => { this.showAccount(accountUri) })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const accountData = this.accountsMap.getAccountFullData(accountUri)
+      if (accountData === undefined) {
+        checkAndGoBack()
+        return
+      }
+      const ledgerEntry = await this.uc.getLedgerEntry(accountData.ledger.uri, entryId)
+      if (ledgerEntry === undefined) {
+        checkAndGoBack()
+        return
+      }
+      let committedTransfer
+      if (ledgerEntry.transfer) {
+        committedTransfer = await this.uc.getCommittedTransfer(ledgerEntry.transfer.uri)
+        if (committedTransfer === undefined) {
+          checkAndGoBack()
+          return
+        }
+      }
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'LedgerEntryModel',
+          reload: () => { this.showLedgerEntry(accountUri, entryId, back) },
+          ledgerEntry: { ...ledgerEntry, transfer: committedTransfer },
+          goBack,
+          accountData,
+        })
+      }
+    })
   }
 
   async setAccountSortPriority(uri: string, priority: number): Promise<void> {

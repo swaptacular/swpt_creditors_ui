@@ -221,6 +221,11 @@ export async function getLedgerEntries(
   return await collection.toArray()
 }
 
+export async function getLedgerEntry(ledgerUri: string, entryId: bigint): Promise<LedgerEntryRecord | undefined> {
+  const entryIdString = getEntryIdString(entryId)
+  return await db.ledgerEntries.get({'ledger.uri': ledgerUri, entryIdString})
+}
+
 export async function getCommittedTransfer(uri: string): Promise<CommittedTransferRecord | undefined> {
   return await db.committedTransfers.get(uri)
 }
