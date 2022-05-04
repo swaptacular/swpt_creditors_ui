@@ -40,13 +40,44 @@
   $: payeeName = paymentInfo.payeeName
   $: description = paymentInfo.description
   $: payeeReference = paymentInfo.payeeReference
+  $: contentFormat = description.contentFormat
   $: content = description.content
   $: amount = transfer.acquiredAmount
   $: displayAmount = calcDisplayAmount(amount)
-  
 </script>
 
 <style>
+  h5 {
+    margin-top: 28px;
+    font-family: Roboto,sans-serif;
+    font-size: 1.1em;
+    font-weight: bold;
+  }
+  a {
+    font-family: Roboto,sans-serif;
+    overflow-wrap: break-word;
+    width: 100%;
+  }
+  pre {
+    color: #888;
+    font-family: monospace;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    width: 100%;
+  }
+  .transfer {
+    font-family: Courier,monospace;
+    line-height: 1.25;
+    word-break: break-word;
+    margin: 16px 0 0 1.5em;
+    text-indent: -1.5em;
+  }
+  .transfer span {
+    font-size: 1.25em;
+  }
+  .transfer-note {
+    margin-top: 28px;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -72,13 +103,13 @@
                 toward "{payeeReference.slice(0, 36)}"
               {/if}
             </p>
-            <p class="transfer-note">
-              {#if description.contentFormat === '.'}
-                <a href="{description.content}" target="_blank" on:click|stopPropagation>{content}</a>
-              {:else if description.contentFormat === ''}
-                {content}
+              {#if contentFormat === '.'}
+                <p class="transfer-note">
+                  <a href="{description.content}" target="_blank" on:click|stopPropagation>{content}</a>
+                </p>
+              {:else if contentFormat === '' && content}
+                <pre class="transfer-note">{content}</pre>
               {/if}
-            </p>
           </Content>
         </Paper>
       </Cell>
