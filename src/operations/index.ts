@@ -58,10 +58,9 @@ export {
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
 
-export type ExtendedLedgerEntry = {
-  ledgerEntry: LedgerEntryRecord,
-  committedTransfer?: CommittedTransferRecord,
-}
+export type ExtendedLedgerEntry =
+  & Omit<LedgerEntryRecord, 'transfer'>
+  & { transfer?: CommittedTransferRecord }
 
 export type KnownAccountData = {
   account: AccountRecord,
@@ -1085,7 +1084,7 @@ export class UserContext {
         committedTransfer = await getCommittedTransfer(transfer.uri)
         if (!committedTransfer) break
       }
-      extendedLedgerEntries.push({ ledgerEntry, committedTransfer })
+      extendedLedgerEntries.push({ ...ledgerEntry, transfer: committedTransfer })
       before = entryId
     }
     return [extendedLedgerEntries, before]

@@ -347,7 +347,7 @@
               <CommittedTransferCard
                 {transfer}
                 pegBound={pegBounds[0]}
-                activate={() => showLedgerEntry(accountUri, transfer.ledgerEntry.entryId)}
+                activate={() => showLedgerEntry(accountUri, transfer.entryId)}
                 />
             </Cell>
           {/each}

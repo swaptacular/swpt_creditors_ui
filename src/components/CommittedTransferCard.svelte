@@ -7,7 +7,6 @@
   export let transfer: ExtendedLedgerEntry
   export let pegBound: PegBound
   export let activate: () => void
-  assert(transfer.ledgerEntry.transfer === undefined || transfer.committedTransfer !== undefined)
 
   const dumyPaymentInfo = {
     payeeName: '',
@@ -16,7 +15,7 @@
   }
 
   function getDate(t: ExtendedLedgerEntry): string {
-    return new Date(t.ledgerEntry.addedAt).toLocaleString()
+    return new Date(t.addedAt).toLocaleString()
   }
   
   function calcDisplayAmount(amt: bigint): string {
@@ -36,15 +35,14 @@
     )
   }
 
-  $: ledgerEntry = transfer.ledgerEntry
-  $: committedTransfer = transfer.committedTransfer
+  $: committedTransfer = transfer.transfer
   $: rationale = committedTransfer?.rationale
   $: paymentInfo = committedTransfer ? parseTransferNote(committedTransfer) : dumyPaymentInfo
   $: payeeName = paymentInfo.payeeName
   $: description = paymentInfo.description
   $: payeeReference = paymentInfo.payeeReference
   $: briefContent = calcBrief(description.content)
-  $: amount = ledgerEntry.acquiredAmount
+  $: amount = transfer.acquiredAmount
   $: displayAmount = calcDisplayAmount(amount)
 </script>
 
