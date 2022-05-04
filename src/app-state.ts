@@ -5,7 +5,7 @@ import type {
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
-  UpdatePolicyActionWithId, PaymentRequestActionWithId
+  UpdatePolicyActionWithId, PaymentRequestActionWithId, ExtendedLedgerEntry
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -84,6 +84,7 @@ export type {
   CommittedTransferRecord,
   PegBound,
   AccountDataForDisplay,
+  ExtendedLedgerEntry,
 }
 
 export type AlertOptions = {
@@ -243,8 +244,8 @@ export type AccountModel = BasePageModel & {
   scrollLeft?: number,
   accountData: AccountFullData,
   sortRank: number,
-  transfers: CommittedTransferRecord[],
-  fetchTransfers: () => Promise<CommittedTransferRecord[] | undefined>,
+  transfers: ExtendedLedgerEntry[],
+  fetchTransfers: () => Promise<ExtendedLedgerEntry[] | undefined>,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -1267,23 +1268,23 @@ export class AppState {
       const interactionId = this.interactionId
       const goBack = back ?? (() => { this.showAccounts() })
       const sortRank = await this.uc.getAccountSortPriority(accountUri)
-      let [transfers, before] = await this.uc.getCommittedTransfers(accountData)
+      let [transfers, before] = await this.uc.getExtendedLedgerEntries(accountData)
 
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'AccountModel',
           reload: () => { this.showAccount(accountUri, back) },
           fetchTransfers: async () => {
-            let fetchedTransfers: CommittedTransferRecord[] | undefined
+            let fetchedTransfers: ExtendedLedgerEntry[] | undefined
             await this.attempt(async () => {
-              let committedTransfers: CommittedTransferRecord[]
-              [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before)
-              if (committedTransfers.length === 0) {
+              let extendedLedgerEntries: ExtendedLedgerEntry[]
+              [extendedLedgerEntries, before] = await this.uc.getExtendedLedgerEntries(accountData, before)
+              if (extendedLedgerEntries.length === 0) {
                 // Fetch from server and retry.
                 await this.uc.fetchCommittedTransfers(accountData, before);
-                [committedTransfers, before] = await this.uc.getCommittedTransfers(accountData, before)
+                [extendedLedgerEntries, before] = await this.uc.getExtendedLedgerEntries(accountData, before)
               }
-              fetchedTransfers = committedTransfers
+              fetchedTransfers = extendedLedgerEntries
             }, {
               alerts: [
                 [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
@@ -1301,8 +1302,9 @@ export class AppState {
     })
   }
 
-  async showLedgerEntry(commitedTransferUri: string, back?: () => void): Promise<void> {
-    commitedTransferUri
+  async showLedgerEntry(accountUri: string, entryId: bigint, back?: () => void): Promise<void> {
+    accountUri
+    entryId
     this.showActions(back)
     // TODO: implement.
   }

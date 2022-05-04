@@ -76,9 +76,9 @@
     }
   }
 
-  function showLedgerEntry(commitedTransferUri: string): void {
+  function showLedgerEntry(accountUri: string, entryId: bigint): void {
     const m = createUpdatedModel()
-    app.showLedgerEntry(commitedTransferUri, () => app.pageModel.set(m))
+    app.showLedgerEntry(accountUri, entryId, () => app.pageModel.set(m))
   }
 
   function showAccount(uri: string): void {
@@ -347,7 +347,7 @@
               <CommittedTransferCard
                 {transfer}
                 pegBound={pegBounds[0]}
-                activate={() => showLedgerEntry(transfer.uri)}
+                activate={() => showLedgerEntry(accountUri, transfer.ledgerEntry.entryId)}
                 />
             </Cell>
           {/each}

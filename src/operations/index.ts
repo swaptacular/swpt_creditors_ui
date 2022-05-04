@@ -5,7 +5,7 @@ import type {
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
-  UpdatePolicyActionWithId, PaymentRequestActionWithId
+  UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
@@ -57,6 +57,11 @@ export {
 }
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
+
+export type ExtendedLedgerEntry = {
+  ledgerEntry: LedgerEntryRecord,
+  committedTransfer?: CommittedTransferRecord,
+}
 
 export type KnownAccountData = {
   account: AccountRecord,
@@ -1059,50 +1064,31 @@ export class UserContext {
     await Promise.all(ledgerEntries.map(entry => this.fetchCommittedTransfer(entry.transfer?.uri, timeout)))
   }
 
-  /* Returns an array of sequentially committed transfers, plus the
-   * ledger entry ID of the earliest transfer in the list. If the
-   * returned list is empty, the value of the passed `before` ledger
-   * entry ID will be returned (it defaults to the ID of the latest
-   * ledger entry). This function will not try to make any network
-   * requests. */
-  async getCommittedTransfers(
+  /* Returns an array of sequential ledger entries (with their
+   * corresponding committed transfers), plus the ledger entry ID of
+   * the earliest entry in the list. If the returned list is empty,
+   * the value of the passed `before` ledger entry ID will be returned
+   * (it defaults to the ID of the latest ledger entry). This function
+   * will not try to make any network requests. */
+  async getExtendedLedgerEntries(
     accountData: AccountFullData,
     before: bigint = accountData.ledger.nextEntryId,
     limit: number = MAX_COMMITTED_TRANSFERS_FETCH_COUNT,
-  ): Promise<[CommittedTransferRecord[], bigint]> {
-    const dummyAccountIdentity = { type: 'AccountIdentity', uri: '' }
-    const accountIdentity = accountData.info.identity ?? dummyAccountIdentity
-    const accountObjectReference = { uri: accountData.account.uri }
-    const createDummyTransfer = (acquiredAmount: bigint, committedAt: string): CommittedTransferRecord => {
-      const accountIsTheSender = acquiredAmount < 0n
-      return {
-        type: 'CommittedTransfer',
-        uri: '',
-        userId: this.userId,
-        account: accountObjectReference,
-        sender: accountIsTheSender ? accountIdentity : dummyAccountIdentity,
-        recipient: accountIsTheSender ? dummyAccountIdentity : accountIdentity,
-        noteFormat: '',
-        note: '',
-        acquiredAmount,
-        committedAt,
-      }
-    }
-    let committedTransfers = []
+  ): Promise<[ExtendedLedgerEntry[], bigint]> {
+    let extendedLedgerEntries = []
     const ledgerEntries = await getLedgerEntries(accountData.ledger.uri, { before, limit })
-    for (const { entryId, acquiredAmount, addedAt, transfer } of ledgerEntries) {
+    for (const ledgerEntry of ledgerEntries) {
+      const { entryId, transfer } = ledgerEntry
       if (entryId + 1n !== before) break
       let committedTransfer: CommittedTransferRecord | undefined
       if (transfer) {
         committedTransfer = await getCommittedTransfer(transfer.uri)
         if (!committedTransfer) break
-      } else {
-        committedTransfer = createDummyTransfer(acquiredAmount, addedAt)
       }
-      committedTransfers.push(committedTransfer)
+      extendedLedgerEntries.push({ ledgerEntry, committedTransfer })
       before = entryId
     }
-    return [committedTransfers, before]
+    return [extendedLedgerEntries, before]
   }
 
   /* Forgets authentication credentials, and goes to the login page. */

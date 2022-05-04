@@ -1,15 +1,21 @@
 <script lang="ts">
-  import type { CommittedTransferRecord, PegBound } from '../app-state'
+  import type { ExtendedLedgerEntry, PegBound } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
   import Card, { PrimaryAction, Content } from '@smui/card'
 
-  export let transfer: CommittedTransferRecord
+  export let transfer: ExtendedLedgerEntry
   export let pegBound: PegBound
   export let activate: () => void
-  
-  function getDate(t: CommittedTransferRecord): string {
-    return new Date(t.committedAt).toLocaleString()
+
+  const dumyPaymentInfo = {
+    payeeName: '',
+    payeeReference: '',
+    description: { contentFormat: '', content: ''},
+  }
+
+  function getDate(t: ExtendedLedgerEntry): string {
+    return new Date(t.ledgerEntry.addedAt).toLocaleString()
   }
   
   function calcDisplayAmount(amt: bigint): string {
@@ -29,13 +35,15 @@
     )
   }
 
-  $: rationale = transfer.rationale
-  $: paymentInfo = parseTransferNote(transfer)
+  $: ledgerEntry = transfer.ledgerEntry
+  $: committedTransfer = transfer.committedTransfer
+  $: rationale = committedTransfer?.rationale
+  $: paymentInfo = committedTransfer ? parseTransferNote(committedTransfer) : dumyPaymentInfo
   $: payeeName = paymentInfo.payeeName
   $: description = paymentInfo.description
   $: payeeReference = paymentInfo.payeeReference
-  $: briefContent = calcBrief(paymentInfo.description.content)
-  $: amount = transfer.acquiredAmount
+  $: briefContent = calcBrief(description.content)
+  $: amount = ledgerEntry.acquiredAmount
   $: displayAmount = calcDisplayAmount(amount)
 </script>
 
@@ -77,7 +85,7 @@
           interest payment
         {:else if amount < 0 && payeeName}
           paid to "{payeeName}"
-        {:else if amount > 0 && payeeReference && transfer.noteFormat !== '.'}
+        {:else if amount > 0 && committedTransfer && committedTransfer.noteFormat !== '.' && payeeReference}
           toward "{payeeReference.slice(0, 36)}"
         {/if}
       </p>
