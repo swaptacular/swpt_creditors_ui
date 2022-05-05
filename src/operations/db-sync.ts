@@ -327,9 +327,9 @@ function postUserResetsChannelMessage(userId: number): void {
 }
 
 async function storeUserData({ accounts, wallet, creditor, pinInfo }: UserData): Promise<number> {
-  // TODO: Delete user's existing actions (excluding
-  // `CreateTransferAction`s and `PaymentRequestAction`s). Also,
-  // consider deleting some of user's tasks.
+  // NOTE: This function wipes out user's wallet and account data, and
+  // recreates it anew. Currently, it seems that existing actions and
+  // tasks belonging to the user do not need to be deleted.
 
   return await db.transaction('rw', db.allTables, async () => {
     let userId = await getUserId(wallet.uri)
