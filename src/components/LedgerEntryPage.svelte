@@ -2,7 +2,7 @@
   import type { LedgerEntryModel, ExtendedLedgerEntry } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
-  import Fab, { Label } from '@smui/fab'
+  import Fab, { Icon } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Page from './Page.svelte'
   import Paper, { Title, Content } from '@smui/paper'
@@ -118,8 +118,8 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={model.goBack} extended>
-        <Label>Back</Label>
+      <Fab on:click={model.goBack}>
+        <Icon class="material-icons">arrow_back</Icon>
       </Fab>
     </div>
   </svelte:fragment>
