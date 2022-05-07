@@ -62,9 +62,17 @@
     switch (action.actionType) {
       case "CreateTransfer": {
         const payeeName = action.paymentInfo.payeeName
-        const unitAmount = "0.00"
-        const unit = "\u00a4"
-        return `Send ${unitAmount} ${unit} to ${payeeName}.`
+        const amount = action.creationRequest.amount
+        const display = app.accountsMap.getAccountDisplay(action.accountUri)
+        if (display) {
+          const unit = display.unit
+          const unitAmount = amountToString(amount, display.amountDivisor, display.decimalPlaces)
+          return `Send ${unitAmount} ${unit} to ${payeeName}.`
+        } else {
+          const unit = "\u00a4"
+          const unitAmount = amountToString(amount, 1, 0n)
+          return `Send ${unitAmount} ${unit} to ${payeeName}.`
+        }
       }
       case "AbortTransfer": {
         const transfer = action.transfer

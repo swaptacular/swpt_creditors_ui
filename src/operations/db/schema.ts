@@ -189,12 +189,17 @@ export type CreateTransferAction =
   & ActionData
   & {
     actionType: 'CreateTransfer',
+    accountUri: string,
     creationRequest: TransferCreationRequestV0,
     paymentInfo: PaymentInfo,
     requestedAmount: bigint,
     requestedDeadline?: Date,
     execution?: ExecutionState,
   }
+
+export type CreateTransferActionWithId =
+  & ActionRecordWithId
+  & CreateTransferAction
 
 export type AccountCreationState = {
   accountUri: string,
@@ -207,10 +212,6 @@ export type AccountCreationState = {
   editedNegligibleAmount: number,
   tinyNegligibleAmount: number,
 }
-
-export type CreateTransferActionWithId =
-  & ActionRecordWithId
-  & CreateTransferAction
 
 export type AbortTransferAction =
   & ActionData
@@ -496,7 +497,7 @@ class CreditorsDb extends Dexie {
     this.version(1).stores({
       wallets: '++userId,&uri',
       walletObjects: 'uri,userId',
-      accounts: 'uri,userId',
+      accounts: 'uri,&[userId+debtor.uri]',
       accountObjects: 'uri,userId,account.uri',
       accountPriorities: 'uri,userId',
       defaultPayeeNames: 'userId',

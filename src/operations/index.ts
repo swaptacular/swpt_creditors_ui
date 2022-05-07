@@ -5,7 +5,8 @@ import type {
   AccountKnowledgeRecord, AccountLedgerRecord, ApproveDebtorNameActionWithId, ApproveAmountDisplayActionWithId,
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
-  UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord
+  UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord, CreateTransferActionStatus,
+  AccountInfoRecord
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
@@ -29,7 +30,8 @@ import {
   getAccountRecord, getAccountObjectRecord, verifyAccountKnowledge, getAccountSortPriorities,
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
-  getEntryIdString, storeLedgerEntryRecord, getLedgerEntry
+  getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
+  getCreateTransferActionStatus
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -37,7 +39,7 @@ import {
 import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
-  getDataFromDebtorInfo, fetchNewLedgerEntries
+  getDataFromDebtorInfo, fetchNewLedgerEntries, getDebtorIdentityFromAccountIdentity
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -54,6 +56,7 @@ export {
   AuthenticationError,
   ServerSessionError,
   IS_A_NEWBIE_KEY,
+  getCreateTransferActionStatus,
 }
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0
@@ -68,6 +71,7 @@ export type KnownAccountData = {
   display: AccountDisplayRecord,
   exchange: AccountExchangeRecord
   ledger: AccountLedgerRecord,
+  info: AccountInfoRecord,
   debtorData: BaseDebtorData,
 }
 
@@ -81,6 +85,7 @@ export type {
   ConfigAccountActionWithId,
   UpdatePolicyActionWithId,
   PaymentRequestActionWithId,
+  CreateTransferActionWithId,
   AccountV0,
   DebtorDataSource,
   AccountsMap,
@@ -92,6 +97,7 @@ export type {
   AccountFullData,
   PegBound,
   BaseDebtorData,
+  CreateTransferActionStatus,
 }
 
 export class ConflictingUpdate extends Error {
@@ -124,6 +130,14 @@ export class ServerSyncError extends Error {
 
 export class BuyingIsForbidden extends Error {
   name = 'BuyingIsForbidden'
+}
+
+export class AccountDoesNotExist extends Error {
+  name = 'AccountDoesNotExist'
+}
+
+export class AccountCanNotMakePayments extends Error {
+  name = 'AccountCanNotMakePayments'
 }
 
 /* Splits the coin URI (scanned from the QR code) into "debtor info
@@ -426,15 +440,17 @@ export class UserContext {
     const knowledge = await getAccountObjectRecord(account.knowledge.uri)
     const exchange = await getAccountObjectRecord(account.exchange.uri)
     const ledger = await getAccountObjectRecord(account.ledger.uri)
-    if (!(knowledge && exchange && ledger)) {
+    const info = await getAccountObjectRecord(account.info.uri)
+    if (!(knowledge && exchange && ledger && info)) {
       return undefined
     }
     assert(knowledge.type === 'AccountKnowledge')
     assert(exchange.type === 'AccountExchange')
     assert(ledger.type === 'AccountLedger')
+    assert(info.type === 'AccountInfo')
 
     const debtorData = getBaseDebtorDataFromAccoutKnowledge(knowledge)
-    return { account, display, knowledge, exchange, ledger, debtorData }
+    return { account, display, knowledge, exchange, ledger, info, debtorData }
   }
 
   /* Changes the display name (and possibly clears `knownDebtor`) as
@@ -987,11 +1003,25 @@ export class UserContext {
     await Promise.all(accountUris.map(uri => deleteAccount(uri)))
   }
 
-  /* Reads a payment request, and adds and returns a new
-   * create transfer action. May throw `IvalidPaymentRequest`. */
+  /* Reads a payment request, and adds and returns a new create
+   * transfer action. May throw `IvalidPaymentRequest` or
+   * `AccountDoesNotExist`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
     const request = await parsePaymentRequest(blob)
-    const noteMaxBytes = 500  // TODO: read this from the accounts-facts.
+    const debtorUri = getDebtorIdentityFromAccountIdentity(request.accountUri)
+    if (debtorUri === undefined) {
+      throw new IvalidPaymentRequest('invalid account identity')
+    }
+    let account, knownAccountData
+    if (!(
+      (account = await getAccountRecordByDebtorUri(this.userId, debtorUri)) &&
+      (knownAccountData = await this.getKnownAccountData(account.uri))
+    )) {
+      throw new AccountDoesNotExist()
+    }
+    if (!knownAccountData.info.account) {
+      throw new AccountCanNotMakePayments()
+    }
     const actionRecord = {
       userId: this.userId,
       actionType: 'CreateTransfer' as const,
@@ -1002,7 +1032,7 @@ export class UserContext {
         amount: request.amount,
         transferUuid: uuidv4(),
         noteFormat: request.amount ? 'PAYMENT0' : 'payment0',
-        note: generatePayment0TransferNote(request, noteMaxBytes),
+        note: generatePayment0TransferNote(request, Number(knownAccountData.info.noteMaxBytes)),
       },
       paymentInfo: {
         payeeReference: request.payeeReference,
@@ -1011,6 +1041,7 @@ export class UserContext {
       },
       requestedAmount: request.amount,
       requestedDeadline: request.deadline,
+      accountUri: account.uri,
     }
     await createActionRecord(actionRecord)  // adds the `actionId` field
     return actionRecord as CreateTransferActionWithId

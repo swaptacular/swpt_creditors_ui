@@ -38,6 +38,13 @@ export async function getAccountRecord(accountUri: string): Promise<AccountRecor
   return await db.accounts.get(accountUri)
 }
 
+export async function getAccountRecordByDebtorUri(
+  userId: number,
+  debtorUri: string,
+): Promise<AccountRecord | undefined> {
+  return await db.accounts.where({userId, 'debtor.uri': debtorUri}).first()
+}
+
 export async function getAccountObjectRecord(objectUri: string): Promise<AccountObjectRecord | undefined> {
   return await db.accountObjects.get(objectUri)
 }

@@ -5,7 +5,8 @@ import type {
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
-  UpdatePolicyActionWithId, PaymentRequestActionWithId, ExtendedLedgerEntry
+  UpdatePolicyActionWithId, PaymentRequestActionWithId, CreateTransferActionWithId,
+  ExtendedLedgerEntry, CreateTransferActionStatus
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -18,7 +19,7 @@ import {
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError,
   RecordDoesNotExist, WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError,
   PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, BuyingIsForbidden,
-  IS_A_NEWBIE_KEY
+  AccountDoesNotExist, AccountCanNotMakePayments, IS_A_NEWBIE_KEY
 } from './operations'
 
 type AttemptOptions = {
@@ -68,6 +69,14 @@ export const BUYING_IS_FORBIDDEN_MESSAGE = 'Automatic buying is not allowed '
   + 'account has been created only recently, or you have not acknowledged '
   + 'the latest changes in the account.'
 
+export const ACCOUNT_DOES_NOT_EXIST_MESSAGE = 'You do not have an account '
+  + 'in the requested currency.'
+
+export const ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE = 'You do have an account '
+  + 'in the requested currency, but making payments from this account is not '
+  + 'allowed. This may be just a temporary condition, if the account has '
+  + 'been created only recently.'
+
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
@@ -81,10 +90,12 @@ export type {
   ConfigAccountActionWithId,
   UpdatePolicyActionWithId,
   PaymentRequestActionWithId,
+  CreateTransferActionWithId,
   CommittedTransferRecord,
   PegBound,
   AccountDataForDisplay,
   ExtendedLedgerEntry,
+  CreateTransferActionStatus,
 }
 
 export type AlertOptions = {
@@ -128,6 +139,7 @@ export type PageModel =
   | AccountsModel
   | AccountModel
   | LedgerEntryModel
+  | CreateTransferModel
 
 type BasePageModel = {
   type: string,
@@ -253,6 +265,12 @@ export type LedgerEntryModel = BasePageModel & {
   type: 'LedgerEntryModel',
   accountData: AccountFullData,
   ledgerEntry: ExtendedLedgerEntry,
+}
+
+export type CreateTransferModel = BasePageModel & {
+  type: 'CreateTransferModel',
+  action: CreateTransferActionWithId,
+  accountData: AccountFullData | undefined,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -387,6 +405,9 @@ export class AppState {
               break
             case 'PaymentRequest':
               this.showPaymentRequestAction(action, back, options)
+              break
+            case 'CreateTransfer':
+              this.showCreateTransferAction(action, back)
               break
             default:
               throw new Error(`Unknown action type: ${action.actionType}`)
@@ -1228,6 +1249,25 @@ export class AppState {
     })
   }
 
+  showCreateTransferAction(action: CreateTransferActionWithId, back?: () => void): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const accountData = this.accountsMap.getAccountFullData(action.accountUri)
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'CreateTransferModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          accountData,
+        })
+      }
+    })
+  }
+
   showAccounts(): Promise<void> {
     return this.attempt(async () => {
       const interactionId = this.interactionId
@@ -1424,6 +1464,8 @@ export class AppState {
       alerts: [
         [IvalidPaymentRequest, new Alert(INVALID_REQUEST_MESSAGE)],
         [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
+        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
+        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
       ],
     })
   }
