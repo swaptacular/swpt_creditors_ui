@@ -154,7 +154,7 @@
         </Dialog>
       {/if}
 
-      <div bind:this={shakingElement} slot="content">
+      <div bind:this={shakingElement}>
         <form
           noValidate
           autoComplete="off"

@@ -190,7 +190,7 @@
 <div class="shaking-container">
   <Page title="Request payment" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
     <svelte:fragment slot="content">
-      <div bind:this={shakingElement} slot="content">
+      <div bind:this={shakingElement}>
         <form
           noValidate
           autoComplete="off"

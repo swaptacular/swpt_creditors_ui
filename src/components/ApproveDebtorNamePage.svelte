@@ -132,7 +132,7 @@
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
-      <div bind:this={shakingElement} slot="content">
+      <div bind:this={shakingElement}>
         <form
           noValidate
           autoComplete="off"
