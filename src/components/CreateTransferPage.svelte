@@ -63,7 +63,7 @@
     if (Number.isNaN(deadline.getTime())) {
       return '9999-12-31T23:59'
     }
-    deadline.setMinutes(deadline.getMinutes() + deadline.getTimezoneOffset())
+    deadline.setMinutes(deadline.getMinutes() - deadline.getTimezoneOffset())
     deadline.setSeconds(0)
     deadline.setMilliseconds(0)
     const isoDeadline = deadline.toISOString()
