@@ -200,7 +200,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Send payment">
+  <Page title="Make payment">
     <svelte:fragment slot="content">
       <div bind:this={shakingElement}>
         <form

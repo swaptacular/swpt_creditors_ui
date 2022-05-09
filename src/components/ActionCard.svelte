@@ -15,7 +15,7 @@
   function getButtonLabel(action: ActionRecordWithId): string {
     switch (action.actionType) {
     case 'CreateTransfer':
-      return 'Send payment'
+      return 'Make payment'
     case 'AbortTransfer':
       return 'Show the problem'
     case 'CreateAccount':

@@ -74,7 +74,7 @@
     </Paper>
   </Cell>
 
-  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+  <Cell>
     <Textfield
       required
       variant="outlined"
@@ -101,7 +101,7 @@
     </Textfield>
   </Cell>
 
-  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+  <Cell>
     <Textfield
       required
       variant="outlined"
