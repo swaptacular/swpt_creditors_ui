@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { PaymentDescription } from '../payment-requests'
+  import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -8,17 +9,23 @@
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
 
+  export let amountDivisor: number
+  export let decimalPlaces: bigint
   export let payeeName: string
   export let unitAmount: string | number
+  export let deadline: string
   export let description: PaymentDescription
   export let title: string
   export let tooltip: string
   export let unit: string
-  export let maxUnitAmount: number
   export let forbidChange: boolean = true
-  export let forbidAmountChange: boolean = true
   export let invalidPayeeName: boolean | undefined = undefined
   export let invalidUnitAmount: boolean | undefined = undefined
+  export let invalidDeadline: boolean | undefined = undefined
+
+  $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
+  $: unitAmountStep = amountToString(tinyNegligibleAmount, amountDivisor, decimalPlaces)
+  $: maxUnitAmount = Number(amountToString(9223372036853775000n, amountDivisor, decimalPlaces))
 </script>
 
 <style>
@@ -37,7 +44,7 @@
 <LayoutGrid>
   <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
     <Wrapper>
-      <Paper style="margin-top: 16px; margin-bottom: 28px" elevation={4}>
+      <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
         <Title style="display: flex; justify-content: space-between; align-items: center">
           {title}
           <Chip chip="help" on:click={() => undefined}>
@@ -64,6 +71,33 @@
     <Textfield
       required
       variant="outlined"
+      type="number"
+      disabled={forbidChange}
+      input$min={unitAmountStep}
+      input$max={maxUnitAmount}
+      input$step={unitAmountStep}
+      style="width: 100%"
+      withTrailingIcon={invalidUnitAmount}
+      bind:value={unitAmount}
+      bind:invalid={invalidUnitAmount}
+      label="Amount"
+      suffix={unit}
+      >
+      <svelte:fragment slot="trailingIcon">
+        {#if invalidUnitAmount}
+          <TextfieldIcon class="material-icons">error</TextfieldIcon>
+        {/if}
+      </svelte:fragment>
+      <HelperText slot="helper" persistent>
+        The amount that will be sent to the payee.
+      </HelperText>
+    </Textfield>
+  </Cell>
+
+  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+    <Textfield
+      required
+      variant="outlined"
       style="width: 100%"
       input$maxlength="200"
       input$spellcheck="false"
@@ -77,35 +111,30 @@
           <TextfieldIcon class="material-icons">error</TextfieldIcon>
         {/if}
       </svelte:fragment>
-      <HelperText slot="helper">
+      <HelperText slot="helper" persistent>
         The name of the recipient of the payment.
       </HelperText>
     </Textfield>
   </Cell>
 
-  <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
+  <Cell>
     <Textfield
       required
+      disabled={forbidChange}
       variant="outlined"
-      type="number"
-      disabled={forbidChange || forbidAmountChange}
-      input$min={Number.EPSILON}
-      input$max={maxUnitAmount}
-      input$step="any"
       style="width: 100%"
-      withTrailingIcon={invalidUnitAmount}
-      bind:value={unitAmount}
-      bind:invalid={invalidUnitAmount}
-      label="Amount"
-      suffix={unit}
+      type="datetime-local"
+      bind:invalid={invalidDeadline}
+      bind:value={deadline}
+      label="Deadline"
       >
       <svelte:fragment slot="trailingIcon">
-        {#if invalidUnitAmount}
+        {#if invalidDeadline}
           <TextfieldIcon class="material-icons">error</TextfieldIcon>
         {/if}
       </svelte:fragment>
-      <HelperText slot="helper">
-        The amount that will be transferred to the payee.
+      <HelperText slot="helper" persistent>
+        The payment must be completed before that moment.
       </HelperText>
     </Textfield>
   </Cell>

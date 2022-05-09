@@ -4,7 +4,7 @@
   } from '../app-state'
   import { INVALID_REQUEST_MESSAGE } from '../app-state'
   import { getCreateTransferActionStatus } from '../operations'
-  import { amountToString, stringToAmount } from '../format-amounts'
+  import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
   import { generatePayment0TransferNote } from '../payment-requests'
   import Fab, { Icon, Label } from '@smui/fab';
   // import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -16,15 +16,15 @@
   export let model: CreateTransferModel
   export const snackbarBottom: string = "84px"
 
-  const MAX_AMOUNT = 9223372036853775808n
-
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let payeeName: string = model.action.paymentInfo.payeeName
   let unitAmount: string | number = getInitialUnitAmount(model)
+  let deadline: string = getInitialDeadline(model)
 
   let invalidPayeeName: boolean | undefined
   let invalidUnitAmount: boolean | undefined
+  let invalidDeadline: boolean | undefined
 
   function createUpdatedAction(): CreateTransferActionWithId {
     const paymentInfo = {
@@ -36,9 +36,13 @@
       paymentInfo,
       creationRequest: {
         ...action.creationRequest,
-        amount: stringToAmount(unitAmount, amountDivisor),
+        amount: amountToSend ?? 0n,
         noteFormat: action.requestedAmount ? 'PAYMENT0' : 'payment0',
         note: generatePayment0TransferNote(paymentInfo, noteMaxBytes),
+        options: {
+          type: 'TransferOptions',
+          deadline: new Date(deadline).toISOString(),
+        },
       },
     }
   }
@@ -49,6 +53,18 @@
     const amountDivisor = display?.amountDivisor ?? 1
     const decimalPlaces = display?.decimalPlaces ?? 0n
     return amount ? amountToString(amount, amountDivisor, decimalPlaces) : ''
+  }
+
+  function getInitialDeadline(model: CreateTransferModel): string {
+    let deadline = new Date(model.action.creationRequest.options?.deadline ?? '')
+    if (Number.isNaN(deadline.getTime())) {
+      return '9999-12-31T23:59:00'
+    }
+    deadline.setMinutes(deadline.getMinutes() + deadline.getTimezoneOffset())
+    deadline.setSeconds(0)
+    deadline.setMilliseconds(0)
+    const isoDeadline = deadline.toISOString()
+    return isoDeadline.slice(0, isoDeadline.length - 1)
   }
 
   function getInfoTooltip(status: CreateTransferActionStatus): string {
@@ -72,6 +88,24 @@
         + 'but it is unknown whether the amount has been successfully transferred or not. '
         + 'It is not safe to retry the transfer.'
     }
+  }
+
+  function amountToBigint(amount: unknown, divisor: number): bigint | undefined {
+    let result
+    if (amount !== '') {
+      let x = Number(amount)
+      if (Number.isFinite(x)) {
+        x = Math.max(0, x) * limitAmountDivisor(divisor)
+        result = BigInt(Math.ceil(x))
+        if (result < 0n) {
+          result = 0n
+        }
+        if (result > MAX_INT64) {
+          result = MAX_INT64
+        }
+      }
+    }
+    return result
   }
 
   function shakeForm(): void {
@@ -98,7 +132,7 @@
 
   $: action = model.action
   $: accountData = model.accountData
-  $: forbidAmountChange = action.requestedAmount > 0
+  // $: forbidAmountChange = action.requestedAmount > 0
   // $: deadline = action.requestedDeadline
   $: description = action.paymentInfo.description
   $: noteMaxBytes = Number(accountData?.info.noteMaxBytes ?? 500n)
@@ -106,7 +140,6 @@
   $: amountDivisor = display?.amountDivisor ?? 1
   $: decimalPlaces = display?.decimalPlaces ?? 0n
   $: unit = display?.unit ?? '\u00a4'
-  $: maxUnitAmount = Number(amountToString(MAX_AMOUNT, amountDivisor, decimalPlaces))
   $: status = getCreateTransferActionStatus(action)
   $: forbidChange = status !== 'Draft'
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
@@ -114,9 +147,11 @@
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
   $: title = status === 'Draft' ? 'Payment request' : `${status} payment`
   $: tooltip = getInfoTooltip(status)
+  $: amountToSend = amountToBigint(unitAmount, amountDivisor)
   $: invalid = (
     invalidPayeeName ||
-    invalidUnitAmount
+    invalidUnitAmount ||
+    invalidDeadline
   )
 
   /*
@@ -146,7 +181,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Payment">
+  <Page title="Make payment">
     <svelte:fragment slot="content">
       <div bind:this={shakingElement}>
         <form
@@ -158,14 +193,16 @@
           <PaymentInfo
             bind:payeeName
             bind:unitAmount
+            bind:deadline
             bind:invalidPayeeName
             bind:invalidUnitAmount
+            bind:invalidDeadline
             {description}
             {title}
             {tooltip}
             {forbidChange}
-            {forbidAmountChange}
-            {maxUnitAmount}
+            {amountDivisor}
+            {decimalPlaces}
             {unit}
             />
         </form>
