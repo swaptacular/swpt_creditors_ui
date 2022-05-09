@@ -9,6 +9,7 @@
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
 
+  export let showAccount: (() => void) | undefined
   export let amountDivisor: number
   export let decimalPlaces: bigint
   export let payeeName: string
@@ -30,6 +31,8 @@
 
 <style>
   pre {
+    color: #888;
+    font-size: 0.9em;
     font-family: monospace;
     white-space: pre-wrap;
     overflow-wrap: break-word;
@@ -43,28 +46,32 @@
 
 <LayoutGrid>
   <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
-    <Wrapper>
-      <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
-        <Title style="display: flex; justify-content: space-between; align-items: center">
-          {title}
-          <Chip chip="help" on:click={() => undefined}>
-            <Text tabindex="0">info</Text>
+    <Paper style="margin-top: 12px; margin-bottom: 24px; word-break: break-word" elevation={6}>
+      <Title>
+        {#if showAccount !== undefined}
+          <Chip chip="account" style="float: right; margin-left: 6px">
+            <Text>
+              <a href="." style="text-decoration: none; color: #666" on:click|preventDefault={showAccount}>
+                account
+              </a>
+            </Text>
           </Chip>
-          <Tooltip>{tooltip}</Tooltip>
-        </Title>
+        {/if}
+        {title}
+      </Title>
+      <Wrapper>
         <Content>
           {#if description.contentFormat === '.'}
             <a href="{description.content}" target="_blank">{description.content}</a>
           {:else if description.content}
-            <pre>
-              {description.content}
-            </pre>
+            <pre>{description.content}</pre>
           {:else}
-            <span style="color: #c4c4c4">The payment request does not contain a description.</span>
+            <span style="color: #ccc">The payment request does not contain a description.</span>
           {/if}
         </Content>
-      </Paper>
-    </Wrapper>
+        <Tooltip>{tooltip}</Tooltip>
+      </Wrapper>
+    </Paper>
   </Cell>
 
   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>

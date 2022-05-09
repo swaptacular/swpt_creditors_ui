@@ -59,9 +59,10 @@
   }
 
   function getInitialDeadline(model: CreateTransferModel): string {
+    console.log(model.action.creationRequest.options?.deadline)
     let deadline = new Date(model.action.creationRequest.options?.deadline ?? '')
     if (Number.isNaN(deadline.getTime())) {
-      return '9999-12-31T23:59:00'
+      return '9999-12-31T23:59'
     }
     deadline.setMinutes(deadline.getMinutes() + deadline.getTimezoneOffset())
     deadline.setSeconds(0)
@@ -92,6 +93,21 @@
         + 'It is not safe to retry the transfer.'
     }
   }
+
+  function createUpdatedModel(): CreateTransferModel {
+    actionManager.save()
+    return {
+      ...model,
+      action: actionManager.currentValue,
+    }
+  }
+
+  const showAccount = model.accountData ? () => {
+    assert(model.accountData)
+    const accountUri = model.accountData.account.uri
+    const m = createUpdatedModel()
+    app.showAccount(accountUri, () => app.pageModel.set(m))
+  } : undefined
 
   function amountToBigint(amount: unknown, divisor: number): bigint {
     let result = 0n
@@ -141,6 +157,7 @@
   $: description = action.paymentInfo.description
   $: noteMaxBytes = Number(accountData?.info.noteMaxBytes ?? 500n)
   $: display = accountData?.display
+  $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
   $: amountDivisor = display?.amountDivisor ?? 1
   $: decimalPlaces = display?.decimalPlaces ?? 0n
   $: unit = display?.unit ?? '\u00a4'
@@ -149,7 +166,7 @@
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
-  $: title = status === 'Draft' ? 'Payment request' : `${status} payment`
+  $: title = status === 'Draft' ? `Payment via ${currencyName}` : `${status} payment via ${currencyName}`
   $: tooltip = getInfoTooltip(status)
   $: invalid = (
     invalidPayeeName ||
@@ -184,7 +201,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Make payment">
+  <Page title="Send payment">
     <svelte:fragment slot="content">
       <div bind:this={shakingElement}>
         <form
@@ -200,6 +217,7 @@
             bind:invalidPayeeName
             bind:invalidUnitAmount
             bind:invalidDeadline
+            {showAccount}
             {description}
             {title}
             {tooltip}

@@ -1033,6 +1033,10 @@ export class UserContext {
         transferUuid: uuidv4(),
         noteFormat: request.amount ? 'PAYMENT0' : 'payment0',
         note: generatePayment0TransferNote(request, Number(knownAccountData.info.noteMaxBytes)),
+        options: {
+          type: 'TransferOptions' as const,
+          deadline: request.deadline?.toISOString(),
+        },
       },
       paymentInfo: {
         payeeReference: request.payeeReference,
