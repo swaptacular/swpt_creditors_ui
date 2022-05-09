@@ -96,6 +96,7 @@ export type {
   AccountDataForDisplay,
   ExtendedLedgerEntry,
   CreateTransferActionStatus,
+  AccountFullData,
 }
 
 export type AlertOptions = {

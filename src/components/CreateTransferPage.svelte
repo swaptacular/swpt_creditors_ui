@@ -1,6 +1,6 @@
 <script lang="ts">
   import type {
-    AppState, CreateTransferActionStatus, CreateTransferModel, CreateTransferActionWithId
+    AppState, CreateTransferActionStatus, CreateTransferModel, CreateTransferActionWithId, AccountFullData
   } from '../app-state'
   import { INVALID_REQUEST_MESSAGE } from '../app-state'
   import { getCreateTransferActionStatus } from '../operations'
@@ -19,7 +19,7 @@
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let payeeName: string = model.action.paymentInfo.payeeName
-  let unitAmount: string | number = getInitialUnitAmount(model)
+  let unitAmount: unknown = getUnitAmount(model.accountData, model.action.creationRequest.amount)
   let deadline: string = getInitialDeadline(model)
 
   let invalidPayeeName: boolean | undefined
@@ -36,7 +36,11 @@
       paymentInfo,
       creationRequest: {
         ...action.creationRequest,
-        amount: amountToSend ?? 0n,
+
+        // In case the user does not edit the amount, we want to be
+        // sure that the sent amount is exactly the same as the
+        // requested amount.
+        amount: unitAmount === requestedUnitAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor),
         noteFormat: action.requestedAmount ? 'PAYMENT0' : 'payment0',
         note: generatePayment0TransferNote(paymentInfo, noteMaxBytes),
         options: {
@@ -47,9 +51,8 @@
     }
   }
 
-  function getInitialUnitAmount(model: CreateTransferModel): string {
-    const amount = model.action.creationRequest.amount
-    const display = model.accountData?.display
+  function getUnitAmount(accountData: AccountFullData | undefined, amount: bigint): string {
+    const display = accountData?.display
     const amountDivisor = display?.amountDivisor ?? 1
     const decimalPlaces = display?.decimalPlaces ?? 0n
     return amount ? amountToString(amount, amountDivisor, decimalPlaces) : ''
@@ -90,8 +93,8 @@
     }
   }
 
-  function amountToBigint(amount: unknown, divisor: number): bigint | undefined {
-    let result
+  function amountToBigint(amount: unknown, divisor: number): bigint {
+    let result = 0n
     if (amount !== '') {
       let x = Number(amount)
       if (Number.isFinite(x)) {
@@ -134,6 +137,7 @@
   $: accountData = model.accountData
   // $: forbidAmountChange = action.requestedAmount > 0
   // $: deadline = action.requestedDeadline
+  $: requestedUnitAmount = Number(getUnitAmount(accountData, action.requestedAmount))
   $: description = action.paymentInfo.description
   $: noteMaxBytes = Number(accountData?.info.noteMaxBytes ?? 500n)
   $: display = accountData?.display
@@ -147,7 +151,6 @@
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
   $: title = status === 'Draft' ? 'Payment request' : `${status} payment`
   $: tooltip = getInfoTooltip(status)
-  $: amountToSend = amountToBigint(unitAmount, amountDivisor)
   $: invalid = (
     invalidPayeeName ||
     invalidUnitAmount ||

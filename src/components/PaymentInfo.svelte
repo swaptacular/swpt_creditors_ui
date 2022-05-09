@@ -12,7 +12,7 @@
   export let amountDivisor: number
   export let decimalPlaces: bigint
   export let payeeName: string
-  export let unitAmount: string | number
+  export let unitAmount: unknown
   export let deadline: string
   export let description: PaymentDescription
   export let title: string
