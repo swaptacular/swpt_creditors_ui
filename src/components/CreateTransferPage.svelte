@@ -59,7 +59,6 @@
   }
 
   function getInitialDeadline(model: CreateTransferModel): string {
-    console.log(model.action.creationRequest.options?.deadline)
     let deadline = new Date(model.action.creationRequest.options?.deadline ?? '')
     if (Number.isNaN(deadline.getTime())) {
       return '9999-12-31T23:59'
