@@ -11,6 +11,7 @@
   import Fab, { Icon, Label } from '@smui/fab';
   import Page from './Page.svelte'
   import PaymentInfo from './PaymentInfo.svelte'
+  import EnterPinDialog from './EnterPinDialog.svelte'
   import Dialog from './Dialog.svelte'
 
   export let app: AppState
@@ -23,6 +24,7 @@
   let unitAmount: unknown = getUnitAmount(model.accountData, model.action.creationRequest.amount)
   let deadline: string = getInitialDeadline(model)
   let showConfirmDialog = false
+  let openEnterPinDialog = false
 
   let invalid: boolean | undefined
 
@@ -166,7 +168,7 @@
     }
   }
 
-  function validateAndExecute(): void {
+  function confirm(): void {
     if (invalid) {
       shakeForm()
     } else if (status === 'Timed out') {
@@ -177,13 +179,13 @@
     } else if (requestedUnitAmount !== '' && !unchangedAmount) {
         showConfirmDialog = true
     } else {
-      execute()
+      openEnterPinDialog = true
     }
   }
 
-  function execute(): void {
+  function submit(pin: string): void {
     // TODO:
-    console.log('sending the money')
+    console.log(`sending the money, ${pin}`)
   }
 
   $: action = model.action
@@ -216,6 +218,8 @@
 <div class="shaking-container">
   <Page title="Make payment">
     <svelte:fragment slot="content">
+      <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
+
       <div bind:this={shakingElement}>
         <form
           noValidate
@@ -258,7 +262,7 @@
             <Button on:click={resetAmount}>
               <ButtonLabel>No</ButtonLabel>
             </Button>
-            <Button default use={[InitialFocus]} on:click={execute}>
+            <Button default use={[InitialFocus]} on:click={() => openEnterPinDialog = true}>
               <ButtonLabel>Yes</ButtonLabel>
             </Button>
           </Actions>
@@ -276,7 +280,7 @@
       {/if}
       {#if !executeButtonIsHidden}
         <div class="fab-container">
-          <Fab color="primary" on:click={validateAndExecute} extended>
+          <Fab color="primary" on:click={confirm} extended>
             <Icon class="material-icons">monetization_on</Icon>
             <Label>{executeButtonLabel}</Label>
           </Fab>
