@@ -5,12 +5,13 @@
   import { INVALID_REQUEST_MESSAGE } from '../app-state'
   import { getCreateTransferActionStatus } from '../operations'
   import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
-  import { generatePayment0TransferNote } from '../payment-requests'
+  import { generatePayment0TransferNote, IvalidPaymentData } from '../payment-requests'
+  import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
+  import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Icon, Label } from '@smui/fab';
-  // import LayoutGrid, { Cell } from '@smui/layout-grid'
-  // import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
   import PaymentInfo from './PaymentInfo.svelte'
+  import Dialog from './Dialog.svelte'
 
   export let app: AppState
   export let model: CreateTransferModel
@@ -21,32 +22,51 @@
   let payeeName: string = model.action.paymentInfo.payeeName
   let unitAmount: unknown = getUnitAmount(model.accountData, model.action.creationRequest.amount)
   let deadline: string = getInitialDeadline(model)
+  let showConfirmDialog = false
 
-  let invalidPayeeName: boolean | undefined
-  let invalidUnitAmount: boolean | undefined
-  let invalidDeadline: boolean | undefined
+  let invalid: boolean | undefined
 
   function createUpdatedAction(): CreateTransferActionWithId {
-    const paymentInfo = {
-      ...action.paymentInfo,
-      payeeName,
+    // In case the user has not edited the amount, we want the sent
+    // amount to be exactly the same as the requested amount.
+    const amount = unchangedAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor)
+
+    // Try to generate a PAYMENT0 transfer note. If this fails, use an
+    // opaque reference format ("-").
+    let noteFormat = '-'
+    let note = paymentInfo.payeeReference
+    try {
+      note = generatePayment0TransferNote(paymentInfo, noteMaxBytes)
+      noteFormat = action.requestedAmount ? 'PAYMENT0' : 'payment0'
+    } catch (e: unknown) {
+      if (e instanceof IvalidPaymentData) {
+        console.warn('Can not generate a PAYMENT0 transfer note:', e)
+      } else throw e
     }
+
+    // The user should not be able to set a later deadline than the
+    // deadline declared in the payment request. (Otherwise the money
+    // could get transferred too late.)
+    let deadlineDate = new Date(deadline)
+    if (action.requestedDeadline && deadlineDate.getTime() > action.requestedDeadline.getTime()) {
+      deadlineDate = action.requestedDeadline
+    }
+    let isoDeadline: string | undefined
+    try {
+      isoDeadline = deadlineDate.toISOString()
+    } catch {
+      isoDeadline = action.requestedDeadline?.toISOString()
+    }
+
     return {
       ...action,
       paymentInfo,
       creationRequest: {
         ...action.creationRequest,
-
-        // In case the user does not edit the amount, we want to be
-        // sure that the sent amount is exactly the same as the
-        // requested amount.
-        amount: unitAmount === requestedUnitAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor),
-        noteFormat: action.requestedAmount ? 'PAYMENT0' : 'payment0',
-        note: generatePayment0TransferNote(paymentInfo, noteMaxBytes),
-        options: {
-          type: 'TransferOptions',
-          deadline: new Date(deadline).toISOString(),
-        },
+        options: { type: 'TransferOptions', deadline: isoDeadline },
+        amount,
+        noteFormat,
+        note,
       },
     }
   }
@@ -58,10 +78,21 @@
     return amount ? amountToString(amount, amountDivisor, decimalPlaces) : ''
   }
 
+  function resetAmount(): void {
+    unitAmount = getUnitAmount(accountData, action.requestedAmount)
+    actionManager.save()
+  }
+
   function getInitialDeadline(model: CreateTransferModel): string {
     let deadline = new Date(model.action.creationRequest.options?.deadline ?? '')
     if (Number.isNaN(deadline.getTime())) {
-      return '9999-12-31T23:59'
+      const requestedDeadline = model.action.requestedDeadline
+      if (requestedDeadline) {
+        deadline = requestedDeadline
+        assert(!Number.isNaN(deadline.getTime()))
+      } else {
+        return '9999-12-31T23:59'
+      }
     }
     deadline.setMinutes(deadline.getMinutes() - deadline.getTimezoneOffset())
     deadline.setSeconds(0)
@@ -135,7 +166,7 @@
     }
   }
 
-  function execute(): void {
+  function validateAndExecute(): void {
     if (invalid) {
       shakeForm()
     } else if (status === 'Timed out') {
@@ -143,17 +174,24 @@
       // acknowledged (not dismissed), because they may have resulted
       // in a transfer.
       actionManager.remove()
+    } else if (requestedUnitAmount !== '' && !unchangedAmount) {
+        showConfirmDialog = true
     } else {
-      // TODO:
+      execute()
     }
+  }
+
+  function execute(): void {
+    // TODO:
+    console.log('sending the money')
   }
 
   $: action = model.action
   $: accountData = model.accountData
-  // $: forbidAmountChange = action.requestedAmount > 0
-  // $: deadline = action.requestedDeadline
-  $: requestedUnitAmount = Number(getUnitAmount(accountData, action.requestedAmount))
-  $: description = action.paymentInfo.description
+  $: requestedUnitAmount = getUnitAmount(accountData, action.requestedAmount)
+  $: unchangedAmount = Number(unitAmount) === Number(requestedUnitAmount)
+  $: paymentInfo = action.paymentInfo
+  $: description = paymentInfo.description
   $: noteMaxBytes = Number(accountData?.info.noteMaxBytes ?? 500n)
   $: display = accountData?.display
   $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
@@ -167,30 +205,6 @@
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
   $: title = status === 'Draft' ? `Payment via ${currencyName}` : `${status} payment via ${currencyName}`
   $: tooltip = getInfoTooltip(status)
-  $: invalid = (
-    invalidPayeeName ||
-    invalidUnitAmount ||
-    invalidDeadline
-  )
-
-  /*
-  $: accountData = model.accountData
-  $: pegBounds = accountData.pegBounds
-  $: pegBound = pegBounds[0]
-  $: display = accountData.display
-  $: debtorName = display.debtorName
-  $: transfer = model.ledgerEntry
-  $: committedTransfer = transfer.transfer
-  $: rationale = committedTransfer?.rationale
-  $: paymentInfo = committedTransfer ? parseTransferNote(committedTransfer) : dumyPaymentInfo
-  $: payeeName = paymentInfo.payeeName
-  $: description = paymentInfo.description
-  $: payeeReference = paymentInfo.payeeReference
-  $: contentFormat = description.contentFormat
-  $: content = description.content
-  $: amount = transfer.acquiredAmount
-  $: displayAmount = calcDisplayAmount(amount)
-  */
 </script>
 
 <style>
@@ -210,23 +224,46 @@
           on:change={() => actionManager.save()}
           >
           <PaymentInfo
-            bind:payeeName
+            bind:invalid
             bind:unitAmount
             bind:deadline
-            bind:invalidPayeeName
-            bind:invalidUnitAmount
-            bind:invalidDeadline
+            {payeeName}
+            {forbidChange}
             {showAccount}
-            {description}
             {title}
             {tooltip}
-            {forbidChange}
+            {description}
             {amountDivisor}
             {decimalPlaces}
             {unit}
             />
         </form>
       </div>
+      {#if showConfirmDialog}
+        <Dialog
+          open
+          scrimClickAction=""
+          aria-labelledby="confirm-change-amount-dialog-title"
+          aria-describedby="confirm-change-amount-dialog-content"
+          on:MDCDialog:closed={() => showConfirmDialog = false}
+          >
+          <DialogTitle id="confirm-change-amount-dialog-title">Changed amount</DialogTitle>
+          <DialogContent id="confirm-change-amount-dialog-content">
+            The amount that you are about to send ({unitAmount}
+            {unit}), is different than the amount stated in the
+            payment request ({requestedUnitAmount} {unit}). Are you
+            sure you want to make this payment?
+          </DialogContent>
+          <Actions>
+            <Button on:click={resetAmount}>
+              <ButtonLabel>No</ButtonLabel>
+            </Button>
+            <Button default use={[InitialFocus]} on:click={execute}>
+              <ButtonLabel>Yes</ButtonLabel>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
@@ -239,7 +276,7 @@
       {/if}
       {#if !executeButtonIsHidden}
         <div class="fab-container">
-          <Fab color="primary" on:click={execute} extended>
+          <Fab color="primary" on:click={validateAndExecute} extended>
             <Icon class="material-icons">monetization_on</Icon>
             <Label>{executeButtonLabel}</Label>
           </Fab>

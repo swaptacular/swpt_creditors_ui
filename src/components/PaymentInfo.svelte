@@ -20,13 +20,16 @@
   export let tooltip: string
   export let unit: string
   export let forbidChange: boolean = true
-  export let invalidPayeeName: boolean | undefined = undefined
-  export let invalidUnitAmount: boolean | undefined = undefined
-  export let invalidDeadline: boolean | undefined = undefined
+  export let invalid: boolean | undefined
+
+  let invalidPayeeName: boolean | undefined = undefined
+  let invalidUnitAmount: boolean | undefined = undefined
+  let invalidDeadline: boolean | undefined = undefined
 
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = amountToString(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: maxUnitAmount = Number(amountToString(9223372036853775000n, amountDivisor, decimalPlaces))
+  $: invalid = invalidPayeeName || invalidUnitAmount || invalidDeadline
 </script>
 
 <style>
@@ -106,6 +109,7 @@
       required
       variant="outlined"
       style="width: 100%"
+      input$readonly
       input$maxlength="200"
       input$spellcheck="false"
       disabled={forbidChange}
