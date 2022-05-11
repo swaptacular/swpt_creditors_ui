@@ -1086,11 +1086,11 @@ export class UserContext {
         await updateExecutionState(action, { startedAt, unresolvedRequestAt: new Date(requestTime) })
 
         // When the given PIN is obviously invalid, we want to avoid
-        // getting a 422 error because of this, so we pass a dummy PIN
-        // instead. This way, we are certain that getting 422
-        // indicates a fatal error.
+        // getting a 422 error because of this, so we report the error
+        // immediately.
         if (!pin.match(/^[0-9]{4,10}$/)) {
-          pin = '0000'
+          await updateExecutionState(action, { startedAt, unresolvedRequestAt })
+          throw new ForbiddenOperation()
         }
 
         // The user should not be able to set a later deadline than
