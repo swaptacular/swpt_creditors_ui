@@ -20,13 +20,13 @@
   export let status: string
   export let tooltip: string
   export let unit: string
-  export let forbidChange: boolean = true
   export let invalid: boolean | undefined
 
   let invalidPayeeName: boolean | undefined = undefined
   let invalidUnitAmount: boolean | undefined = undefined
   let invalidDeadline: boolean | undefined = undefined
 
+  $: isDraft = status === 'Draft'
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = amountToString(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: maxUnitAmount = Number(amountToString(9223372036853775000n, amountDivisor, decimalPlaces))
@@ -72,7 +72,7 @@
         Payment via {currencyName}
       </Title>
         <Content>
-          {#if status !== 'Draft'}
+          {#if !isDraft}
             <Wrapper>
               <p class="transfer-status">
                 Status: <span>{status.toLowerCase()}</span>
@@ -91,7 +91,7 @@
     </Paper>
   </Cell>
 
-  {#if forbidChange}
+  {#if !isDraft}
     <Cell>
       <Textfield
         required

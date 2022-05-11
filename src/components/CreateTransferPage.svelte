@@ -200,7 +200,6 @@
   $: decimalPlaces = display?.decimalPlaces ?? 0n
   $: unit = display?.unit ?? '\u00a4'
   $: status = getCreateTransferActionStatus(action)
-  $: forbidChange = status !== 'Draft'
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
@@ -231,7 +230,6 @@
             bind:deadline
             {currencyName}
             {payeeName}
-            {forbidChange}
             {showAccount}
             {status}
             {tooltip}
