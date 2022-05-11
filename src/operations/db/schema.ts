@@ -192,8 +192,9 @@ export type CreateTransferAction =
     accountUri: string,
     transferUuid: string,
     recipientUri: string,
-    noteMaxBytes: bigint,
     paymentInfo: PaymentInfo,
+    noteFormat: string,
+    note: string
     requestedAmount: bigint,
     requestedDeadline?: Date,
     editedAmount: bigint

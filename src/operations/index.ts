@@ -1042,13 +1042,6 @@ export class UserContext {
     if (!knownAccountData.info.account) {
       throw new AccountCanNotMakePayments()
     }
-    const noteMaxBytes = knownAccountData.info.noteMaxBytes
-
-    // Before creating a new create transfer action, we try to
-    // generate a transfer note for the eventual transfer. If not
-    // successful, this will throw a`IvalidPaymentData` error.
-    generatePayment0TransferNote(request, Number(noteMaxBytes))
-
     const actionRecord = {
       userId: this.userId,
       actionType: 'CreateTransfer' as const,
@@ -1062,10 +1055,11 @@ export class UserContext {
         payeeName: request.payeeName,
         description: request.description,
       },
+      noteFormat: request.amount ? 'PAYMENT0' : 'payment0',
+      note: generatePayment0TransferNote(request, Number(knownAccountData.info.noteMaxBytes)),
       requestedAmount: request.amount,
       requestedDeadline: request.deadline,
       accountUri: account.uri,
-      noteMaxBytes,
     }
     await createActionRecord(actionRecord)  // adds the `actionId` field
     return actionRecord as CreateTransferActionWithId
@@ -1117,8 +1111,8 @@ export class UserContext {
           recipient: { type: 'AccountIdentity' as const, uri: action.recipientUri },
           amount: action.editedAmount,
           transferUuid: action.transferUuid,
-          noteFormat: action.requestedAmount ? 'PAYMENT0' : 'payment0',
-          note: generatePayment0TransferNote(action.paymentInfo, Number(action.noteMaxBytes)),
+          noteFormat: action.noteFormat,
+          note: action.note,
           options: { type: 'TransferOptions' as const, deadline: deadline?.toISOString() },
           pin,
         }

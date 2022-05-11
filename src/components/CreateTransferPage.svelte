@@ -28,6 +28,8 @@
   let invalid: boolean | undefined
 
   function createUpdatedAction(): CreateTransferActionWithId {
+    if (status !== 'Draft') return action
+
     // In case the user has not edited the amount, we want the sent
     // amount to be exactly the same as the requested amount.
     const editedAmount = unchangedAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor)
