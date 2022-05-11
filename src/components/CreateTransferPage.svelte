@@ -28,7 +28,7 @@
   let invalid: boolean | undefined
 
   function createUpdatedAction(): CreateTransferActionWithId {
-    if (status !== 'Draft') return action
+    if (!isDraft) return action
 
     // In case the user has not edited the amount, we want the sent
     // amount to be exactly the same as the requested amount.
@@ -137,7 +137,7 @@
   }
 
   function confirm(): void {
-    if (invalid) {
+    if (invalid && isDraft) {
       shakeForm()
     } else if (status === 'Timed out') {
       // Timed out payments can not be executed, but still must be
@@ -145,7 +145,7 @@
       // in a transfer.
       actionManager.remove()
     } else if (requestedUnitAmount !== '' && !unchangedAmount) {
-        showConfirmDialog = true
+      showConfirmDialog = true
     } else {
       openEnterPinDialog = true
     }
@@ -167,6 +167,7 @@
   $: decimalPlaces = display?.decimalPlaces ?? 0n
   $: unit = display?.unit ?? '\u00a4'
   $: status = getCreateTransferActionStatus(action)
+  $: isDraft = status === 'Draft'
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
