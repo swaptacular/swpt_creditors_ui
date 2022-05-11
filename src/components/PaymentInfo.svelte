@@ -16,7 +16,8 @@
   export let unitAmount: unknown
   export let deadline: string
   export let description: PaymentDescription
-  export let title: string
+  export let currencyName: string
+  export let status: string
   export let tooltip: string
   export let unit: string
   export let forbidChange: boolean = true
@@ -45,6 +46,14 @@
     overflow-wrap: break-word;
     width: 100%;
   }
+  .transfer-status {
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 16px 0 16px 0;
+  }
+  .transfer-status span {
+    text-decoration: underline;
+  }
 </style>
 
 <LayoutGrid>
@@ -60,10 +69,17 @@
             </Text>
           </Chip>
         {/if}
-        {title}
+        Payment via {currencyName}
       </Title>
-      <Wrapper>
         <Content>
+          {#if status !== 'Draft'}
+            <Wrapper>
+              <p class="transfer-status">
+                Status: <span>{status.toLowerCase()}</span>
+              </p>
+              <Tooltip>{tooltip}</Tooltip>
+            </Wrapper>
+          {/if}
           {#if description.contentFormat === '.'}
             <a href="{description.content}" target="_blank">{description.content}</a>
           {:else if description.content}
@@ -72,81 +88,148 @@
             <span style="color: #ccc">The payment request does not contain a description.</span>
           {/if}
         </Content>
-        <Tooltip>{tooltip}</Tooltip>
-      </Wrapper>
     </Paper>
   </Cell>
 
-  <Cell>
-    <Textfield
-      required
-      variant="outlined"
-      type="number"
-      disabled={forbidChange}
-      input$min={unitAmountStep}
-      input$max={maxUnitAmount}
-      input$step={unitAmountStep}
-      style="width: 100%"
-      withTrailingIcon={invalidUnitAmount}
-      bind:value={unitAmount}
-      bind:invalid={invalidUnitAmount}
-      label="Amount"
-      suffix={unit}
-      >
-      <svelte:fragment slot="trailingIcon">
-        {#if invalidUnitAmount}
-          <TextfieldIcon class="material-icons">error</TextfieldIcon>
-        {/if}
-      </svelte:fragment>
-      <HelperText slot="helper" persistent>
-        The amount that will be sent to the payee.
-      </HelperText>
-    </Textfield>
-  </Cell>
+  {#if forbidChange}
+    <Cell>
+      <Textfield
+        required
+        variant="outlined"
+        type="number"
+        input$readonly
+        input$min={unitAmountStep}
+        input$max={maxUnitAmount}
+        input$step={unitAmountStep}
+        style="width: 100%"
+        withTrailingIcon={invalidUnitAmount}
+        bind:value={unitAmount}
+        bind:invalid={invalidUnitAmount}
+        label="Amount"
+        suffix={unit}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidUnitAmount}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The amount that will be sent to the payee.
+        </HelperText>
+      </Textfield>
+    </Cell>
 
-  <Cell>
-    <Textfield
-      required
-      variant="outlined"
-      style="width: 100%"
-      input$readonly
-      input$maxlength="200"
-      input$spellcheck="false"
-      disabled={forbidChange}
-      bind:invalid={invalidPayeeName}
-      bind:value={payeeName}
-      label="Payee name"
-      >
-      <svelte:fragment slot="trailingIcon">
-        {#if invalidPayeeName}
-          <TextfieldIcon class="material-icons">error</TextfieldIcon>
-        {/if}
-      </svelte:fragment>
-      <HelperText slot="helper" persistent>
-        The name of the recipient of the payment.
-      </HelperText>
-    </Textfield>
-  </Cell>
+    <Cell>
+      <Textfield
+        variant="outlined"
+        style="width: 100%"
+        label="Payee name"
+        input$readonly
+        input$maxlength="200"
+        input$spellcheck="false"
+        bind:invalid={invalidPayeeName}
+        bind:value={payeeName}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidPayeeName}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The name of the recipient of the payment.
+        </HelperText>
+      </Textfield>
+    </Cell>
 
-  <Cell>
-    <Textfield
-      required
-      disabled={forbidChange}
-      variant="outlined"
-      style="width: 100%"
-      type="datetime-local"
-      bind:invalid={invalidDeadline}
-      bind:value={deadline}
-      label="Deadline"
-      >
-      <svelte:fragment slot="trailingIcon">
-        {#if invalidDeadline}
-          <TextfieldIcon class="material-icons">error</TextfieldIcon>
-        {/if}
-      </svelte:fragment>
-      <HelperText slot="helper" persistent>
-        The payment must be completed before that moment.
-      </HelperText>
-    </Textfield>
-  </Cell>
+    <Cell>
+      <Textfield
+        required
+        input$readonly
+        variant="outlined"
+        style="width: 100%"
+        type="datetime-local"
+        label="Deadline"
+        bind:invalid={invalidDeadline}
+        bind:value={deadline}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidDeadline}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The payment must be completed before that moment.
+        </HelperText>
+      </Textfield>
+    </Cell>
+  {:else}
+    <Cell>
+      <Textfield
+        required
+        variant="outlined"
+        style="width: 100%"
+        type="number"
+        label="Amount"
+        input$min={unitAmountStep}
+        input$max={maxUnitAmount}
+        input$step={unitAmountStep}
+        suffix={unit}
+        withTrailingIcon={invalidUnitAmount}
+        bind:value={unitAmount}
+        bind:invalid={invalidUnitAmount}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidUnitAmount}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The amount that will be sent to the payee.
+        </HelperText>
+      </Textfield>
+    </Cell>
+
+    <Cell>
+      <Textfield
+        variant="outlined"
+        style="width: 100%"
+        label="Payee name"
+        input$readonly
+        input$maxlength="200"
+        input$spellcheck="false"
+        bind:invalid={invalidPayeeName}
+        bind:value={payeeName}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidPayeeName}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The name of the recipient of the payment.
+        </HelperText>
+      </Textfield>
+    </Cell>
+
+    <Cell>
+      <Textfield
+        required
+        variant="outlined"
+        style="width: 100%"
+        type="datetime-local"
+        label="Deadline"
+        bind:invalid={invalidDeadline}
+        bind:value={deadline}
+        >
+        <svelte:fragment slot="trailingIcon">
+          {#if invalidDeadline}
+            <TextfieldIcon class="material-icons">error</TextfieldIcon>
+          {/if}
+        </svelte:fragment>
+        <HelperText slot="helper" persistent>
+          The payment must be completed before that moment.
+        </HelperText>
+      </Textfield>
+    </Cell>
+  {/if}
 </LayoutGrid>

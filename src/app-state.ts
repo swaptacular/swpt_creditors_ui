@@ -15,11 +15,12 @@ import { writable } from 'svelte/store'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { generatePr0Blob } from './payment-requests'
 import {
-  obtainUserContext, parseCoinUri, UserContext, AuthenticationError, ServerSessionError,
-  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError,
+  IS_A_NEWBIE_KEY, obtainUserContext, parseCoinUri, UserContext, AuthenticationError,
+  IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, ServerSessionError,
   RecordDoesNotExist, WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError,
   PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, BuyingIsForbidden,
-  AccountDoesNotExist, AccountCanNotMakePayments, IS_A_NEWBIE_KEY
+  AccountDoesNotExist, AccountCanNotMakePayments, TransferCreationTimeout, WrongTransferData,
+  ForbiddenOperation
 } from './operations'
 
 type AttemptOptions = {
@@ -1468,6 +1469,56 @@ export class AppState {
         [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
         [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
       ],
+    })
+  }
+
+  executeCreateTransferAction(actionManager: ActionManager<CreateTransferActionWithId>, pin: string): Promise<void> {
+    let interactionId: number
+    const saveActionPromise = actionManager.save()
+    let action = actionManager.currentValue
+    const showActions = () => { this.showActions() }
+    const reloadAction = () => { this.showAction(action.actionId) }
+    const checkAndShowActions = () => { if (this.interactionId === interactionId) showActions() }
+    const checkAndReloadAction = () => { if (this.interactionId === interactionId) reloadAction() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      await saveActionPromise
+      const transferRecord = await this.uc.executeCreateTransferAction(action, pin)
+      if (this.interactionId === interactionId) {
+        this.showTransfer(transferRecord.uri, showActions)
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndReloadAction })],
+        [ForbiddenOperation, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndReloadAction })],
+        [WrongTransferData, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
+        [TransferCreationTimeout, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
+        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+      ],
+    })
+  }
+
+  async showTransfer(TransferUri: string, back?: () => void): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      checkAndGoBack()
+      // TODO: implement
+      TransferUri
+
+      // if (this.interactionId === interactionId) {
+      //   this.pageModel.set({
+      //     type: 'LedgerEntryModel',
+      //     reload: () => { this.showLedgerEntry(accountUri, entryId, back) },
+      //     ledgerEntry: { ...ledgerEntry, transfer: committedTransfer },
+      //     goBack,
+      //     accountData,
+      //   })
+      // }
     })
   }
 

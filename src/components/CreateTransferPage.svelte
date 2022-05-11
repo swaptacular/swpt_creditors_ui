@@ -184,8 +184,7 @@
   }
 
   function submit(pin: string): void {
-    // TODO:
-    console.log(`sending the money, ${pin}`)
+    app.executeCreateTransferAction(actionManager, pin)
   }
 
   $: action = model.action
@@ -205,7 +204,6 @@
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
-  $: title = status === 'Draft' ? `Payment via ${currencyName}` : `${status} payment via ${currencyName}`
   $: tooltip = getInfoTooltip(status)
 </script>
 
@@ -231,10 +229,11 @@
             bind:invalid
             bind:unitAmount
             bind:deadline
+            {currencyName}
             {payeeName}
             {forbidChange}
             {showAccount}
-            {title}
+            {status}
             {tooltip}
             {description}
             {amountDivisor}

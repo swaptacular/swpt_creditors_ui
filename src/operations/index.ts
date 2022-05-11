@@ -1,4 +1,6 @@
-import type { PinInfo, Account, DebtorIdentity, CommittedTransfer } from './server'
+import type {
+  PinInfo, Account, DebtorIdentity, CommittedTransfer, Transfer, Error as WebApiError
+} from './server'
 import type {
   WalletRecordWithId, ActionRecordWithId, TaskRecordWithId, ListQueryOptions, CreateTransferActionWithId,
   CreateAccountActionWithId, AckAccountInfoActionWithId, DebtorDataSource, AccountDisplayRecord,
@@ -6,7 +8,7 @@ import type {
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord, CreateTransferActionStatus,
-  AccountInfoRecord
+  AccountInfoRecord, TransferRecord, ExecutionState
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
@@ -31,12 +33,12 @@ import {
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
   getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
-  getCreateTransferActionStatus
+  getCreateTransferActionStatus, createTransferRecord, getTransferRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
 } from './db-sync'
-import { makePinInfo, makeAccount, makeLogObject } from './canonical-objects'
+import { makePinInfo, makeAccount, makeTransfer, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
   getDataFromDebtorInfo, fetchNewLedgerEntries, getDebtorIdentityFromAccountIdentity
@@ -140,6 +142,18 @@ export class AccountCanNotMakePayments extends Error {
   name = 'AccountCanNotMakePayments'
 }
 
+export class TransferCreationTimeout extends Error {
+  name = 'TransferCreationTimeout'
+}
+
+export class WrongTransferData extends Error {
+  name = 'WrongTransferData'
+}
+
+export class ForbiddenOperation extends Error {
+  name = 'ForbiddenOperation'
+}
+
 /* Splits the coin URI (scanned from the QR code) into "debtor info
  * uri" and "debtor identity URI". The caller must be prepared this
  * function to throw `InvalidCoinUri`. */
@@ -213,6 +227,11 @@ export async function update(server: ServerSession, userId: number, accountsMap:
       console.error(error)
     }
   }
+}
+
+async function updateExecutionState(action: CreateTransferActionWithId, execution: ExecutionState): Promise<void> {
+  await replaceActionRecord(action, { ...action, execution })
+  action.execution = execution
 }
 
 async function createAccountDeletionTasksIfNecessary(userId: number, accountsMap: AccountsMap): Promise<void> {
@@ -1049,6 +1068,76 @@ export class UserContext {
     }
     await createActionRecord(actionRecord)  // adds the `actionId` field
     return actionRecord as CreateTransferActionWithId
+  }
+
+  /* Tries to (re)execute the given create transfer action. If the
+   * execution is successful, the given action record is deleted, and
+   * a `TransferRecord` instance is returned. The caller must be
+   * prepared this method to throw `ServerSessionError`,
+   * `ForbiddenOperation`, `WrongTransferData`,
+   * `TransferCreationTimeout`, `RecordDoesNotExist`. Note that the
+   * passed `action` object will be modified according to the changes
+   * occurring in the state of the action record. */
+  async executeCreateTransferAction(action: CreateTransferActionWithId, pin: string): Promise<TransferRecord> {
+    let transferRecord
+
+    switch (getCreateTransferActionStatus(action)) {
+      case 'Draft':
+      case 'Not confirmed':
+      case 'Not sent':
+        const now = Date.now()
+        const { startedAt = new Date(now), unresolvedRequestAt } = action.execution ?? {}
+        const requestTime = Math.max(now, (unresolvedRequestAt?.getTime() ?? -Infinity) + 1)
+        await updateExecutionState(action, { startedAt, unresolvedRequestAt: new Date(requestTime) })
+
+        // NOTE: When the given PIN is obviously invalid, we want to
+        // avoid getting a 422 error because of this, so we pass a
+        // dummy PIN instead. This way, we are certain that getting
+        // 422 indicates a fatal error.
+        if (!pin.match(/^[0-9]{4,10}$/)) {
+          pin = '0000'
+        }
+        try {
+          const response = await this.server.post(
+            this.walletRecord.createTransfer.uri,
+            { ...action.creationRequest, pin },
+            { attemptLogin: true },
+          ) as HttpResponse<Transfer>
+          const transfer = makeTransfer(response)
+          transferRecord = await createTransferRecord(action, transfer)
+        } catch (e: unknown) {
+          if (e instanceof HttpError) {
+            if (e.status === 422) {
+              const webApiError: WebApiError = (typeof e.data === 'object' ? e.data : null) ?? {}
+              await updateExecutionState(action, { startedAt, result: { ...webApiError, ok: false as const } })
+              throw new WrongTransferData()
+            } else {
+              await updateExecutionState(action, { startedAt, unresolvedRequestAt })
+              if (e.status === 403) throw new ForbiddenOperation()
+              throw new ServerSessionError(`unexpected status code (${e.status})`)
+            }
+          } else throw e
+        }
+        break
+
+      case 'Initiated':
+        const transferUri: string = (action.execution?.result as any).transferUri
+        transferRecord = await getTransferRecord(transferUri)
+        assert(transferRecord, 'missing transfer record')
+        replaceActionRecord(action, null)
+        break
+
+      case 'Failed':
+        throw new WrongTransferData()
+
+      case 'Timed out':
+        throw new TransferCreationTimeout()
+    }
+
+    if (!transferRecord.result && transferRecord.checkupAt) {
+      this.scheduleUpdate(new Date(transferRecord.checkupAt))
+    }
+    return transferRecord
   }
 
   /* Returns the properly sorted list of configured accounts for the
