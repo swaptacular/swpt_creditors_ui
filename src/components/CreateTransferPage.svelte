@@ -49,8 +49,10 @@
   }
 
   function resetAmount(): void {
-    unitAmount = getUnitAmount(accountData, action.requestedAmount)
-    actionManager.save()
+    if (isDraft) {
+      unitAmount = getUnitAmount(accountData, action.requestedAmount)
+      actionManager.save()
+    }
   }
 
   function getInitialDeadline(model: CreateTransferModel): string {
@@ -219,7 +221,7 @@
           <DialogTitle id="confirm-change-amount-dialog-title">Changed amount</DialogTitle>
           <DialogContent id="confirm-change-amount-dialog-content">
             The amount that you are about to send ({unitAmount}
-            {unit}), is different than the amount stated in the
+            {unit}), is not the same as the amount stated in the
             payment request ({requestedUnitAmount} {unit}). Are you
             sure you want to make this payment?
           </DialogContent>
