@@ -62,7 +62,7 @@
     switch (action.actionType) {
       case "CreateTransfer": {
         const payeeName = action.paymentInfo.payeeName
-        const amount = action.creationRequest.amount
+        const amount = action.editedAmount
         const display = app.accountsMap.getAccountDisplay(action.accountUri)
         if (display) {
           const unit = display.unit

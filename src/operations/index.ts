@@ -1023,8 +1023,9 @@ export class UserContext {
   }
 
   /* Reads a payment request, and adds and returns a new create
-   * transfer action. May throw `IvalidPaymentRequest` or
-   * `AccountDoesNotExist`. */
+   * transfer action. The caller must be prepared this method to throw
+   * `IvalidPaymentRequest`, `IvalidPaymentData`,
+   * `AccountDoesNotExist`, `AccountCanNotMakePayments`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
     const request = await parsePaymentRequest(blob)
     const debtorUri = getDebtorIdentityFromAccountIdentity(request.accountUri)
@@ -1041,22 +1042,21 @@ export class UserContext {
     if (!knownAccountData.info.account) {
       throw new AccountCanNotMakePayments()
     }
+    const noteMaxBytes = knownAccountData.info.noteMaxBytes
+
+    // Before creating a new create transfer action, we try to
+    // generate a transfer note for the eventual transfer. If not
+    // successful, this will throw a`IvalidPaymentData` error.
+    generatePayment0TransferNote(request, Number(noteMaxBytes))
+
     const actionRecord = {
       userId: this.userId,
       actionType: 'CreateTransfer' as const,
       createdAt: new Date(),
-      creationRequest: {
-        type: 'TransferCreationRequest' as const,
-        recipient: { uri: request.accountUri },
-        amount: request.amount,
-        transferUuid: uuidv4(),
-        noteFormat: request.amount ? 'PAYMENT0' : 'payment0',
-        note: generatePayment0TransferNote(request, Number(knownAccountData.info.noteMaxBytes)),
-        options: {
-          type: 'TransferOptions' as const,
-          deadline: request.deadline?.toISOString(),
-        },
-      },
+      recipientUri: request.accountUri,
+      transferUuid: uuidv4(),
+      editedAmount: request.amount,
+      editedDeadline: request.deadline,
       paymentInfo: {
         payeeReference: request.payeeReference,
         payeeName: request.payeeName,
@@ -1065,6 +1065,7 @@ export class UserContext {
       requestedAmount: request.amount,
       requestedDeadline: request.deadline,
       accountUri: account.uri,
+      noteMaxBytes,
     }
     await createActionRecord(actionRecord)  // adds the `actionId` field
     return actionRecord as CreateTransferActionWithId
@@ -1074,7 +1075,7 @@ export class UserContext {
    * execution is successful, the given action record is deleted, and
    * a `TransferRecord` instance is returned. The caller must be
    * prepared this method to throw `ServerSessionError`,
-   * `ForbiddenOperation`, `WrongTransferData`,
+   * `ForbiddenOperation`, `WrongTransferData`, `IvalidPaymentData`,
    * `TransferCreationTimeout`, `RecordDoesNotExist`. Note that the
    * passed `action` object will be modified according to the changes
    * occurring in the state of the action record. */
@@ -1090,17 +1091,42 @@ export class UserContext {
         const requestTime = Math.max(now, (unresolvedRequestAt?.getTime() ?? -Infinity) + 1)
         await updateExecutionState(action, { startedAt, unresolvedRequestAt: new Date(requestTime) })
 
-        // NOTE: When the given PIN is obviously invalid, we want to
-        // avoid getting a 422 error because of this, so we pass a
-        // dummy PIN instead. This way, we are certain that getting
-        // 422 indicates a fatal error.
+        // When the given PIN is obviously invalid, we want to avoid
+        // getting a 422 error because of this, so we pass a dummy PIN
+        // instead. This way, we are certain that getting 422
+        // indicates a fatal error.
         if (!pin.match(/^[0-9]{4,10}$/)) {
           pin = '0000'
         }
+
+        // The user should not be able to set a later deadline than
+        // the deadline declared in the payment request. (Otherwise
+        // the money could get transferred too late.)
+        let deadline = action.editedDeadline
+        if (deadline !== undefined) {
+          const t = deadline.getTime()
+          if (Number.isNaN(t) || (action.requestedDeadline !== undefined && t > action.requestedDeadline.getTime())) {
+            deadline = action.requestedDeadline
+          }
+        }
+
+        // It is theoretically possible this to throw an
+        // `IvalidPaymentData` error, but normally, this should not happen.
+        const creationRequest = {
+          type: 'TransferCreationRequest' as const,
+          recipient: { type: 'AccountIdentity' as const, uri: action.recipientUri },
+          amount: action.editedAmount,
+          transferUuid: action.transferUuid,
+          noteFormat: action.requestedAmount ? 'PAYMENT0' : 'payment0',
+          note: generatePayment0TransferNote(action.paymentInfo, Number(action.noteMaxBytes)),
+          options: { type: 'TransferOptions' as const, deadline: deadline?.toISOString() },
+          pin,
+        }
+
         try {
           const response = await this.server.post(
             this.walletRecord.createTransfer.uri,
-            { ...action.creationRequest, pin },
+            creationRequest,
             { attemptLogin: true },
           ) as HttpResponse<Transfer>
           const transfer = makeTransfer(response)

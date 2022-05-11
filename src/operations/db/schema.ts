@@ -3,7 +3,7 @@ import type { BaseDebtorData, ResourceReference, DocumentWithHash, Peg } from '.
 import type {
   LedgerEntryV0, TransferV0, CommittedTransferV0, PinInfoV0, CreditorV0, WalletV0, AccountV0,
   AccountLedgerV0, AccountInfoV0, AccountKnowledgeV0, AccountExchangeV0, AccountDisplayV0,
-  AccountConfigV0, TransferCreationRequestV0, WebApiError, ObjectReference
+  AccountConfigV0, WebApiError, ObjectReference
 } from '../canonical-objects'
 
 import { Dexie } from 'dexie'
@@ -190,10 +190,14 @@ export type CreateTransferAction =
   & {
     actionType: 'CreateTransfer',
     accountUri: string,
-    creationRequest: TransferCreationRequestV0,
+    transferUuid: string,
+    recipientUri: string,
+    noteMaxBytes: bigint,
     paymentInfo: PaymentInfo,
     requestedAmount: bigint,
     requestedDeadline?: Date,
+    editedAmount: bigint
+    editedDeadline?: Date,
     execution?: ExecutionState,
   }
 
@@ -521,7 +525,7 @@ class CreditorsDb extends Dexie {
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
 
-      actions: '++actionId,&payeeReference,[userId+createdAt],creationRequest.transferUuid,transferUri,accountUri',
+      actions: '++actionId,&payeeReference,[userId+createdAt],transferUuid,transferUri,accountUri',
       tasks: '++taskId,[userId+scheduledFor],transferUri,accountUri',
     })
 

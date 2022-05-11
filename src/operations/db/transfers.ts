@@ -124,7 +124,7 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
 
   const matchCreateTransferAction = async (): Promise<boolean> => {
     const matched = await db.actions
-      .where({ 'creationRequest.transferUuid': transferUuid })
+      .where({ transferUuid })
       .filter(action => action.actionType === 'CreateTransfer')
       .modify((action: CreateTransferAction) => {
         action.execution = {

@@ -5,7 +5,6 @@
   import { INVALID_REQUEST_MESSAGE } from '../app-state'
   import { getCreateTransferActionStatus } from '../operations'
   import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
-  import { generatePayment0TransferNote, IvalidPaymentData } from '../payment-requests'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Icon, Label } from '@smui/fab';
@@ -21,7 +20,7 @@
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let payeeName: string = model.action.paymentInfo.payeeName
-  let unitAmount: unknown = getUnitAmount(model.accountData, model.action.creationRequest.amount)
+  let unitAmount: unknown = getUnitAmount(model.accountData, model.action.editedAmount)
   let deadline: string = getInitialDeadline(model)
   let showConfirmDialog = false
   let openEnterPinDialog = false
@@ -31,45 +30,12 @@
   function createUpdatedAction(): CreateTransferActionWithId {
     // In case the user has not edited the amount, we want the sent
     // amount to be exactly the same as the requested amount.
-    const amount = unchangedAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor)
-
-    // Try to generate a PAYMENT0 transfer note. If this fails, use an
-    // opaque reference format ("-").
-    let noteFormat = '-'
-    let note = paymentInfo.payeeReference
-    try {
-      note = generatePayment0TransferNote(paymentInfo, noteMaxBytes)
-      noteFormat = action.requestedAmount ? 'PAYMENT0' : 'payment0'
-    } catch (e: unknown) {
-      if (e instanceof IvalidPaymentData) {
-        console.warn('Can not generate a PAYMENT0 transfer note:', e)
-      } else throw e
-    }
-
-    // The user should not be able to set a later deadline than the
-    // deadline declared in the payment request. (Otherwise the money
-    // could get transferred too late.)
-    let deadlineDate = new Date(deadline)
-    if (action.requestedDeadline && deadlineDate.getTime() > action.requestedDeadline.getTime()) {
-      deadlineDate = action.requestedDeadline
-    }
-    let isoDeadline: string | undefined
-    try {
-      isoDeadline = deadlineDate.toISOString()
-    } catch {
-      isoDeadline = action.requestedDeadline?.toISOString()
-    }
-
+    const editedAmount = unchangedAmount ? action.requestedAmount : amountToBigint(unitAmount, amountDivisor)
+    const editedDeadline = new Date(deadline)
     return {
       ...action,
-      paymentInfo,
-      creationRequest: {
-        ...action.creationRequest,
-        options: { type: 'TransferOptions', deadline: isoDeadline },
-        amount,
-        noteFormat,
-        note,
-      },
+      editedDeadline: Number.isNaN(editedDeadline.getTime()) ? undefined : editedDeadline,
+      editedAmount,
     }
   }
 
@@ -86,11 +52,11 @@
   }
 
   function getInitialDeadline(model: CreateTransferModel): string {
-    let deadline = new Date(model.action.creationRequest.options?.deadline ?? '')
+    let deadline = new Date(model.action.editedDeadline ?? '')
     if (Number.isNaN(deadline.getTime())) {
       const requestedDeadline = model.action.requestedDeadline
       if (requestedDeadline) {
-        deadline = requestedDeadline
+        deadline = new Date(requestedDeadline)
         assert(!Number.isNaN(deadline.getTime()))
       } else {
         return '9999-12-31T23:59'
@@ -193,7 +159,6 @@
   $: unchangedAmount = Number(unitAmount) === Number(requestedUnitAmount)
   $: paymentInfo = action.paymentInfo
   $: description = paymentInfo.description
-  $: noteMaxBytes = Number(accountData?.info.noteMaxBytes ?? 500n)
   $: display = accountData?.display
   $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
   $: amountDivisor = display?.amountDivisor ?? 1
