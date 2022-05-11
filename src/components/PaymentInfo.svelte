@@ -96,23 +96,15 @@
       <Textfield
         required
         variant="outlined"
-        type="number"
-        input$readonly
-        input$min={unitAmountStep}
-        input$max={maxUnitAmount}
-        input$step={unitAmountStep}
         style="width: 100%"
-        withTrailingIcon={invalidUnitAmount}
-        bind:value={unitAmount}
-        bind:invalid={invalidUnitAmount}
+        type="number"
         label="Amount"
+        input$readonly
+        input$step="any"
+        bind:invalid={invalidUnitAmount}
+        value={unitAmount}
         suffix={unit}
         >
-        <svelte:fragment slot="trailingIcon">
-          {#if invalidUnitAmount}
-            <TextfieldIcon class="material-icons">error</TextfieldIcon>
-          {/if}
-        </svelte:fragment>
         <HelperText slot="helper" persistent>
           The amount that will be sent to the payee.
         </HelperText>
@@ -125,16 +117,10 @@
         style="width: 100%"
         label="Payee name"
         input$readonly
-        input$maxlength="200"
         input$spellcheck="false"
         bind:invalid={invalidPayeeName}
-        bind:value={payeeName}
+        value={payeeName}
         >
-        <svelte:fragment slot="trailingIcon">
-          {#if invalidPayeeName}
-            <TextfieldIcon class="material-icons">error</TextfieldIcon>
-          {/if}
-        </svelte:fragment>
         <HelperText slot="helper" persistent>
           The name of the recipient of the payment.
         </HelperText>
@@ -143,20 +129,15 @@
 
     <Cell>
       <Textfield
-        required
-        input$readonly
         variant="outlined"
         style="width: 100%"
         type="datetime-local"
         label="Deadline"
+        required
+        input$readonly
         bind:invalid={invalidDeadline}
-        bind:value={deadline}
+        value={deadline}
         >
-        <svelte:fragment slot="trailingIcon">
-          {#if invalidDeadline}
-            <TextfieldIcon class="material-icons">error</TextfieldIcon>
-          {/if}
-        </svelte:fragment>
         <HelperText slot="helper" persistent>
           The payment must be completed before that moment.
         </HelperText>
@@ -197,6 +178,7 @@
         input$readonly
         input$maxlength="200"
         input$spellcheck="false"
+        withTrailingIcon={invalidPayeeName}
         bind:invalid={invalidPayeeName}
         bind:value={payeeName}
         >
@@ -218,6 +200,7 @@
         style="width: 100%"
         type="datetime-local"
         label="Deadline"
+        withTrailingIcon={invalidDeadline}
         bind:invalid={invalidDeadline}
         bind:value={deadline}
         >
