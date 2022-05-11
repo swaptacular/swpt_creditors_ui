@@ -18,30 +18,10 @@
   }
 
   onMount(() => {
-    let destructor
-
     QrScanner.hasCamera().then(ok => { noCamera = !ok })
     const qrScanner = new QrScanner(videoElement, onScannedValue)
-    const startedScannerPromise = qrScanner.start()
-    const tryTurningFlashOn = async (): Promise<boolean> => {
-      let mustTurnFlashOff = false
-      await startedScannerPromise
-      if (await qrScanner.hasFlash()) {
-        mustTurnFlashOff = qrScanner.isFlashOn()
-        await qrScanner.turnFlashOn()
-      }
-      return mustTurnFlashOff
-    }
-    const flashEffortPromise = tryTurningFlashOn()
-
-    destructor = async () => {
-      if (await flashEffortPromise) {
-        await qrScanner.turnFlashOff()
-      }
-      qrScanner.destroy()
-    }
-
-    return destructor
+    qrScanner.start()
+    return () => qrScanner.destroy()
   })
 
   $: maxVideoHeight = windowHeight - 205
