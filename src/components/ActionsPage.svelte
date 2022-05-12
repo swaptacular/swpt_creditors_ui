@@ -140,7 +140,7 @@
   <svelte:fragment slot="floating">
     {#if hasAccounts}
       <div class="fab-container">
-        <Fab on:click={() => alert('not implemented') }>
+        <Fab on:click={() => app.showTransfers()}>
           <Icon class="material-icons">history</Icon>
         </Fab>
       </div>

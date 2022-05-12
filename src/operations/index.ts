@@ -33,7 +33,7 @@ import {
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
   getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
-  getCreateTransferActionStatus, createTransferRecord, getTransferRecord
+  getCreateTransferActionStatus, createTransferRecord, getTransferRecord, getTransferRecords
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -100,6 +100,7 @@ export type {
   PegBound,
   BaseDebtorData,
   CreateTransferActionStatus,
+  TransferRecord,
 }
 
 export class ConflictingUpdate extends Error {
@@ -321,6 +322,8 @@ export class UserContext {
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
   readonly obtainBaseDebtorData = obtainBaseDebtorData
+  readonly getTransferRecords: (options?: ListQueryOptions) => Promise<TransferRecord[]>
+  readonly getTransferRecord = getTransferRecord
   readonly getAccountSortPriority = getAccountSortPriority
   readonly getExpectedPaymentAmount = getExpectedPaymentAmount
   readonly getLedgerEntry = getLedgerEntry
@@ -341,6 +344,7 @@ export class UserContext {
     this.userId = walletRecord.userId
     this.walletRecord = walletRecord
     this.scheduleUpdate = this.updateScheduler.schedule.bind(this.updateScheduler)
+    this.getTransferRecords = getTransferRecords.bind(undefined, this.userId)
     this.getActionRecords = getActionRecords.bind(undefined, this.userId)
     this.setAccountSortPriority = setAccountSortPriority.bind(undefined, this.userId)
     this.setDefaultPayeeName = setDefaultPayeeName.bind(undefined, this.userId)

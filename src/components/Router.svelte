@@ -16,6 +16,8 @@
   import AccountPage from './AccountPage.svelte'
   import LedgerEntryPage from './LedgerEntryPage.svelte'
   import CreateTransferPage from './CreateTransferPage.svelte'
+  import TransfersPage from './TransfersPage.svelte'
+  import TransferPage from './TransferPage.svelte'
 
   export let app: AppState
   export let snackbarBottom: string = '0px'
@@ -59,6 +61,10 @@
       return LedgerEntryPage
     case 'CreateTransferModel':
       return CreateTransferPage
+    case 'TransfersModel':
+      return TransfersPage
+    case 'TransferModel':
+      return TransferPage
     default:
       throw new Error('unknown page model type')
     }

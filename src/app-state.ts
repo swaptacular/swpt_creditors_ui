@@ -6,11 +6,11 @@ import type {
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, CreateTransferActionWithId,
-  ExtendedLedgerEntry, CreateTransferActionStatus
+  ExtendedLedgerEntry, CreateTransferActionStatus, TransferRecord
 } from './operations'
 
 import equal from 'fast-deep-equal'
-import { liveQuery } from 'dexie'
+import { Dexie, liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { generatePr0Blob } from './payment-requests'
@@ -78,6 +78,8 @@ export const ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE = 'You do have an account '
   + 'allowed. This may be just a temporary condition, if the account has '
   + 'been created only recently.'
 
+export const PAYMENT_DOES_NOT_EXIST_MESSAGE = 'The requested payment record does not exist.'
+
 export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
 
 export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
@@ -99,6 +101,7 @@ export type {
   CreateTransferActionStatus,
   AccountFullData,
   AccountDisplayRecord,
+  TransferRecord,
 }
 
 export type AlertOptions = {
@@ -143,6 +146,8 @@ export type PageModel =
   | AccountModel
   | LedgerEntryModel
   | CreateTransferModel
+  | TransfersModel
+  | TransferModel
 
 type BasePageModel = {
   type: string,
@@ -274,6 +279,20 @@ export type CreateTransferModel = BasePageModel & {
   type: 'CreateTransferModel',
   action: CreateTransferActionWithId,
   accountData: AccountFullData | undefined,
+}
+
+export type TransfersModel = BasePageModel & {
+  type: 'TransfersModel',
+  transfers: TransferRecord[],
+  fetchTransfers: () => Promise<TransferRecord[]>,
+  scrollTop?: number,
+  scrollLeft?: number,
+}
+
+export type TransferModel = BasePageModel & {
+  type: 'TransferModel',
+  transfer: Store<TransferRecord>,
+  goBack: () => void,
 }
 
 export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
@@ -1500,26 +1519,51 @@ export class AppState {
     })
   }
 
-  async showTransfer(TransferUri: string, back?: () => void): Promise<void> {
-    let interactionId: number
-    const goBack = back ?? (() => { this.showActions() })
-    const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
+  showTransfers(): Promise<void> {
+    // TODO: Implement properly.
 
     return this.attempt(async () => {
-      interactionId = this.interactionId
-      checkAndGoBack()
-      // TODO: implement
-      TransferUri
+      const interactionId = this.interactionId
 
-      // if (this.interactionId === interactionId) {
-      //   this.pageModel.set({
-      //     type: 'LedgerEntryModel',
-      //     reload: () => { this.showLedgerEntry(accountUri, entryId, back) },
-      //     ledgerEntry: { ...ledgerEntry, transfer: committedTransfer },
-      //     goBack,
-      //     accountData,
-      //   })
-      // }
+      let before: any = Dexie.maxKey
+      const fetchTransfers = async (): Promise<TransferRecord[]> => {
+        const batch = await this.uc.getTransferRecords({ before, limit: 100 })
+        const n = batch.length
+        before = n > 0 ? batch[n - 1].time : Number.MIN_VALUE
+        return batch
+      }
+      const transfers = await fetchTransfers()
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'TransfersModel',
+          reload: () => { this.showTransfers() },
+          goBack: () => { this.showActions() },
+          transfers,
+          fetchTransfers,
+        })
+      }
+    })
+  }
+
+  showTransfer(transferUri: string, back?: () => void): Promise<void> {
+    // TODO: Implement properly.
+
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const transfer = await createLiveQuery(() => this.uc.getTransferRecord(transferUri))
+      if (this.interactionId === interactionId) {
+        const goBack = back ?? (() => { this.showTransfers() })
+        if (getStoreValue(transfer) !== undefined) {
+          this.pageModel.set({
+            type: 'TransferModel',
+            reload: () => { this.showTransfer(transferUri, back) },
+            goBack,
+            transfer: transfer as Store<TransferRecord>,
+          })
+        } else {
+          this.addAlert(new Alert(PAYMENT_DOES_NOT_EXIST_MESSAGE, { continue: goBack }))
+        }
+      }
     })
   }
 
@@ -1714,4 +1758,11 @@ export async function createAppState(): Promise<AppState | undefined> {
     return new AppState(uc, actions)
   }
   return undefined
+}
+
+function getStoreValue<T>(store: Store<T>): T {
+  let value: T | undefined
+  const unsubscribe = store.subscribe(v => { value = v })
+  unsubscribe()
+  return value as T
 }
