@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { PaymentDescription } from '../payment-requests'
+  import type { AccountDisplayRecord } from '../app-state'
+  import type { PaymentInfo } from '../payment-requests'
   import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -10,22 +11,26 @@
   import Tooltip, { Wrapper } from '@smui/tooltip'
 
   export let showAccount: (() => void) | undefined
-  export let amountDivisor: number
-  export let decimalPlaces: bigint
-  export let payeeName: string
+  export let paymentInfo: PaymentInfo
+  export let display: AccountDisplayRecord | undefined
   export let unitAmount: unknown
   export let deadline: string
-  export let description: PaymentDescription
-  export let currencyName: string
   export let status: string
-  export let tooltip: string
-  export let unit: string
+  export let statusTooltip: string
   export let invalid: boolean | undefined
 
   let invalidPayeeName: boolean | undefined = undefined
   let invalidUnitAmount: boolean | undefined = undefined
   let invalidDeadline: boolean | undefined = undefined
 
+  $: payeeName = paymentInfo.payeeName
+  $: description = paymentInfo.description
+  $: contentFormat = description.contentFormat
+  $: content = description.content
+  $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
+  $: amountDivisor = display?.amountDivisor ?? 1
+  $: decimalPlaces = display?.decimalPlaces ?? 0n
+  $: unit = display?.unit ?? '\u00a4'
   $: isDraft = status === 'Draft'
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = amountToString(tinyNegligibleAmount, amountDivisor, decimalPlaces)
@@ -77,13 +82,13 @@
               <p class="transfer-status">
                 Status: <span>{status.toLowerCase()}</span>
               </p>
-              <Tooltip>{tooltip}</Tooltip>
+              <Tooltip>{statusTooltip}</Tooltip>
             </Wrapper>
           {/if}
-          {#if description.contentFormat === '.'}
-            <a href="{description.content}" target="_blank">{description.content}</a>
-          {:else if description.content}
-            <pre>{description.content}</pre>
+          {#if contentFormat === '.'}
+            <a href="{content}" target="_blank">{content}</a>
+          {:else if content}
+            <pre>{content}</pre>
           {:else}
             <span style="color: #ccc">The payment request does not contain a description.</span>
           {/if}
@@ -180,7 +185,7 @@
         input$spellcheck="false"
         withTrailingIcon={invalidPayeeName}
         bind:invalid={invalidPayeeName}
-        bind:value={payeeName}
+        value={payeeName}
         >
         <svelte:fragment slot="trailingIcon">
           {#if invalidPayeeName}

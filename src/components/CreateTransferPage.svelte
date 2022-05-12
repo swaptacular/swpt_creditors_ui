@@ -19,7 +19,6 @@
 
   let shakingElement: HTMLElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
-  let payeeName: string = model.action.paymentInfo.payeeName
   let unitAmount: unknown = getUnitAmount(model.accountData, model.action.editedAmount)
   let deadline: string = getInitialDeadline(model)
   let showConfirmDialog = false
@@ -162,18 +161,15 @@
   $: requestedUnitAmount = getUnitAmount(accountData, action.requestedAmount)
   $: unchangedAmount = Number(unitAmount) === Number(requestedUnitAmount)
   $: paymentInfo = action.paymentInfo
-  $: description = paymentInfo.description
   $: display = accountData?.display
-  $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
   $: amountDivisor = display?.amountDivisor ?? 1
-  $: decimalPlaces = display?.decimalPlaces ?? 0n
   $: unit = display?.unit ?? '\u00a4'
   $: status = getCreateTransferActionStatus(action)
   $: isDraft = status === 'Draft'
   $: executeButtonLabel = (status !== 'Initiated' && status !== 'Timed out' && status !== 'Failed') ? "Send" : 'Acknowledge'
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
-  $: tooltip = getInfoTooltip(status)
+  $: statusTooltip = getInfoTooltip(status)
 </script>
 
 <style>
@@ -198,15 +194,11 @@
             bind:invalid
             bind:unitAmount
             bind:deadline
-            {currencyName}
-            {payeeName}
+            {display}
             {showAccount}
+            {paymentInfo}
             {status}
-            {tooltip}
-            {description}
-            {amountDivisor}
-            {decimalPlaces}
-            {unit}
+            {statusTooltip}
             />
         </form>
       </div>
