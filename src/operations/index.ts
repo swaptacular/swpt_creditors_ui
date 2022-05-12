@@ -1069,7 +1069,7 @@ export class UserContext {
    * execution is successful, the given action record is deleted, and
    * a `TransferRecord` instance is returned. The caller must be
    * prepared this method to throw `ServerSessionError`,
-   * `ForbiddenOperation`, `WrongTransferData`, `IvalidPaymentData`,
+   * `ForbiddenOperation`, `WrongTransferData`,
    * `TransferCreationTimeout`, `RecordDoesNotExist`. Note that the
    * passed `action` object will be modified according to the changes
    * occurring in the state of the action record. */

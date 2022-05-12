@@ -1493,7 +1493,6 @@ export class AppState {
       alerts: [
         [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndReloadAction })],
         [ForbiddenOperation, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndReloadAction })],
-        [IvalidPaymentData, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
         [WrongTransferData, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
         [TransferCreationTimeout, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
         [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
