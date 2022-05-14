@@ -56,6 +56,16 @@
     text-align: center;
     color: #c4c4c4;
   }
+  .transfer {
+    font-family: Courier,monospace;
+    line-height: 1.25;
+    word-break: break-word;
+    margin: 10px 0 0 1.5em;
+    text-indent: -1.5em;
+  }
+  .transfer span {
+    font-size: 1.25em;
+  }
 </style>
 
 <Page title="Payments" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
@@ -75,10 +85,12 @@
                     <Icon style="vertical-align: -20%" class="material-icons">{getIconName(transfer)}</Icon>
                     {getDate(transfer)}
                   </h5>
-                  <p>
-                    {amountToString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
-                    {transfer.display?.unit} to
-                    {transfer.paymentInfo.payeeName}
+                  <p class="transfer">
+                    <span>
+                      {amountToString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
+                      {transfer.display?.unit ?? '\u00a4'}
+                    </span>
+                    to {transfer.paymentInfo.payeeName}
                   </p>
                 </Content>
               </PrimaryAction>

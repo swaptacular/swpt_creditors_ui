@@ -77,27 +77,20 @@ export async function getTransferRecords(
   if (latestFirst) {
     collection = collection.reverse()
   }
-  let transferRecords: ExtendedTransferRecord[] = await collection.toArray()
-  await Promise.all(transferRecords.map(async t => {
-    const debtorIdentityUri = getDebtorIdentityFromAccountIdentity(t.recipient.uri)
-    if (debtorIdentityUri) {
-      const account = await getAccountRecordByDebtorUri(t.userId, debtorIdentityUri)
-      if (account) {
-        const display = await getAccountObjectRecord(account.display.uri)
-        if (display) {
-          assert(display.type === 'AccountDisplay')
-          if (display.debtorName !== undefined) {
-            t.display = display
-          }
-        }
-      }
-    }
-  }))
-  return transferRecords
+  const transferRecords = await collection.toArray()
+  return await Promise.all(transferRecords.map(extendTransferRecord))
 }
 
 export async function getTransferRecord(uri: string): Promise<TransferRecord | undefined> {
   return await db.transfers.get(uri)
+}
+
+export async function getExtendedTransferRecord(uri: string): Promise<ExtendedTransferRecord | undefined> {
+  const transferRecord = await db.transfers.get(uri)
+  if (transferRecord) {
+    return await extendTransferRecord(transferRecord)
+  }
+  return undefined
 }
 
 /* Deletes the passed create transfer action record, and ensures
@@ -317,4 +310,22 @@ function hasTimedOut(startedAt: Date, currentTime: number = Date.now()): boolean
 function getIsoTimeOrNow(isoTime?: string): number {
   const time = isoTime ? new Date(isoTime).getTime() : NaN
   return Number.isFinite(time) ? time : Date.now()
+}
+
+async function extendTransferRecord(transferRecord: TransferRecord): Promise<ExtendedTransferRecord> {
+  let t: ExtendedTransferRecord = { ...transferRecord }
+  const debtorIdentityUri = getDebtorIdentityFromAccountIdentity(t.recipient.uri)
+  if (debtorIdentityUri) {
+    const account = await getAccountRecordByDebtorUri(t.userId, debtorIdentityUri)
+    if (account) {
+      const display = await getAccountObjectRecord(account.display.uri)
+      if (display) {
+        assert(display.type === 'AccountDisplay')
+        if (display.debtorName !== undefined) {
+          t.display = display
+        }
+      }
+    }
+  }
+  return t
 }

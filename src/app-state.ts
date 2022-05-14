@@ -292,7 +292,7 @@ export type TransfersModel = BasePageModel & {
 
 export type TransferModel = BasePageModel & {
   type: 'TransferModel',
-  transfer: Store<TransferRecord>,
+  transfer: Store<ExtendedTransferRecord>,
   goBack: () => void,
 }
 
@@ -1545,11 +1545,9 @@ export class AppState {
   }
 
   showTransfer(transferUri: string, back?: () => void): Promise<void> {
-    // TODO: Implement properly.
-
     return this.attempt(async () => {
       const interactionId = this.interactionId
-      const transfer = await createLiveQuery(() => this.uc.getTransferRecord(transferUri))
+      const transfer = await createLiveQuery(() => this.uc.getExtendedTransferRecord(transferUri))
       if (this.interactionId === interactionId) {
         const goBack = back ?? (() => { this.showTransfers() })
         if (getStoreValue(transfer) !== undefined) {
@@ -1557,7 +1555,7 @@ export class AppState {
             type: 'TransferModel',
             reload: () => { this.showTransfer(transferUri, back) },
             goBack,
-            transfer: transfer as Store<TransferRecord>,
+            transfer: transfer as Store<ExtendedTransferRecord>,
           })
         } else {
           this.addAlert(new Alert(PAYMENT_DOES_NOT_EXIST_MESSAGE, { continue: goBack }))

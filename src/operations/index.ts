@@ -34,7 +34,7 @@ import {
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
   getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
   getCreateTransferActionStatus, createTransferRecord, getTransferRecord, getTransferRecords,
-  getDebtorIdentityFromAccountIdentity
+  getDebtorIdentityFromAccountIdentity, getExtendedTransferRecord
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -326,6 +326,7 @@ export class UserContext {
   readonly obtainBaseDebtorData = obtainBaseDebtorData
   readonly getTransferRecords: (options?: ListQueryOptions) => Promise<ExtendedTransferRecord[]>
   readonly getTransferRecord = getTransferRecord
+  readonly getExtendedTransferRecord = getExtendedTransferRecord
   readonly getAccountSortPriority = getAccountSortPriority
   readonly getExpectedPaymentAmount = getExpectedPaymentAmount
   readonly getLedgerEntry = getLedgerEntry
