@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { AppState, TransfersModel, TransferRecord } from '../app-state'
-  // import { onMount } from "svelte"
+  import type { AppState, TransfersModel, ExtendedTransferRecord } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { Icon } from '@smui/common'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -13,7 +12,7 @@
   export const snackbarBottom: string = "0px"
 
   let scrollElement: HTMLElement
-  let transfers: TransferRecord[] = []
+  let transfers: ExtendedTransferRecord[] = []
   let newBatch = model.transfers
 
   async function fetchNewBatch(): Promise<void> {
@@ -28,7 +27,7 @@
     })
   }
 
-  function getIconName(t: TransferRecord): string {
+  function getIconName(t: ExtendedTransferRecord): string {
     if (!t.result) {
       return 'schedule'
     } else if (t.result.error) {
@@ -38,22 +37,12 @@
     }
   }
 
-  function getDate(t: TransferRecord): string {
+  function getDate(t: ExtendedTransferRecord): string {
     const initiatedAt = new Date(t.initiatedAt)
     return initiatedAt.toLocaleString()
   }
 
-  // onMount(() => {
-  //   if (scrollElement) {
-  //     scrollElement.scrollTop = model.scrollTop ?? scrollElement.scrollTop
-  //     scrollElement.scrollLeft = model.scrollLeft ?? scrollElement.scrollLeft
-  //   }
-  // })
-
   $: transfers = [...transfers, ...newBatch]
-  $: amountDivisor = 1
-  $: decimalPlaces = 0n
-  $: unit = '\u00A4'
 </script>
 
 <style>
@@ -87,7 +76,9 @@
                     {getDate(transfer)}
                   </h5>
                   <p>
-                    {`${amountToString(transfer.amount, amountDivisor, decimalPlaces)} ${unit} to ${transfer.paymentInfo.payeeName}`}
+                    {amountToString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
+                    {transfer.display?.unit} to
+                    {transfer.paymentInfo.payeeName}
                   </p>
                 </Content>
               </PrimaryAction>

@@ -1,5 +1,6 @@
 import type {
-  WalletRecordWithId, DocumentRecord, AccountKnowledgeRecord, AccountInfoRecord, AccountRecord
+  WalletRecordWithId, DocumentRecord, AccountKnowledgeRecord, AccountInfoRecord, AccountRecord,
+  AccountObjectRecord
 } from './schema'
 import type { DebtorInfoV0, AccountKnowledgeV0 } from '../canonical-objects'
 import type { DebtorData, BaseDebtorData } from '../../debtor-info'
@@ -266,6 +267,29 @@ async function tryToGetDebtorDataFromDebtorInfo(
     if (debtorData && debtorData.debtorIdentity.uri === debtorIdentityUri) {
       return debtorData
     }
+  }
+  return undefined
+}
+
+export async function getAccountRecord(accountUri: string): Promise<AccountRecord | undefined> {
+  return await db.accounts.get(accountUri)
+}
+
+export async function getAccountObjectRecord(objectUri: string): Promise<AccountObjectRecord | undefined> {
+  return await db.accountObjects.get(objectUri)
+}
+
+export async function getAccountRecordByDebtorUri(
+  userId: number,
+  debtorUri: string,
+): Promise<AccountRecord | undefined> {
+  return await db.accounts.where({userId, 'debtor.uri': debtorUri}).first()
+}
+
+export function getDebtorIdentityFromAccountIdentity(uri: string): string | undefined {
+  const parts = uri.split('/')
+  if (parts.length === 2) {
+    return parts[0]
   }
   return undefined
 }

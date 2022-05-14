@@ -8,7 +8,7 @@ import type {
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord, CreateTransferActionStatus,
-  AccountInfoRecord, TransferRecord, ExecutionState
+  AccountInfoRecord, TransferRecord, ExtendedTransferRecord, ExecutionState
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
@@ -33,7 +33,8 @@ import {
   getAccountSortPriority, setAccountSortPriority, ensureUniqueAccountAction, ensureDeleteAccountTask,
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
   getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
-  getCreateTransferActionStatus, createTransferRecord, getTransferRecord, getTransferRecords
+  getCreateTransferActionStatus, createTransferRecord, getTransferRecord, getTransferRecords,
+  getDebtorIdentityFromAccountIdentity
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -41,7 +42,7 @@ import {
 import { makePinInfo, makeAccount, makeTransfer, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
-  getDataFromDebtorInfo, fetchNewLedgerEntries, getDebtorIdentityFromAccountIdentity
+  getDataFromDebtorInfo, fetchNewLedgerEntries
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -101,6 +102,7 @@ export type {
   BaseDebtorData,
   CreateTransferActionStatus,
   TransferRecord,
+  ExtendedTransferRecord,
 }
 
 export class ConflictingUpdate extends Error {
@@ -322,7 +324,7 @@ export class UserContext {
   readonly getActionRecord = getActionRecord
   readonly replaceActionRecord = replaceActionRecord
   readonly obtainBaseDebtorData = obtainBaseDebtorData
-  readonly getTransferRecords: (options?: ListQueryOptions) => Promise<TransferRecord[]>
+  readonly getTransferRecords: (options?: ListQueryOptions) => Promise<ExtendedTransferRecord[]>
   readonly getTransferRecord = getTransferRecord
   readonly getAccountSortPriority = getAccountSortPriority
   readonly getExpectedPaymentAmount = getExpectedPaymentAmount

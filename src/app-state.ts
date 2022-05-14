@@ -6,7 +6,7 @@ import type {
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, CreateTransferActionWithId,
-  ExtendedLedgerEntry, CreateTransferActionStatus, TransferRecord
+  ExtendedLedgerEntry, CreateTransferActionStatus, TransferRecord, ExtendedTransferRecord
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -102,6 +102,7 @@ export type {
   AccountFullData,
   AccountDisplayRecord,
   TransferRecord,
+  ExtendedTransferRecord,
 }
 
 export type AlertOptions = {
@@ -283,8 +284,8 @@ export type CreateTransferModel = BasePageModel & {
 
 export type TransfersModel = BasePageModel & {
   type: 'TransfersModel',
-  transfers: TransferRecord[],
-  fetchTransfers: () => Promise<TransferRecord[]>,
+  transfers: ExtendedTransferRecord[],
+  fetchTransfers: () => Promise<ExtendedTransferRecord[]>,
   scrollTop?: number,
   scrollLeft?: number,
 }
@@ -1520,13 +1521,11 @@ export class AppState {
   }
 
   showTransfers(): Promise<void> {
-    // TODO: Implement properly.
-
     return this.attempt(async () => {
       const interactionId = this.interactionId
 
       let before: any = Dexie.maxKey
-      const fetchTransfers = async (): Promise<TransferRecord[]> => {
+      const fetchTransfers = async (): Promise<ExtendedTransferRecord[]> => {
         const batch = await this.uc.getTransferRecords({ before, limit: 100 })
         const n = batch.length
         before = n > 0 ? batch[n - 1].time : Number.MIN_VALUE

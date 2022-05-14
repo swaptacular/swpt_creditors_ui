@@ -2,13 +2,16 @@ import type { Collection } from 'dexie'
 import type { TransferV0 } from '../canonical-objects'
 import type {
   CreateTransferAction, CreateTransferActionWithId, TransferRecord, AbortTransferActionWithId,
-  AbortTransferAction, ListQueryOptions, ExecutionState
+  AbortTransferAction, ListQueryOptions, ExecutionState, AccountDisplayRecord
 } from './schema'
 import equal from 'fast-deep-equal'
 import { Dexie } from 'dexie'
 import { parseTransferNote } from '../../payment-requests'
 import { db, RecordDoesNotExist } from './schema'
-import { UserDoesNotExist, isInstalledUser, getWalletRecord } from './common'
+import {
+  UserDoesNotExist, isInstalledUser, getWalletRecord, getAccountRecordByDebtorUri,
+  getAccountObjectRecord, getDebtorIdentityFromAccountIdentity
+} from './common'
 
 export const MAX_PROCESSING_DELAY_MILLISECONDS = 2 * appConfig.serverApiTimeout + 3_600_000  // to be on the safe side
 export const TRANSFER_NORMAL_WAIT_SECONDS = 86400  // 24 hours before the transfer is considered delayed.
@@ -17,6 +20,10 @@ export const TRANSFER_DELETION_DELAY_SECONDS = Math.max(
   appConfig.transferDeletionDelaySeconds, TRANSFER_DELETION_MIN_DELAY_SECONDS)
 
 export type TransferState = 'waiting' | 'delayed' | 'successful' | 'unsuccessful'
+
+export type ExtendedTransferRecord = TransferRecord & {
+  display?: AccountDisplayRecord,
+}
 
 export function getTransferState(transfer: TransferV0): TransferState {
   switch (transfer.result?.committedAmount) {
@@ -58,7 +65,10 @@ export function getCreateTransferActionStatus(
   }
 }
 
-export async function getTransferRecords(userId: number, options: ListQueryOptions = {}): Promise<TransferRecord[]> {
+export async function getTransferRecords(
+  userId: number,
+  options: ListQueryOptions = {},
+): Promise<ExtendedTransferRecord[]> {
   const { before = Dexie.maxKey, after = Dexie.minKey, limit = 1e9, latestFirst = true } = options
   let collection = db.transfers
     .where('[userId+time]')
@@ -67,7 +77,23 @@ export async function getTransferRecords(userId: number, options: ListQueryOptio
   if (latestFirst) {
     collection = collection.reverse()
   }
-  return await collection.toArray()
+  let transferRecords: ExtendedTransferRecord[] = await collection.toArray()
+  await Promise.all(transferRecords.map(async t => {
+    const debtorIdentityUri = getDebtorIdentityFromAccountIdentity(t.recipient.uri)
+    if (debtorIdentityUri) {
+      const account = await getAccountRecordByDebtorUri(t.userId, debtorIdentityUri)
+      if (account) {
+        const display = await getAccountObjectRecord(account.display.uri)
+        if (display) {
+          assert(display.type === 'AccountDisplay')
+          if (display.debtorName !== undefined) {
+            t.display = display
+          }
+        }
+      }
+    }
+  }))
+  return transferRecords
 }
 
 export async function getTransferRecord(uri: string): Promise<TransferRecord | undefined> {
