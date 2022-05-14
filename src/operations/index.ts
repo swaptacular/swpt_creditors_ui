@@ -43,7 +43,7 @@ import {
 import { makePinInfo, makeAccount, makeTransfer, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
-  getDataFromDebtorInfo, fetchNewLedgerEntries
+  getDataFromDebtorInfo, fetchNewLedgerEntries, getTransferStatusDetails
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -61,6 +61,7 @@ export {
   ServerSessionError,
   IS_A_NEWBIE_KEY,
   getCreateTransferActionStatus,
+  getTransferStatusDetails,
 }
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0

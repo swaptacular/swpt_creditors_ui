@@ -95,6 +95,7 @@ export type {
   UpdatePolicyActionWithId,
   PaymentRequestActionWithId,
   CreateTransferActionWithId,
+  AbortTransferActionWithId,
   CommittedTransferRecord,
   PegBound,
   AccountDataForDisplay,
