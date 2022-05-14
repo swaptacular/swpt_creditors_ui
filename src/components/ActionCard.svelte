@@ -17,7 +17,7 @@
     case 'CreateTransfer':
       return 'Make payment'
     case 'AbortTransfer':
-      return 'Show the problem'
+      return action.transfer.result ? "Show the failed payment" : "Show the delayed payment"
     case 'CreateAccount':
       return 'Confirm account'
     case "AckAccountInfo":

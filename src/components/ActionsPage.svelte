@@ -57,7 +57,8 @@
     margin: 16px 16px;
   }
   .no-actions {
-    --no-actions-color: #c4c4c4;
+    --no-actions-color: #888;
+    font-size: 1.25em;
     margin: 36px 18px 26px 18px;
     text-align: center;
     color: var(--no-actions-color);
