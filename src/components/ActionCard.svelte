@@ -78,8 +78,18 @@
         const transfer = action.transfer
         const title = transfer.result ? "Failed payment" : "Delayed payment"
         const payeeName = transfer.paymentInfo.payeeName
-        const unitAmount = "0.00"
-        const unit = "\u00a4"
+        let amountDivisor = 1
+        let decimalPlaces = 0n
+        let unit = "\u00a4"
+        if (action.accountUri !== undefined) {
+          const display = app.accountsMap.getAccountDisplay(action.accountUri)
+          if (display) {
+            amountDivisor = display.amountDivisor
+            decimalPlaces = display.decimalPlaces
+            unit = display.unit ?? "\u00a4"
+          }
+        }
+        const unitAmount = amountToString(transfer.amount, amountDivisor, decimalPlaces)
         return `${title}: ${unitAmount} ${unit} to ${payeeName}.`
       }
       case "CreateAccount": {

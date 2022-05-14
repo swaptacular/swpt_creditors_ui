@@ -224,6 +224,7 @@ export type AbortTransferAction =
     actionType: 'AbortTransfer',
     transferUri: string,
     transfer: TransferRecord,
+    accountUri?: string,
   }
 
 export type AbortTransferActionWithId =

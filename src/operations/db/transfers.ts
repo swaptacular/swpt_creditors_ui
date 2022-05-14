@@ -204,9 +204,11 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
   const putAbortTransferAction = async (t: TransferRecord): Promise<void> => {
     let abortTransferAction: AbortTransferAction | undefined
     const existingAbortTransferAction = await getAbortTransferActionQuery().first()
+    const accountUri = (await extendTransferRecord(t))?.display?.account.uri
     if (!existingAbortTransferAction) {
       abortTransferAction = {
         userId,
+        accountUri,
         actionType: 'AbortTransfer',
         createdAt: new Date(),
         transferUri,
