@@ -107,16 +107,16 @@
   $: unitAmount = getUnitAmount($transfer)
   $: deadline = getDeadline($transfer)
   $: display = $transfer.display
+  $: unit = display?.unit ?? '\u00a4'
   $: paymentInfo = parseTransferNote($transfer)
   $: status = getStatus($transfer)
   $: statusTooltip = getStatusTooltip($transfer)
   $: dataUrl = generateDataUrl($transfer)
   $: payeeName = $transfer.paymentInfo.payeeName ?? 'Unknown payee'
   $: payeeReference = $transfer.paymentInfo.payeeReference
-  $: debtorName = $transfer.display?.debtorName ?? 'Unknown currency'
-  $: downloadNameShort = `Pay ${payeeName} via ${debtorName}`
+  $: downloadNameShort = `Pay ${unitAmount} ${unit} to ${payeeName}`
   $: downloadName = payeeReference ? `${downloadNameShort} - ${payeeReference}` : downloadNameShort
-  $: fileName = downloadName.slice(0, 120) + '.pr0'
+  $: fileName = downloadName.slice(0, 120).replace(/[<>:"/|?*\\]/g, ' ') + '.pr0'
 
   $: showAccount = $transfer.display ? () => {
     assert($transfer.display)
