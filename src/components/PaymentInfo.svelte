@@ -17,7 +17,7 @@
   export let deadline: string
   export let status: string
   export let statusTooltip: string
-  export let invalid: boolean | undefined
+  export let invalid: boolean | undefined = undefined
 
   let invalidPayeeName: boolean | undefined = undefined
   let invalidUnitAmount: boolean | undefined = undefined
