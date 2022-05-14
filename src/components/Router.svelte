@@ -18,6 +18,7 @@
   import CreateTransferPage from './CreateTransferPage.svelte'
   import TransfersPage from './TransfersPage.svelte'
   import TransferPage from './TransferPage.svelte'
+  import AbortTransferPage from './AbortTransferPage.svelte'
 
   export let app: AppState
   export let snackbarBottom: string = '0px'
@@ -65,6 +66,8 @@
       return TransfersPage
     case 'TransferModel':
       return TransferPage
+    case 'AbortTransferModel':
+      return AbortTransferPage
     default:
       throw new Error('unknown page model type')
     }

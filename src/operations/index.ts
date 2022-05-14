@@ -8,7 +8,8 @@ import type {
   AccountRecord, ApprovePegActionWithId, AccountExchangeRecord, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, PegBound, ConfigAccountActionWithId, AccountConfigRecord,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, LedgerEntryRecord, CreateTransferActionStatus,
-  AccountInfoRecord, TransferRecord, ExtendedTransferRecord, ExecutionState
+  AccountInfoRecord, TransferRecord, ExtendedTransferRecord, ExecutionState, AbortTransferActionWithId,
+  CreateTransferAction
 } from './db'
 import type {
   AccountV0, AccountKnowledgeV0, AccountConfigV0, AccountExchangeV0, AccountDisplayV0, CommittedTransferV0
@@ -34,7 +35,7 @@ import {
   getDefaultPayeeName, setDefaultPayeeName, getExpectedPaymentAmount, getLedgerEntries, getCommittedTransfer,
   getEntryIdString, storeLedgerEntryRecord, getLedgerEntry, getAccountRecordByDebtorUri,
   getCreateTransferActionStatus, createTransferRecord, getTransferRecord, getTransferRecords,
-  getDebtorIdentityFromAccountIdentity, getExtendedTransferRecord
+  getDebtorIdentityFromAccountIdentity, getExtendedTransferRecord, removeActionRecord, storeTransfer
 } from './db'
 import {
   getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
@@ -80,6 +81,7 @@ export type KnownAccountData = {
 
 export type {
   ActionRecordWithId,
+  AbortTransferActionWithId,
   CreateAccountActionWithId,
   AckAccountInfoActionWithId,
   ApproveDebtorNameActionWithId,
@@ -1035,20 +1037,7 @@ export class UserContext {
    * `AccountDoesNotExist`, `AccountCanNotMakePayments`. */
   async processPaymentRequest(blob: Blob): Promise<CreateTransferActionWithId> {
     const request = await parsePaymentRequest(blob)
-    const debtorUri = getDebtorIdentityFromAccountIdentity(request.accountUri)
-    if (debtorUri === undefined) {
-      throw new IvalidPaymentRequest('invalid account identity')
-    }
-    let account, knownAccountData
-    if (!(
-      (account = await getAccountRecordByDebtorUri(this.userId, debtorUri)) &&
-      (knownAccountData = await this.getKnownAccountData(account.uri))
-    )) {
-      throw new AccountDoesNotExist()
-    }
-    if (!knownAccountData.info.account) {
-      throw new AccountCanNotMakePayments()
-    }
+    const knownAccountData = await this.getSenderAccountData(request.accountUri)
     const actionRecord = {
       userId: this.userId,
       actionType: 'CreateTransfer' as const,
@@ -1066,7 +1055,7 @@ export class UserContext {
       note: generatePayment0TransferNote(request, Number(knownAccountData.info.noteMaxBytes)),
       requestedAmount: request.amount,
       requestedDeadline: request.deadline,
-      accountUri: account.uri,
+      accountUri: knownAccountData.account.uri,
     }
     await createActionRecord(actionRecord)  // adds the `actionId` field
     return actionRecord as CreateTransferActionWithId
@@ -1165,6 +1154,84 @@ export class UserContext {
       this.scheduleUpdate(new Date(transferRecord.checkupAt))
     }
     return transferRecord
+  }
+
+  /* Dismisses an unsuccessful or delayed transfer. */
+  async dismissTransfer(action: AbortTransferActionWithId): Promise<TransferRecord> {
+    await removeActionRecord(action.actionId)
+    const transferRecord = await getTransferRecord(action.transferUri)
+    assert(transferRecord, 'missing transfer record')
+    return transferRecord
+  }
+
+  /* Tries to cancel a delayed transfer. Returns whether the transfer
+   * was canceled. For delayed transfers, this method should be called
+   * before calling `dismissTransfer`. The caller must be prepared
+   * this method to throw `ServerSessionError`.*/
+  async cancelTransfer(action: AbortTransferActionWithId): Promise<boolean> {
+    let response
+    try {
+      response = await this.server.post(
+        action.transferUri,
+        { type: 'TransferCancelationRequest' },
+        { attemptLogin: true },
+      ) as HttpResponse<Transfer>
+    } catch (e: unknown) {
+      if (e instanceof HttpError) {
+        if (e.status === 403 || e.status === 404) return false
+        throw new ServerSessionError(`unexpected status code (${e.status})`)
+      }
+      throw e
+    }
+    const transfer = makeTransfer(response)
+    await storeTransfer(action.userId, transfer)
+    return true
+  }
+
+  /* Retries an unsuccessful transfer. The caller must be prepared
+   * this method to throw `IvalidPaymentRequest`,
+   * `AccountDoesNotExist`, `AccountCanNotMakePayments`. */
+  async retryTransfer(transferRecord: TransferRecord): Promise<CreateTransferActionWithId>
+  async retryTransfer(abortTransferAction: AbortTransferActionWithId): Promise<CreateTransferActionWithId>
+  async retryTransfer(param: TransferRecord | AbortTransferActionWithId): Promise<CreateTransferActionWithId> {
+    const [transferRecord, abortTransferAction] = 'actionId' in param
+      ? [await getTransferRecord(param.transferUri), param]
+      : [param, undefined]
+    assert(transferRecord, 'missing transfer record')
+
+    const recipientUri = transferRecord.recipient.uri
+    const knownAccountData = await this.getSenderAccountData(recipientUri)
+    let deadline: Date | undefined = new Date(transferRecord.options.deadline ?? '')
+    if (Number.isNaN(deadline.getTime())) {
+      deadline = undefined
+    }
+    const createTransferAction: CreateTransferAction = {
+      userId: transferRecord.userId,
+      actionType: 'CreateTransfer' as const,
+      createdAt: new Date(),
+      transferUuid: uuidv4(),
+      editedAmount: transferRecord.amount,
+      editedDeadline: deadline,
+      paymentInfo: transferRecord.paymentInfo,
+      noteFormat: transferRecord.noteFormat,
+      note: transferRecord.note,
+      requestedAmount: transferRecord.amount,
+      requestedDeadline: deadline,
+      accountUri: knownAccountData.account.uri,
+      recipientUri,
+    }
+
+    if (abortTransferAction) {
+      try {
+        await replaceActionRecord(abortTransferAction, createTransferAction)
+        return createTransferAction as CreateTransferActionWithId
+      } catch (e: unknown) {
+        if (e instanceof RecordDoesNotExist) assert(!await getActionRecord(abortTransferAction.actionId))
+        else throw e
+      }
+    }
+    await createActionRecord(createTransferAction)
+    return createTransferAction as CreateTransferActionWithId
   }
 
   /* Returns the properly sorted list of configured accounts for the
@@ -1340,6 +1407,24 @@ export class UserContext {
       assert(committedTransferObject.type === 'CommittedTransfer')
       await storeObject(this.userId, committedTransferObject)
     }
+  }
+
+  private async getSenderAccountData(recipientUri: string): Promise<KnownAccountData> {
+    const debtorUri = getDebtorIdentityFromAccountIdentity(recipientUri)
+    if (debtorUri === undefined) {
+      throw new IvalidPaymentRequest('invalid account identity')
+    }
+    let account, knownAccountData
+    if (!(
+      (account = await getAccountRecordByDebtorUri(this.userId, debtorUri)) &&
+      (knownAccountData = await this.getKnownAccountData(account.uri))
+    )) {
+      throw new AccountDoesNotExist()
+    }
+    if (!knownAccountData.info.account) {
+      throw new AccountCanNotMakePayments()
+    }
+    return knownAccountData
   }
 
   private async sync(): Promise<void> {

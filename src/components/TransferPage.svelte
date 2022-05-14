@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, TransferModel, ExtendedTransferRecord } from '../app-state'
+  import type { AppState, TransferModel, TransferRecord, ExtendedTransferRecord } from '../app-state'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote, generatePr0Blob } from '../payment-requests'
   import { onDestroy } from 'svelte'
@@ -21,7 +21,7 @@
     return transfer.amount ? amountToString(transfer.amount, amountDivisor, decimalPlaces) : ''
   }
 
-  function getDeadline(transfer: ExtendedTransferRecord): string {
+  function getDeadline(transfer: TransferRecord): string {
     let deadline = new Date(transfer.options.deadline ?? '')
     if (Number.isNaN(deadline.getTime())) {
       return '9999-12-31T23:59'
@@ -55,7 +55,7 @@
     }
   }
 
-  function getStatus(transfer: ExtendedTransferRecord): string {
+  function getStatus(transfer: TransferRecord): string {
     switch (true) {
     case transfer.result?.error !== undefined:
       return 'Failed'
@@ -66,7 +66,7 @@
     }
   }
 
-  export function getStatusTooltip(t: ExtendedTransferRecord): string {
+  export function getStatusTooltip(t: TransferRecord): string {
     let tooltip = `The payment was initiated at ${new Date(t.initiatedAt).toLocaleString()}`
     if (t.result) {
       const finalizedAt = new Date(t.result.finalizedAt).toLocaleString()
@@ -89,7 +89,7 @@
     }
   }
 
-  function generateDataUrl(t: ExtendedTransferRecord): string {
+  function generateDataUrl(t: TransferRecord): string {
     let deadline = new Date(t.options.deadline ?? '')
     const blob = generatePr0Blob({
       ...t.paymentInfo,

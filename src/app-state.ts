@@ -6,7 +6,8 @@ import type {
   ApproveAmountDisplayActionWithId, ApprovePegActionWithId, KnownAccountData, AccountDataForDisplay,
   CommittedTransferRecord, AccountFullData, ConfigAccountActionWithId, BaseDebtorData, PegBound,
   UpdatePolicyActionWithId, PaymentRequestActionWithId, CreateTransferActionWithId,
-  ExtendedLedgerEntry, CreateTransferActionStatus, TransferRecord, ExtendedTransferRecord
+  ExtendedLedgerEntry, CreateTransferActionStatus, TransferRecord, ExtendedTransferRecord,
+  AbortTransferActionWithId
 } from './operations'
 
 import equal from 'fast-deep-equal'
@@ -147,6 +148,7 @@ export type PageModel =
   | AccountModel
   | LedgerEntryModel
   | CreateTransferModel
+  | AbortTransferModel
   | TransfersModel
   | TransferModel
 
@@ -279,6 +281,12 @@ export type LedgerEntryModel = BasePageModel & {
 export type CreateTransferModel = BasePageModel & {
   type: 'CreateTransferModel',
   action: CreateTransferActionWithId,
+  accountData: AccountFullData | undefined,
+}
+
+export type AbortTransferModel = BasePageModel & {
+  type: 'AbortTransferModel',
+  action: AbortTransferActionWithId,
   accountData: AccountFullData | undefined,
 }
 
@@ -432,8 +440,9 @@ export class AppState {
             case 'CreateTransfer':
               this.showCreateTransferAction(action, back)
               break
-            default:
-              throw new Error(`Unknown action type: ${action.actionType}`)
+            case 'AbortTransfer':
+              this.showAbortTransferAction(action, back)
+              break
           }
         } else {
           this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
@@ -1288,6 +1297,74 @@ export class AppState {
           accountData,
         })
       }
+    })
+  }
+
+  showAbortTransferAction(action: AbortTransferActionWithId, back?: () => void): Promise<void> {
+    let interactionId: number
+    const goBack = back ?? (() => { this.showActions() })
+
+    return this.attempt(async () => {
+      interactionId = this.interactionId
+      const accountData = action.accountUri ? this.accountsMap.getAccountFullData(action.accountUri) : undefined
+      if (this.interactionId === interactionId) {
+        this.pageModel.set({
+          type: 'AbortTransferModel',
+          reload: () => { this.showAction(action.actionId, back) },
+          goBack,
+          action,
+          accountData,
+        })
+      }
+    })
+  }
+
+  dismissTransfer(action: AbortTransferActionWithId): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      await this.uc.dismissTransfer(action)
+      if (this.interactionId === interactionId) {
+        this.showActions()
+      }
+    })
+  }
+
+  cancelTransfer(action: AbortTransferActionWithId, onFailure: () => void): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const canceled = await this.uc.cancelTransfer(action)
+      if (canceled) {
+        await this.uc.dismissTransfer(action)
+      }
+      if (this.interactionId === interactionId) {
+        if (canceled) {
+          this.showActions()
+        } else {
+          onFailure()
+        }
+      }
+    }, {
+      alerts: [
+        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+      ],
+    })
+  }
+
+  async retryTransfer(transferRecord: TransferRecord): Promise<void>
+  async retryTransfer(abortTransferAction: AbortTransferActionWithId): Promise<void>
+  async retryTransfer(param: TransferRecord | AbortTransferActionWithId): Promise<void> {
+    return this.attempt(async () => {
+      const interactionId = this.interactionId
+      const createTransferAction = await this.uc.retryTransfer(param as any)
+      if (this.interactionId === interactionId) {
+        this.showAction(createTransferAction.actionId)
+      }
+    }, {
+      alerts: [
+        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
+        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
+        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
+      ],
     })
   }
 
