@@ -82,11 +82,11 @@ export async function getTransferRecords(
 }
 
 export async function getTransferRecord(uri: string): Promise<TransferRecord | undefined> {
-  return await db.transfers.get(uri)
+  return await db.transfers.get({ uri })
 }
 
 export async function getExtendedTransferRecord(uri: string): Promise<ExtendedTransferRecord | undefined> {
-  const transferRecord = await db.transfers.get(uri)
+  const transferRecord = await db.transfers.get({ uri })
   if (transferRecord) {
     return await extendTransferRecord(transferRecord)
   }
@@ -156,7 +156,7 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
 
   const putTransferRecord = async (): Promise<TransferRecord> => {
     let transferRecord
-    const existingTransferRecord = await db.transfers.get(transferUri)
+    const existingTransferRecord = await db.transfers.get({ uri: transferUri })
     if (existingTransferRecord) {
       assert(existingTransferRecord.userId === userId, 'wrong userId')
       assert(existingTransferRecord.transfersList.uri === transfer.transfersList.uri)
@@ -246,7 +246,7 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
 
 export async function abortTransfer(userId: number, transferUri: string): Promise<void> {
   await db.transaction('rw', [db.transfers, db.tasks], async () => {
-    let transferRecord = await db.transfers.get(transferUri)
+    let transferRecord = await db.transfers.get({ uri: transferUri })
     if (transferRecord && transferRecord.userId === userId) {
       if (getTransferState(transferRecord) !== 'successful') {
         const initiationTime = getIsoTimeOrNow(transferRecord.initiatedAt)

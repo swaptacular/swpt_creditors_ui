@@ -706,7 +706,7 @@ async function getLogObjectRecord(objectType: LogObjectType, objectUri: string):
       return await db.committedTransfers.get(objectUri)
 
     case 'Transfer':
-      return await db.transfers.get(objectUri)
+      return await db.transfers.get({ uri: objectUri })
 
     case 'AccountDisplay':
     case 'AccountKnowledge':

@@ -138,8 +138,10 @@ export type LedgerEntryRecord =
   & UserReference
   & LedgerEntryV0
   & {
-    id?: number, // an autoincremented ID
-    entryIdString: string, // the `entryId` field as a string (to avoid using bigint IndexedDB keys).
+    // This is the `entryId` field as a string. This avoids using
+    // bigints as IndexedDB keys, which is not supprted yet by some
+    // browsers.
+    entryIdString: string,
   }
 
 export type DocumentRecord =
@@ -508,21 +510,14 @@ class CreditorsDb extends Dexie {
       accountPriorities: 'uri,userId',
       defaultPayeeNames: 'userId',
       expectedPayments: 'payeeReference,userId,accountUri',
+      transfers: '[userId+time],&uri',
+      ledgerEntries: '[ledger.uri+entryIdString],userId',
 
       // Committed transfers are objects that belong to a specific
       // account, but we will have lots of them, and in order to keep
       // the `accountObjects` table lean, committed transfers are
       // separated in their own table.
       committedTransfers: 'uri,userId,account.uri',
-
-      // Here '[userId+time],&uri' / '[ledger.uri+entryId],userId'
-      // would probably be a bit more efficient, because the records
-      // would be ordered physically in the same way as they are
-      // normally queried. The problem is that it seems
-      // "fake-indexeddb", which we use for testing, does not support
-      // compound primary keys.
-      transfers: 'uri,&[userId+time]',
-      ledgerEntries: '++id,&[ledger.uri+entryIdString],userId',
 
       // Contains debtor info documents. They are shared by all users.
       documents: 'uri',
