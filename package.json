@@ -15,8 +15,8 @@
     "@babel/core": "^7.15.5",
     "@babel/preset-env": "^7.15.6",
     "@babel/preset-typescript": "^7.15.0",
-    "@originjs/vite-plugin-commonjs": "^1.0.1",
-    "@rollup/plugin-commonjs": "^21.0.1",
+    "@originjs/vite-plugin-commonjs": "^1.0.3",
+    "@rollup/plugin-commonjs": "^21.1.0",
     "@smui/banner": "^4.2.0",
     "@smui/button": "^4.2.0",
     "@smui/card": "^4.2.0",
@@ -38,7 +38,7 @@
     "@smui/textfield": "^4.2.0",
     "@smui/tooltip": "^4.2.0",
     "@smui/top-app-bar": "^4.2.0",
-    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.11",
+    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.44",
     "@tsconfig/svelte": "^2.0.1",
     "@types/jest": "^26.0.23",
     "@types/uuid": "^8.3.0",
@@ -55,13 +55,13 @@
     "qr-scanner": "^1.2.0",
     "qrious": "^4.0.2",
     "svelte": "^3.46.4",
-    "svelte-check": "^2.1.0",
-    "svelte-preprocess": "^4.7.2",
+    "svelte-check": "^2.7.1",
+    "svelte-preprocess": "^4.10.6",
     "tinyqueue": "^2.0.3",
-    "tslib": "^2.2.0",
-    "typescript": "^4.3.2",
+    "tslib": "^2.4.0",
+    "typescript": "^4.6.4",
     "uuid": "^8.3.2",
-    "vite": "^2.5.4"
+    "vite": "^2.9.9"
   },
   "dependencies": {}
 }

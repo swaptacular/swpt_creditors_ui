@@ -9,13 +9,13 @@ export default defineConfig({
   build: {
     target: ['es2020'],
     sourcemap: true,
+    commonjsOptions: {include: '**/*.js'},
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,
         assetFileNames: `assets/[name].[ext]`
       },
-      plugins: [commonjs()],
     }
   },
   server: {
