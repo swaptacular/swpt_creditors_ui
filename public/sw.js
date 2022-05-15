@@ -1,5 +1,5 @@
 const appName = 'swpt-creditors-ui'
-const cacheName = `${appName}-v0.1.11`
+const cacheName = `${appName}-v0.1.12`
 const appFiles = [
   './',
   'index.html',
@@ -13,7 +13,6 @@ const appFiles = [
   'fonts/material-icons.woff2',
   'assets/index.css',
   'assets/index.js',
-  'assets/vendor.js',
 ]
 self.addEventListener('install', (e) => {
   console.log('[Service Worker] Install')
