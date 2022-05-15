@@ -88,6 +88,7 @@
   <div class="shaking-container">
     <Dialog
       open
+      scrimClickAction=""
       aria-labelledby="enter-pin-dialog-title"
       aria-describedby="enter-pin-dialog-content"
       on:MDCDialog:closed={close}
