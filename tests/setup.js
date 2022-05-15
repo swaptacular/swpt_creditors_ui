@@ -5,8 +5,6 @@ const axios = require('axios')
 // https://stackoverflow.com/questions/51054286/cross-origin-http-request-originating-from-server-side-nodejs-axios-jsdom
 axios.defaults.adapter = require('axios/lib/adapters/http')
 
-require("fake-indexeddb/auto")
-
 globalThis.Blob = require("cross-blob")
 globalThis.TextEncoder = require("util").TextEncoder
 globalThis.TextDecoder = require("util").TextDecoder
