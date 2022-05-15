@@ -3,6 +3,7 @@
   import { amountToString } from '../format-amounts'
   import { parseTransferNote, generatePr0Blob } from '../payment-requests'
   import { onDestroy } from 'svelte'
+  import { fade } from 'svelte/transition'
   import Fab, { Icon } from '@smui/fab';
   import PaymentInfo from './PaymentInfo.svelte'
   import Page from './Page.svelte'
@@ -101,6 +102,10 @@
     return currentDataUrl = URL.createObjectURL(blob)
   }
 
+  function update(): void {
+    app.fetchDataFromServer(() => model.reload())
+  }
+
   onDestroy(revokeCurrentDataUrl)
 
   $: transfer = model.transfer
@@ -154,5 +159,12 @@
         <Icon class="material-icons">download</Icon>
       </Fab>
     </div>
+    {#if status === 'Initiated'}
+      <div out:fade="{{ duration: 1000 }}" class="fab-container">
+        <Fab on:click={update}>
+          <Icon class="material-icons">sync</Icon>
+        </Fab>
+      </div>
+    {/if}
   </svelte:fragment>
 </Page>

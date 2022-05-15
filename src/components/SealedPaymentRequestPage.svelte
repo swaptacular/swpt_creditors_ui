@@ -14,7 +14,6 @@
   import DoneSvgIcon from './DoneSvgIcon.svelte'
 
   export let app: AppState
-  const { pageModel } = app
   export let model: SealedPaymentRequestModel
   export const snackbarBottom: string = "84px"
   export const scrollElement = document.documentElement
@@ -45,7 +44,7 @@
   }
 
   function update(): void {
-    app.fetchDataFromServer(() => $pageModel.reload())
+    app.fetchDataFromServer(() => model.reload())
   }
 
   function revokeTextDataUrl() {
@@ -74,7 +73,8 @@
   $: unit = display.unit ?? '\u00a4'
   $: amountSuffix = unit.slice(0, 10)
   $: payeeName = action.editedPayeeName
-  $: fileName = amount ? action.payeeReference : `Generic payment request - ${debtorName}`
+  $: rawFileName = amount ? action.payeeReference : `Generic payment request - ${debtorName}`
+  $: fileName = rawFileName.replace(/[<>:"/|?*\\]/g, ' ')
   $: imageFileName = `${fileName}.png`
   $: textFileName = `${fileName}.pr0`
 </script>
@@ -155,7 +155,7 @@
 </style>
 
 <div>
-  <Page title="Request payment" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
+  <Page title="Payment request" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
     <svelte:fragment slot="app-bar">
       <Row style="height: 72px">
         <div class="received-box">
@@ -206,7 +206,8 @@
                 represents a request {unitAmount} {unit} to be paid to "{payeeName}".
               {/if}
 
-              The request has been created at {sealedAt?.toLocaleString()}.
+              This payment request has been created at
+              {sealedAt?.toLocaleString()}.
 
               {#if deadline.getTime()}
                 The deadline for the payment is {deadline.toLocaleString()}.
@@ -228,11 +229,11 @@
           aria-describedby="confirm-delete-dialog-content"
           on:MDCDialog:closed={() => showConfirmDialog = false}
           >
-          <DialogTitle id="confirm-delete-dialog-title">Delete payment request</DialogTitle>
+          <DialogTitle id="confirm-delete-dialog-title">Delete this payment request</DialogTitle>
           <DialogContent id="confirm-delete-dialog-content">
-            If you delete this payment request, you will no longer be
-            able to watch the corresponding payments. Are you sure
-            you want to do this?
+            If you delete this payment request, you may fail to notice
+            the corresponding payment. Are you sure you want to do
+            this?
           </DialogContent>
           <Actions>
             <Button>
