@@ -71,7 +71,7 @@
     height: 2ex;
   }
 
-  :global(.focused) span {
+  :global(.focused) .caret {
     border-right: solid 1px black;
     will-change: opacity;
     animation: blinker 1s linear infinite;
