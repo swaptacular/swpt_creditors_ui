@@ -160,7 +160,7 @@
       </Fab>
     </div>
     {#if status === 'Initiated'}
-      <div out:fade="{{ duration: 1000 }}" class="fab-container">
+      <div out:fade|local="{{ duration: 1000 }}" class="fab-container">
         <Fab on:click={update}>
           <Icon class="material-icons">sync</Icon>
         </Fab>
