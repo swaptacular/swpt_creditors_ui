@@ -250,7 +250,7 @@ async function reviseOutdatedDebtorInfosIfNecessary(userId: number, accountsMap:
   const storage_key = 'creditors.latestOutdatedDebtorInfosRevisionDate'
   const storage_value = localStorage.getItem(storage_key) ?? '1970-01-01T00:00:00.000Z'
   const latestRevisionTime = new Date(storage_value).getTime()
-  const intervalMilliseconds = 1000 * 86400 * appConfig.outdatedDebtorInfosRevisionIntervalDays
+  const intervalMilliseconds = 1000 * 86400 * appConfig.debtorInfosRevisionDays
   const now = new Date()
   if (latestRevisionTime + intervalMilliseconds < now.getTime()) {
     await reviseOutdatedDebtorInfos(userId, accountsMap)

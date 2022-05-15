@@ -8,7 +8,7 @@ window.appConfig = {
     redirectUrl: 'http://localhost:5000/',
   },
   transferDeletionDelaySeconds: 15 * 86400,
-  outdatedDebtorInfosRevisionIntervalDays: 7,
+  debtorInfosRevisionDays: 7,
 }
 
 window.assert = function assert(condition, msg) {

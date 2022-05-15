@@ -9,7 +9,7 @@ declare var appConfig: {
     redirectUrl: string,
   },
   transferDeletionDelaySeconds: number,
-  outdatedDebtorInfosRevisionIntervalDays: number,
+  debtorInfosRevisionDays: number,
 }
 
 declare function assert(condition: any, msg?: string): asserts condition
