@@ -81,9 +81,13 @@
         {/each}
       </div>
       <slot name="important"></slot>
-      {#if summary}
-        <blockquote class="summary-box">{summary}</blockquote>
-      {/if}
+      <blockquote class="summary-box">
+        {#if summary}
+          {summary}
+        {:else}
+          <span style="color: #ccc">The issuer of the currency has not provided any currency description.</span>
+        {/if}
+      </blockquote>
     </div>
     <slot name="content"></slot>
   </Content>
