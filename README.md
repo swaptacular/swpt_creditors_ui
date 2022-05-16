@@ -1,48 +1,64 @@
 # UI for the Swaptacular service that manages creditors
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+This service implements a [Payments Web
+API](https://epandurski.github.io/swaptacular/swpt_creditors/redoc.html)
+client. The main deliverable is a docker image, generated from the
+project's
+[Dockerfile](https://github.com/epandurski/swpt_creditors_ui/blob/master/Dockerfile).
+The generated image is a simple static web server (using nginx), which
+uses the following environment variables for configuration (along with
+some example values):
 
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-  `vite dev` and `vite build` wouldn't work in a SvelteKit environment, for example.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
 ```
+SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
+SERVER_API_TIMEOUT=8000  # milliseconds
+AUTHORIZATION_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/auth
+TOKEN_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/token
+CLIENT_ID=creditors-webapp
+REDIRECT_URL=https://demo.swaptacular.org/creditors-webapp/
+TRANSFER_DELETION_DELAY_SECONDS=1296000
+DEBTOR_INFOS_REVISION_DAYS=7
+```
+
+## How to setup a development environment
+
+*Note that you will need to have [Node.js](https://nodejs.org)
+installed.*
+
+Install the dependencies...
+
+```bash
+cd swpt_creditors_ui
+npm install
+```
+
+...then start [Vite](https://vitejs.dev):
+
+```bash
+npm run dev
+```
+
+Navigate to [localhost:5000](http://localhost:5000). You should see
+your app running. Edit a component file in `src`, save it, and reload
+the page to see your changes.
+
+By default, the server will only respond to requests from
+localhost. To allow connections from other computers, edit the `dev`
+command in package.json to include the option `--host 0.0.0.0`.
+
+If you're using [Visual Studio Code](https://code.visualstudio.com/)
+we recommend installing the official extension [Svelte for VS
+Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode). If
+you are using other editors you may need to install a plugin in order
+to get syntax highlighting and intellisense.
+
+
+## Building and running in production mode
+
+To create an optimised version of the app:
+
+```bash
+npm run build
+```
+
+You can run the newly built app with `npm run serve`.
