@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Title, Content, Actions } from '@smui/dialog'
+  import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
+  import { tick } from 'svelte'
   import Button, { Label } from '@smui/button'
   import Textfield from '@smui/textfield'
   import Dialog from './Dialog.svelte'
@@ -36,6 +37,11 @@
     open = false
   }
 
+  async function focusPinInput() {
+    await tick()
+    pinInput?.focus()
+  }
+
   function submit(e: Event): void {
     e.preventDefault()
     const enteredPin = pin
@@ -44,6 +50,9 @@
   }
 
   $: pinMask = '\u2022'.repeat(pin.length)
+  $: if (open) {
+    focusPinInput()
+  }
 </script>
 
 <style>
@@ -106,6 +115,7 @@
               style="width: 100%"
               type="tel"
               input$maxlength={10}
+              use={[InitialFocus]}
               bind:value={pin}
               bind:this={pinInput}
               on:keypress={ignoreNonNumberKeys}
