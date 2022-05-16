@@ -9,6 +9,7 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
+  import Button, { Label } from '@smui/button'
 
   export let showAccount: (() => void) | undefined
   export let paymentInfo: PaymentInfo
@@ -18,12 +19,15 @@
   export let status: string
   export let statusTooltip: string
   export let invalid: boolean | undefined = undefined
+  export let dataUrl: string | undefined = undefined
 
+  let downloadLinkElement: HTMLAnchorElement | undefined
   let invalidPayeeName: boolean | undefined = undefined
   let invalidUnitAmount: boolean | undefined = undefined
   let invalidDeadline: boolean | undefined = undefined
 
   $: payeeName = paymentInfo.payeeName
+  $: payeeReference = paymentInfo.payeeReference
   $: description = paymentInfo.description
   $: contentFormat = description.contentFormat
   $: content = description.content
@@ -36,6 +40,10 @@
   $: unitAmountStep = amountToString(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: maxUnitAmount = Number(amountToString(9223372036853775000n, amountDivisor, decimalPlaces))
   $: invalid = invalidPayeeName || invalidUnitAmount || invalidDeadline
+  $: name = payeeName.slice(0, 40) ?? 'unknown payee'
+  $: downloadNameShort = unitAmount ? `Pay ${unitAmount} ${unit.slice(0, 10)} to ${name}` : `Pay ${name}`
+  $: downloadName = payeeReference ? `${downloadNameShort} - ${payeeReference}` : downloadNameShort
+  $: fileName = downloadName.slice(0, 120).replace(/[<>:"/|?*\\]/g, ' ') + '.pr0'
 </script>
 
 <style>
@@ -60,6 +68,9 @@
   .transfer-status span {
     text-decoration: underline;
   }
+  .download-link {
+    display: none;
+  }
 </style>
 
 <LayoutGrid>
@@ -77,23 +88,34 @@
         {/if}
         Payment via {currencyName}
       </Title>
-        <Content>
-          {#if !isDraft}
-            <Wrapper>
-              <p class="transfer-status">
-                Status: <span>{status.toLowerCase()}</span>
-              </p>
-              <Tooltip>{statusTooltip}</Tooltip>
-            </Wrapper>
-          {/if}
-          {#if contentFormat === '.'}
-            <a href="{content}" target="_blank">{content}</a>
-          {:else if content}
-            <pre>{content}</pre>
-          {:else}
-            <span style="color: #ccc">The payment request does not contain a description.</span>
-          {/if}
-        </Content>
+      <Content>
+        {#if !isDraft}
+          <Wrapper>
+            <p class="transfer-status">
+              Status: <span>{status.toLowerCase()}</span>
+            </p>
+            <Tooltip>{statusTooltip}</Tooltip>
+          </Wrapper>
+        {/if}
+        {#if contentFormat === '.'}
+          <a href="{content}" target="_blank">{content}</a>
+        {:else if content}
+          <pre>{content}</pre>
+        {:else}
+          <span style="color: #ccc">The payment request does not contain a description.</span>
+        {/if}
+        {#if dataUrl}
+          <a class="download-link" href={dataUrl} download={fileName} bind:this={downloadLinkElement}>download</a>
+          <Button
+            type="button"
+            color="primary"
+            style="margin-top: 0.5em; width: 100%;"
+            on:click={() => downloadLinkElement?.click()}
+            >
+            <Label>save</Label>
+          </Button>
+        {/if}
+      </Content>
     </Paper>
   </Cell>
 
