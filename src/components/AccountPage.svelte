@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
+  import { IS_A_NEWBIE_KEY } from '../app-state'
   import { Alert } from '../app-state'
   import { fade } from 'svelte/transition'
   import Paper, { Title, Content } from '@smui/paper'
@@ -15,12 +16,18 @@
   import CommittedTransferCard from './CommittedTransferCard.svelte'
   import ExchangeSvgIcon from './ExchangeSvgIcon.svelte'
   import AccountInfo from './AccountInfo.svelte'
+  import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
+  import Button, { Label as ButtonLabel } from '@smui/button'
+  import Dialog from './Dialog.svelte'
 
   export let app: AppState
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
 
+  const isANewbie = localStorage.getItem(IS_A_NEWBIE_KEY) === 'true'
   const scrollElement = document.documentElement
+  const KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY = 'creditors.KnowsHowToRequestPayments'
+  let knowsHowToRequestPayment = localStorage.getItem(KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY) === 'true'
   let downloadLinkElement: HTMLAnchorElement
   let dataUrl: string
   let duration = 0
@@ -110,6 +117,11 @@
     } else {
       app.createPaymentRequestAction(accountUri, showThisAccount)
     }
+  }
+
+  function gotIt() {
+    localStorage.setItem(KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY, 'true')
+    knowsHowToRequestPayment = true
   }
 
   $: if (sortRank !== model.sortRank) {
@@ -231,6 +243,29 @@
     <div class="empty-space"></div>
 
     {#if tab === 'account'}
+      {#if isANewbie && !knowsHowToRequestPayment}
+        <Dialog
+          open
+          scrimClickAction=""
+          aria-labelledby="ack-payment-help-dialog-title"
+          aria-describedby="ack-payment-help-dialog-content"
+          >
+          <DialogTitle>You have successfully created an account with "{debtorName}".</DialogTitle>
+          <DialogContent style="word-break: break-word">
+            Use the
+            <Fab color="primary" style="vertical-align: middle">
+              <Icon class="material-icons">receipt</Icon>
+            </Fab>
+            button bellow to request a payment.
+          </DialogContent>
+          <Actions>
+            <Button on:click={gotIt}>
+              <ButtonLabel>I have got it</ButtonLabel>
+            </Button>
+          </Actions>
+        </Dialog>
+      {/if}
+
       <div in:fade="{{ duration }}">
         <AccountInfo
           homepage={homepageUri}
