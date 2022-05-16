@@ -4,10 +4,13 @@
   } from '../app-state'
   import { INVALID_REQUEST_MESSAGE } from '../app-state'
   import { getCreateTransferActionStatus } from '../operations'
+  import { generatePr0Blob } from '../payment-requests'
   import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
+  import { onDestroy } from 'svelte'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
-  import Button, { Label as ButtonLabel } from '@smui/button'
-  import Fab, { Icon, Label } from '@smui/fab';
+  import Button, { Group, GroupItem, Icon as ButtonIcon, Label as ButtonLabel } from '@smui/button'
+  import Menu from "@smui/menu"
+  import List, { Item, Text } from "@smui/list"
   import Page from './Page.svelte'
   import PaymentInfo from './PaymentInfo.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -18,13 +21,15 @@
   export const snackbarBottom: string = "84px"
 
   let shakingElement: HTMLElement
+  let downloadLinkElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let unitAmount: unknown = getUnitAmount(model.accountData, model.action.editedAmount)
   let deadline: string = getInitialDeadline(model)
   let showConfirmDialog = false
   let openEnterPinDialog = false
-
+  let currentDataUrl: string
   let invalid: boolean | undefined
+  let menu: any
 
   function createUpdatedAction(): CreateTransferActionWithId {
     if (!isDraft) return action
@@ -95,6 +100,23 @@
     }
   }
 
+  function revokeCurrentDataUrl() {
+    if (currentDataUrl) {
+      URL.revokeObjectURL(currentDataUrl)
+    }
+  }
+
+  function generateDataUrl(action: CreateTransferActionWithId): string {
+    const blob = generatePr0Blob({
+      ...action.paymentInfo,
+      accountUri: action.recipientUri,
+      amount: action.requestedAmount,
+      deadline: action.requestedDeadline,
+    }, { mimeType: 'application/octet-stream'})
+    revokeCurrentDataUrl()
+    return currentDataUrl = URL.createObjectURL(blob)
+  }
+
   function createUpdatedModel(): CreateTransferModel {
     actionManager.save()
     return {
@@ -156,6 +178,8 @@
     app.executeCreateTransferAction(actionManager, pin)
   }
 
+  onDestroy(revokeCurrentDataUrl)
+
   $: action = model.action
   $: accountData = model.accountData
   $: requestedUnitAmount = getUnitAmount(accountData, action.requestedAmount)
@@ -170,11 +194,20 @@
   $: executeButtonIsHidden = (status === 'Failed')
   $: dismissButtonIsHidden = (status === 'Not confirmed' || status === 'Initiated' || status === 'Timed out')
   $: statusTooltip = getInfoTooltip(status)
+  $: dataUrl = generateDataUrl(action)
+  $: payeeName = paymentInfo.payeeName.slice(0, 40) ?? 'unknown payee'
+  $: payeeReference = paymentInfo.payeeReference
+  $: downloadNameShort = `Pay ${unitAmount} ${unit.slice(0, 10)} to ${payeeName}`
+  $: downloadName = payeeReference ? `${downloadNameShort} - ${payeeReference}` : downloadNameShort
+  $: fileName = downloadName.slice(0, 120).replace(/[<>:"/|?*\\]/g, ' ') + '.pr0'
 </script>
 
 <style>
   .fab-container {
-    margin: 16px 16px;
+    margin: 24px 16px;
+  }
+  .download-link {
+    display: none;
   }
 </style>
 
@@ -232,17 +265,45 @@
     <svelte:fragment slot="floating">
       {#if !dismissButtonIsHidden}
         <div class="fab-container">
-          <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
-            <Label>Dismiss</Label>
-          </Fab>
+          <a class="download-link" href={dataUrl} download={fileName} bind:this={downloadLinkElement}>download</a>
+          <Group variant="raised">
+            <Button
+              on:click={() => actionManager.remove()}
+              color={executeButtonIsHidden ? "primary" : "secondary"}
+              variant="raised"
+              style="padding-right: 6px"
+              >
+              <ButtonLabel>Dismiss</ButtonLabel>
+            </Button>
+            <div use:GroupItem>
+              <Button
+                on:click={() => menu.setOpen(true)}
+                color={executeButtonIsHidden ? "primary" : "secondary"}
+                variant="raised"
+                style="padding: 0; min-width: 36px;"
+                >
+                <ButtonIcon class="material-icons" style="margin: 0">arrow_drop_down</ButtonIcon>
+              </Button>
+              <Menu bind:this={menu} anchorCorner="TOP_LEFT">
+                <List>
+                  <Item on:SMUI:action={() => actionManager.remove()}>
+                    <Text>Dismiss</Text>
+                  </Item>
+                  <Item on:SMUI:action={() => downloadLinkElement.click()}>
+                    <Text>Save</Text>
+                  </Item>
+                </List>
+              </Menu>
+            </div>
+          </Group>
         </div>
       {/if}
       {#if !executeButtonIsHidden}
         <div class="fab-container">
-          <Fab color="primary" on:click={confirm} extended>
-            <Icon class="material-icons">monetization_on</Icon>
-            <Label>{executeButtonLabel}</Label>
-          </Fab>
+          <Button color="primary" on:click={confirm} variant="raised">
+            <ButtonIcon class="material-icons">monetization_on</ButtonIcon>
+            <ButtonLabel>{executeButtonLabel}</ButtonLabel>
+          </Button>
         </div>
       {/if}
     </svelte:fragment>
