@@ -80,6 +80,7 @@
           </p>
         {/each}
       </div>
+      <slot name="important"></slot>
       {#if summary}
         <blockquote class="summary-box">{summary}</blockquote>
       {/if}

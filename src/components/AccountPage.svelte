@@ -136,10 +136,10 @@
 <style>
   ul {
     list-style: disc outside;
-    margin: 1.25em 0 0.75em 16px;
+    margin: 0.75em 0 0.75em 16px;
   }
   li {
-    margin-top: 0.5em;
+    margin-top: 0.2em;
   }
   .download-link {
     display: none;
@@ -249,7 +249,7 @@
             {/if}
           </svelte:fragment>
 
-          <svelte:fragment slot="content">
+          <svelte:fragment slot="important">
             <ul>
               <li>
                 The annual interest rate on this account is
