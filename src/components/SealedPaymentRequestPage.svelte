@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { AppState, SealedPaymentRequestModel } from '../app-state'
-  import { MIME_TYPE_PR0 } from '../payment-requests'
   import { amountToString } from '../format-amounts'
   import { onMount, onDestroy } from 'svelte'
   import Fab, { Icon } from '@smui/fab'
@@ -27,7 +26,7 @@
   let downloadTextElement: HTMLAnchorElement
   let actionManager = app.createActionManager(model.action)
   let imageDataUrl: string = ''
-  let textDataUrl: string = URL.createObjectURL(new Blob([model.paymentRequest], { type: MIME_TYPE_PR0 }))
+  let textDataUrl: string = URL.createObjectURL(new Blob([model.paymentRequest], { type: 'application/octet-stream' }))
 
   function rotateDoneIcon(): void {
     if (done && doneIcon) {
