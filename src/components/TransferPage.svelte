@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, TransferModel, TransferRecord, ExtendedTransferRecord } from '../app-state'
+  import { getTransferStatusDetails } from '../operations'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote, generatePr0Blob } from '../payment-requests'
   import { onDestroy } from 'svelte'
@@ -34,28 +35,6 @@
     return isoDeadline.slice(0, isoDeadline.length - 1)
   }
 
-  function getFailureReason(errorCode: string): string {
-    switch (errorCode) {
-    case 'CANCELED_BY_THE_SENDER':
-      return 'The payment has been canceled the sender.'
-    case 'RECIPIENT_IS_UNREACHABLE':
-      return "The recipient's account does not exist, or does not accept incoming payments."
-    case 'NO_RECIPIENT_CONFIRMATION':
-      return "A confirmation from the recipient is required, but has not been obtained."
-    case 'TRANSFER_NOTE_IS_TOO_LONG':
-      return "The byte-length of the payment note is too big."
-    case 'INSUFFICIENT_AVAILABLE_AMOUNT':
-      return "The requested amount is not available on the sender's account."
-    case 'TERMINATED':
-      return "The payment has been terminated due to expired deadline, unapproved "
-        + "interest rate change, or some other temporary or correctable condition. If "
-        + "the payment is retried with the correct options, chances are that it can "
-        + "be committed successfully."
-    default:
-      return errorCode
-    }
-  }
-
   function getStatus(transfer: TransferRecord): string {
     switch (true) {
     case transfer.result?.error !== undefined:
@@ -65,23 +44,6 @@
     default:
       return 'Initiated'
     }
-  }
-
-  export function getStatusTooltip(t: TransferRecord): string {
-    let tooltip = `The payment was initiated at ${new Date(t.initiatedAt).toLocaleString()}`
-    if (t.result) {
-      const finalizedAt = new Date(t.result.finalizedAt).toLocaleString()
-      if (t.result.error) {
-        const reason = getFailureReason(t.result.error.errorCode)
-        tooltip += `, and failed at ${finalizedAt}.`
-        tooltip += `The reason for the failure is: "${reason}"`
-      } else {
-        tooltip += `, and succeeded at ${finalizedAt}.`
-      }
-    } else {
-      tooltip += '.'
-    }
-    return tooltip
   }
 
   function revokeCurrentDataUrl() {
@@ -115,7 +77,7 @@
   $: unit = display?.unit ?? '\u00a4'
   $: paymentInfo = parseTransferNote($transfer)
   $: status = getStatus($transfer)
-  $: statusTooltip = getStatusTooltip($transfer)
+  $: statusTooltip = getTransferStatusDetails($transfer)
   $: dataUrl = generateDataUrl($transfer)
   $: payeeName = $transfer.paymentInfo.payeeName ?? 'Unknown payee'
   $: payeeReference = $transfer.paymentInfo.payeeReference

@@ -214,6 +214,8 @@ function getFailureReason(errorCode: string): string {
       return 'The payment has been canceled the sender.'
     case 'RECIPIENT_IS_UNREACHABLE':
       return "The recipient's account does not exist, or does not accept incoming payments."
+    case 'RECIPIENT_SAME_AS_SENDER':
+      return "The recipient's account is the same as the sender's account."
     case 'NO_RECIPIENT_CONFIRMATION':
       return "A confirmation from the recipient is required, but has not been obtained."
     case 'TRANSFER_NOTE_IS_TOO_LONG':
@@ -269,7 +271,7 @@ export function getTransferStatusDetails(t: TransferRecord): string {
     if (t.result.error) {
       const reason = getFailureReason(t.result.error.errorCode)
       tooltip += `, and failed at ${finalizedAt}.`
-      tooltip += `The reason for the failure is: "${reason}"`
+      tooltip += `The reason for the failure is: ${reason}`
     } else {
       tooltip += `, and succeeded at ${finalizedAt}.`
     }

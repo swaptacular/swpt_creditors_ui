@@ -52,6 +52,7 @@
     width: 100%;
   }
   .transfer-status {
+    user-select: none;
     font-size: 1.3em;
     font-weight: bold;
     padding: 16px 0 16px 0;
