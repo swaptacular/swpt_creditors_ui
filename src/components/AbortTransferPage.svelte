@@ -4,7 +4,6 @@
   } from '../app-state'
   import { getTransferStatusDetails } from '../operations'
   import { amountToString } from '../format-amounts'
-  import { parseTransferNote } from '../payment-requests'
   import Fab, { Label } from '@smui/fab';
   import Button, { Label as ButtonLabel } from '@smui/button'
   import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
@@ -63,7 +62,7 @@
   $: unitAmount = getUnitAmount(transfer.amount, model.accountData?.display)
   $: deadline = getDeadline(transfer)
   $: display = model.accountData?.display
-  $: paymentInfo = parseTransferNote(transfer)
+  $: paymentInfo = transfer.paymentInfo
   $: status = getStatus(transfer)
   $: statusTooltip = getTransferStatusDetails(transfer)
 

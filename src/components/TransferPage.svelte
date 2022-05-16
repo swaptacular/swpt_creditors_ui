@@ -2,7 +2,7 @@
   import type { AppState, TransferModel, TransferRecord, ExtendedTransferRecord } from '../app-state'
   import { getTransferStatusDetails } from '../operations'
   import { amountToString } from '../format-amounts'
-  import { parseTransferNote, generatePr0Blob } from '../payment-requests'
+  import { generatePr0Blob } from '../payment-requests'
   import { onDestroy } from 'svelte'
   import { fade } from 'svelte/transition'
   import Fab, { Icon } from '@smui/fab';
@@ -73,15 +73,15 @@
   $: transfer = model.transfer
   $: unitAmount = getUnitAmount($transfer)
   $: deadline = getDeadline($transfer)
+  $: paymentInfo = $transfer.paymentInfo
   $: display = $transfer.display
   $: unit = display?.unit ?? '\u00a4'
-  $: paymentInfo = parseTransferNote($transfer)
   $: status = getStatus($transfer)
   $: statusTooltip = getTransferStatusDetails($transfer)
   $: dataUrl = generateDataUrl($transfer)
-  $: payeeName = $transfer.paymentInfo.payeeName ?? 'Unknown payee'
-  $: payeeReference = $transfer.paymentInfo.payeeReference
-  $: downloadNameShort = `Pay ${unitAmount} ${unit} to ${payeeName}`
+  $: payeeName = paymentInfo.payeeName.slice(0, 40) ?? 'unknown payee'
+  $: payeeReference = paymentInfo.payeeReference
+  $: downloadNameShort = `Pay ${unitAmount} ${unit.slice(0, 10)} to ${payeeName}`
   $: downloadName = payeeReference ? `${downloadNameShort} - ${payeeReference}` : downloadNameShort
   $: fileName = downloadName.slice(0, 120).replace(/[<>:"/|?*\\]/g, ' ') + '.pr0'
 

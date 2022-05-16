@@ -201,9 +201,14 @@ export class IvalidPaymentData extends Error {
 */
 export function generatePr0Blob(
   request: PaymentRequest,
-  options: { includeCrc?: boolean, noteMaxBytes?: number, surplusBytes?: number } = {}
+  options: { includeCrc?: boolean, noteMaxBytes?: number, surplusBytes?: number, mimeType?: string } = {}
 ): Blob {
-  const { includeCrc = true, noteMaxBytes = DEFAULT_NOTE_MAX_BYTES, surplusBytes = DEFAULT_SURPLUS_BYTES } = options
+  const {
+    includeCrc = true,
+    noteMaxBytes = DEFAULT_NOTE_MAX_BYTES,
+    surplusBytes = DEFAULT_SURPLUS_BYTES,
+    mimeType = MIME_TYPE_PR0,
+  } = options
   if (!isValidPr0Data(request)) {
     throw new IvalidPaymentData('invalid field')
   }
@@ -222,7 +227,7 @@ export function generatePr0Blob(
   )
   const crc32 = includeCrc ? (CRC32.buf(body) >>> 0).toString(16).padStart(8, '0') : ''
   const header = UTF8_ENCODER.encode(`PR0\n${crc32}\n`)
-  return new Blob([header, body], { type: MIME_TYPE_PR0 })
+  return new Blob([header, body], { type: mimeType })
 }
 
 /*

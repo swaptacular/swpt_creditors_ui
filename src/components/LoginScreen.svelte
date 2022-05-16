@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { login, authorizePinReset } from "../operations";
-  import Button, { Group, GroupItem, Label, Icon } from "@smui/button";
-  import Menu from "@smui/menu";
-  import List, { Item, Text } from "@smui/list";
-  import Paper, { Title, Content } from "@smui/paper";
+  import { login, authorizePinReset } from "../operations"
+  import Button, { Group, GroupItem, Label, Icon } from "@smui/button"
+  import Menu from "@smui/menu"
+  import List, { Item, Text } from "@smui/list"
+  import Paper, { Title, Content } from "@smui/paper"
 
-  export const snackbarBottom: string = "84px";
+  export const snackbarBottom: string = "84px"
 
   function action(disablePin: boolean): void {
     if (disablePin) {
@@ -15,8 +15,8 @@
     }
   }
 
-  let menu: any;
-  let resetPin = false;
+  let menu: any
+  let resetPin = false
 </script>
 
 <div class="paper-container">
