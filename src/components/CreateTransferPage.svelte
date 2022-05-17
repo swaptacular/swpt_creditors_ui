@@ -253,20 +253,22 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      {#if !dismissButtonIsHidden}
-        <div class="fab-container">
-          <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
-            <Label>Dismiss</Label>
-          </Fab>
-        </div>
-      {/if}
-      {#if !executeButtonIsHidden}
-        <div class="fab-container">
-          <Fab color="primary" on:click={confirm} extended>
-            <Icon class="material-icons">monetization_on</Icon>
-            <Label>{executeButtonLabel}</Label>
-          </Fab>
-        </div>
+      {#if !openEnterPinDialog}
+        {#if !dismissButtonIsHidden}
+          <div class="fab-container">
+            <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
+              <Label>Dismiss</Label>
+            </Fab>
+          </div>
+        {/if}
+        {#if !executeButtonIsHidden}
+          <div class="fab-container">
+            <Fab color="primary" on:click={confirm} extended>
+              <Icon class="material-icons">monetization_on</Icon>
+              <Label>{executeButtonLabel}</Label>
+            </Fab>
+          </div>
+        {/if}
       {/if}
     </svelte:fragment>
   </Page>

@@ -265,16 +265,18 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      <div class="fab-container">
-        <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
-          <Label>Cancel</Label>
-        </Fab>
-      </div>
-      <div class="fab-container">
-        <Fab color="primary" on:click={modify} extended>
-          <Label>Modify</Label>
-        </Fab>
-      </div>
+      {#if !openEnterPinDialog}
+        <div class="fab-container">
+          <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
+            <Label>Cancel</Label>
+          </Fab>
+        </div>
+        <div class="fab-container">
+          <Fab color="primary" on:click={modify} extended>
+            <Label>Modify</Label>
+          </Fab>
+        </div>
+      {/if}
     </svelte:fragment>
   </Page>
 </div>

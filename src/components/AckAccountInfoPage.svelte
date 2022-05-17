@@ -228,10 +228,12 @@
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    <div class="fab-container">
-      <Fab color="primary" on:click={acknowlege} extended>
-        <FabLabel>Acknowlege</FabLabel>
-      </Fab>
-    </div>
+    {#if !openEnterPinDialog}
+      <div class="fab-container">
+        <Fab color="primary" on:click={acknowlege} extended>
+          <FabLabel>Acknowlege</FabLabel>
+        </Fab>
+      </div>
+    {/if}
   </svelte:fragment>
 </Page>

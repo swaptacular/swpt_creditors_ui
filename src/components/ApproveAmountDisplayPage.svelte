@@ -190,11 +190,13 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      <div class="fab-container">
-        <Fab color="primary" on:click={confirm} extended>
-          <Label>Approve</Label>
-        </Fab>
-      </div>
+      {#if !openEnterPinDialog}
+        <div class="fab-container">
+          <Fab color="primary" on:click={confirm} extended>
+            <Label>Approve</Label>
+          </Fab>
+        </div>
+      {/if}
     </svelte:fragment>
   </Page>
 </div>
