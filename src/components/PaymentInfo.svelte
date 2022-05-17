@@ -112,7 +112,7 @@
             style="margin-top: 0.5em; width: 100%;"
             on:click={() => downloadLinkElement?.click()}
             >
-            <Label>Save to file</Label>
+            <Label>Save to a file</Label>
           </Button>
         {/if}
       </Content>
