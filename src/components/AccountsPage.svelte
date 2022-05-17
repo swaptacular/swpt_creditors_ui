@@ -56,7 +56,9 @@
   function hideSearchBox() {
     resetScroll()
     filter = searchText = ''
-    visibleSearchBox = false
+    setTimeout(() => {
+      visibleSearchBox = false
+    }, 350)
   }
 
   function triggerFilterChange() {
