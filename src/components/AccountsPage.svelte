@@ -137,7 +137,7 @@
     margin: 36px 18px 26px 18px;
     text-align: center;
     color: #888;
-    font-size: 1.1em;
+    font-size: 1.25em;
   }
 </style>
 
