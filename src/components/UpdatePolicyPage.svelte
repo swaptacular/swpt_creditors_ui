@@ -197,7 +197,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Modify policy">
+  <Page title="Modify policy" hideFloating={openEnterPinDialog}>
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -357,18 +357,16 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      {#if !openEnterPinDialog}
-        <div class="fab-container">
-          <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
-            <Label>Cancel</Label>
-          </Fab>
-        </div>
-        <div class="fab-container">
-          <Fab color="primary" on:click={modify} extended>
-            <Label>Modify</Label>
-          </Fab>
-        </div>
-      {/if}
+      <div class="fab-container">
+        <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
+          <Label>Cancel</Label>
+        </Fab>
+      </div>
+      <div class="fab-container">
+        <Fab color="primary" on:click={modify} extended>
+          <Label>Modify</Label>
+        </Fab>
+      </div>
     </svelte:fragment>
   </Page>
 </div>

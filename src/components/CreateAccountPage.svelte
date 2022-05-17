@@ -181,7 +181,7 @@
       </svelte:fragment>
     </Page>
   {:else}
-    <Page title={pageTitle}>
+    <Page title={pageTitle} hideFloating={openEnterPinDialog}>
       <svelte:fragment slot="content">
         <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -307,18 +307,16 @@
       </svelte:fragment>
 
       <svelte:fragment slot="floating">
-        {#if !openEnterPinDialog}
-          <div class="fab-container">
-            <Fab on:click={() => actionManager.remove() } extended>
-              <Label>Cancel</Label>
-            </Fab>
-          </div>
-          <div class="fab-container">
-            <Fab color="primary" on:click={confirm} extended>
-              <Label>{isCreateAccountAction ? 'Confirm' : 'Create'}</Label>
-            </Fab>
-          </div>
-        {/if}
+        <div class="fab-container">
+          <Fab on:click={() => actionManager.remove() } extended>
+            <Label>Cancel</Label>
+          </Fab>
+        </div>
+        <div class="fab-container">
+          <Fab color="primary" on:click={confirm} extended>
+            <Label>{isCreateAccountAction ? 'Confirm' : 'Create'}</Label>
+          </Fab>
+        </div>
       </svelte:fragment>
     </Page>
   {/if}

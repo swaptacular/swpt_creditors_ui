@@ -201,7 +201,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Make payment">
+  <Page title="Make payment" hideFloating={openEnterPinDialog}>
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -253,22 +253,20 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      {#if !openEnterPinDialog}
-        {#if !dismissButtonIsHidden}
-          <div class="fab-container">
-            <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
-              <Label>Dismiss</Label>
-            </Fab>
-          </div>
-        {/if}
-        {#if !executeButtonIsHidden}
-          <div class="fab-container">
-            <Fab color="primary" on:click={confirm} extended>
-              <Icon class="material-icons">monetization_on</Icon>
-              <Label>{executeButtonLabel}</Label>
-            </Fab>
-          </div>
-        {/if}
+      {#if !dismissButtonIsHidden}
+        <div class="fab-container">
+          <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
+            <Label>Dismiss</Label>
+          </Fab>
+        </div>
+      {/if}
+      {#if !executeButtonIsHidden}
+        <div class="fab-container">
+          <Fab color="primary" on:click={confirm} extended>
+            <Icon class="material-icons">monetization_on</Icon>
+            <Label>{executeButtonLabel}</Label>
+          </Fab>
+        </div>
       {/if}
     </svelte:fragment>
   </Page>

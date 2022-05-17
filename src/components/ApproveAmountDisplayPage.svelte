@@ -111,7 +111,7 @@
 </style>
 
 <div class="shaking-container">
-  <Page title="Approve display">
+  <Page title="Approve display" hideFloating={openEnterPinDialog}>
     <svelte:fragment slot="content">
       <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -190,13 +190,11 @@
     </svelte:fragment>
 
     <svelte:fragment slot="floating">
-      {#if !openEnterPinDialog}
-        <div class="fab-container">
-          <Fab color="primary" on:click={confirm} extended>
-            <Label>Approve</Label>
-          </Fab>
-        </div>
-      {/if}
+      <div class="fab-container">
+        <Fab color="primary" on:click={confirm} extended>
+          <Label>Approve</Label>
+        </Fab>
+      </div>
     </svelte:fragment>
   </Page>
 </div>

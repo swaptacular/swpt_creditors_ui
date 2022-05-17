@@ -10,6 +10,7 @@
   import ResetPinDialog from './ResetPinDialog.svelte'
 
   export let title: string
+  export let hideFloating: boolean = false
   export let scrollTop: number | undefined = undefined
   export let scrollLeft: number | undefined = undefined
 
@@ -95,8 +96,10 @@
     {/if}
     <slot name="content"></slot>
 
-    <div class="floating" in:fade="{{ duration: 300, delay: 210 }}">
-      <slot name="floating"></slot>
-    </div>
+    {#if !hideFloating}
+      <div class="floating" in:fade="{{ duration: 300, delay: 210 }}">
+        <slot name="floating"></slot>
+      </div>
+    {/if}
   </AutoAdjust>
 </div>

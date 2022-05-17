@@ -56,7 +56,7 @@
   }
 </style>
 
-<Page title="Acknowledge changes">
+<Page title="Acknowledge changes" hideFloating={openEnterPinDialog}>
   <svelte:fragment slot="content">
     <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
@@ -228,12 +228,10 @@
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    {#if !openEnterPinDialog}
-      <div class="fab-container">
-        <Fab color="primary" on:click={acknowlege} extended>
-          <FabLabel>Acknowlege</FabLabel>
-        </Fab>
-      </div>
-    {/if}
+    <div class="fab-container">
+      <Fab color="primary" on:click={acknowlege} extended>
+        <FabLabel>Acknowlege</FabLabel>
+      </Fab>
+    </div>
   </svelte:fragment>
 </Page>
