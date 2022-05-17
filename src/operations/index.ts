@@ -939,6 +939,7 @@ export class UserContext {
         peg,
       }, false)
     }
+    await verifyAccountKnowledge(action.accountCreationState.accountUri)
     await this.setInitializationInProgressFlag(action, false)
   }
 
