@@ -16,7 +16,7 @@
   import CommittedTransferCard from './CommittedTransferCard.svelte'
   import ExchangeSvgIcon from './ExchangeSvgIcon.svelte'
   import AccountInfo from './AccountInfo.svelte'
-  import { Title as DialogTitle, Content as DialogContent, Actions } from '@smui/dialog'
+  import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Dialog from './Dialog.svelte'
 
@@ -257,7 +257,7 @@
             button bellow to request a payment.
           </DialogContent>
           <Actions>
-            <Button on:click={gotIt}>
+            <Button use={[InitialFocus]} on:click={gotIt}>
               <ButtonLabel>I have got it</ButtonLabel>
             </Button>
           </Actions>
