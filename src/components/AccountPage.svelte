@@ -24,10 +24,8 @@
   export let model: AccountModel
   export const snackbarBottom: string = '84px'
 
-  const isANewbie = localStorage.getItem(IS_A_NEWBIE_KEY) === 'true'
   const scrollElement = document.documentElement
-  const KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY = 'creditors.KnowsHowToRequestPayments'
-  let knowsHowToRequestPayment = localStorage.getItem(KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY) === 'true'
+  let isANewbie = localStorage.getItem(IS_A_NEWBIE_KEY) === 'true'
   let downloadLinkElement: HTMLAnchorElement
   let dataUrl: string
   let duration = 0
@@ -120,8 +118,8 @@
   }
 
   function gotIt() {
-    localStorage.setItem(KNOWS_HOW_TO_REQUEST_PAYMENTS_KEY, 'true')
-    knowsHowToRequestPayment = true
+    localStorage.setItem(IS_A_NEWBIE_KEY, 'false')
+    isANewbie = false
   }
 
   $: if (sortRank !== model.sortRank) {
@@ -243,7 +241,7 @@
     <div class="empty-space"></div>
 
     {#if tab === 'account'}
-      {#if isANewbie && !knowsHowToRequestPayment}
+      {#if isANewbie}
         <Dialog
           open
           scrimClickAction=""
