@@ -254,7 +254,7 @@
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab on:click={update}>
+        <Fab color="primary" on:click={update}>
           <Icon class="material-icons">sync</Icon>
         </Fab>
       </div>
