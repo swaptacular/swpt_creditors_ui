@@ -68,6 +68,12 @@
   .transfer-status span {
     text-decoration: underline;
   }
+  .save-button-container {
+    margin-top: 0.5em;
+    margin-bottom: -0.5em;
+    width: 100%;
+    text-align: center;
+  }
   .download-link {
     display: none;
   }
@@ -105,15 +111,12 @@
           <span style="color: #ccc">The payment request does not contain a description.</span>
         {/if}
         {#if dataUrl}
-          <a class="download-link" href={dataUrl} download={fileName} bind:this={downloadLinkElement}>download</a>
-          <Button
-            type="button"
-            color="primary"
-            style="margin-top: 0.5em; width: 100%;"
-            on:click={() => downloadLinkElement?.click()}
-            >
-            <Label>Save to a file</Label>
-          </Button>
+          <div class="save-button-container">
+            <a class="download-link" href={dataUrl} download={fileName} bind:this={downloadLinkElement}>download</a>
+            <Button type="button" color="primary" on:click={() => downloadLinkElement?.click()}>
+              <Label>Save to a file</Label>
+            </Button>
+          </div>
         {/if}
       </Content>
     </Paper>
