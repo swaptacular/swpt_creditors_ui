@@ -11,7 +11,8 @@
 
   // QrScanner.WORKER_PATH = 'path/to/qr-scanner-worker.min.js'
 
-  function onScannedValue(value: string): void {
+  function onScannedValue(v: string | { data: string }): void {
+    const value = typeof(v) === 'string'? v : v.data
     if (value !== result) {
       result = value
     }
@@ -19,7 +20,11 @@
 
   onMount(() => {
     QrScanner.hasCamera().then(ok => { noCamera = !ok })
-    const qrScanner = new QrScanner(videoElement, onScannedValue)
+    const qrScanner = new QrScanner(
+      videoElement,
+      onScannedValue,
+      { returnDetailedScanResult: true } as any,  // This is passed only to silence a deprecation warning.
+    )
     qrScanner.start()
     return () => qrScanner.destroy()
   })
