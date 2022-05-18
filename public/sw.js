@@ -13,6 +13,7 @@ const appFiles = [
   'fonts/material-icons.woff2',
   'assets/index.css',
   'assets/index.js',
+  'assets/qr-scanner-worker.min.js',
 ]
 self.addEventListener('install', (e) => {
   console.log('[Service Worker] Install')
