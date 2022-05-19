@@ -93,7 +93,7 @@
       hijackBackButton()
       $pageModel.goBack()
     } else {
-      window.close()
+      history.back()
     }
   }
 
