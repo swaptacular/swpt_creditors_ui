@@ -391,16 +391,14 @@ export class AppState {
     })
   }
 
-  showActions(back?: () => void): Promise<void> {
+  showActions(): Promise<void> {
     return this.attempt(async () => {
-      const goBack = back ?? (() => { this.showActions() })
       const interactionId = this.interactionId
       const actions = await createLiveQuery(() => this.uc.getActionRecords())
       if (this.interactionId === interactionId) {
         this.pageModel.set({
           type: 'ActionsModel',
           reload: () => { this.showActions() },
-          goBack,
           actions,
         })
       }

@@ -86,11 +86,14 @@
     history.pushState(++seqnum, '')
   }
   function goBack() {
-    hijackBackButton()
     if (app.goBack) {
+      hijackBackButton()
       app.goBack()
+    } else if ($pageModel.goBack) {
+      hijackBackButton()
+      $pageModel.goBack()
     } else {
-      $pageModel.goBack?.()
+      history.back()
     }
   }
 
