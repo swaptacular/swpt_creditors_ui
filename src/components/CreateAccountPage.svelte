@@ -223,12 +223,13 @@
                     </ul>
                     {#if isCreateAccountAction}
                       <p class="warning">
-                        <strong>Note:</strong> You must confirm that
-                        you are certain about the real identity of the
-                        issuer of this currency. The dangers here are
-                        similar to the dangers when a stranger
-                        introduces you to an unknown foreign currency:
-                        You could be tricked by fraudsters!
+                        <strong>Note:</strong> You must click the
+                        checkbox below, to confirm that you are
+                        certain about the real identity of the issuer
+                        of this currency. The dangers here are similar
+                        to the dangers when a stranger introduces you
+                        to an unknown foreign currency: You could be
+                        tricked by fraudsters!
                       </p>
                     {/if}
                   </svelte:fragment>
