@@ -95,6 +95,7 @@
     } else if (!confirm('Please confirm that you want to exit this application.')) {
       hijackBackButton()
     } else {
+      window.close()
       history.back()
     }
   }
