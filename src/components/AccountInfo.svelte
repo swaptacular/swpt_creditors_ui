@@ -32,8 +32,8 @@
     flex: 0 0 20em;
   }
   .amount {
-    font-family: Courier,monospace;
-    font-size: 1.1em;
+    font-family: "Cutive Mono", monospace;
+    font-size: 1.3em;
     text-align: right;
   }
   .amount a {

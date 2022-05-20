@@ -50,7 +50,7 @@
   pre {
     color: #888;
     font-size: 0.9em;
-    font-family: monospace;
+    font-family: "Roboto Mono", monospace;
     white-space: pre-wrap;
     overflow-wrap: break-word;
     width: 100%;

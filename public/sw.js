@@ -1,5 +1,5 @@
 const appName = 'swpt-creditors-ui'
-const cacheName = `${appName}-v0.1.22`
+const cacheName = `${appName}-v0.1.23`
 const appFiles = [
   './',
   'index.html',
@@ -10,6 +10,12 @@ const appFiles = [
   'material.min.css',
   'material-icons.css',
   'fonts/material-icons.woff2',
+  'fonts/Roboto_300.woff2',
+  'fonts/Roboto_400.woff2',
+  'fonts/Roboto_500.woff2',
+  'fonts/Roboto_700.woff2',
+  'fonts/Roboto_Mono.woff2',
+  'fonts/Cutive_Mono.woff2',
   'assets/index.css',
   'assets/index.js',
   'assets/qr-scanner-worker.min.js',

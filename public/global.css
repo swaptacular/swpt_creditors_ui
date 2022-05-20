@@ -23,3 +23,51 @@ table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 300;
+	src:
+		/* from https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmSU5vBg.woff2 */
+		url('fonts/Roboto_300.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 400;
+	src:
+		/* from https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me4A.woff2 */
+		url('fonts/Roboto_400.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 500;
+	src:
+		/* from https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmEU9vBg.woff2 */
+		url('fonts/Roboto_500.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Roboto';
+	font-style: normal;
+	font-weight: 700;
+	src:
+		/* from https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlvBg.woff2 */
+		url('fonts/Roboto_700.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Roboto Mono';
+	font-style: normal;
+	font-weight: normal;
+	src:
+		/* from https://fonts.gstatic.com/s/robotomono/v21/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vqPRg.woff2 */
+		url('fonts/Roboto_Mono.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Cutive Mono';
+	font-style: normal;
+	font-weight: normal;
+	src:
+		/* from https://fonts.gstatic.com/s/cutivemono/v14/m8JWjfRfY7WVjVi2E-K9H5RA.woff2 */
+		url('fonts/Cutive_Mono.woff2') format('woff2');
+}

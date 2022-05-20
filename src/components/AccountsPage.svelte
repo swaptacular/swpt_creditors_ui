@@ -96,7 +96,7 @@
 <style>
   .delete-link {
     margin: 8px 0;
-    font-family: Roboto,sans-serif;
+    font-family: Roboto, sans-serif;
     text-decoration: underline;
     color: #888;
   }
@@ -119,11 +119,11 @@
     color: black !important;
   }
   .amount {
-    font-size: 1.25em;
+    font-size: 1.4em;
     margin-top: 0.33em;
     color: #555;
     text-align: right;
-    font-family: Courier,ui-monospace;
+    font-family: "Cutive Mono", monospace;
   }
   .fab-container {
     margin: 16px 16px;

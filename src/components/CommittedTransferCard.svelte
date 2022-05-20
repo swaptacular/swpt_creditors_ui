@@ -48,7 +48,7 @@
 
 <style>
   h5 {
-    font-family: Roboto,sans-serif;
+    font-family: Roboto, sans-serif;
     font-size: 1.1em;
     font-weight: bold;
   }
@@ -57,18 +57,19 @@
     width: 100%;
   }
   .transfer {
-    font-family: Courier,monospace;
+    font-family: "Cutive Mono", monospace;
+    font-size: 1.1em;
     line-height: 1.25;
     word-break: break-word;
     margin: 10px 0 0 1.5em;
     text-indent: -1.5em;
   }
   .transfer span {
-    font-size: 1.25em;
+    font-size: 1.2em;
   }
   .transfer-note {
     word-break: break-word;
-    font-family: Roboto,sans-serif;
+    font-family: Roboto, sans-serif;
     margin-top: 10px;
     color: #888;
   }

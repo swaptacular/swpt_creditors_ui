@@ -87,7 +87,7 @@
     color: #888;
     margin-top: 16px;
     font-size: 0.9em;
-    font-family: monospace;
+    font-family: "Roboto Mono", monospace;
     white-space: pre-wrap;
     overflow-wrap: break-word;
     width: 100%;
@@ -110,13 +110,13 @@
   }
   .received-text {
     font-size: 13px;
-    font-family: Roboto,sans-serif;
+    font-family: Roboto, sans-serif;
     color: #888;
   }
   .received-amount {
     margin-top: 5px;
-    font-size: 22px;
-    font-family: Courier,monospace;
+    font-size: 25px;
+    font-family: "Cutive Mono", monospace;
   }
   .received-icon {
     flex-grow: 0;
