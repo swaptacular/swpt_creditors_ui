@@ -329,5 +329,6 @@ async function extendTransferRecord(transferRecord: TransferRecord): Promise<Ext
       }
     }
   }
+  await db.transfers.get({ uri: '' })  // This ensures that the transaction is kept alive.
   return t
 }

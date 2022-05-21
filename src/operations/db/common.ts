@@ -249,6 +249,7 @@ async function addAckAccountInfoActionIfThereAreChanges(
         changes,
       })
     }
+    await db.documents.get('')  // This ensures that the transaction is kept alive.
     return undefined
   })
 }
@@ -283,7 +284,7 @@ export async function getAccountRecordByDebtorUri(
   userId: number,
   debtorUri: string,
 ): Promise<AccountRecord | undefined> {
-  return await db.accounts.where({userId, 'debtor.uri': debtorUri}).first()
+  return await db.accounts.where({ userId, 'debtor.uri': debtorUri }).first()
 }
 
 export function getDebtorIdentityFromAccountIdentity(uri: string): string | undefined {

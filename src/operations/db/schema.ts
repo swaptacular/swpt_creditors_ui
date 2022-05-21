@@ -493,8 +493,8 @@ class CreditorsDb extends Dexie {
   defaultPayeeNames: Dexie.Table<DefaultPayeeName, number>
   expectedPayments: Dexie.Table<ExpectedPayment, string>
   committedTransfers: Dexie.Table<CommittedTransferRecord, string>
-  transfers: Dexie.Table<TransferRecord, string>
-  ledgerEntries: Dexie.Table<LedgerEntryRecord, number>
+  transfers: Dexie.Table<TransferRecord, [number, Date]>
+  ledgerEntries: Dexie.Table<LedgerEntryRecord, [string, string]>
   documents: Dexie.Table<DocumentRecord, string>
   actions: Dexie.Table<ActionRecord, number>
   tasks: Dexie.Table<TaskRecord, number>
