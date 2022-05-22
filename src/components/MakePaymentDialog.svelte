@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
-  import { HAS_LOADED_PAYMENT_REQUEST_KEY } from '../app-state'
   import { getContext } from 'svelte'
   import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
@@ -16,8 +15,9 @@
   let fileInputElement: HTMLInputElement
   let files: FileList | undefined
 
-  function markDone() {
-    localStorage.setItem(HAS_LOADED_PAYMENT_REQUEST_KEY, 'true')
+  function close() {
+    open = false
+    flashlightOn = false
   }
 
   function chooseFile() {
@@ -32,12 +32,10 @@
     app.initiatePayment(new Blob([scannedValue]))
     open = false
     scannedValue = undefined
-    markDone()
   }
   $: chosenFile = files?.[0]
   $: if (chosenFile) {
     app.initiatePayment(chosenFile)
-    markDone()
     fileInputElement.value = ''
   }
 </script>
@@ -72,7 +70,7 @@
     scrimClickAction=""
     aria-labelledby="payment-dialog-title"
     aria-describedby="payment-dialog-content"
-    on:MDCDialog:closed={() => open = false}
+    on:MDCDialog:closed={close}
     >
     <Title id="payment-dialog-title">Scan the QR code of the payment request</Title>
     <Content id="payment-dialog-content">

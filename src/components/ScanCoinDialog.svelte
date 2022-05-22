@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
-  import { HAS_SCANNED_DIGITAL_COIN_KEY } from '../app-state'
   import { getContext } from 'svelte'
   import { Title, Content, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label } from '@smui/button'
@@ -14,8 +13,9 @@
   let flashlightOn: boolean = false
   let scannedValue: string | undefined
 
-  function markDone() {
-    localStorage.setItem(HAS_SCANNED_DIGITAL_COIN_KEY, 'true')
+  function close() {
+    open = false
+    flashlightOn = false
   }
 
   function toggleFlashlight() {
@@ -26,7 +26,6 @@
     app.createCreateAccountAction(scannedValue)
     open = false
     scannedValue = undefined
-    markDone()
   }
 </script>
 
@@ -49,7 +48,7 @@
     scrimClickAction=""
     aria-labelledby="scan-coin-dialog-title"
     aria-describedby="scan-coin-dialog-content"
-    on:MDCDialog:closed={() => open = false}
+    on:MDCDialog:closed={close}
     >
     <Title id="scan-coin-dialog-title">Scan the digital coin (a QR code)</Title>
     <Content id="scan-coin-dialog-content">

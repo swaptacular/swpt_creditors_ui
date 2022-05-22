@@ -305,9 +305,6 @@ export type TransferModel = BasePageModel & {
   goBack: () => void,
 }
 
-export const HAS_LOADED_PAYMENT_REQUEST_KEY = 'creditors.hasLoadedPaymentRequest'
-export const HAS_SCANNED_DIGITAL_COIN_KEY = 'creditors.hasScannedDigitalCoin'
-
 export const authenticated = writable(true)
 
 export class AppState {
