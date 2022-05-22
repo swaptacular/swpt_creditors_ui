@@ -80,11 +80,11 @@
       return 'No attempts to transfer the amount have been made yet.'
     case 'Not sent':
       return 'An attempt has been made to transfer the amount, '
-        + 'but it was unsuccessful. '
+        + 'but it has been unsuccessful. '
         + 'It is safe to retry the transfer, though.'
     case 'Not confirmed':
       return 'An attempt has been made to transfer the amount, '
-        + 'but it is unknown whether the amount was successfully transferred or not. '
+        + 'but it is unknown whether the amount has been successfully transferred or not. '
         + 'It is safe to retry the transfer, though.'
     case 'Initiated':
       return 'The payment has been initiated successfully.'
