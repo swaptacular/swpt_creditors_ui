@@ -95,16 +95,16 @@
 
 {#if open}
   <div class="shaking-container">
-    <Dialog
-      open
-      scrimClickAction=""
-      aria-labelledby="enter-pin-dialog-title"
-      aria-describedby="enter-pin-dialog-content"
-      on:MDCDialog:closed={close}
-      >
-      <Title id="enter-pin-dialog-title">Enter your PIN</Title>
-      <Content id="enter-pin-dialog-content">
-        <form noValidate autoComplete="off">
+    <form noValidate autoComplete="off">
+      <Dialog
+        open
+        scrimClickAction=""
+        aria-labelledby="enter-pin-dialog-title"
+        aria-describedby="enter-pin-dialog-content"
+        on:MDCDialog:closed={close}
+        >
+        <Title id="enter-pin-dialog-title">Enter your PIN</Title>
+        <Content id="enter-pin-dialog-content">
           <p class="pin-explain">
             To guarantee the security of your wallet, you must enter
             your personal identification number.
@@ -132,16 +132,16 @@
             >
             {pinMask}<span class="caret"></span>
           </p>
-        </form>
-      </Content>
-      <Actions>
-        <Button>
-          <Label>Cancel</Label>
-        </Button>
-        <Button default on:click={submit}>
-          <Label>OK</Label>
-        </Button>
-      </Actions>
-    </Dialog>
+        </Content>
+        <Actions>
+          <Button type="button">
+            <Label>Cancel</Label>
+          </Button>
+          <Button type="submit" default on:click={submit}>
+            <Label>OK</Label>
+          </Button>
+        </Actions>
+      </Dialog>
+    </form>
   </div>
 {/if}
