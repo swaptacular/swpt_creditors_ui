@@ -4,6 +4,10 @@
   import { Icon } from '@smui/common'
 
   export let result: string | undefined = undefined
+  export let hasFlash: boolean = false
+  export let flashlightOn: boolean = false
+
+  let qrScanner: QrScanner | undefined
   let videoElement: HTMLVideoElement
   let noCamera = false
   let windowHeight: number
@@ -18,19 +22,36 @@
     }
   }
 
+  async function setFlashlightState(qrScanner: QrScanner | undefined, flashlightIsOn: boolean): Promise<void> {
+    if (qrScanner) {
+      hasFlash = await qrScanner.hasFlash()
+      if (hasFlash) {
+        if (flashlightIsOn) {
+          await qrScanner?.turnFlashOn()
+        } else {
+          await qrScanner?.turnFlashOff()
+        }
+      }
+    }
+  }
+
   onMount(() => {
     QrScanner.hasCamera().then(ok => { noCamera = !ok })
-    const qrScanner = new QrScanner(
+    qrScanner = new QrScanner(
       videoElement,
       onScannedValue,
       { returnDetailedScanResult: true } as any,  // This is passed only to silence a deprecation warning.
     )
     qrScanner.start()
-    return () => qrScanner.destroy()
+    return () => {
+      qrScanner?.destroy()
+      qrScanner = undefined
+    }
   })
 
   $: maxVideoHeight = windowHeight - 205
   $: height = videoHeight > maxVideoHeight ? maxVideoHeight : undefined
+  $: setFlashlightState(qrScanner, flashlightOn)
 </script>
 
 <style>
