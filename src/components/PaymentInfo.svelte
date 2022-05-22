@@ -114,7 +114,7 @@
           <div class="save-button-container">
             <a class="download-link" href={dataUrl} download={fileName} bind:this={downloadLinkElement}>download</a>
             <Button type="button" color="primary" on:click={() => downloadLinkElement?.click()}>
-              <Label>Save to a file</Label>
+              <Label>Save this payment request</Label>
             </Button>
           </div>
         {/if}
