@@ -26,6 +26,7 @@
     app.createCreateAccountAction(scannedValue)
     open = false
     scannedValue = undefined
+    flashlightOn = false
   }
 </script>
 

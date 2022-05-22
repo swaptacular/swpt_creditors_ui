@@ -32,6 +32,7 @@
     app.initiatePayment(new Blob([scannedValue]))
     open = false
     scannedValue = undefined
+    flashlightOn = false
   }
   $: chosenFile = files?.[0]
   $: if (chosenFile) {
