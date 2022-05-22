@@ -254,7 +254,7 @@
             <Fab color="primary" style="vertical-align: middle">
               <Icon class="material-icons">receipt</Icon>
             </Fab>
-            button bellow to request a payment.
+            button below to request a payment.
           </DialogContent>
           <Actions>
             <Button use={[InitialFocus]} on:click={gotIt}>

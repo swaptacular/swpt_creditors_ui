@@ -111,9 +111,9 @@
         </LayoutGrid>
       {:else}
         <p class="no-actions">
-          Press
+          To make a payment, press the
           <Icon class="material-icons" style="vertical-align: middle">local_atm</Icon>
-          to make a payment.
+          button below.
         </p>
       {/if}
     {/if}
