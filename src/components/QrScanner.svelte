@@ -13,8 +13,6 @@
   let windowHeight: number
   let videoHeight: number
 
-  // QrScanner.WORKER_PATH = 'path/to/qr-scanner-worker.min.js'
-
   function onScannedValue(v: string | { data: string }): void {
     const value = typeof(v) === 'string'? v : v.data
     if (value !== result) {
@@ -35,14 +33,33 @@
     }
   }
 
+  async function initQrScanner(): Promise<QrScanner | undefined> {
+    let scanner: QrScanner | undefined
+    if (await QrScanner.hasCamera()) {
+      scanner = new QrScanner(
+        videoElement,
+        onScannedValue,
+        { returnDetailedScanResult: true } as any,  // This is passed only to silence a deprecation warning.
+      )
+      await scanner.start()
+    } else {
+      noCamera = true
+    }
+    return scanner
+  }
+
   onMount(() => {
-    QrScanner.hasCamera().then(ok => { noCamera = !ok })
-    qrScanner = new QrScanner(
-      videoElement,
-      onScannedValue,
-      { returnDetailedScanResult: true } as any,  // This is passed only to silence a deprecation warning.
-    )
-    qrScanner.start()
+    if (qrScanner === undefined) {
+      initQrScanner().then(
+        (newQrScanner) => {
+          qrScanner = newQrScanner
+        },
+        (error) => {
+          noCamera = true
+          console.error(error)
+        },
+      )
+    }
     return () => {
       qrScanner?.destroy()
       qrScanner = undefined
