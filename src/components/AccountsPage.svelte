@@ -183,9 +183,9 @@
 
     {:else}
       <p class="no-accounts">
-        Press
+        Press the
         <Icon class="material-icons" style="vertical-align: middle">add</Icon>
-        to create a new account.
+        button below to create a new account.
       </p>
     {/if}
 

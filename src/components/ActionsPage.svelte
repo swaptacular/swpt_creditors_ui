@@ -139,7 +139,7 @@
   </svelte:fragment>
 
   <svelte:fragment slot="floating">
-    {#if hasAccounts}
+    {#if !isANewbie || hasAccounts}
       <div class="fab-container">
         <Fab on:click={() => app.showTransfers()}>
           <Icon class="material-icons">history</Icon>
