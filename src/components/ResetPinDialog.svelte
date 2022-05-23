@@ -10,6 +10,7 @@
   import HelperText from '@smui/textfield/helper-text/index'
 
   export let app: AppState
+  export let open: boolean = false
 
   let shakingElement: HTMLElement
   let invalidPin: boolean | undefined
@@ -161,4 +162,3 @@
     </Dialog>
   </div>
 {/if}
-

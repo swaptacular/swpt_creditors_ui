@@ -18,6 +18,7 @@
   const { waitingInteractions, alerts, pageModel } = app
   const authenticated: Writable<boolean> = getContext('authenticated')
   let topAppBar: any
+  let resettingPin: boolean = false
 
   function confirmLogout() {
     if (confirm('You will be logged out. To use the application again, you will have to log in.')) {
@@ -87,7 +88,7 @@
   </TopAppBar>
 
   <AutoAdjust {topAppBar}>
-    <ResetPinDialog {app} />
+    <ResetPinDialog {app} bind:open={resettingPin} />
 
     {#if $alerts.length > 0}
       <Alerts alerts={$alerts} {app} />
@@ -96,7 +97,7 @@
     {/if}
     <slot name="content"></slot>
 
-    {#if !hideFloating}
+    {#if !hideFloating && !resettingPin}
       <div class="floating" in:fade="{{ duration: 300, delay: 210 }}">
         <slot name="floating"></slot>
       </div>
