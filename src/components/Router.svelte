@@ -136,6 +136,8 @@
   }
   #text {
     font-size: 24px;
+    padding: 8px;
+    background-color: rgb(229,229,229);
     color: black;
     user-select: none;
   }
