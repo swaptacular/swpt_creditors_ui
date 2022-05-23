@@ -77,11 +77,13 @@
     max-width: 640px;
   }
   .no-camera {
-    width: 98%;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     color: #c4c4c4;
     padding: 20px 0 10px 0;
     border: 4px dotted;
+    overflow: hidden;
   }
   .no-camera :global(i) {
     font-size: 150px;
