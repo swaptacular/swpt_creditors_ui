@@ -149,7 +149,7 @@
           </p>
 
           <p class="submit">
-            <Button on:click={submit} variant="raised">
+            <Button on:click={submit} type="submit" variant="raised">
               <Label>Save</Label>
             </Button>
             <!-- The type="button" is necessary to prevent form submitting.-->
