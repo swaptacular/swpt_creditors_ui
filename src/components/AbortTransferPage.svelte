@@ -103,8 +103,8 @@
         <Content id="failed-cancellation-content">
           The attempt to cancel the delayed payment has failed. You
           can get rid of this payment, but please note that it is not
-          certain whether the amount was successfully transferred or
-          not.
+          certain whether the amount has been successfully transferred
+          or not.
         </Content>
         <Actions>
           <Button on:click={dismiss}>
