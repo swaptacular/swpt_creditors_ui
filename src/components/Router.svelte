@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import { setContext, onMount } from 'svelte'
+  import { fade } from 'svelte/transition'
   import CreateAccountPage from './CreateAccountPage.svelte'
   import AckAccountInfoPage from './AckAccountInfoPage.svelte'
   import ApproveDebtorNamePage from './ApproveDebtorNamePage.svelte'
@@ -26,6 +27,7 @@
   const { pageModel } = app
   const originalAppState = app
   let seqnum = typeof history.state === 'number' ? history.state : 0
+  let exiting = false
 
   function enusreOriginalAppState(appState: AppState): void {
     if (appState !== originalAppState) throw new Error('unoriginal app state')
@@ -94,6 +96,12 @@
       $pageModel.goBack()
     } else {
       history.back()
+
+      // Shows a "Tap again to exit" overlay before exiting. This
+      // should be visible only on Android devices, which for some
+      // bizarre reason require additional back button tap before
+      // `history.back()` takes effect.
+      exiting = true
     }
   }
 
@@ -109,5 +117,34 @@
   $: enusreOriginalAppState(app)
   $: pageComponent = getUniquePageComponent($pageModel.type)
 </script>
+
+<style>
+  #overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.1);
+    cursor: not-allowed;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #text {
+    font-size: 24px;
+    color: black;
+    user-select: none;
+  }
+</style>
+
+{#if exiting}
+  <div id="overlay">
+    <div id="text" in:fade="{{ duration: 300, delay: 200 }}">Tap again to exit</div>
+  </div>
+{/if}
 
 <svelte:component this={pageComponent} model={$pageModel} {app} bind:snackbarBottom />
