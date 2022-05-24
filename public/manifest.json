@@ -12,11 +12,6 @@
   "background_color": "#ffffff",
   "icons": [
     {
-      "src": "favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
-    },
-    {
       "src": "icons/favicon-192x192.png",
       "type": "image/png",
       "sizes": "192x192"
