@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
+  import { LOCALSTORAGE_STATE } from '../web-api'
   import { setContext, onMount } from 'svelte'
   import { fade } from 'svelte/transition'
   import CreateAccountPage from './CreateAccountPage.svelte'
@@ -95,6 +96,7 @@
       hijackBackButton()
       $pageModel.goBack()
     } else {
+      sessionStorage.removeItem(LOCALSTORAGE_STATE)
       history.back()
 
       // Shows a "Tap again to exit" overlay before exiting. This

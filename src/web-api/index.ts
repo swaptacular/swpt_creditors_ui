@@ -11,6 +11,7 @@ import type {
   AuthTokenSource,
 } from './oauth2-token-source'
 
+export { LOCALSTORAGE_STATE } from './oauth2-token-source'
 export { Oauth2TokenSource }
 
 export type {

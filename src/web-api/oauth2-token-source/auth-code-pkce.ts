@@ -93,7 +93,7 @@ function createErrorInstance(rawError: string): OAuth2Error {
 }
 
 const LOCALSTORAGE_ID = `creditors.oauth2`;
-const LOCALSTORAGE_STATE = `${LOCALSTORAGE_ID}-state`;
+export const LOCALSTORAGE_STATE = `${LOCALSTORAGE_ID}-state`;
 
 /**
  * The maximum length for a code verifier for the best security we can offer.
