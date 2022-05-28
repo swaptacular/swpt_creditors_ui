@@ -74,7 +74,7 @@
       let x = Number(amount)
       if (Number.isFinite(x)) {
         x = Math.max(0, x) * limitAmountDivisor(divisor)
-        result = BigInt(Math.ceil(x))
+        result = BigInt(Math.round(x))
         if (result < 0n) {
           result = 0n
         }
