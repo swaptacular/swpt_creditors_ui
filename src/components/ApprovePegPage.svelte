@@ -60,7 +60,7 @@
     const bound = bounds[bounds.length - 1]
     if (bound && bound.accountUri !== accountUri) {
       const finalUnitAmount = amountToString(
-        BigInt(Math.round(Math.min(amount * bound.exchangeRate, MAX_AMOUNT))),
+        Math.min(amount * bound.exchangeRate, MAX_AMOUNT),
         bound.display.amountDivisor,
         bound.display.decimalPlaces,
       ) + ' ' + bound.display.unit
@@ -96,18 +96,17 @@
   $: peggedDisplay = model.peggedAccountDisplay
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
-  $: peggedAmount = Math.ceil(exampleAmount)
   $: peggedAmountString = amountToString(
-    BigInt(peggedAmount),
+    exampleAmount,
     peggedDisplay.amountDivisor,
     peggedDisplay.decimalPlaces,
   )
   $: peggedUnitAmount = peggedAmountString + ' ' + peggedDisplay.unit
   $: pegDisplay = action.peg.display
   $: pegDebtorName = model.pegDebtorName
-  $: pegAmount = Math.ceil(exampleAmount * action.peg.exchangeRate)
+  $: pegAmount = exampleAmount * action.peg.exchangeRate
   $: pegAmountString = amountToString(
-    BigInt(Math.min(pegAmount, MAX_AMOUNT)),
+    Math.min(pegAmount, MAX_AMOUNT),
     pegDisplay.amountDivisor,
     pegDisplay.decimalPlaces,
   )
