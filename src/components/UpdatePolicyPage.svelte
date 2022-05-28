@@ -80,7 +80,7 @@
     if (pegBounds.length >= 2) {
       const [pegged, peg] = pegBounds
       const amount = calcPegExampleAmount(pegged.display, peg.display, peg.exchangeRate)
-      return BigInt(Math.ceil(amount))
+      return BigInt(Math.round(amount))
     }
     return 0n
   }
