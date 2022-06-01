@@ -69,6 +69,11 @@
     app.fetchDataFromServer(() => model.reload())
   }
 
+  function goBack(): void {
+    app.startInteraction()
+    model.goBack?.()
+  }
+
   onDestroy(revokeCurrentDataUrl)
 
   $: transfer = model.transfer
@@ -129,5 +134,10 @@
         </Fab>
       </div>
     {/if}
+    <div class="fab-container">
+      <Fab on:click={goBack} color="primary">
+        <Icon class="material-icons">arrow_back</Icon>
+      </Fab>
+    </div>
   </svelte:fragment>
 </Page>
