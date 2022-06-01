@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { AppState, AccountModel } from '../app-state'
-  import { IS_A_NEWBIE_KEY } from '../app-state'
-  import { Alert } from '../app-state'
   import { fade } from 'svelte/transition'
+  import { IS_A_NEWBIE_KEY } from '../app-state'
+  import { amountToString } from '../format-amounts'
+  import { Alert } from '../app-state'
   import Paper, { Title, Content } from '@smui/paper'
   import { Row } from '@smui/top-app-bar'
   import Fab, { Icon } from '@smui/fab'
@@ -143,6 +144,13 @@
   $: accountUri = data.account.uri
   $: display = data.display
   $: knownDebtor = display.knownDebtor
+  $: amountDivisor = display.amountDivisor
+  $: decimalPlaces = display.decimalPlaces
+  $: unit = display.unit ?? '\u00A4'
+  $: unitAbbr = unit.slice(0, 10)
+  $: exchange = data.exchange
+  $: minPrincipalUnitAmount = amountToString(exchange.minPrincipal, amountDivisor, decimalPlaces)
+  $: maxPrincipalUnitAmount = amountToString(exchange.maxPrincipal, amountDivisor, decimalPlaces)
   $: info = data.info
   $: interestRate = info.interestRate
   $: configError = info.configError
@@ -308,6 +316,15 @@
               {#if scheduledForDeletion}
                 <li>
                   This account has been scheduled for deletion.
+                </li>
+              {:else if exchange.policy !== undefined}
+                <li>
+                  The available amount should stay
+                  {#if minPrincipalUnitAmount === maxPrincipalUnitAmount}
+                    as close as possible to {maxPrincipalUnitAmount} {unitAbbr}.
+                  {:else}
+                    between {minPrincipalUnitAmount} and {maxPrincipalUnitAmount} {unitAbbr}.
+                  {/if}
                 </li>
               {/if}
               {#if configError !== undefined}
