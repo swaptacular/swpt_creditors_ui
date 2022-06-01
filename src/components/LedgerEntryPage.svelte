@@ -127,7 +127,7 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={goBack}>
+      <Fab on:click={goBack} color="primary">
         <Icon class="material-icons">arrow_back</Icon>
       </Fab>
     </div>
