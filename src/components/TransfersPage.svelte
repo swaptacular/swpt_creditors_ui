@@ -91,7 +91,7 @@
                       {amountToString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
                       {transfer.display?.unit ?? '\u00a4'}
                     </span>
-                    to {transfer.paymentInfo.payeeName}
+                    to {transfer.paymentInfo.payeeName || 'unknown payee'}
                   </p>
                 </Content>
               </PrimaryAction>
