@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { PegBound } from '../app-state'
+  import type { PegBound, AppState } from '../app-state'
+  import { getContext } from 'svelte'
   import { amountToString } from '../format-amounts'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
@@ -12,6 +13,13 @@
   export let showAccount: ((accountUri: string) => void) | undefined = undefined
   export let elevation = 6
   export let style: string = 'margin-top: 12px; margin-bottom: 24px; word-break: break-word'
+
+  const app: AppState = getContext('app')
+
+  function followPeg(accountUri: string): void {
+    app.startInteraction()
+    showAccount?.(accountUri)
+  }
 
   function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
     const x = Number(amt) * pegBound.exchangeRate
@@ -70,7 +78,7 @@
               </span>
             {:else}
               {#if showAccount !== undefined}
-                <a href="." target="_blank" on:click|preventDefault={() => showAccount?.(pegBound.accountUri)}>
+                <a href="." target="_blank" on:click|preventDefault={() => followPeg(pegBound.accountUri)}>
                   = {calcDisplayAmount(amount, pegBound)}
                 </a>
               {:else}

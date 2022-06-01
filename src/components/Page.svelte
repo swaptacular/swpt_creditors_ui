@@ -24,7 +24,14 @@
       app.logout()
     }
   }
+
+  function goBack(): void {
+    app.startInteraction()
+    $pageModel.goBack?.()
+  }
+
   function update(): void {
+    app.startInteraction()
     app.fetchDataFromServer(() => $pageModel.reload())
   }
 
@@ -62,7 +69,7 @@
     <Row>
       <Section>
         {#if $pageModel.goBack}
-          <IconButton class="material-icons" on:click={() => $pageModel.goBack?.()}>
+          <IconButton class="material-icons" on:click={goBack}>
             arrow_back
           </IconButton>
         {/if}

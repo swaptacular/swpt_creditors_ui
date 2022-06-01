@@ -326,6 +326,10 @@ export class AppState {
     })
   }
 
+  startInteraction(): void {
+    this.interactionId++
+  }
+
   get accountsMap(): AccountsMap {
     return this.uc.accountsMap
   }

@@ -24,6 +24,11 @@
   let searchText = model.searchText ?? ''
   let filter = searchText
 
+  function deleteUnnamedAccountUris(): void {
+    app.startInteraction()
+    app.deleteUnnamedAccountUris(unnamedAccountUris)
+  }
+
   function showAccount(accountUri: string): void {
     const m = {
       ...model,
@@ -31,6 +36,7 @@
       scrollTop: scrollElement.scrollTop,
       scrollLeft: scrollElement.scrollLeft,
     }
+    app.startInteraction()
     app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
@@ -48,9 +54,12 @@
   }
 
   async function showSearchBox() {
-    visibleSearchBox = true
-    await tick()
-    searchInput?.focus()
+    if (!visibleSearchBox) {
+      app.startInteraction()
+      visibleSearchBox = true
+      await tick()
+      searchInput?.focus()
+    }
   }
 
   function hideSearchBox() {
@@ -80,6 +89,13 @@
     const unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
     const unit = pegBound.display.unit
     return `${unitAmount} ${unit}`
+  }
+
+  function scanCoin(): void {
+    if (!scanCoinDialog) {
+      app.startInteraction()
+      scanCoinDialog = true
+    }
   }
 
   onMount(() => {
@@ -149,7 +165,7 @@
           {#if unnamedAccountUris.length > MAX_UNNAMED_ACCOUNT_CONFIGS}
             <Cell>
               <Card>
-                <PrimaryAction padded on:click={() => app.deleteUnnamedAccountUris(unnamedAccountUris)}>
+                <PrimaryAction padded on:click={deleteUnnamedAccountUris}>
                   <span class="delete-link">
                     {#if unnamedAccountUris.length === 1}
                       Delete 1 unconfirmed account, which is not
@@ -222,7 +238,7 @@
         </div>
       {/if}
       <div class="fab-container">
-        <Fab color="primary" on:click={() => scanCoinDialog = true} >
+        <Fab color="primary" on:click={scanCoin} >
           <Icon class="material-icons">add</Icon>
         </Fab>
       </div>

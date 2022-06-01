@@ -122,7 +122,13 @@
     }
   }
 
+  function cancel(): void {
+    app.startInteraction()
+    actionManager.remove(model.backToAccount)
+  }
+
   function modify(): void {
+    app.startInteraction()
     if (invalid) {
       shakeForm()
     } else if (requirePin) {
@@ -358,7 +364,7 @@
 
     <svelte:fragment slot="floating">
       <div class="fab-container">
-        <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
+        <Fab on:click={cancel} extended>
           <Label>Cancel</Label>
         </Fab>
       </div>

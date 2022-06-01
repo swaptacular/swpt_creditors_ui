@@ -37,6 +37,7 @@
   async function handleClosedAuthenticationErrorSnackbar(event: any) {
     if (event.detail.reason === 'action') {
       const appState = await appStatePromise
+      appState?.startInteraction()
       appState?.fetchDataFromServer()
     }
   }

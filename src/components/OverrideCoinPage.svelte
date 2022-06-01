@@ -38,6 +38,7 @@
   }
 
   function submit(): void {
+    app.startInteraction()
     if (editedReplaceCoin === undefined) {
       shakeForm()
     } else {

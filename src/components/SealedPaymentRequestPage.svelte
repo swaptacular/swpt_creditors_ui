@@ -40,11 +40,20 @@
       scrollTop: scrollElement.scrollTop,
       scrollLeft: scrollElement.scrollLeft,
     }
+    app.startInteraction()
     app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
   function update(): void {
+    app.startInteraction()
     app.fetchDataFromServer(() => model.reload())
+  }
+
+  function close(): void {
+    if (!showConfirmDialog) {
+      app.startInteraction()
+      showConfirmDialog = true
+    }
   }
 
   function revokeTextDataUrl() {
@@ -259,7 +268,7 @@
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab color="primary" on:click={() => showConfirmDialog = true}>
+        <Fab color="primary" on:click={close}>
           <Icon class="material-icons">close</Icon>
         </Fab>
       </div>

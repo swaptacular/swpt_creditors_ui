@@ -89,6 +89,7 @@
     history.pushState(++seqnum, '')
   }
   function goBack() {
+    app.startInteraction()
     if (app.goBack) {
       hijackBackButton()
       app.goBack()

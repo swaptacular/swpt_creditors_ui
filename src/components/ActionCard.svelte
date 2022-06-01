@@ -12,6 +12,11 @@
   export let show = () => { app.showAction(action.actionId) }
   export let color: string = 'primary'
 
+  function activate(): void {
+    app.startInteraction()
+    show()
+  }
+
   function getButtonLabel(action: ActionRecordWithId): string {
     switch (action.actionType) {
     case 'CreateTransfer':
@@ -168,7 +173,7 @@
   <Card>
     <Content style="word-break: break-word">{getDescription(action)}</Content>
     <Actions fullBleed>
-      <Button {color} on:click={show}>
+      <Button {color} on:click={activate}>
         <Label>{getButtonLabel(action)}</Label>
         <i class="material-icons" aria-hidden="true">arrow_forward</i>
       </Button>

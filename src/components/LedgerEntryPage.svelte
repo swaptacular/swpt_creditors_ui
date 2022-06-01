@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { LedgerEntryModel, ExtendedLedgerEntry } from '../app-state'
+  import type { LedgerEntryModel, ExtendedLedgerEntry, AppState } from '../app-state'
+  import { getContext } from 'svelte'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
   import Fab, { Icon } from '@smui/fab'
@@ -10,12 +11,19 @@
   export let model: LedgerEntryModel
   export const snackbarBottom: string = "84px"
   
+  const app: AppState = getContext('app')
+
   const dumyPaymentInfo = {
     payeeName: '',
     payeeReference: '',
     description: { contentFormat: '', content: ''},
   }
   
+  function goBack(): void {
+    app.startInteraction()
+    model.goBack?.()
+  }
+
   function getDate(t: ExtendedLedgerEntry): string {
     return new Date(t.addedAt).toLocaleString()
   }
@@ -119,7 +127,7 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={model.goBack}>
+      <Fab on:click={goBack}>
         <Icon class="material-icons">arrow_back</Icon>
       </Fab>
     </div>

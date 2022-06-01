@@ -120,10 +120,17 @@
 
   function showAccount(): void {
     const m = createUpdatedModel()
+    app.startInteraction()
     app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
+  function cancel(): void {
+    app.startInteraction()
+    actionManager.remove(model.backToAccount)
+  }
+
   function request(): void {
+    app.startInteraction()
     if (invalid) {
       shakeForm()
     } else if (requestedAmount && requestedAmount < 3 * Math.max(negligibleAmount, 1)) {
@@ -316,7 +323,7 @@
 
     <svelte:fragment slot="floating">
       <div class="fab-container">
-        <Fab on:click={() => actionManager.remove(model.backToAccount) } extended>
+        <Fab on:click={cancel} extended>
           <Label>Cancel</Label>
         </Fab>
       </div>

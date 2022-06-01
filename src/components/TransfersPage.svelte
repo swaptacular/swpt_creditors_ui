@@ -22,6 +22,7 @@
   function showTransfer(transferUri: string): void {
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
+    app.startInteraction()
     app.showTransfer(transferUri, () => {
       app.pageModel.set({ ...model, transfers, scrollTop, scrollLeft })
     })

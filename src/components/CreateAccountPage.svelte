@@ -63,7 +63,18 @@
     }
   }
 
+  function retry(): void {
+    app.startInteraction()
+    model.reload()  
+  }
+
+  function cancel(): void {
+    app.startInteraction()
+    actionManager.remove()
+  }
+
   function confirm(): void {
+    app.startInteraction()
     allowIntermediate = true
     uniqueDebtorName = isUniqueDebtorName(debtorName, action)
     if (invalid) {
@@ -169,12 +180,12 @@
 
       <svelte:fragment slot="floating">
         <div class="fab-container">
-          <Fab on:click={() => actionManager.remove()} extended>
+          <Fab on:click={cancel} extended>
             <Label>Cancel</Label>
           </Fab>
         </div>
         <div class="fab-container">
-          <Fab color="primary" on:click={() => model.reload()} extended>
+          <Fab color="primary" on:click={retry} extended>
             <Label>Retry</Label>
           </Fab>
         </div>
@@ -309,7 +320,7 @@
 
       <svelte:fragment slot="floating">
         <div class="fab-container">
-          <Fab on:click={() => actionManager.remove() } extended>
+          <Fab on:click={cancel} extended>
             <Label>Cancel</Label>
           </Fab>
         </div>

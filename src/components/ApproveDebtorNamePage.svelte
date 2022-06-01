@@ -57,6 +57,7 @@
   }
 
   function confirm(): void {
+    app.startInteraction()
     uniqueDebtorName = isUniqueDebtorName(debtorName)
     if (invalidDebtorName || !uniqueDebtorName) {
       shakeForm()

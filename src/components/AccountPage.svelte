@@ -57,6 +57,7 @@
   }
 
   async function loadTransfers(): Promise<void> {
+    app.startInteraction()
     if (showLoadedTranfersButton) {
       showLoadedTranfersButton = false
       const newBatch = await model.fetchTransfers()
@@ -95,12 +96,24 @@
     app.showAccount(accountUri)
   }
 
+  function createConfigAccountAction(): void {
+    app.startInteraction()
+    app.createConfigAccountAction(accountUri, showThisAccount)
+  }
+
+  function createUpdatePolicyAction(): void {
+    app.startInteraction()
+    app.createUpdatePolicyAction(accountUri, showThisAccount)
+  }
+
   function changeTab(t: AccountModel['tab']): void {
+    app.startInteraction()
     duration = 350
     tab = t
   }
 
   function receipt():void {
+    app.startInteraction()
     if (!(
       secureCoin &&
       !scheduledForDeletion &&
@@ -407,14 +420,14 @@
 
   <svelte:fragment slot="floating">
     <div class="fab-container">
-      <Fab on:click={() => app.createConfigAccountAction(accountUri, showThisAccount)} >
+      <Fab on:click={createConfigAccountAction} >
         <Icon class="material-icons">
           settings
         </Icon>
       </Fab>
     </div>
     <div class="fab-container">
-      <Fab on:click={() => app.createUpdatePolicyAction(accountUri, showThisAccount)} >
+      <Fab on:click={createUpdatePolicyAction} >
         <ExchangeSvgIcon />
       </Fab>
     </div>

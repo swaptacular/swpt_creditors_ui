@@ -156,7 +156,13 @@
     }
   }
 
+  function dismiss(): void {
+    app.startInteraction()
+    actionManager.remove()
+  }
+
   function confirm(): void {
+    app.startInteraction()
     if (invalid && isDraft) {
       shakeForm()
     } else if (status === 'Timed out') {
@@ -255,7 +261,7 @@
     <svelte:fragment slot="floating">
       {#if !dismissButtonIsHidden}
         <div class="fab-container">
-          <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={() => actionManager.remove()} extended>
+          <Fab color={executeButtonIsHidden ? "primary" : "secondary"} on:click={dismiss} extended>
             <Label>Dismiss</Label>
           </Fab>
         </div>

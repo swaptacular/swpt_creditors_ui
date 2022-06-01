@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { AccountDisplayRecord } from '../app-state'
+  import type { AccountDisplayRecord, AppState } from '../app-state'
   import type { PaymentInfo } from '../payment-requests'
+  import { getContext } from 'svelte'  
   import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -26,6 +27,13 @@
   let invalidUnitAmount: boolean | undefined = undefined
   let invalidDeadline: boolean | undefined = undefined
 
+  const app: AppState = getContext('app')  
+
+  function followAccount(): void {
+    app.startInteraction()
+    showAccount?.()    
+  }
+  
   $: payeeName = paymentInfo.payeeName
   $: payeeReference = paymentInfo.payeeReference
   $: description = paymentInfo.description
@@ -86,7 +94,7 @@
         {#if showAccount !== undefined}
           <Chip chip="account" style="float: right; margin-left: 6px">
             <Text>
-              <a href="." style="text-decoration: none; color: #666" on:click|preventDefault={showAccount}>
+              <a href="." style="text-decoration: none; color: #666" on:click|preventDefault={followAccount}>
                 account
               </a>
             </Text>

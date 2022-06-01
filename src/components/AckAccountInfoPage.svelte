@@ -21,6 +21,7 @@
   let openEnterPinDialog: boolean = false
 
   function acknowlege(): void {
+    app.startInteraction()
     const previousPegMustBeRemoved = action.previousPeg !== undefined && action.changes.pegParams
     if (previousPegMustBeRemoved) {
       openEnterPinDialog = true

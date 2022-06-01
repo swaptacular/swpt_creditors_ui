@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { ExtendedLedgerEntry, PegBound } from '../app-state'
+  import type { ExtendedLedgerEntry, PegBound, AppState } from '../app-state'
+  import { getContext } from 'svelte'
   import { amountToString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
   import Card, { PrimaryAction, Content } from '@smui/card'
@@ -7,6 +8,8 @@
   export let transfer: ExtendedLedgerEntry
   export let pegBound: PegBound
   export let activate: () => void
+
+  const app: AppState = getContext('app')
 
   const dumyPaymentInfo = {
     payeeName: '',
@@ -33,6 +36,11 @@
         ? s
         : s.slice(0, MAX_LENGTH) + '\u2026'
     )
+  }
+
+  function showCommittedTransfer(): void {
+    app.startInteraction()
+    activate()
   }
 
   $: committedTransfer = transfer.transfer
@@ -76,7 +84,7 @@
 </style>
 
 <Card>
-  <PrimaryAction on:click={activate}>
+  <PrimaryAction on:click={showCommittedTransfer}>
     <Content>
       <h5>{getDate(transfer)}</h5>
       <p class="transfer">

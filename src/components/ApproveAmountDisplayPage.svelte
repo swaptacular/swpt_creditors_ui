@@ -54,6 +54,7 @@
   }
 
   function confirm(): void {
+    app.startInteraction()
     if (invalid) {
       shakeForm()
     } else if (approved === 'no') {

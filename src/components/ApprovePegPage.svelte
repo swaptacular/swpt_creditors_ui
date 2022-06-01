@@ -44,6 +44,7 @@
   }
 
   function confirm(): void {
+    app.startInteraction()
     if (editedApproval === undefined) {
       shakeForm()
     } else if (editedApproval === action.alreadyHasApproval) {

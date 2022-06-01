@@ -44,6 +44,21 @@
     })
   }
 
+  function showTransfers(): void {
+    app.startInteraction()
+    app.showTransfers()
+  }
+
+  function showAccounts(): void {
+    app.startInteraction()
+    app.showAccounts()
+  }
+
+  function scanPaymentRequest(): void {
+    app.startInteraction()
+    showMakePaymentDialog = true
+  }
+
   $: actions = model.actions
   $: hasAccounts = app.accountsMap.hasAccounts()
   $: [regularActions, foreignActions] = separateForeignActions($actions)
@@ -101,7 +116,7 @@
                 currency.
               </CardContent>
               <Actions fullBleed>
-                <Button on:click={() => app.showAccounts() }>
+                <Button on:click={showAccounts}>
                   <Label>Create an account</Label>
                   <i class="material-icons" aria-hidden="true">arrow_forward</i>
                 </Button>
@@ -141,18 +156,18 @@
   <svelte:fragment slot="floating">
     {#if !isANewbie || hasAccounts}
       <div class="fab-container">
-        <Fab on:click={() => app.showTransfers()}>
+        <Fab on:click={showTransfers}>
           <Icon class="material-icons">history</Icon>
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab color="primary" on:click={() => showMakePaymentDialog = true} >
+        <Fab color="primary" on:click={scanPaymentRequest} >
           <Icon class="material-icons">local_atm</Icon>
         </Fab>
       </div>
     {/if}
     <div class="fab-container">
-      <Fab color="primary" on:click={() => app.showAccounts() } >
+      <Fab color="primary" on:click={showAccounts} >
         <Icon class="material-icons">account_balance_wallet</Icon>
       </Fab>
     </div>
