@@ -31,13 +31,19 @@
 </script>
 
 <style>
+  .account-info {
+    display: flex;
+    flex-flow: row-reverse wrap;
+  }
   .summary-box {
     color: #888;
     margin-top: 16px;
-    flex: 1 1 25em;
   }
   .amounts-box {
     flex: 0 0 20em;
+  }
+  .important-box {
+    flex: 1 1 25em;
   }
   .amount {
     font-family: "Cutive Mono", monospace;
@@ -68,7 +74,7 @@
     <slot name="title"></slot>
   </Title>
   <Content style="clear: both">
-    <div style="display: flex; flex-flow: row-reverse wrap">
+    <div class="account-info">
       <div class="amounts-box">
         {#each pegBounds as pegBound, index}
           <p class="amount">
@@ -88,15 +94,17 @@
           </p>
         {/each}
       </div>
-      <slot name="important"></slot>
-      <blockquote class="summary-box">
-        {#if summary}
-          {summary}
-        {:else}
-          <span style="color: #ccc">The issuer of the currency has not provided any currency description.</span>
-        {/if}
-      </blockquote>
+      <div class="important-box">
+        <slot name="important"></slot>
+      </div>
     </div>
+    <blockquote class="summary-box">
+      {#if summary}
+        {summary}
+      {:else}
+        <span style="color: #ccc">The issuer of the currency has not provided any currency description.</span>
+      {/if}
+    </blockquote>
     <slot name="content"></slot>
   </Content>
 </Paper>
