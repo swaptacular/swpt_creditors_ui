@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { AppState, TransfersModel, ExtendedTransferRecord } from '../app-state'
   import { amountToString } from '../format-amounts'
-  import { Icon } from '@smui/common'
+  import Fab, { Icon } from '@smui/fab';
+  import { Icon as CommonIcon } from '@smui/common'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Card, { PrimaryAction, Content } from '@smui/card'
   import InfiniteScroll from "./InfiniteScroll.svelte"
@@ -17,6 +18,11 @@
 
   async function fetchNewBatch(): Promise<void> {
     newBatch = await model.fetchTransfers()
+  }
+
+  function goBack(): void {
+    app.startInteraction()
+    model.goBack?.()
   }
 
   function showTransfer(transferUri: string): void {
@@ -68,6 +74,9 @@
   .transfer span {
     font-size: 1.2em;
   }
+  .fab-container {
+    margin: 16px 16px;
+  }
 </style>
 
 <Page title="Payments" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
@@ -84,7 +93,7 @@
               <PrimaryAction on:click={() => showTransfer(transfer.uri)}>
                 <Content>
                   <h5>
-                    <Icon style="vertical-align: -20%" class="material-icons">{getIconName(transfer)}</Icon>
+                    <CommonIcon style="vertical-align: -20%" class="material-icons">{getIconName(transfer)}</CommonIcon>
                     {getDate(transfer)}
                   </h5>
                   <p class="transfer">
@@ -102,5 +111,13 @@
       </LayoutGrid>
       <InfiniteScroll bind:scrollElement hasMore={newBatch.length > 0} threshold={100} on:loadMore={fetchNewBatch} />
     {/if}
+  </svelte:fragment>
+
+  <svelte:fragment slot="floating">
+    <div class="fab-container">
+      <Fab on:click={goBack} color="primary">
+        <Icon class="material-icons">arrow_back</Icon>
+      </Fab>
+    </div>
   </svelte:fragment>
 </Page>
