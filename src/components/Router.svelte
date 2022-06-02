@@ -33,6 +33,7 @@
   function enusreOriginalAppState(appState: AppState): void {
     if (appState !== originalAppState) throw new Error('unoriginal app state')
   }
+
   function getPageComponent(pageModelType: string) {
     switch (pageModelType) {
     case 'CreateAccountModel':
@@ -75,6 +76,7 @@
       throw new Error('unknown page model type')
     }
   }
+
   function getUniquePageComponent(pageModelType: string) {
     const PageComponent = getPageComponent(pageModelType)
 
@@ -84,10 +86,12 @@
     // passed (to the `this` property).
     return class extends PageComponent {}
   }
+
   function hijackBackButton() {
     history.scrollRestoration = 'manual'
     history.pushState(++seqnum, '')
   }
+
   function goBack() {
     app.startInteraction()
     if (app.goBack) {
@@ -97,14 +101,15 @@
       hijackBackButton()
       $pageModel.goBack()
     } else {
+      if (history.length <= 2) {
+        // Shows a "Tap again to exit" overlay before exiting. This
+        // should be visible only on Android devices, which for some
+        // bizarre reason require additional back button tap before
+        // `history.back()` takes effect.
+        exiting = true
+      }
       sessionStorage.removeItem(LOCALSTORAGE_STATE)
       history.back()
-
-      // Shows a "Tap again to exit" overlay before exiting. This
-      // should be visible only on Android devices, which for some
-      // bizarre reason require additional back button tap before
-      // `history.back()` takes effect.
-      exiting = true
     }
   }
 
