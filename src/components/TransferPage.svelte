@@ -4,7 +4,6 @@
   import { amountToString } from '../format-amounts'
   import { generatePr0Blob } from '../payment-requests'
   import { onDestroy } from 'svelte'
-  import { fade } from 'svelte/transition'
   import Fab, { Icon } from '@smui/fab';
   import PaymentInfo from './PaymentInfo.svelte'
   import Page from './Page.svelte'
@@ -62,11 +61,6 @@
     })
     revokeCurrentDataUrl()
     return currentDataUrl = URL.createObjectURL(blob)
-  }
-
-  function update(): void {
-    app.startInteraction()
-    app.fetchDataFromServer(() => model.reload())
   }
 
   function goBack(): void {
@@ -127,13 +121,6 @@
         <Icon class="material-icons">download</Icon>
       </Fab>
     </div>
-    {#if status === 'Initiated'}
-      <div out:fade|local="{{ duration: 1000 }}" class="fab-container">
-        <Fab on:click={update}>
-          <Icon class="material-icons">sync</Icon>
-        </Fab>
-      </div>
-    {/if}
     <div class="fab-container">
       <Fab on:click={goBack} color="primary">
         <Icon class="material-icons">arrow_back</Icon>
