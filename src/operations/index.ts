@@ -1247,8 +1247,8 @@ export class UserContext {
         // Sort by priority. If priorities are equal, sort by debtor name.
         const displayA = a.display
         const displayB = b.display
-        const priorityA = prioritiesMap.get(displayA.account.uri) ?? 0
-        const priorityB = prioritiesMap.get(displayB.account.uri) ?? 0
+        const priorityA = prioritiesMap.get(displayA.account.uri) ?? 1
+        const priorityB = prioritiesMap.get(displayB.account.uri) ?? 1
         if (priorityA > priorityB) {
           return -1
         }

@@ -180,7 +180,7 @@ export async function getAccountSortPriorities(userId: number): Promise<AccountS
 
 export async function getAccountSortPriority(uri: string): Promise<number> {
   const obj = await db.accountPriorities.get(uri)
-  return obj?.priority ?? 0
+  return obj?.priority ?? 1
 }
 
 export async function setAccountSortPriority(userId: number, uri: string, priority: number): Promise<void> {
