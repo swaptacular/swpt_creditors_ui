@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import { LOCALSTORAGE_STATE } from '../web-api'
+  import { v4 as uuidv4 } from 'uuid'
   import { setContext, onMount } from 'svelte'
   import { fade } from 'svelte/transition'
   import CreateAccountPage from './CreateAccountPage.svelte'
@@ -27,7 +28,8 @@
 
   const { pageModel } = app
   const originalAppState = app
-  let seqnum = typeof history.state === 'number' ? history.state : 0
+  const baseState = uuidv4()
+  const hijackedState = `hijacked:${baseState}`
   let exiting = false
 
   function enusreOriginalAppState(appState: AppState): void {
@@ -88,37 +90,51 @@
   }
 
   function hijackBackButton() {
-    history.scrollRestoration = 'manual'
-    history.pushState(++seqnum, '')
+    if (history.state !== baseState && history.state !== hijackedState) {
+      history.scrollRestoration = 'manual'
+      history.replaceState(baseState, '')
+      assert(history.state === baseState)
+    }
+    if (history.state === baseState) {
+      history.pushState(hijackedState, '')
+    }
   }
 
-  function goBack() {
+  function onPopstate() {
     app.startInteraction()
-    if (app.goBack) {
-      hijackBackButton()
-      app.goBack()
-    } else if ($pageModel.goBack) {
-      hijackBackButton()
-      $pageModel.goBack()
-    } else {
-      if (history.length <= 2) {
-        // Shows a "Tap again to exit" overlay before exiting. This
-        // should be visible only on Android devices, which for some
-        // bizarre reason require additional back button tap before
-        // `history.back()` takes effect.
-        exiting = true
+    if (history.state === baseState) {
+      if (app.goBack) {
+        hijackBackButton()
+        app.goBack()
+      } else if ($pageModel.goBack) {
+        hijackBackButton()
+        $pageModel.goBack()
+      } else {
+        if (history.length <= 2) {
+          // Shows a "Tap again to exit" overlay before exiting. This
+          // should be visible only on Android devices, which for some
+          // bizarre reason require additional back button tap before
+          // `history.back()` takes effect.
+          exiting = true
+        }
+        sessionStorage.removeItem(LOCALSTORAGE_STATE)
+        history.replaceState(null, '')
+        history.back()
       }
-      sessionStorage.removeItem(LOCALSTORAGE_STATE)
+    } else if (history.state === null) {
+      hijackBackButton()
+    } else {
       history.back()
     }
   }
 
   setContext('app', app)
-  hijackBackButton()
+
   onMount(() => {
-    addEventListener('popstate', goBack)
+    hijackBackButton()
+    addEventListener('popstate', onPopstate)
     return () => {
-      removeEventListener("popstate", goBack)
+      removeEventListener("popstate", onPopstate)
     }
   })
 
