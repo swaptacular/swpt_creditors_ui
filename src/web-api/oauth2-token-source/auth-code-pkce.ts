@@ -204,7 +204,7 @@ export class OAuth2AuthCodePKCE {
       url += `&${OAuth2AuthCodePKCE.objectToQueryString(extraAuthorizationParams)}`
     }
 
-    location.replace(url);
+    location.assign(url);
     return new Promise(() => { })
   }
 
