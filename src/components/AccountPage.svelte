@@ -83,6 +83,11 @@
     }
   }
 
+  function update(): void {
+    app.startInteraction()
+    app.fetchDataFromServer(() => model.reload())
+  }
+
   function showLedgerEntry(accountUri: string, entryId: bigint): void {
     const m = createUpdatedModel()
     app.showLedgerEntry(accountUri, entryId, () => app.pageModel.set(m))
@@ -121,10 +126,12 @@
       data.info.identity &&
       data.info.noteMaxBytes >= 150n
     )) {
-      app.addAlert(new Alert('Requesting payments is not allowed '
-        + 'for this account. This may be just a temporary condition, if the '
-        + 'account has been created only recently, or you have not acknowledged '
-        + 'the latest changes in the account.'
+      app.addAlert(new Alert(
+        'Requesting payments is not allowed '
+          + 'for this account. This may be just a temporary condition, if the '
+          + 'account has been created only recently, or you have not acknowledged '
+          + 'the latest changes in the account.',
+        { continue: update },
       ))
     } else {
       app.createPaymentRequestAction(accountUri, showThisAccount)
