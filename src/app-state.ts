@@ -10,6 +10,7 @@ import type {
   AbortTransferActionWithId
 } from './operations'
 
+import { v4 as uuidv4 } from 'uuid'
 import equal from 'fast-deep-equal'
 import { Dexie, liveQuery } from 'dexie'
 import { writable } from 'svelte/store'
@@ -313,6 +314,9 @@ export class AppState {
   readonly waitingInteractions: Writable<Set<number>>
   readonly alerts: Writable<Alert[]>
   readonly pageModel: Writable<PageModel>
+  readonly baseState: string = uuidv4()
+  readonly hijackedState = `hijacked:${this.baseState}`
+
   goBack?: () => void
 
   constructor(private uc: UserContext, actions: Store<ActionRecordWithId[]>) {
@@ -327,6 +331,7 @@ export class AppState {
   }
 
   startInteraction(): void {
+    this.hijackBackButton()
     this.interactionId++
   }
 
@@ -1716,6 +1721,20 @@ export class AppState {
       save,
       saveAndClose,
       remove,
+    }
+  }
+
+  /* Make sure the back button triggers a 'popstate' event, instead of
+   * exiting the app right away. */
+  private hijackBackButton() {
+    const { baseState, hijackedState } = this
+    if (history.state !== baseState && history.state !== hijackedState) {
+      history.scrollRestoration = 'manual'
+      history.replaceState(baseState, '')
+      assert(history.state === baseState)
+    }
+    if (history.state === baseState) {
+      history.pushState(hijackedState, '')
     }
   }
 

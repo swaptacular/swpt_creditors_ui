@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { AppState } from '../app-state'
   import { LOCALSTORAGE_STATE } from '../web-api'
-  import { v4 as uuidv4 } from 'uuid'
   import { setContext, onMount } from 'svelte'
   import { fade } from 'svelte/transition'
   import CreateAccountPage from './CreateAccountPage.svelte'
@@ -28,8 +27,6 @@
 
   const { pageModel } = app
   const originalAppState = app
-  const baseState = uuidv4()
-  const hijackedState = `hijacked:${baseState}`
   let exiting = false
 
   function enusreOriginalAppState(appState: AppState): void {
@@ -89,25 +86,14 @@
     return class extends PageComponent {}
   }
 
-  function hijackBackButton() {
-    if (history.state !== baseState && history.state !== hijackedState) {
-      history.scrollRestoration = 'manual'
-      history.replaceState(baseState, '')
-      assert(history.state === baseState)
-    }
-    if (history.state === baseState) {
-      history.pushState(hijackedState, '')
-    }
-  }
-
   function onPopstate() {
-    app.startInteraction()
-    if (history.state === baseState) {
+    switch (history.state) {
+    case app.baseState:
       if (app.goBack) {
-        hijackBackButton()
+        app.startInteraction()
         app.goBack()
       } else if ($pageModel.goBack) {
-        hijackBackButton()
+        app.startInteraction()
         $pageModel.goBack()
       } else {
         if (history.length <= 2) {
@@ -121,9 +107,12 @@
         history.replaceState(null, '')
         history.back()
       }
-    } else if (history.state === null) {
-      hijackBackButton()
-    } else {
+      break
+    case null:
+    case app.hijackedState:
+      app.startInteraction()
+      break
+    default:
       history.back()
     }
   }
@@ -131,7 +120,7 @@
   setContext('app', app)
 
   onMount(() => {
-    hijackBackButton()
+    app.startInteraction()
     addEventListener('popstate', onPopstate)
     return () => {
       removeEventListener("popstate", onPopstate)
