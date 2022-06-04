@@ -87,8 +87,7 @@
   }
 
   function onPopstate() {
-    switch (history.state) {
-    case app.baseState:
+    if (history.state !== app.hijackedState) {
       if (app.goBack) {
         app.startInteraction()
         app.goBack()
@@ -104,23 +103,15 @@
           exiting = true
         }
         sessionStorage.removeItem(LOCALSTORAGE_STATE)
-        history.replaceState(null, '')
         history.back()
       }
-      break
-    case null:
-    case app.hijackedState:
-      app.startInteraction()
-      break
-    default:
-      history.back()
     }
   }
 
   setContext('app', app)
 
   onMount(() => {
-    app.startInteraction()
+    history.scrollRestoration = 'manual'
     addEventListener('popstate', onPopstate)
     return () => {
       removeEventListener("popstate", onPopstate)
