@@ -240,24 +240,24 @@
     <Row style="height: 56px">
       <div class="buttons-box">
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={tab === 'account'} on:click={() => changeTab('account')}>
+          <IconButton class="material-icons" on:click={() => changeTab('account')}>
             account_balance
           </IconButton>
         </div>
         {#if secureCoin}
           <div class="icon-container">
-            <IconButton class="material-icons" disabled={tab === 'coin'} on:click={() => changeTab('coin')}>
+            <IconButton class="material-icons" on:click={() => changeTab('coin')}>
               qr_code_2
             </IconButton>
           </div>
         {/if}
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={tab === 'sort'} on:click={() => changeTab('sort')}>
+          <IconButton class="material-icons" on:click={() => changeTab('sort')}>
             sort
           </IconButton>
         </div>
         <div class="icon-container">
-          <IconButton class="material-icons" disabled={tab === 'ledger'} on:click={() => changeTab('ledger')}>
+          <IconButton class="material-icons" on:click={() => changeTab('ledger')}>
             history
           </IconButton>
         </div>
