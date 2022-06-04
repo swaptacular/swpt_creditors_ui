@@ -1482,7 +1482,7 @@ export async function obtainUserContext(
     if (evt.data.userId === userId && evt.data.windowUuid !== currentWindowUuid) {
       // The user's data has been reset by another app window. This
       // is likely to disturb the interaction with the UI.
-      alert('Failed to synchronize with the server. The app is being automatically restarted.')
+      console.warn('Failed to synchronize with the server. The app is being automatically restarted.')
       location.reload()
     }
   }

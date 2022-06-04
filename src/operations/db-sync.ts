@@ -74,7 +74,7 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
     await resolveOldNotConfirmedCreateTransferRequests(userId)
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
-      alert('Failed to synchronize with the server. The app is being automatically restarted.')
+      console.warn('Failed to synchronize with the server. The app is being automatically restarted.')
       location.reload()
     } else throw e
   }
