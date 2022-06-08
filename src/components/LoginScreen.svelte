@@ -53,10 +53,10 @@
         </Button>
         <Menu bind:this={menu} anchorCorner="TOP_LEFT">
           <List>
-            <Item on:SMUI:action={() => (resetPin = false)}>
+            <Item on:SMUI:action={() => action(false)}>
               <Text>Login</Text>
             </Item>
-            <Item on:SMUI:action={() => (resetPin = true)}>
+            <Item on:SMUI:action={() => action(true)}>
               <Text>Reset&nbsp;PIN</Text>
             </Item>
           </List>
