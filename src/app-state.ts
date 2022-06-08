@@ -341,6 +341,10 @@ export class AppState {
     return await this.uc.logout()
   }
 
+  scheduleUpdate(): void {
+    this.uc.scheduleUpdate()
+  }
+
   fetchDataFromServer(callback?: () => void): Promise<void> {
     let interactionId = this.interactionId
     const executeCallbackAfterUpdate = () => new Promise(resolve => {

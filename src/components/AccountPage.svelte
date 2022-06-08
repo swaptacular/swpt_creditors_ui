@@ -83,9 +83,10 @@
     }
   }
 
-  function update(): void {
+  function showActions(): void {
     app.startInteraction()
-    app.fetchDataFromServer(() => model.reload())
+    app.scheduleUpdate()
+    app.showActions()
   }
 
   function showLedgerEntry(accountUri: string, entryId: bigint): void {
@@ -131,7 +132,7 @@
           + 'for this account. This may be just a temporary condition, if the '
           + 'account has been created only recently, or you have not acknowledged '
           + 'the latest changes in the account.',
-        { continue: update },
+        { continue: showActions },
       ))
     } else {
       app.createPaymentRequestAction(accountUri, showThisAccount)
