@@ -109,7 +109,7 @@
                 Press the
                 <Icon class="material-icons" style="vertical-align: middle">account_balance_wallet</Icon>
                 button below to check the contents of your wallet, or
-                to add a new account to it.
+                to request a payment.
               </CardContent>
             </Card>
           </Cell>
