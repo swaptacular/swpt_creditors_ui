@@ -107,17 +107,14 @@
           <Cell>
             <Card>
               <CardContent>
-                To acquire any digital currency, first you need to
-                create an account with it. To create an account with
-                the digital currency of your choice, you should scan
-                the QR code that identifies the currency. In
-                Swaptacular, the QR code that identifies a given
-                currency is called "the digital coin" for this
-                currency.
+                Press the
+                <Icon class="material-icons" style="vertical-align: middle">account_balance_wallet</Icon>
+                button below to check the contents of your wallet, or
+                to add a new account to it.
               </CardContent>
               <Actions fullBleed>
                 <Button on:click={showAccounts}>
-                  <Label>Create an account</Label>
+                  <Label>View accounts</Label>
                   <i class="material-icons" aria-hidden="true">arrow_forward</i>
                 </Button>
               </Actions>

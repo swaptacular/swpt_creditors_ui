@@ -3,6 +3,7 @@
   import { amountToString } from '../format-amounts'
   import { tick, onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';
+  import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Card, { PrimaryAction } from '@smui/card'
   import Textfield from '@smui/textfield'
@@ -149,11 +150,8 @@
     text-align: center;
     color: #c4c4c4;
   }
-  .no-accounts {
-    margin: 36px 18px 26px 18px;
-    text-align: center;
-    color: #888;
-    font-size: 1.25em;
+  .text {
+    margin-top: 1em;
   }
 </style>
 
@@ -198,11 +196,26 @@
       {/if}
 
     {:else}
-      <p class="no-accounts">
-        Press the
-        <Icon class="material-icons" style="vertical-align: middle">add</Icon>
-        button below to create a new account.
-      </p>
+      <Paper elevation={8} style="margin: 24px 18px">
+        <Title>
+          Press the
+          <Icon class="material-icons" style="vertical-align: middle">add</Icon>
+          button below to add a new account
+        </Title>
+        <Content>
+          <p class="text">
+            To acquire any digital currency, first you need to create an
+            account with it. To create an account with the digital
+            currency of your choice, you should scan the QR code that
+            identifies the currency.
+          </p>
+          <p class="text">
+            In Swaptacular, the QR code that
+            identifies a given currency is called "the digital coin" for
+            the currency.
+          </p>
+        </Content>
+      </Paper>
     {/if}
 
     <ScanCoinDialog bind:open={scanCoinDialog}/>
