@@ -263,7 +263,7 @@
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab color="primary" on:click={update}>
+        <Fab on:click={update}>
           <Icon class="material-icons">sync</Icon>
         </Fab>
       </div>
