@@ -114,7 +114,7 @@
               </CardContent>
               <Actions fullBleed>
                 <Button on:click={showAccounts}>
-                  <Label>View accounts</Label>
+                  <Label>Manage accounts</Label>
                   <i class="material-icons" aria-hidden="true">arrow_forward</i>
                 </Button>
               </Actions>
