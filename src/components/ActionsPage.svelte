@@ -93,7 +93,7 @@
       {#if isANewbie && !hasAccounts}
         <LayoutGrid>
           <Cell>
-            <Paper elevation={8} style="margin-bottom: 16px">
+            <Paper elevation={8} style="margin: 8px 0">
               <Title>Are you new to Swaptacular?</Title>
               <Content>
                 Every time this app starts, you will see the "Actions"
