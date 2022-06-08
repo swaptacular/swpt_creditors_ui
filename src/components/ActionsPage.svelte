@@ -8,8 +8,7 @@
   import FormField from '@smui/form-field'
   import Paper, { Title, Content } from '@smui/paper'
   import Page from './Page.svelte'
-  import Card, { Actions, Content as CardContent } from '@smui/card'
-  import Button, { Label } from '@smui/button'
+  import Card, { Content as CardContent } from '@smui/card'
   import MakePaymentDialog from './MakePaymentDialog.svelte'
 
   export let app: AppState
@@ -105,19 +104,13 @@
             </Paper>
           </Cell>
           <Cell>
-            <Card>
-              <CardContent>
+            <Card padded>
+              <CardContent style="line-height: 1.4">
                 Press the
                 <Icon class="material-icons" style="vertical-align: middle">account_balance_wallet</Icon>
                 button below to check the contents of your wallet, or
                 to add a new account to it.
               </CardContent>
-              <Actions fullBleed>
-                <Button on:click={showAccounts}>
-                  <Label>Manage accounts</Label>
-                  <i class="material-icons" aria-hidden="true">arrow_forward</i>
-                </Button>
-              </Actions>
             </Card>
           </Cell>
         </LayoutGrid>
