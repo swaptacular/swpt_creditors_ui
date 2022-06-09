@@ -1230,18 +1230,24 @@ export class AppState {
         if (action.sealedAt !== undefined) {
           const deadline = new Date(action.editedDeadline)
           const isLink = isValidHttpUrl(action.editedNote)
-          const pr0Blob = generatePr0Blob({
-            accountUri: accountData.info.identity.uri,
-            amount: action.editedAmount || 0n,
-            payeeName: action.editedPayeeName,
-            payeeReference: action.payeeReference,
-            deadline: deadline.getTime() ? deadline : undefined,
-            description: {
-              contentFormat: isLink ? '.' : '',
-              content: isLink ? action.editedNote.trim() : action.editedNote,
-            },
-          })
-          const paymentRequest = await pr0Blob.text()
+          let pr0Blob: Blob | undefined
+          try {
+            pr0Blob = generatePr0Blob({
+              accountUri: accountData.info.identity.uri,
+              amount: action.editedAmount || 0n,
+              payeeName: action.editedPayeeName,
+              payeeReference: action.payeeReference,
+              deadline: deadline.getTime() ? deadline : undefined,
+              description: {
+                contentFormat: isLink ? '.' : '',
+                content: isLink ? action.editedNote.trim() : action.editedNote,
+              },
+            })
+          } catch (e: unknown) {
+            if (e instanceof IvalidPaymentData) { /* ignore */ }
+            else throw e
+          }
+          const paymentRequest = pr0Blob !== undefined ? await pr0Blob.text() : 'INVALID PAYMENT REQUEST'
           const paidAmount = await this.uc.getExpectedPaymentAmount(action.payeeReference)
           if (this.interactionId === interactionId) {
             this.pageModel.set({

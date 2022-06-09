@@ -95,7 +95,7 @@
       + Number(model.accountData.info.noteMaxBytes)
       - emptyNoteBytes
       - getByteLength(payeeName)
-      - 44  // Some bytes must be left unused, so that other info can be added.
+      - 50  // Some bytes must be left unused, so that other info can be added.
     )
   }
 
