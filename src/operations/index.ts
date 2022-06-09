@@ -62,6 +62,7 @@ export {
   IS_A_NEWBIE_KEY,
   getCreateTransferActionStatus,
   getTransferStatusDetails,
+  getExpectedPaymentAmount,
 }
 
 export type UpdatableAccountObject = AccountConfigV0 | AccountKnowledgeV0 | AccountDisplayV0 | AccountExchangeV0

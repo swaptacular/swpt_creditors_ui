@@ -1,5 +1,6 @@
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
+import type { TaskCallback } from './update-scheduler'
 import type {
   ActionRecordWithId, CreateAccountActionWithId, AccountV0, DebtorDataSource, AccountsMap,
   AckAccountInfoActionWithId, ApproveDebtorNameActionWithId, AccountRecord, AccountDisplayRecord,
@@ -341,8 +342,8 @@ export class AppState {
     return await this.uc.logout()
   }
 
-  scheduleUpdate(): void {
-    this.uc.scheduleUpdate()
+  scheduleUpdate(callback?: TaskCallback): void {
+    this.uc.scheduleUpdate(callback)
   }
 
   fetchDataFromServer(callback?: () => void): Promise<void> {

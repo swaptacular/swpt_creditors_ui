@@ -1,8 +1,9 @@
 <script lang="ts">
   import type { AppState, SealedPaymentRequestModel } from '../app-state'
+  import { getExpectedPaymentAmount } from '../operations'
   import { amountToString } from '../format-amounts'
   import { onMount, onDestroy } from 'svelte'
-  import Fab, { Icon } from '@smui/fab'
+  import Fab, { Label as FabLabel } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Paper, { Title, Content } from '@smui/paper'
@@ -19,6 +20,7 @@
   export const scrollElement = document.documentElement
 
   assert(model.action.sealedAt !== undefined)
+  const POLLING_INTERVAL: number = 5 * 1000  // 5 seconds
 
   let doneIcon: HTMLElement
   let showConfirmDialog = false
@@ -27,12 +29,9 @@
   let actionManager = app.createActionManager(model.action)
   let imageDataUrl: string = ''
   let textDataUrl: string = URL.createObjectURL(new Blob([model.paymentRequest], { type: 'application/octet-stream' }))
-
-  function rotateDoneIcon(): void {
-    if (done && doneIcon) {
-      doneIcon.className += ' rotate'
-    }
-  }
+  let updatedPaidAmount: bigint | undefined
+  let timeoutId: number | undefined
+  let pollingDeadline: number = Date.now() + 10 * 60 * 1000  // 10 minutes from now
 
   function showAccount(): void {
     const m = {
@@ -44,29 +43,41 @@
     app.showAccount(accountUri, () => app.pageModel.set(m))
   }
 
-  function update(): void {
-    app.startInteraction()
-    app.fetchDataFromServer(() => model.reload())
+  function scheduleUpdateIfNecessary(): void {
+    if (!done && timeoutId === undefined && Date.now() <= pollingDeadline) {
+      timeoutId = window.setTimeout(() => {
+        app.scheduleUpdate(async () => {
+          updatedPaidAmount = await getExpectedPaymentAmount(action.payeeReference)
+          timeoutId = undefined
+          scheduleUpdateIfNecessary()
+        })
+      }, POLLING_INTERVAL)
+    }
   }
 
-  function close(): void {
+  function remove(): void {
     if (!showConfirmDialog) {
       app.startInteraction()
       showConfirmDialog = true
     }
   }
 
-  function revokeTextDataUrl() {
+  function freeUsedResources() {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+      timeoutId = undefined
+    }
     if (textDataUrl) {
       URL.revokeObjectURL(textDataUrl)
     }
+    pollingDeadline = -Infinity
   }
 
-  onMount(rotateDoneIcon)
-  onDestroy(revokeTextDataUrl)
+  onMount(scheduleUpdateIfNecessary)
+  onDestroy(freeUsedResources)
 
   $: action = model.action
-  $: paidAmount = model.paidAmount
+  $: paidAmount = updatedPaidAmount ?? model.paidAmount
   $: accountUri = action.accountUri
   $: sealedAt = action.sealedAt
   $: accountData = model.accountData
@@ -86,6 +97,9 @@
   $: fileName = rawFileName.replace(/[<>:"/|?*\\]/g, ' ')
   $: imageFileName = `${fileName}.png`
   $: textFileName = `${fileName}.pr0`
+  $: if (done && doneIcon) {
+      doneIcon.className += ' rotate'
+  }
 </script>
 
 <style>
@@ -258,18 +272,13 @@
 
     <svelte:fragment slot="floating">
       <div class="fab-container">
-        <Fab on:click={() => downloadTextElement.click()}>
-          <Icon class="material-icons">download</Icon>
+        <Fab on:click={() => downloadTextElement.click()} extended>
+          <FabLabel>Save</FabLabel>
         </Fab>
       </div>
       <div class="fab-container">
-        <Fab on:click={update}>
-          <Icon class="material-icons">sync</Icon>
-        </Fab>
-      </div>
-      <div class="fab-container">
-        <Fab color="primary" on:click={close}>
-          <Icon class="material-icons">close</Icon>
+        <Fab color="primary" on:click={remove} extended>
+          <FabLabel>Delete</FabLabel>
         </Fab>
       </div>
     </svelte:fragment>
