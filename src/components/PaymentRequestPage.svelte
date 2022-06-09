@@ -95,7 +95,11 @@
       + Number(model.accountData.info.noteMaxBytes)
       - emptyNoteBytes
       - getByteLength(payeeName)
-      - 50  // Some bytes must be left unused, so that other info can be added.
+      - 50  // Some bytes must be left unused, so that other info can
+            // be added.
+            //
+            // NOTE: The value must be at least DEFAULT_SURPLUS_BYTES
+            // + 3 (see the "+3" comment in calcPayment0NoteByteLength).
     )
   }
 
