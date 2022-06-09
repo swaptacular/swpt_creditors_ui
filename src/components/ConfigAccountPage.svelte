@@ -112,6 +112,7 @@
   $: unit = display.unit ?? '\u00A4'
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: negligibleUnitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
+  $: disableForceDeletion = !allowUnsafeDeletion && !scheduledForDeletion
   $: invalid = (
     invalidDebtorName ||
     !uniqueDebtorName ||
@@ -129,6 +130,9 @@
   .shaking-container {
     position: relative;
     overflow: hidden;
+  }
+  .grayed {
+    color: #888;
   }
 
   @keyframes shake {
@@ -257,8 +261,8 @@
 
             <Cell>
               <FormField>
-                <Checkbox bind:checked={allowUnsafeDeletion} disabled={!allowUnsafeDeletion && !scheduledForDeletion} />
-                <span slot="label">
+                <Checkbox bind:checked={allowUnsafeDeletion} disabled={disableForceDeletion} />
+                <span slot="label" class:grayed={disableForceDeletion}>
                   Forced account deletion: the account will be deleted
                   irrespective of the remaining amount. Use this with
                   extreme caution!
