@@ -273,7 +273,7 @@
     <svelte:fragment slot="floating">
       <div class="fab-container">
         <Fab on:click={() => downloadTextElement.click()} extended>
-          <FabLabel>Save</FabLabel>
+          <FabLabel>Download</FabLabel>
         </Fab>
       </div>
       <div class="fab-container">
