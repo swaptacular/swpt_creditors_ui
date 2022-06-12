@@ -305,11 +305,13 @@
                     {/if}
                   </svelte:fragment>
                   <HelperText style="word-break: break-word" slot="helper" persistent>
-                    An amount to be considered negligible. It will be
-                    used to decide whether the account can be safely
-                    deleted, and whether an incoming transfer can be
-                    ignored. Can not be smaller than
-                    {negligibleUnitAmountStep} {data.unit}
+                    An amount which you consider as insignificant. It
+                    must be equal or bigger than {negligibleUnitAmountStep}
+                    {data.unit}. Swaptacular will use this amount when
+                    deciding whether the account can be safely
+                    deleted, and whether an incoming transfer should
+                    be ignored. If in doubt, leave the default value
+                    unchanged.
                   </HelperText>
                 </Textfield>
               </Cell>
