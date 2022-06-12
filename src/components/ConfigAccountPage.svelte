@@ -232,7 +232,8 @@
                   {unit}. Swaptacular will use this amount when
                   deciding whether the account can be safely
                   deleted, and whether an incoming transfer should
-                  be ignored.
+                  be ignored. If in doubt, leave the default value
+                  unchanged.
                 </HelperText>
               </Textfield>
             </Cell>
