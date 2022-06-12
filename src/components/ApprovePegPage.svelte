@@ -273,7 +273,7 @@
     <svelte:fragment slot="floating">
       <div class="fab-container">
         <Fab color="primary" on:click={confirm} extended>
-          <Label>Make a decision</Label>
+          <Label>Submit decision</Label>
         </Fab>
       </div>
     </svelte:fragment>
