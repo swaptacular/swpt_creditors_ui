@@ -153,6 +153,10 @@
   .text {
     margin-top: 1em;
   }
+  .important {
+    font-weight: bold;
+    font-size: 1.1em;
+  }
 </style>
 
 <Page title="Accounts" scrollTop={model.scrollTop} scrollLeft={model.scrollLeft}>
@@ -198,9 +202,7 @@
     {:else}
       <Paper elevation={8} style="margin: 24px 18px">
         <Title>
-          Press the
-          <Icon class="material-icons" style="vertical-align: middle">add</Icon>
-          button below to add a new account
+          Your wallet is empty!
         </Title>
         <Content>
           <p class="text">
@@ -213,6 +215,11 @@
             In Swaptacular, the QR code that
             identifies a given currency is called "the digital coin" for
             the currency.
+          </p>
+          <p class="text important">
+            Press the
+            <Icon class="material-icons" style="vertical-align: middle">add</Icon>
+            button below to add a new account
           </p>
         </Content>
       </Paper>
