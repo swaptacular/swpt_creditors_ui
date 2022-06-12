@@ -98,8 +98,8 @@
               <Content>
                 Every time this app starts, you will see the "Actions"
                 screen first. It shows things that require your
-                attention &ndash; like actions that have been started,
-                but have not been finalized.
+                immediate attention &ndash; like actions that have
+                been started, but have not been finalized.
               </Content>
             </Paper>
           </Cell>
