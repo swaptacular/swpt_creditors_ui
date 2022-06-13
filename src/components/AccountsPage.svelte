@@ -219,7 +219,7 @@
           <p class="text important">
             Press the
             <Icon class="material-icons" style="vertical-align: middle">add</Icon>
-            button below to add a new account
+            button below to add a new account.
           </p>
         </Content>
       </Paper>
