@@ -254,9 +254,15 @@
           >
           <DialogTitle id="confirm-delete-dialog-title">Delete this payment request</DialogTitle>
           <DialogContent id="confirm-delete-dialog-content">
-            If you delete this payment request, you may fail to notice
-            the corresponding payment. Are you sure you want to do
-            this?
+            {#if paidAmount === 0n}
+              If you delete this payment request, you may fail to
+              notice the corresponding payment. Are you sure you want
+              to do this?
+            {:else}
+              If you delete this payment request, you may fail to
+              notice eventual additional associated payments. Are you
+              sure you want to do this?
+            {/if}
           </DialogContent>
           <Actions>
             <Button>
