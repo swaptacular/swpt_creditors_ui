@@ -274,6 +274,10 @@ export function getTransferStatusDetails(t: TransferRecord): string {
       tooltip += `The reason for the failure is: ${reason}`
     } else {
       tooltip += `, and succeeded at ${finalizedAt}.`
+      const paymentRefernece = t.paymentInfo.payeeReference
+      if (paymentRefernece) {
+        tooltip += ` The payment reference is: ${paymentRefernece}.`
+      }
     }
   } else {
     tooltip += '.'
