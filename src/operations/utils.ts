@@ -276,7 +276,11 @@ export function getTransferStatusDetails(t: TransferRecord): string {
       tooltip += `, and succeeded at ${finalizedAt}.`
       const paymentRefernece = t.paymentInfo.payeeReference
       if (paymentRefernece) {
-        tooltip += ` The payment reference is: ${paymentRefernece}.`
+        const maxLength = 64
+        const shortRef = paymentRefernece.length <= maxLength
+          ? paymentRefernece
+          : `${paymentRefernece.slice(0, maxLength)}...`
+        tooltip += ` The payment reference is: "${shortRef}".`
       }
     }
   } else {
