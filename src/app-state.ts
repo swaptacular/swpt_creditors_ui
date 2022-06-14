@@ -1025,7 +1025,7 @@ export class AppState {
     }
     const deleteAction = () => this.uc
       .replaceActionRecord(action, null)
-      .then(backToAccount)
+      .then(backToAccount, showActions)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1136,7 +1136,7 @@ export class AppState {
     }
     const deleteAction = () => this.uc
       .replaceActionRecord(action, null)
-      .then(backToAccount)
+      .then(backToAccount, showActions)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1233,7 +1233,7 @@ export class AppState {
     }
     const deleteAction = () => this.uc
       .replaceActionRecord(action, null)
-      .then(backToAccount)
+      .then(backToAccount, showActions)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
