@@ -68,13 +68,21 @@
     width: 100%;
   }
   .transfer-status {
+    display: flex;
     user-select: none;
     font-size: 1.3em;
     font-weight: bold;
     padding: 16px 0 16px 0;
   }
-  .transfer-status span {
-    text-decoration: underline;
+  .status-name {
+    display: flex;
+    flex-direction: column;
+  }
+  .status-smalltext {
+    font-size: 0.55em;
+    font-weight: normal;
+    line-height: 1.3;
+    color: #666;
   }
   .save-button-container {
     margin-top: 0.5em;
@@ -105,9 +113,15 @@
       <Content>
         {#if !isDraft}
           <Wrapper>
-            <p class="transfer-status">
-              Status: <span>{status.toLowerCase()}</span>
-            </p>
+            <div class="transfer-status">
+              <div style="padding-right: 0.3em">Status:</div>
+              <div class="status-name">
+                <span style="text-decoration: underline">{status.toLowerCase()}</span>
+                {#if status === 'Failed'}
+                  <span class="status-smalltext">tap for details</span>
+                {/if}
+              </div>
+            </div>
             <Tooltip>{statusTooltip}</Tooltip>
           </Wrapper>
         {/if}
