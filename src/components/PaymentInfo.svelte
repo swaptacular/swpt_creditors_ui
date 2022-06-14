@@ -117,9 +117,13 @@
               <div style="padding-right: 0.3em">Status:</div>
               <div class="status-name">
                 <span style="text-decoration: underline">{status.toLowerCase()}</span>
-                {#if status === 'Failed'}
-                  <span class="status-smalltext">tap for details</span>
-                {/if}
+                <span class="status-smalltext">
+                  {#if status === 'Failed'}
+                    tap for details
+                  {:else}
+                    &nbsp;
+                  {/if}
+                </span>
               </div>
             </div>
             <Tooltip>{statusTooltip}</Tooltip>
