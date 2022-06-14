@@ -102,6 +102,10 @@
     return result
   }
 
+  function showActions(): void {
+    app.showActions()
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -212,6 +216,7 @@
           noValidate
           autoComplete="off"
           on:input={() => actionManager.markDirty()}
+          on:input={() => model.goBack = showActions}
           on:change={() => actionManager.save()}
           >
           <LayoutGrid>

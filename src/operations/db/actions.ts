@@ -205,7 +205,7 @@ export async function createApproveAction(action: ApproveAction, overrideExistin
 
 export async function ensureUniqueAccountAction<T extends ConfigAccountAction | UpdatePolicyAction>(
   action: T,
-): Promise<T & ActionRecordWithId> {
+): Promise<{ action: T & ActionRecordWithId, created: boolean }> {
   const { accountUri, actionType } = action
   return await db.transaction('rw', [db.wallets, db.actions, db.expectedPayments], async () => {
     const existingAction = await db.actions
@@ -213,10 +213,10 @@ export async function ensureUniqueAccountAction<T extends ConfigAccountAction | 
       .filter(a => a.actionType === actionType)
       .first() as (T & ActionRecordWithId) | undefined
     if (existingAction) {
-      return existingAction
+      return { action: existingAction, created: false }
     }
     await createActionRecord(action)  // adds the `actionId` field
-    return action as T & ActionRecordWithId
+    return { action: action as T & ActionRecordWithId, created: true }
   })
 }
 

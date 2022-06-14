@@ -991,12 +991,13 @@ export class AppState {
   showConfigAccountAction(
     action: ConfigAccountActionWithId,
     back?: () => void,
-    options?: { backToAccount?: () => void },
+    options?: { backToAccount?: () => void, justCreated?: boolean },
   ): Promise<void> {
     let interactionId: number
     const showActions = () => { this.showActions() }
     const goBack = back ?? showActions
     const backToAccount = options?.backToAccount ?? showActions
+    const justCreated = options?.justCreated ?? false
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     const detectNonstandardAmountDisplay = async (accountData: AccountFullData) => {
@@ -1022,6 +1023,9 @@ export class AppState {
       }
       return nonstandard
     }
+    const deleteAction = () => this.uc
+      .replaceActionRecord(action, null)
+      .then(backToAccount)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1032,7 +1036,7 @@ export class AppState {
           this.pageModel.set({
             type: 'ConfigAccountModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack,
+            goBack: justCreated ? deleteAction : goBack,
             backToAccount,
             action,
             accountData,
@@ -1088,12 +1092,13 @@ export class AppState {
   showUpdatePolicyAction(
     action: UpdatePolicyActionWithId,
     back?: () => void,
-    options?: { backToAccount?: () => void },
+    options?: { backToAccount?: () => void, justCreated?: boolean },
   ): Promise<void> {
     let interactionId: number
     const showActions = () => { this.showActions() }
     const goBack = back ?? showActions
     const backToAccount = options?.backToAccount ?? showActions
+    const justCreated = options?.justCreated ?? false
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
 
     const detectPegStatus = async (accountData: AccountFullData) => {
@@ -1129,6 +1134,9 @@ export class AppState {
       }
       return 'UsesNoPeg' as const
     }
+    const deleteAction = () => this.uc
+      .replaceActionRecord(action, null)
+      .then(backToAccount)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1139,7 +1147,7 @@ export class AppState {
           this.pageModel.set({
             type: 'UpdatePolicyModel',
             reload: () => { this.showAction(action.actionId, back) },
-            goBack,
+            goBack: justCreated ? deleteAction : goBack,
             backToAccount,
             action,
             accountData,
@@ -1197,7 +1205,7 @@ export class AppState {
       const interactionId = this.interactionId
       const actionId = await this.uc.createPaymentRequestAction(accountUri)
       if (this.interactionId === interactionId) {
-        this.showAction(actionId, undefined, { backToAccount })
+        this.showAction(actionId, undefined, { backToAccount, justCreated: true })
       }
     })
   }
@@ -1205,12 +1213,13 @@ export class AppState {
   showPaymentRequestAction(
     action: PaymentRequestActionWithId,
     back?: () => void,
-    options?: { backToAccount?: () => void },
+    options?: { backToAccount?: () => void, justCreated?: boolean },
   ): Promise<void> {
     let interactionId: number
     const showActions = () => { this.showActions() }
     const goBack = back ?? showActions
     const backToAccount = options?.backToAccount ?? showActions
+    const justCreated = options?.justCreated ?? false
     const checkAndGoBack = () => { if (this.interactionId === interactionId) goBack() }
     const reload = () => { this.showAction(action.actionId, back) }
     const isValidHttpUrl = (s: string): boolean => {
@@ -1222,6 +1231,9 @@ export class AppState {
       }
       return url.protocol === "http:" || url.protocol === "https:"
     }
+    const deleteAction = () => this.uc
+      .replaceActionRecord(action, null)
+      .then(backToAccount)
 
     return this.attempt(async () => {
       interactionId = this.interactionId
@@ -1259,7 +1271,8 @@ export class AppState {
           if (this.interactionId === interactionId) {
             this.pageModel.set({
               type: 'PaymentRequestModel',
-              reload, goBack, backToAccount, action, accountData,
+              goBack: justCreated ? deleteAction : goBack,
+              reload, backToAccount, action, accountData,
             })
           }
         }
@@ -1513,7 +1526,7 @@ export class AppState {
         this.showAccounts()
         return
       }
-      const action = await this.uc.ensureUniqueAccountAction({
+      const { action, created } = await this.uc.ensureUniqueAccountAction({
         userId: this.uc.userId,
         actionType: 'ConfigAccount',
         createdAt: new Date(),
@@ -1525,7 +1538,7 @@ export class AppState {
         accountUri,
       })
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId, undefined, { backToAccount: back })
+        this.showAction(action.actionId, undefined, { backToAccount: back, justCreated: created })
       }
     }, {
       alerts: [
@@ -1544,7 +1557,7 @@ export class AppState {
         return
       }
       const { minPrincipal, maxPrincipal, policy } = accountData.exchange
-      const action = await this.uc.ensureUniqueAccountAction({
+      const { action, created } = await this.uc.ensureUniqueAccountAction({
         userId: this.uc.userId,
         actionType: 'UpdatePolicy',
         createdAt: new Date(),
@@ -1557,7 +1570,7 @@ export class AppState {
         accountUri,
       })
       if (this.interactionId === interactionId) {
-        this.showAction(action.actionId, undefined, { backToAccount: back })
+        this.showAction(action.actionId, undefined, { backToAccount: back, justCreated: created })
       }
     }, {
       alerts: [
