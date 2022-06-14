@@ -19,6 +19,11 @@
   const authenticated: Writable<boolean> = getContext('authenticated')
   let topAppBar: any
 
+  function goHome() {
+    app.startInteraction()
+    app.showActions()
+  }
+
   function confirmLogout() {
     app.startInteraction()
     if (confirm('You will be logged out. To use the application again, you will have to log in.')) {
@@ -86,9 +91,15 @@
           {/if}
         </IconButton>
 
-        <IconButton class="material-icons" aria-label="Logout" on:click={confirmLogout}>
-          logout
-        </IconButton>
+        {#if $pageModel.goBack}
+          <IconButton class="material-icons" aria-label="Logout" on:click={goHome}>
+            home
+          </IconButton>
+        {:else}
+          <IconButton class="material-icons" aria-label="Logout" on:click={confirmLogout}>
+            logout
+          </IconButton>
+        {/if}
       </Section>
     </Row>
     <slot name="app-bar"></slot>
