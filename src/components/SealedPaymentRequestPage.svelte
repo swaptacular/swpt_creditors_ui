@@ -162,6 +162,11 @@
   .download-link {
     display: none;
   }
+  .important {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-top: 16px;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -239,6 +244,12 @@
               {#if action.editedNote}
                 <pre>{action.editedNote}</pre>
               {/if}
+
+              <p class="important">
+                Show the QR code to the payer, or download and send a
+                file. Discard this payment request once the
+                corresponding payment has been received.
+              </p>
             </Content>
           </Paper>
         </div>
@@ -252,16 +263,14 @@
           aria-describedby="confirm-delete-dialog-content"
           on:MDCDialog:closed={() => showConfirmDialog = false}
           >
-          <DialogTitle id="confirm-delete-dialog-title">Delete this payment request</DialogTitle>
+          <DialogTitle id="confirm-delete-dialog-title">Discard this payment request</DialogTitle>
           <DialogContent id="confirm-delete-dialog-content">
-            {#if paidAmount === 0n}
-              If you delete this payment request, you may fail to
+            {#if done}
+              Are you sure you want to do this?
+            {:else}
+              If you discard this payment request, you may fail to
               notice the corresponding payment. Are you sure you want
               to do this?
-            {:else}
-              If you delete this payment request, you may fail to
-              notice eventual additional associated payments. Are you
-              sure you want to do this?
             {/if}
           </DialogContent>
           <Actions>
@@ -284,7 +293,7 @@
       </div>
       <div class="fab-container">
         <Fab color="primary" on:click={remove} extended>
-          <FabLabel>Delete</FabLabel>
+          <FabLabel>Discard</FabLabel>
         </Fab>
       </div>
     </svelte:fragment>
