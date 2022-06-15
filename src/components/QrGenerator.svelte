@@ -1,63 +1,67 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
-  import QRious from 'qrious'
+  import { qrcodegen } from '../qrcodegen'
 
-  const QRcode = new QRious()
-
-  export let background = "#fff"
-  export let color = "#000"
-  export let value = ""
-  export let className = "qrcode"
+  export let value: string = ''
+  export let className = 'qrcode'
   export let dataUrl: string | undefined = undefined
 
-  const errorCorrection = "L"
+  let canvasElement: HTMLCanvasElement | undefined
 
-  // NOTE: QRious requires an output size (in pixels) to be passed. It
-  // also makes sure that a single QR element (a white/black dot)
-  // takes a whole number of pixels. Therefore, to obey the passed
-  // size, sometimes empty padding strips will be
-  // added. Unfortunately, the padding strips are added always on the
-  // right, and on the bottom. To avoid getting too wide strips, we
-  // calculate the passed size so that each QR element is big enough
-  // (about 32x32 pixels in size). This makes the generated QR code
-  // image quite big (up to 2500x2500 pixels). On the plus side, if
-  // the user wants to scale up/down the image, while preserving
-  // image's sharpness, it will be easier to do so when starting from
-  // a higher resolution.
-  const bytes = new TextEncoder().encode(value).length
-  const approxPixelCount = Math.sqrt(bytes * 12 + 21 * 21)
-  const size = Math.ceil(32 * approxPixelCount)
-  const padding = 4 * 32
+  function drawCanvas(
+    qr: qrcodegen.QrCode,
+    scale: number,
+    border: number,
+    lightColor: string,
+    darkColor: string,
+    canvas: HTMLCanvasElement,
+  ): void {
+    if (scale <= 0 || border < 0) {
+      throw new RangeError("Value out of range")
+    }
+    const width: number = (qr.size + border * 2) * scale
+    canvas.width = width
+    canvas.height = width
+    let ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+    ctx.fillStyle = lightColor
+    ctx.fillRect(0, 0, width, width)
+    for (let y = -border; y < qr.size + border; y++) {
+      for (let x = -border; x < qr.size + border; x++) {
+	ctx.fillStyle = qr.getModule(x, y) ? darkColor : lightColor
+	ctx.fillRect((x + border) * scale, (y + border) * scale, scale, scale)
+      }
+    }
+  }
 
-  function generateQrCode() {
-    QRcode.set({
-      background,
-      foreground: color,
-      level: errorCorrection,
-      padding,
-      size,
-      value,
-    })
-    dataUrl = QRcode.toDataURL('image/png')
+  function revokeDataUrl(): void {
+    if (dataUrl !== undefined) {
+      URL.revokeObjectURL(dataUrl)
+    }
+    dataUrl = undefined
+  }
+
+  function generateQrCode(s: string, canvas: HTMLCanvasElement) {
+    const errCorLvl: qrcodegen.QrCode.Ecc = qrcodegen.QrCode.Ecc.LOW
+    const qrCode: qrcodegen.QrCode = qrcodegen.QrCode.encodeText(s, errCorLvl)
+    drawCanvas(qrCode, 20, 4, "#FFFFFF", "#000000", canvas)
+    revokeDataUrl()
+    dataUrl = canvas.toDataURL('image/png')
   }
 
   $: {
-    if (value) {
-      generateQrCode()
+    if (value && canvasElement) {
+      generateQrCode(value, canvasElement)
     }
   }
 
   onMount(() => {
     if (dataUrl === undefined) {
-      generateQrCode()
+      assert(canvasElement)
+      generateQrCode(value, canvasElement)
     }
   })
 
-  onDestroy(() => {
-    if (dataUrl !== undefined) {
-      URL.revokeObjectURL(dataUrl)
-    }
-  })
+  onDestroy(revokeDataUrl)
 </script>
 
-<img src={dataUrl} alt={value} class={className}/>
+<canvas bind:this={canvasElement} class={className} />

@@ -53,7 +53,6 @@
     "jest": "^27.2.2",
     "just-clone": "^3.2.1",
     "qr-scanner": "^1.4.1",
-    "qrious": "^4.0.2",
     "svelte": "^3.46.4",
     "svelte-check": "^2.7.1",
     "svelte-preprocess": "^4.10.6",

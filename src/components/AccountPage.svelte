@@ -187,7 +187,7 @@
     width: 100%;
     text-align: center;
   }
-  .qrcode-container :global(img) {
+  .qrcode-container :global(canvas) {
     width: 100%;
     max-width: 66vh;
   }
