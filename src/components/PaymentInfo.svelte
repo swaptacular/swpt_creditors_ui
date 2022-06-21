@@ -118,7 +118,7 @@
               <div class="status-name">
                 <span style="text-decoration: underline">{status.toLowerCase()}</span>
                 <span class="status-smalltext">
-                  {#if status === 'Failed'}
+                  {#if status !== 'Initiated' && status !== 'Successful'}
                     tap for details
                   {:else}
                     &nbsp;
