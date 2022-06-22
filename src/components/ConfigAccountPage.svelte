@@ -260,8 +260,8 @@
                 <span slot="label">
                   Scheduled for deletion: the account can not receive
                   payments, and unless the currency is used as a peg,
-                  the account will be deleted once the remaining
-                  amount becomes negligible.
+                  the account will be deleted some time after the
+                  remaining amount becomes negligible.
                 </span>
               </FormField>
             </Cell>
