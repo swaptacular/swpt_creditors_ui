@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { AppState, CreateAccountModel, CreateAccountActionWithId, ApprovePegActionWithId } from '../app-state'
+  import { HAS_NOT_CREATED_PEG_ACCOUNT } from '../app-state'
   import { limitAmountDivisor } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -9,8 +10,11 @@
   import HelperText from '@smui/textfield/helper-text/index'
   import FormField from '@smui/form-field'
   import Checkbox from '@smui/checkbox'
+  import Button, { Label as ButtonLabel } from '@smui/button'
+  import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import { amountToString } from '../format-amounts'
   import Page from './Page.svelte'
+  import Dialog from './Dialog.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
   import AccountInfo from './AccountInfo.svelte'
 
@@ -26,6 +30,7 @@
   let debtorName = model.action.accountCreationState?.editedDebtorName ?? ''
   let uniqueDebtorName = isUniqueDebtorName(debtorName, model.action)
   let negligibleUnitAmount = formatAsUnitAmount(model.action.accountCreationState?.editedNegligibleAmount)
+  let hasNotCreatedPegAccount = localStorage.getItem(HAS_NOT_CREATED_PEG_ACCOUNT) === 'true'
   let invalidDebtorName: boolean
   let invalidNegligibleUnitAmount: boolean
 
@@ -54,6 +59,14 @@
     )
   }
 
+  function getPeggedDebtorName(model: CreateAccountModel): string {
+    let debtroName
+    if (model.action.actionType !== 'CreateAccount') {
+      debtroName = app.accountsMap.getAccountDisplay(model.action.accountUri)?.debtorName
+    }
+    return debtroName ?? ''
+  }
+
   function shakeForm(): void {
     const shakingSuffix = ' shaking-block'
     const origClassName = shakingElement.className
@@ -61,6 +74,11 @@
       shakingElement.className += shakingSuffix
       setTimeout(() => { shakingElement && (shakingElement.className = origClassName) }, 1000)
     }
+  }
+
+  function gotIt() {
+    localStorage.setItem(HAS_NOT_CREATED_PEG_ACCOUNT, 'false')
+    hasNotCreatedPegAccount = false
   }
 
   function retry(): void {
@@ -105,6 +123,7 @@
     }
   }
 
+  $: peggedDebtorName = getPeggedDebtorName(model)
   $: action = model.action
   $: isCreateAccountAction = action.actionType === 'CreateAccount'
   $: pageTitle = isCreateAccountAction ? 'Confirm account' : 'Create peg account'
@@ -142,6 +161,9 @@
   }
   .warning {
     margin-top: 16px;
+  }
+  .peg-definition {
+    margin-bottom: 20px;
   }
 
   @keyframes shake {
@@ -194,6 +216,43 @@
   {:else}
     <Page title={pageTitle} hideFloating={openEnterPinDialog}>
       <svelte:fragment slot="content">
+        {#if !isCreateAccountAction && hasNotCreatedPegAccount}
+          <Dialog
+            open
+            scrimClickAction=""
+            aria-labelledby="ack-peg-explanation-dialog-title"
+            aria-describedby="ack-peg-explanation-dialog-content"
+            >
+            <DialogTitle>What a "currency peg" is?</DialogTitle>
+            <DialogContent style="word-break: break-word">
+              <p class="peg-definition">
+                A currency peg is a currency management strategy in
+                which the issuer sets a specific
+                <span style="font-weight: bold">
+                  fixed exchange rate
+                </span>
+                between the tokens of his currency (the pegged
+                currency) and the tokens of some other currency (the
+                peg currency).
+              </p>
+              <p>
+                The issuer of the "{peggedDebtorName}" currency, has
+                declared a fixed exchange rate with the
+                "{data.debtorData.debtorName}" currency. Before you can
+                approve this peg, first you should
+                <span style="font-weight: bold">
+                  create an account with "{data.debtorData.debtorName}".
+                </span>
+              </p>
+            </DialogContent>
+            <Actions>
+              <Button use={[InitialFocus]} on:click={gotIt}>
+                <ButtonLabel>I have got it</ButtonLabel>
+              </Button>
+            </Actions>
+          </Dialog>
+        {/if}
+
         <EnterPinDialog bind:open={openEnterPinDialog} performAction={submit} />
 
         <div bind:this={shakingElement}>

@@ -38,7 +38,8 @@ import {
   getDebtorIdentityFromAccountIdentity, getExtendedTransferRecord, removeActionRecord, storeTransfer
 } from './db'
 import {
-  getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid, IS_A_NEWBIE_KEY
+  getOrCreateUserId, sync, storeObject, PinNotRequired, userResetsChannel, currentWindowUuid,
+  IS_A_NEWBIE_KEY, HAS_NOT_CREATED_PEG_ACCOUNT
 } from './db-sync'
 import { makePinInfo, makeAccount, makeTransfer, makeLogObject } from './canonical-objects'
 import {
@@ -60,6 +61,7 @@ export {
   AuthenticationError,
   ServerSessionError,
   IS_A_NEWBIE_KEY,
+  HAS_NOT_CREATED_PEG_ACCOUNT,
   getCreateTransferActionStatus,
   getTransferStatusDetails,
   getExpectedPaymentAmount,

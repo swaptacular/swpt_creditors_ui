@@ -17,7 +17,8 @@ import { writable } from 'svelte/store'
 import { calcSmallestDisplayableNumber } from './format-amounts'
 import { generatePr0Blob } from './payment-requests'
 import {
-  IS_A_NEWBIE_KEY, obtainUserContext, parseCoinUri, UserContext, AuthenticationError,
+  IS_A_NEWBIE_KEY, HAS_NOT_CREATED_PEG_ACCOUNT,
+  obtainUserContext, parseCoinUri, UserContext, AuthenticationError,
   IvalidPaymentData, IvalidPaymentRequest, InvalidCoinUri, DocumentFetchError, ServerSessionError,
   RecordDoesNotExist, WrongPin, ConflictingUpdate, UnprocessableEntity, CircularPegError,
   PegDisplayMismatch, ResourceNotFound, ServerSyncError, InvalidDocument, BuyingIsForbidden,
@@ -31,7 +32,7 @@ type AttemptOptions = {
   waitingDelay?: number,
 }
 
-export { IS_A_NEWBIE_KEY }
+export { IS_A_NEWBIE_KEY, HAS_NOT_CREATED_PEG_ACCOUNT }
 
 export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
   + 'Make sure that you are scanning the correct QR code, '

@@ -38,6 +38,7 @@ export class PinNotRequired extends Error {
 }
 
 export const IS_A_NEWBIE_KEY = 'creditors.IsANewbie'
+export const HAS_NOT_CREATED_PEG_ACCOUNT = 'creditors.HasNotCreatedPegAccount'
 
 export const currentWindowUuid = uuidv4()
 
@@ -317,7 +318,9 @@ async function getUserData(server: ServerSession): Promise<UserData> {
 function setIsANewbieFlag(hasAccounts: boolean): void {
   const value = localStorage.getItem(IS_A_NEWBIE_KEY)
   if (value === null || value === 'true') {
-    localStorage.setItem(IS_A_NEWBIE_KEY, hasAccounts ? 'false' : 'true')
+    const updatedValue = hasAccounts ? 'false' : 'true'
+    localStorage.setItem(IS_A_NEWBIE_KEY, updatedValue)
+    localStorage.setItem(HAS_NOT_CREATED_PEG_ACCOUNT, updatedValue)
   }
 }
 
