@@ -45,17 +45,7 @@
   }
 
   function getDebtorName(accountUri: string): string | undefined {
-    let debtorName
-    const account = app.accountsMap.getObjectByUri(accountUri)
-    if (account) {
-      assert(account.type === 'Account')
-      const display = app.accountsMap.getObjectByUri(account.display.uri)
-      if (display) {
-        assert(display.type === 'AccountDisplay')
-        debtorName = display.debtorName
-      }
-    }
-    return debtorName
+    return app.accountsMap.getAccountDisplay(accountUri)?.debtorName
   }
 
   function removeEndingDot(s: string): string {
