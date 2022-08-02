@@ -112,9 +112,9 @@
       </Title>
       <Content>
         {#if !isDraft}
-          <Wrapper>
-            <div class="transfer-status">
-              <div style="padding-right: 0.3em">Status:</div>
+          <div class="transfer-status">
+            <div style="padding-right: 0.3em">Status:</div>
+            <Wrapper>
               <div class="status-name">
                 <span style="text-decoration: underline">{status.toLowerCase()}</span>
                 <span class="status-smalltext">
@@ -125,9 +125,9 @@
                   {/if}
                 </span>
               </div>
-            </div>
-            <Tooltip>{statusTooltip}</Tooltip>
-          </Wrapper>
+              <Tooltip>{statusTooltip}</Tooltip>
+            </Wrapper>
+          </div>
         {/if}
         {#if contentFormat === '.'}
           <a href="{content}" target="_blank">{content}</a>
