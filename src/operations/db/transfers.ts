@@ -125,14 +125,8 @@ export async function createTransferRecord(
 export async function storeTransfer(userId: number, transfer: TransferV0): Promise<TransferRecord> {
   const { uri: transferUri, transferUuid, initiatedAt, result } = transfer
 
-  const getAbortTransferActionQuery = () => db.actions
-    .where({ transferUri })
-    .filter(
-      action => action.actionType === 'AbortTransfer' && action.userId === userId
-    ) as Collection<AbortTransferActionWithId, number>
-
   const deleteAbortTransferAction = async () => {
-    const actionsToDelete = await getAbortTransferActionQuery().toArray()
+    const actionsToDelete = await getAbortTransferActionQuery(userId, transferUri).toArray()
     for (const { actionId } of actionsToDelete) {
       await db.actions.delete(actionId)
     }
@@ -170,13 +164,15 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
         transferRecord = existingTransferRecord
       } else {
         const { time, paymentInfo, originatesHere, aborted } = existingTransferRecord
-        transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, aborted }
+        const couldBeDelayed = (result === undefined && !aborted) ? "yes" as const : undefined
+        transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, couldBeDelayed, aborted }
       }
     } else {
       const time = getIsoTimeOrNow(initiatedAt)
       const paymentInfo = parseTransferNote(transfer)
       const originatesHere = await matchCreateTransferAction()
-      transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, aborted: false }
+      const couldBeDelayed = (result === undefined) ? "yes" as const: undefined
+      transferRecord = { ...transfer, userId, time, paymentInfo, originatesHere, couldBeDelayed, aborted: false }
     }
     let attemptsLeft = 100
     while (true) {
@@ -199,28 +195,6 @@ export async function storeTransfer(userId: number, transfer: TransferV0): Promi
       scheduledFor: new Date(finalizationTime + 1000 * TRANSFER_DELETION_DELAY_SECONDS),
       transferUri,
     })
-  }
-
-  const putAbortTransferAction = async (t: TransferRecord): Promise<void> => {
-    let abortTransferAction: AbortTransferAction | undefined
-    const existingAbortTransferAction = await getAbortTransferActionQuery().first()
-    const accountUri = (await extendTransferRecord(t))?.display?.account.uri
-    if (!existingAbortTransferAction) {
-      abortTransferAction = {
-        userId,
-        accountUri,
-        actionType: 'AbortTransfer',
-        createdAt: new Date(),
-        transferUri,
-        transfer: t,
-      }
-    } else if (!existingAbortTransferAction.transfer.result && t.result) {
-      existingAbortTransferAction.transfer.result = t.result
-      abortTransferAction = existingAbortTransferAction
-    }
-    if (abortTransferAction) {
-      await db.actions.put(abortTransferAction)
-    }
   }
 
   return await db.transaction('rw', db.allTables, async () => {
@@ -304,6 +278,24 @@ export async function resolveOldNotConfirmedCreateTransferRequests(userId: numbe
   })
 }
 
+export async function detectDelayedTransfers(userId: number): Promise<void> {
+  await db.transaction('rw', db.allTables, async () => {
+    const now = new Date()
+    const delayedTransfers = await db.transfers
+      .where({userId, couldBeDelayed: 'yes'})
+      .filter(transfer => {
+        assert(transfer.result === undefined && !transfer.aborted)
+        const initiatedAt = new Date(transfer.initiatedAt)
+        const delayThreshold = new Date(initiatedAt.getTime() + 1000 * TRANSFER_NORMAL_WAIT_SECONDS)
+        return now > delayThreshold
+      })
+      .toArray()
+    for (const transfer of delayedTransfers) {
+      await putAbortTransferAction(transfer)
+    }
+  })
+}
+
 function hasTimedOut(startedAt: Date, currentTime: number = Date.now()): boolean {
   const deadline = startedAt.getTime() + 1000 * TRANSFER_DELETION_MIN_DELAY_SECONDS
   return currentTime + MAX_PROCESSING_DELAY_MILLISECONDS > deadline
@@ -331,4 +323,35 @@ async function extendTransferRecord(transferRecord: TransferRecord): Promise<Ext
   }
   await db.transfers.get({ uri: '' })  // This ensures that the transaction is kept alive.
   return t
+}
+
+function getAbortTransferActionQuery(userId: number, transferUri: string) {
+  return db.actions
+    .where({ transferUri })
+    .filter(
+      action => action.actionType === 'AbortTransfer' && action.userId === userId
+    ) as Collection<AbortTransferActionWithId, number>
+}
+
+async function putAbortTransferAction(transfer: TransferRecord): Promise<void>  {
+  let abortTransferAction: AbortTransferAction | undefined
+  const { uri: transferUri, userId, result } = transfer
+  const existingAbortTransferAction = await getAbortTransferActionQuery(userId, transferUri).first()
+  if (!existingAbortTransferAction) {
+    const accountUri = (await extendTransferRecord(transfer))?.display?.account.uri
+    abortTransferAction = {
+      userId,
+      accountUri,
+      actionType: 'AbortTransfer',
+      createdAt: new Date(),
+      transferUri,
+      transfer,
+    }
+  } else if (!existingAbortTransferAction.transfer.result && result) {
+    existingAbortTransferAction.transfer.result = result
+    abortTransferAction = existingAbortTransferAction
+  }
+  if (abortTransferAction) {
+    await db.actions.put(abortTransferAction)
+  }
 }

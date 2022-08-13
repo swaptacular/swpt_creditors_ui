@@ -18,11 +18,11 @@ import {
   db, storeCommittedTransferRecord, deleteAccountObject, deleteAccount, storeLedgerEntryRecord, splitIntoRecords,
   updateWalletRecord, getWalletRecord, getUserId, registerTranferDeletion, getTransferRecord, storeTransfer,
   resolveOldNotConfirmedCreateTransferRequests, storeAccountKnowledgeRecord, storeAccountInfoRecord,
-  postAccountsMapMessage, verifyAccountKnowledge, getEntryIdString
+  postAccountsMapMessage, verifyAccountKnowledge, getEntryIdString, detectDelayedTransfers
 } from './db'
 import {
   makeCreditor, makePinInfo, makeAccount, makeWallet, makeLogObject, makeLogEntriesPage,
-  getCanonicalType,
+  getCanonicalType
 } from './canonical-objects'
 import {
   iterAccountsList, calcParallelTimeout, fetchNewLedgerEntries, iterTransfersList, fetchTransfers,
@@ -73,6 +73,7 @@ export async function sync(server: ServerSession, userId: number): Promise<void>
     await ensureLoadedTransfers(server, userId)
     while (await processLogPage(server, userId));
     await resolveOldNotConfirmedCreateTransferRequests(userId)
+    await detectDelayedTransfers(userId)
   } catch (e: unknown) {
     if (e instanceof BrokenLogStream) {
       console.warn('Failed to synchronize with the server. The app is being automatically restarted.')

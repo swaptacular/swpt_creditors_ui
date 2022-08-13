@@ -132,6 +132,7 @@ export type TransferRecord =
     paymentInfo: PaymentInfo,
     aborted: boolean,
     originatesHere: boolean,
+    couldBeDelayed: 'yes' | undefined,
   }
 
 export type LedgerEntryRecord =
@@ -502,7 +503,7 @@ class CreditorsDb extends Dexie {
   constructor() {
     super('creditors')
 
-    this.version(1).stores({
+    this.version(2).stores({
       wallets: '++userId,&uri',
       walletObjects: 'uri,userId',
       accounts: 'uri,&[userId+debtor.uri]',
@@ -510,7 +511,7 @@ class CreditorsDb extends Dexie {
       accountPriorities: 'uri,userId',
       defaultPayeeNames: 'userId',
       expectedPayments: 'payeeReference,userId,accountUri',
-      transfers: '[userId+time],&uri',
+      transfers: '[userId+time],&uri,[userId+couldBeDelayed]',
       ledgerEntries: '[ledger.uri+entryIdString],userId',
 
       // Committed transfers are objects that belong to a specific
@@ -524,6 +525,10 @@ class CreditorsDb extends Dexie {
 
       actions: '++actionId,&payeeReference,[userId+createdAt],transferUuid,transferUri,accountUri',
       tasks: '++taskId,[userId+scheduledFor],transferUri,accountUri',
+    }).upgrade((trans: any) => {
+      return trans.transfers.toCollection().modify((t: TransferRecord) => {
+        t.couldBeDelayed = (t.result === undefined && !t.aborted) ? "yes" as const : undefined
+      })
     })
 
     this.wallets = this.table('wallets')
