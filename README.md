@@ -67,6 +67,9 @@ By default, the server will only respond to requests from
 localhost. To allow connections from other computers, edit the `dev`
 command in package.json to include the option `--host 0.0.0.0`.
 
+You can edit the [config.js](../master/public/config.js) file if you
+want to change the active configuration options during development.
+
 If you're using [Visual Studio Code](https://code.visualstudio.com/)
 we recommend installing the official extension [Svelte for VS
 Code](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode). If
