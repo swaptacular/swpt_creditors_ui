@@ -21,10 +21,12 @@ variables. Here are the most important settings with some random
 example values:
 
 ```shell
-# The entrypint URL for the "Payments Web API".
+# An URL pointing to the "Redirect to the creditor's wallet"
+# entrypoint on the server. (See the "Payments Web API"
+# specification.)
 SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
 
-# OAuth 2.0 authorization parameters.
+# OAuth 2.0 Authorization Code Flow parameters.
 AUTHORIZATION_URL=https://demo.swaptacular.org/oauth2/auth
 TOKEN_URL=https://demo.swaptacular.org/oauth2/token
 CLIENT_ID=creditors-webapp
