@@ -1,23 +1,32 @@
-# UI for the Swaptacular service that manages creditors
+# Swaptacular "Currency Holder UI" reference implementation
 
-This service implements a [Payments Web
+This project implements a [Payments Web
 API](https://swaptacular.github.io/public/docs/swpt_creditors/redoc.html)
-client. The main deliverable is a docker image, generated from the
-project's [Dockerfile](../master/Dockerfile).  The generated image is
-a simple static web server (using nginx), which uses the following
-environment variables for configuration (along with some example
-values):
+client for [Swaptacular]. The main deliverable is a [docker image],
+generated from the project's [Dockerfile](../master/Dockerfile). The
+generated image is a simple static web server, which backs a
+[Progressive Web App].
+
+
+## Configuration
+
+The behavior of the running container can be tuned with environment
+variables. Here are the most important settings with some random
+example values:
 
 ```
 SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
-SERVER_API_TIMEOUT=8000  # milliseconds
+
+# OAuth 2.0 authorization server parameters:
 AUTHORIZATION_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/auth
 TOKEN_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/token
 CLIENT_ID=creditors-webapp
 REDIRECT_URL=https://demo.swaptacular.org/creditors-webapp/
-TRANSFER_DELETION_DELAY_SECONDS=1296000
-DEBTOR_INFOS_REVISION_DAYS=7
 ```
+
+For more configuration options, check the
+[app-config.env](../master/app-config.env) file.
+
 
 ## How to setup a development environment
 
@@ -61,3 +70,9 @@ npm run build
 ```
 
 You can run the newly built app with `npm run serve`.
+
+
+
+[Swaptacular]: https://swaptacular.github.io/overview
+[docker image]: https://www.geeksforgeeks.org/what-is-docker-images/
+[Progressive Web App]: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
