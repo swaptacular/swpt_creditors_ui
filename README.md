@@ -4,12 +4,12 @@ This project implements a [Payments Web
 API](https://swaptacular.github.io/public/docs/swpt_creditors/redoc.html)
 client for [Swaptacular]. The main deliverable is a [docker image],
 generated from the project's [Dockerfile](../master/Dockerfile). The
-generated image is a simple static web server, which serves a
-[Progressive Web App].
+generated image is a simple static web server, running on port 80,
+which serves a [Progressive Web App] at its root path ("/").
 
 To obtain permissions to act on behalf of the user, the Web App
-performs [OAuth 2.0 Authorization Code Flow] with Proof Key for Code
-Exchange (PKCE), which is specifically designed for clients that
+performs the [OAuth 2.0 Authorization Code Flow] with Proof Key for
+Code Exchange (PKCE), which is specifically designed for clients that
 cannot securely store a client secret, because their entire source is
 available to the browser.
 
@@ -31,9 +31,9 @@ AUTHORIZATION_URL=https://demo.swaptacular.org/oauth2/auth
 TOKEN_URL=https://demo.swaptacular.org/oauth2/token
 CLIENT_ID=creditors-webapp
 
-# This is the starting URL for the Web App, and it must exactly match
-# the "redirect URL" that has been configured for the client with the
-# given CLIENT_ID.
+# This must be the starting URL for the Web App, and it must exactly
+# match the "redirect URL" that has been configured for the client
+# with the given CLIENT_ID.
 REDIRECT_URL=https://demo.swaptacular.org/creditors-webapp/
 ```
 
