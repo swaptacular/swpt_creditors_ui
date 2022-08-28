@@ -30,6 +30,10 @@ SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
 AUTHORIZATION_URL=https://demo.swaptacular.org/oauth2/auth
 TOKEN_URL=https://demo.swaptacular.org/oauth2/token
 CLIENT_ID=creditors-webapp
+
+# This is the starting URL for the Web App, and it must exactly match
+# the "redirect URL" that has been configured for the client with the
+# given CLIENT_ID.
 REDIRECT_URL=https://demo.swaptacular.org/creditors-webapp/
 ```
 
