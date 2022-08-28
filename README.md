@@ -14,7 +14,7 @@ The behavior of the running container can be tuned with environment
 variables. Here are the most important settings with some random
 example values:
 
-```
+```shell
 SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
 
 # OAuth 2.0 authorization server parameters:
