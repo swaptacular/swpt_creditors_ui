@@ -61,14 +61,13 @@ npm run dev
 
 Navigate to [localhost:5000](http://localhost:5000). You should see
 your app running. Edit a component file in `src`, save it, and reload
-the page to see your changes.
+the page to see your changes. You can edit the
+[config.js](../master/public/config.js) file if you want to change the
+active configuration options during development.
 
 By default, the server will only respond to requests from
 localhost. To allow connections from other computers, edit the `dev`
 command in package.json to include the option `--host 0.0.0.0`.
-
-You can edit the [config.js](../master/public/config.js) file if you
-want to change the active configuration options during development.
 
 If you're using [Visual Studio Code](https://code.visualstudio.com/)
 we recommend installing the official extension [Svelte for VS
