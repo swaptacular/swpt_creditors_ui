@@ -84,6 +84,11 @@ npm run build
 
 You can run the newly built app with `npm run serve`.
 
+**IMPORTANT NOTE: Each new version released in production, must have a
+new value of the `cacheName` constant in the
+[sw.js](../master/public/sw.js) file. This is necessary in order to
+ensure that clients' service workers will be updated.**
+
 
 
 [Swaptacular]: https://swaptacular.github.io/overview
