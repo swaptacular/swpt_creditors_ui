@@ -4,8 +4,14 @@ This project implements a [Payments Web
 API](https://swaptacular.github.io/public/docs/swpt_creditors/redoc.html)
 client for [Swaptacular]. The main deliverable is a [docker image],
 generated from the project's [Dockerfile](../master/Dockerfile). The
-generated image is a simple static web server, which backs a
+generated image is a simple static web server, which serves a
 [Progressive Web App].
+
+To obtain permissions to act on behalf of the user, the Web App
+performs [OAuth 2.0 Authorization Code Flow] with Proof Key for Code
+Exchange (PKCE), which is specifically designed for clients that
+cannot securely store a client secret, because their entire source is
+available to the browser.
 
 
 ## Configuration
@@ -15,11 +21,12 @@ variables. Here are the most important settings with some random
 example values:
 
 ```shell
+# The entrypint URL for the "Payments Web API".
 SERVER_API_ENTRYPOINT=https://demo.swaptacular.org/creditors/.wallet
 
-# OAuth 2.0 authorization server parameters:
-AUTHORIZATION_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/auth
-TOKEN_URL=https://demo.swaptacular.org/creditors-hydra/oauth2/token
+# OAuth 2.0 authorization parameters.
+AUTHORIZATION_URL=https://demo.swaptacular.org/oauth2/auth
+TOKEN_URL=https://demo.swaptacular.org/oauth2/token
 CLIENT_ID=creditors-webapp
 REDIRECT_URL=https://demo.swaptacular.org/creditors-webapp/
 ```
@@ -76,3 +83,4 @@ You can run the newly built app with `npm run serve`.
 [Swaptacular]: https://swaptacular.github.io/overview
 [docker image]: https://www.geeksforgeeks.org/what-is-docker-images/
 [Progressive Web App]: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
+[OAuth 2.0 Authorization Code Flow]: https://developer.okta.com/blog/2018/04/10/oauth-authorization-code-grant-type
