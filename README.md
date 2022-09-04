@@ -92,7 +92,6 @@ new value of the `cacheName` constant in the
 ensure that clients' service workers will be updated.**
 
 
-
 [Swaptacular]: https://swaptacular.github.io/overview
 [docker image]: https://www.geeksforgeeks.org/what-is-docker-images/
 [Progressive Web App]: https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps
