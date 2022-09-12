@@ -258,7 +258,13 @@ async function tryToGetDebtorDataFromDebtorInfo(
   debtorInfo: DebtorInfoV0,
   debtorIdentityUri: string,
 ): Promise<DebtorData | undefined> {
-  const document = await getDocumentRecord(debtorInfo.iri)
+  let url: URL
+  try {
+    url = new URL(debtorInfo.iri)
+  } catch {
+    return undefined
+  }
+  const document = await getDocumentRecord(url.href)
   if (
     document &&
     document.sha256 === (debtorInfo.sha256 ?? document.sha256) &&

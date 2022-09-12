@@ -53,12 +53,14 @@ test("Validate CoinInfo schema", () => {
 })
 
 test("Parse CoinInfo document", async () => {
-  const text = `{"revision":0,"willNotChangeUntil":"INVALID","latestDebtorInfo":{"uri":"http://example.com/"},"summary":"bla-bla","debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:123"},"debtorName":"USA","debtorHomepage":{"uri":"https://example.com/USA"},"amountDivisor":100,"decimalPlaces":2,"unit":"USD","peg":{"type":"Peg","exchangeRate":1,"display":{"type":"PegDisplay","amountDivisor":100,"decimalPlaces":2,"unit":"USD"},"debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:321"},"latestDebtorInfo":{"uri":"http://example.com/"}},"type":"CoinInfo"} `
+  const text = `{"revision":0,"willNotChangeUntil":"INVALID","latestDebtorInfo":{"uri":"http://кирилица.com/кирилица/"},"summary":"bla-bla","debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:123"},"debtorName":"USA","debtorHomepage":{"uri":"https://example.com/USA"},"amountDivisor":100,"decimalPlaces":2,"unit":"USD","peg":{"type":"Peg","exchangeRate":1,"display":{"type":"PegDisplay","amountDivisor":100,"decimalPlaces":2,"unit":"USD"},"debtorIdentity":{"type":"DebtorIdentity","uri":"swpt:321"},"latestDebtorInfo":{"uri":"http://кирилица.com/КИРИЛИЦА/"}},"type":"CoinInfo"} `
   const document = {
     contentType: MIME_TYPE_COIN_INFO,
     content: (new TextEncoder()).encode(text),
   }
   const parsed = parseDebtorInfoDocument(document)
+  expect(parsed.latestDebtorInfo.uri).toEqual('http://xn--80apaahi7a3c.com/%D0%BA%D0%B8%D1%80%D0%B8%D0%BB%D0%B8%D1%86%D0%B0/')
+  expect(parsed.peg?.latestDebtorInfo.uri).toEqual('http://xn--80apaahi7a3c.com/%D0%9A%D0%98%D0%A0%D0%98%D0%9B%D0%98%D0%A6%D0%90/')
   expect(parsed.revision).toEqual(0n)
   expect(parsed.willNotChangeUntil).toBeUndefined()
 
