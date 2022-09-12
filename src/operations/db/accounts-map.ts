@@ -113,7 +113,7 @@ export class AccountsMap {
       for (const obj of await db.accountObjects.where({ userId }).toArray()) {
         this.processObjectAddition(obj)
         if (obj.type === 'AccountInfo' && obj.debtorInfo) {
-          const documentUri = obj.debtorInfo.iri
+          const documentUri = iri2uri(obj.debtorInfo.iri)
           const document = await db.documents.get(documentUri)
           if (document) {
             const debtorData = tryToParseDebtorInfoDocument(document)
@@ -271,7 +271,7 @@ export class AccountsMap {
         let debtorInfoDocument: ParsedDebtorInfoDocument | undefined
         if (info.debtorInfo) {
           const { contentType, sha256, iri } = info.debtorInfo
-          const obj = this.getObjectByUri(iri)
+          const obj = this.getObjectByUri(iri2uri(iri))
           if (
             obj &&
             obj.type === 'ParsedDebtorInfoDocument' &&
@@ -476,5 +476,13 @@ export class AccountsMap {
         this.accounts.set(obj.debtor.uri, obj.uri)
       }
     }
+  }
+}
+
+function iri2uri(iri: string): string {
+  try {
+    return new URL(iri).href
+  } catch {
+    return ''
   }
 }

@@ -121,9 +121,15 @@ export async function calcSha256(buffer: ArrayBuffer): Promise<string> {
 }
 
 export async function fetchDebtorInfoDocument(
-  documentUri: string,
+  documentIri: string,
   timeout: number = appConfig.serverApiTimeout,
 ): Promise<DocumentRecord> {
+  let documentUri: string
+  try {
+    documentUri = new URL(documentIri).href
+  } catch {
+    throw new DocumentFetchError()
+  }
   let document = await getDocumentRecord(documentUri)
   if (!document) {
     let response, content

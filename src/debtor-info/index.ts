@@ -216,6 +216,11 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
     throw new InvalidDocument(`${e.instancePath} ${e.message}`)
   }
   data.peg = data.peg  // Ensure the `peg` property exists on the object.
+  try {
+    data.latestDebtorInfo = { uri: new URL(data.latestDebtorInfo.uri).href }
+  } catch {
+    throw new InvalidDocument('invalid latestDebtorInfo.uri')
+  }
   data.summary = data.summary
   data.debtorHomepage = data.debtorHomepage
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
@@ -225,6 +230,11 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
     data.peg.type = 'Peg'
     data.peg.display.type = 'PegDisplay'
     data.peg.display.decimalPlaces = BigInt(Math.ceil(data.peg.display.decimalPlaces))
+    try {
+      data.peg.latestDebtorInfo = { uri: new URL(data.peg.latestDebtorInfo.uri).href }
+    } catch {
+      throw new InvalidDocument('invalid peg.latestDebtorInfo.uri')
+    }
   }
   delete data.type
   return data
