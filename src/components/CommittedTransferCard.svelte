@@ -98,7 +98,7 @@
         {/if}
       </p>
       <p class="transfer-note">
-        {#if description.contentFormat === '.'}
+        {#if description.contentFormat === '.' || description.contentFormat === '-'}
           <a href="{description.content}" target="_blank" on:click|stopPropagation>{briefContent}</a>
         {:else if description.contentFormat === ''}
           {briefContent}

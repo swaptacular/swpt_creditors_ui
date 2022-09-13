@@ -112,7 +112,7 @@
                 toward "{payeeReference.slice(0, 36)}"
               {/if}
             </p>
-              {#if contentFormat === '.'}
+              {#if contentFormat === '.' || contentFormat === '-'}
                 <p class="transfer-note">
                   <a href="{description.content}" target="_blank" on:click|stopPropagation>{content}</a>
                 </p>
