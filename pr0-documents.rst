@@ -85,7 +85,7 @@ The "requested amount" line MUST contain an integer number between
 ``0`` and ``9223372036854775807``, which represents the requested
 amount in raw currency tokens [#smp-raw-tokens]_.
 
-  
+
 Payment deadline
 ----------------
 
@@ -112,6 +112,21 @@ The "reason format" line contains a short string that indicates how
 the remaining content (the "reason for the payment") should be
 interpreted. This MAY be an empty string.
 
+**Important note:** All standard *transfer note
+formats* [#note-formats]_ can be used as "reason format"s as well.
+
+.. [#note-formats] In Swaptacular, every transfer can have a *transfer
+  note*. The "transfer note" is a textual message that contains
+  information which the sender wants the recipient of the transfer to
+  see. In addition to the transfer note, the sender can specify a
+  *transfer note format*, which is a short string that indicates how
+  the content of the corresponding transfer note should be
+  interpreted. The sender of each transfer can choose among a
+  multitude of standard *transfer note formats*. Every transfer note
+  format (and therefore, every "reason format") is identified by a
+  short string — the format's name. All format names match the regular
+  expression: `^[0-9A-Za-z.-]{0,8}$`
+
 
 Reason for the payment
 ----------------------
@@ -125,7 +140,7 @@ This MAY be an empty string.
 
 .. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
   document.
-   
+
 .. [#smp-raw-tokens] "Raw currency tokens" are the 64-bit numbers that
   the `Swaptacular Messaging Protocol`_ uses to represent currency
   amounts. Usually, before being shown to the user, these raw numbers
@@ -140,6 +155,24 @@ Over HTTP connections, ``PR-zero`` documents MUST be transferred with
 ``application/vnd.swaptacular.pr0`` `MIME type`_.
 
 
+Example ``PR-zero`` Document
+============================
+
+::
+
+  PR0
+
+  swpt:112233445566778899/998877665544332211
+  Payee Name
+  1000
+  2021-07-30T16:00:00Z
+  12d3a45642665544
+
+  This is a description of the reason
+  for the payment. It may contain multiple
+  lines. Everything until the end of the file
+  is considered as part of the description.
+   
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _regular expression: https://en.wikipedia.org/wiki/Regular_expression
