@@ -1,7 +1,7 @@
 +++++++++++++++++++++++++++++++++++++
 PR-zero Payment Request Documents
 +++++++++++++++++++++++++++++++++++++
-:Description: This document specifies the format for PR-zero payment
+:Description: Specifies the PR-zero document format for payment
               requests.
 :Author: Evgeni Pandurksi
 :Contact: epandurski@gmail.com
@@ -13,7 +13,13 @@ PR-zero Payment Request Documents
 Overview
 ========
 
-This document specifies the format for ``PR-zero`` payment requests.
+This document specifies the ``PR-zero`` document format for payment
+requests.
+
+``PR-zero`` is a `machine-readable`_ format for `Swaptacular`_ payment
+requests, which has been specifically designed to be very compact, so
+that payment requests in this format can be presented as `QR Codes`_,
+and scanned by the payer at the point-of-sale.
 
 **Note:** The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
 "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
@@ -143,7 +149,7 @@ This MAY be an empty string.
   interpreted. The sender of each transfer can choose among a
   multitude of standard *transfer note formats*. Every transfer note
   format (and therefore, every "reason format") is identified by a
-  short string — the format's name. All format names match the regular
+  short string — the format's name. Format names match the regular
   expression: `^[0-9A-Za-z.-]{0,8}$`
 
 
@@ -175,10 +181,10 @@ Example ``PR-zero`` Document
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _regular expression: https://en.wikipedia.org/wiki/Regular_expression
-.. _machine-readable document: https://en.wikipedia.org/wiki/Machine-readable_document
+.. _machine-readable: https://en.wikipedia.org/wiki/Machine-readable_document
 .. _UTF-8: https://en.wikipedia.org/wiki/UTF-8
 .. _MIME Type: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 .. _cyclic redundancy check: https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 .. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-.. _Internationalized Resource Identifier: https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier
+.. _QR codes: https://en.wikipedia.org/wiki/QR_code
