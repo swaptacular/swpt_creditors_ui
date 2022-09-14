@@ -129,7 +129,7 @@
             </Wrapper>
           </div>
         {/if}
-        {#if contentFormat === '.'}
+        {#if contentFormat === '.' || contentFormat === '-'}
           <a href="{content}" target="_blank">{content}</a>
         {:else if content}
           <pre>{content}</pre>

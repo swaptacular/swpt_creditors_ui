@@ -17,7 +17,7 @@ test("Parse payement request", async () => {
     '1000\n',
     '2001-01-01\n',
     '12d3a45642665544\n',
-    '.\n',
+    '-\n',
     'http://example.com'
   ])
   const request = await parsePaymentRequest(blob)
@@ -35,7 +35,7 @@ test("Parse payement request", async () => {
   expect(request.deadline).toEqual(new Date('2001-01-01'))
   expect(request.payeeReference).toEqual('12d3a45642665544')
   expect(request.description).toEqual({
-    contentFormat: '.',
+    contentFormat: '-',
     content: 'http://example.com',
   })
 })

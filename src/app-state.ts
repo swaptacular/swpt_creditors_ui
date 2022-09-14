@@ -1252,7 +1252,7 @@ export class AppState {
               payeeReference: action.payeeReference,
               deadline: deadline.getTime() ? deadline : undefined,
               description: {
-                contentFormat: isLink ? '.' : '',
+                contentFormat: isLink ? '-' : '',
                 content: isLink ? action.editedNote.trim() : action.editedNote,
               },
             })

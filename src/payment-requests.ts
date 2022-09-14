@@ -2,6 +2,7 @@ import CRC32 from 'crc-32'
 
 const PAYMENT_REQUEST_REGEXP = /^PR0\r?\n(?<crc32>(?:[0-9a-f]{8})?)\r?\n(?<accountUri>.{0,200})\r?\n(?<payeeName>.{0,200})\r?\n(?<amount>\d{1,20})(?:\r?\n(?<deadline>(?:\d{4}-\d{2}-\d{2}.{0,32})?)(?:\r?\n(?<payeeReference>.{0,200})(?:\r?\n(?<descriptionFormat>[0-9A-Za-z.-]{0,8})(?:\r?\n(?<description>[\s\S]{0,3000}))?)?)?)?$/u
 const PAYMENT0_TRANSFER_NOTE_REGEXP = /^(?<payeeReference>.{0,200})(?:\r?\n(?<payeeName>.{0,200})(?:\r?\n(?<descriptionFormat>[0-9A-Za-z.-]{0,8})(?:\r?\n(?<description>[\s\S]{0,3000}))?)?)?$/u
+const NON_CANONICAL_FORMAT_REGEXP = /^(?:-.*)?$/
 const MAX_INT64 = 2n ** 63n - 1n
 const UTF8_ENCODER = new TextEncoder()
 const DEFAULT_NOTE_MAX_BYTES = 500  // Defined in the spec as an upper limit.
@@ -20,16 +21,12 @@ class InvalidTransferNote extends Error {
 }
 
 function isForbiddenRequestFormat(format: string): boolean {
-  return (
-    // These formats do not make sense in a payment request.
-    format === 'payment0' ||
-    format === 'PAYMENT0' ||
-
-    // The content of all formats that start with "-" is
-    // client-specific, so they also do not make sense in a payment
-    // request.
-    format.startsWith('-')
-  )
+  // No formats are strictly forbidden by the spec, but some
+  // of them does not make much sense.
+  if (!format.match(NON_CANONICAL_FORMAT_REGEXP)) {
+    console.warn(`Unexpected canonical format "${format}" in a payment request.`)
+  }
+  return false
 }
 
 function removePr0Header(bytes: Uint8Array): Uint8Array {
@@ -103,16 +100,15 @@ export const MIME_TYPE_PR0 = 'application/vnd.swaptacular.pr0'
  The currently defined standard content formats are:
 
  ""         : plain text
+ "-"        : an IRI (Internationalized Resource Identifier)
  "."        : an IRI (Internationalized Resource Identifier)
- "-"        : an opaque payer reference (the content is client-specific)
  "payment0" : payment format v0
  "PAYMENT0" : payment format v0 (an alternative name)
 
- All format names that contain at least two symbols, and the frist
- symbol is ".", are set aside for non-standard (yet) formats.
-
- All format names that contain at least two symbols, and the frist
- symbol is "-", are set aside for private client formats.
+ The plain text format, and all formats whose names start with "-" are
+ "non-canonical", and the content's first line do not need to contain
+ the payee reference. All the other formats are "canonical",
+ and the content's first line should contain the payee reference.
 
 */
 export type PaymentDescription = {
@@ -189,9 +185,9 @@ export class IvalidPaymentData extends Error {
 
  * Also, an optional description format can be passed (the empty line
    right before the description). When an empty string is passed, this
-   means that the description is in plain text. The symbol "."
-   indicates that the description contains the URI of the document
-   that describes the payment request.
+   means that the description is in plain text. If non-empty, the
+   description format should be a string which starts with "-". The
+   format "-" indicates that the description contains an URI.
 
  An `IvalidPaymentData` error will be thrown if invalid payment data
  is passed. Also, this function will try to simulate generating a
@@ -314,9 +310,9 @@ export async function parsePaymentRequest(blob: Blob): Promise<PaymentRequest> {
 
  * Also, an optional description format can be passed (the empty line
    right before the description). When an empty string is passed, this
-   means that the description is in plain text. "."  indicates that
-   the description contains an IRI, "-" indicates that the description
-   contains a payer reference.
+   means that the description is in plain text. If non-empty, the
+   description format should be a string which starts with "-". The
+   format "-" indicates that the description contains an IRI.
 
  An alternative name for the "payment0" format is "PAYMENT0". It is
  recommended that client applications use "PAYMENT0" for payments in
@@ -348,10 +344,10 @@ export function generatePayment0TransferNote(info: PaymentInfo, noteMaxBytes: nu
  format "" (plain text), and "payment0".
 
  Important note: When the payee can not recognize the format of the
- transfer note, it assumes that the first line in the note contains
- the payee reference. This assumption gives payers the flexibility to
- use a wide variety of formats, still remaining compatible with
- payees' clients.
+ transfer note, but the transfer note format is canonical, it assumes
+ that the first line in the note contains the payee reference. This
+ assumption gives payers the flexibility to use a wide variety of
+ formats, still remaining compatible with payees' clients.
 */
 export function parseTransferNote(noteData: { noteFormat: string, note: string }): PaymentInfo {
   const { noteFormat, note } = noteData
@@ -372,9 +368,11 @@ export function parseTransferNote(noteData: { noteFormat: string, note: string }
     if (!(e instanceof InvalidTransferNote)) {
       throw e
     }
+    const isCanonicalFormat = noteFormat.match(NON_CANONICAL_FORMAT_REGEXP) === null
+    const payeeReference = isCanonicalFormat ? (note.match(/.{0,200}/u)?.[0] ?? '') : ''
     return {
       payeeName: '',
-      payeeReference: note.match(/.{0,200}/u)?.[0] ?? '',
+      payeeReference,
       description,
     }
   }
