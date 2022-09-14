@@ -72,14 +72,14 @@ The CRC-32 value for the document is calculated as follows:
 Payee's account
 ---------------
 
-The "payee's account" line MUST contain a ``swpt`` [#swpt-scheme]_
+The "payee's account" line MUST contain an ``swpt`` [#swpt-scheme]_
 `URI`_, which uniquely identifies the payee's account.
 
 
 Payee name
 ----------
 
-The "payee name" line contains the name of the payee. This MAY be an
+The "payee name" line contains the name of the payee. It MAY be an
 empty string.
 
 
@@ -115,7 +115,7 @@ Reason format
 
 The "reason format" line contains a short string that indicates how
 the remaining content (the "reason for the payment") should be
-interpreted. This MAY be an empty string.
+interpreted. It MAY be an empty string.
 
 **Important note:** All standard *transfer note
 formats* [#note-formats]_ can be used as "reason format"s as well.
@@ -125,8 +125,8 @@ Reason for the payment
 ----------------------
 
 The "reason for the payment" field may contain multiple lines, which
-explain the reason for the payment. The way this field is interpreted
-depends on the specified "reason format" (see above).
+should explain the reason for the payment. The way this field is
+interpreted depends on the specified "reason format" (see above).
 
 This MAY be an empty string.
 
