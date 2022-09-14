@@ -64,13 +64,15 @@ Payment requests MAY contain additional information like:
 Transfer Note
 -------------
 
-In Swaptacular, every transfer can have a *transfer note*. The
+In Swaptacular, every transfer can have a *transfer note*. [#smp]_ The
 "transfer note" is a textual message that contains information which
 the sender wants the recipient of the transfer to see.
 
 In addition to the transfer note, the sender can specify a *transfer
 note format*, which is a short string that indicates how the content
 of the corresponding transfer note should be interpreted.
+
+.. [#smp] This is specified by the `Swaptacular Messaging Protocol`_.
 
 
 Transfer Note Formats 
@@ -99,7 +101,9 @@ conforming implementations:
   `Internationalized Resource Identifier`_ (IRI), and *this IRI is the
   payee reference*.
   
-Transfer note formats fall into two broad categories:
+Other standard transfer note formats shall be defined in their own
+specification documents. Transfer note formats fall into two broad
+categories:
 
 1. **Non-canonical formats**
 
@@ -112,17 +116,14 @@ Transfer note formats fall into two broad categories:
 
    This category includes all formats whose names do not start with a
    dash (``"-"``), and have at least one character. For canonical
-   formats, the first line [#first-line]_ MUST always contain the
-   payee reference from the payment request.
+   formats, the first line [#first-line]_ MUST always refer to *the
+   payee reference* from the corresponding payment request.
    
    This simple restriction, imposed on canonical formats' message
    structure, allows the payee to successfully match incoming
    transfers with their corresponding payment requests, even when the
    payer uses *unknown transfer note formats*, as long as they are
    canonical.
-
-**Note:** Other standard transfer note formats shall be defined in
-their own specification documents.
 
 .. [#format-name] The transfer note format name MUST match the regular
   expression: `^[0-9A-Za-z.-]{0,8}$`
@@ -135,5 +136,6 @@ their own specification documents.
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _machine-readable document: https://en.wikipedia.org/wiki/Machine-readable_document
+.. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Internationalized Resource Identifier: https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier
