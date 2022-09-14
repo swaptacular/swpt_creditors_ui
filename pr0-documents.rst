@@ -27,12 +27,12 @@ and scanned by the payer at the point-of-sale.
 RFC 2119.
 
 
-The Structure of ``PR-zero`` Documents
-======================================
+Structure of ``PR-zero`` Documents
+==================================
 
-PR-zero documents are `UTF-8`_ encoded text documents, which match the
-`regular expression`_ specified below. Whitespaces and comments have
-been added for readability::
+``PR-zero`` documents are `UTF-8`_ encoded text documents, which match
+the `regular expression`_ specified below. Whitespaces and comments
+have been added for readability::
 
   ^PR0\r?\n                        # header
   (?<crc32>(?:[0-9a-f]{8})?)\r?\n  # optional CRC-32 value
