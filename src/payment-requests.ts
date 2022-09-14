@@ -21,10 +21,12 @@ class InvalidTransferNote extends Error {
 }
 
 function isForbiddenRequestFormat(format: string): boolean {
-  return (
-    // Canonical formats do not make sense in a payment request.
-    format.match(NON_CANONICAL_FORMAT_REGEXP) === null
-  )
+  // No formats are strictly forbidden by the spec, but some
+  // of them does not make much sense.
+  if (!format.match(NON_CANONICAL_FORMAT_REGEXP)) {
+    console.warn(`Unexpected canonical format "${format}" in a payment request.`)
+  }
+  return false
 }
 
 function removePr0Header(bytes: Uint8Array): Uint8Array {
