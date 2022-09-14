@@ -45,6 +45,10 @@ have been added for readability::
   (?<reason>[\s\S]{0,3000})        # reason for the payment
   )?)?)?)?$
 
+As you can see, the basic structure of ``PR-zero`` documents is such
+that each line contains different kind of information about the
+payment request (a different "field"), as follows:
+
 
 Optional CRC-32 value
 ---------------------
@@ -160,8 +164,8 @@ Over HTTP connections, ``PR-zero`` documents MUST be transferred with
 ``application/vnd.swaptacular.pr0`` `MIME type`_.
 
 
-Example ``PR-zero`` Document
-============================
+An Example ``PR-zero`` Document
+===============================
 
 ::
 
@@ -173,9 +177,8 @@ Example ``PR-zero`` Document
   2021-07-30T16:00:00Z
   12d3a45642665544
 
-  This is a description of the reason
-  for the payment. It may contain multiple
-  lines. Everything until the end of the file
+  This is a description of the reason for the payment. It may
+  contain multiple lines. Everything until the end of the file
   is considered as part of the description.
    
 
