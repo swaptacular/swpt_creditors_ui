@@ -2,7 +2,7 @@
 PR-zero Payment Request Documents
 +++++++++++++++++++++++++++++++++++++
 :Description: This document specifies the format for PR-zero payment
-              request documents.
+              requests.
 :Author: Evgeni Pandurksi
 :Contact: epandurski@gmail.com
 :Date: 2022-09-16
@@ -13,8 +13,7 @@ PR-zero Payment Request Documents
 Overview
 ========
 
-This document specifies the format for ``PR-zero`` payment request
-documents.
+This document specifies the format for ``PR-zero`` payment requests.
 
 **Note:** The key words "MUST", "MUST NOT", "REQUIRED", "SHALL",
 "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
@@ -22,8 +21,8 @@ documents.
 RFC 2119.
 
 
-Structure of ``PR-zero`` Documents
-==================================
+The Structure of ``PR-zero`` Documents
+======================================
 
 PR-zero documents are `UTF-8`_ encoded text documents, which match the
 `regular expression`_ specified below. Whitespaces and comments have
@@ -46,8 +45,8 @@ Optional CRC-32 value
 
 When reading a ``PR-zero`` document, if the "optional CRC-32 value"
 line is not empty, the contained value MUST be compared to the CRC-32
-value calculated for the document. If the values differ, the document
-MUST be treated as invalid.
+value calculated for the document. If the two values differ, the
+document MUST be treated as invalid.
 
 The CRC-32 value for the document is calculated as follows:
 
@@ -115,18 +114,6 @@ interpreted. This MAY be an empty string.
 **Important note:** All standard *transfer note
 formats* [#note-formats]_ can be used as "reason format"s as well.
 
-.. [#note-formats] In Swaptacular, every transfer can have a *transfer
-  note*. The "transfer note" is a textual message that contains
-  information which the sender wants the recipient of the transfer to
-  see. In addition to the transfer note, the sender can specify a
-  *transfer note format*, which is a short string that indicates how
-  the content of the corresponding transfer note should be
-  interpreted. The sender of each transfer can choose among a
-  multitude of standard *transfer note formats*. Every transfer note
-  format (and therefore, every "reason format") is identified by a
-  short string — the format's name. All format names match the regular
-  expression: `^[0-9A-Za-z.-]{0,8}$`
-
 
 Reason for the payment
 ----------------------
@@ -146,6 +133,18 @@ This MAY be an empty string.
   amounts. Usually, before being shown to the user, these raw numbers
   will be divided by some big number. For example, the raw number
   ``100`` could be shown to the user as "1 USD".
+
+.. [#note-formats] In Swaptacular, every transfer can have a *transfer
+  note*. The "transfer note" is a textual message that contains
+  information which the sender wants the recipient of the transfer to
+  see. In addition to the transfer note, the sender can specify a
+  *transfer note format*, which is a short string that indicates how
+  the content of the corresponding transfer note should be
+  interpreted. The sender of each transfer can choose among a
+  multitude of standard *transfer note formats*. Every transfer note
+  format (and therefore, every "reason format") is identified by a
+  short string — the format's name. All format names match the regular
+  expression: `^[0-9A-Za-z.-]{0,8}$`
 
 
 MIME Type
