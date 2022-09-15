@@ -139,28 +139,6 @@ format" (see above).
 This MAY be an empty string.
 
 
-.. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
-  document.
-
-.. [#smp-raw-tokens] "Raw currency tokens" are the 64-bit numbers that
-  the `Swaptacular Messaging Protocol`_ uses to represent currency
-  amounts. Usually, before being shown to the user, these raw numbers
-  will be divided by some (usually big) number. For example, the raw
-  number ``2500`` could be shown to the user as "25 USD".
-
-.. [#note-formats] In Swaptacular, every transfer can have a *transfer
-  note*. The "transfer note" is a textual message that contains
-  information which the sender wants the recipient of the transfer to
-  see. In addition to the transfer note, the sender can specify a
-  *transfer note format*, which is a short string that indicates how
-  the content of the corresponding transfer note should be
-  interpreted. The sender of each transfer can choose among a
-  multitude of standard *transfer note formats*. Every transfer note
-  format is identified by a short string — the format's name.
-  Transfer note format names match the regular expression:
-  `^[0-9A-Za-z.-]{0,8}$`
-
-
 MIME Type
 =========
 
@@ -185,6 +163,28 @@ An Example ``PR-zero`` Document
   contain multiple lines. Everything until the end of the file
   will be considered as part of the description.
    
+
+.. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
+  document.
+
+.. [#smp-raw-tokens] "Raw currency tokens" are the 64-bit numbers that
+  the `Swaptacular Messaging Protocol`_ uses to represent currency
+  amounts. Usually, before being shown to the user, these raw numbers
+  will be divided by some (usually big) number. For example, the raw
+  number ``2500`` could be shown to the user as "25 USD".
+
+.. [#note-formats] In Swaptacular, every transfer can have a *transfer
+  note*. The "transfer note" is a textual message that contains
+  information which the sender wants the recipient of the transfer to
+  see. In addition to the transfer note, the sender can specify a
+  *transfer note format*, which is a short string that indicates how
+  the content of the corresponding transfer note should be
+  interpreted. The sender of each transfer can choose among a
+  multitude of standard *transfer note formats*. Every transfer note
+  format is identified by a short string — the format's name.
+  Transfer note format names match the regular expression:
+  `^[0-9A-Za-z.-]{0,8}$`
+
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _regular expression: https://en.wikipedia.org/wiki/Regular_expression
