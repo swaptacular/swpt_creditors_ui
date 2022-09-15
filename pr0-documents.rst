@@ -27,14 +27,14 @@ and scanned by the payer at the point-of-sale.
 RFC 2119.
 
 
-Structure of ``PR-zero`` Documents
-==================================
+``PR-zero`` Documents Structure
+===============================
 
 ``PR-zero`` documents are `UTF-8`_ encoded text documents, which match
 the `regular expression`_ specified below. Whitespaces and comments
 have been added for readability::
 
-  ^PR0\r?\n                        # header
+  ^PR0\r?\n                        # PR0 header
   (?<crc32>(?:[0-9a-f]{8})?)\r?\n  # optional CRC-32 value
   (?<accountUri>.{0,200})\r?\n     # payee's account
   (?<payeeName>.{0,200})\r?\n      # payee name
@@ -45,9 +45,9 @@ have been added for readability::
   (?<reason>[\s\S]{0,3000})        # reason for the payment
   )?)?)?)?$
 
-As you can see, the basic structure of ``PR-zero`` documents is such
+As can be seen, the basic structure of ``PR-zero`` documents is such
 that each line contains different kind of information about the
-payment request (a different "field"), as follows:
+payment request (a different "data field"), as follows:
 
 
 Optional CRC-32 value
@@ -55,21 +55,21 @@ Optional CRC-32 value
 
 When reading a ``PR-zero`` document, if the "optional CRC-32 value"
 line is not empty, the contained value MUST be compared to the CRC-32
-value calculated for the document. If the two values differ, the
-document MUST be treated as invalid.
+(`Cyclic Redundancy Check`_) value calculated for the document. If the
+two values differ, the document MUST be treated as invalid.
 
 The CRC-32 value for the document is calculated as follows:
 
 1. The textual content of the document is `UTF-8`_ encoded.
 
-2. The first two lines of the document (the "header", and the
-   "optional CRC-32 value" lines) are removed.
+2. The first two lines of the document are removed. That is: the "PR0
+   header" line, and the "optional CRC-32 value" line.
 
 3. The CRC-32 algorithm is executed on the remaining bytes, producing
    a 32-bit number.
 
 4. The produced 32-bit number is formatted as a lowercase hexadecimal
-   number, containing exactly 8 characters. If necessary, leading
+   number, which contains exactly 8 characters. If necessary, leading
    zeros are added.
 
 
@@ -83,7 +83,7 @@ The "payee's account" line MUST contain an ``swpt`` [#swpt-scheme]_
 Payee name
 ----------
 
-The "payee name" line contains the name of the payee. It MAY be an
+The "payee name" line contains the name of the payee. This MAY be an
 empty string.
 
 
@@ -91,15 +91,17 @@ Requested amount
 ----------------
 
 The "requested amount" line MUST contain an integer number between
-``0`` and ``9223372036854775807``, which represents the requested
-amount in raw currency tokens [#smp-raw-tokens]_.
+``0`` and ``9223372036854775807`` (|263| - 1), which represents the
+requested amount in *raw currency tokens* [#smp-raw-tokens]_.
+
+.. |263| replace:: 2\ :sup:`63`
 
 
 Payment deadline
 ----------------
 
 The "payment deadline" line MUST contain either an empty string, or
-the deadline for the requested payment, formatted as an ISO 8601
+the deadline for the requested payment, formatted as an `ISO 8601`_
 timestamp.
 
 
@@ -109,59 +111,39 @@ Payee reference
 The "payee reference" line contains a short string that the payer
 should include in the transfer note for the payment, so that the payee
 can match the incoming transfer with the corresponding payment
-request. For example, this could be an invoice number.
-
-This MAY be an empty string.
+request. For example, this could be an invoice number. The payee
+reference MAY be an empty string.
 
 
 Reason format
 -------------
 
 The "reason format" line contains a short string that indicates how
-the remaining content (the "reason for the payment") should be
-interpreted. It MAY be an empty string.
+the remaining document content (the "reason for the payment" field)
+should be interpreted. The reason format MAY be an empty string, which
+indicates "plain text".
 
-**Important note:** All standard *transfer note
-formats* [#note-formats]_ can be used as "reason format"s as well.
+**Important note:** All standard *transfer note formats* [#note-formats]_
+can be used as "reason format"s too. That is: the same format names
+correspond to the same formats.
 
 
 Reason for the payment
 ----------------------
 
 The "reason for the payment" field may contain multiple lines, which
-should explain the reason for the payment. The way this field is
-interpreted depends on the specified "reason format" (see above).
+can be used to describe the reason for the payment. The manner in
+which this field will be interpreted depends on the specified "reason
+format" (see above).
 
 This MAY be an empty string.
-
-
-.. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
-  document.
-
-.. [#smp-raw-tokens] "Raw currency tokens" are the 64-bit numbers that
-  the `Swaptacular Messaging Protocol`_ uses to represent currency
-  amounts. Usually, before being shown to the user, these raw numbers
-  will be divided by some big number. For example, the raw number
-  ``100`` could be shown to the user as "1 USD".
-
-.. [#note-formats] In Swaptacular, every transfer can have a *transfer
-  note*. The "transfer note" is a textual message that contains
-  information which the sender wants the recipient of the transfer to
-  see. In addition to the transfer note, the sender can specify a
-  *transfer note format*, which is a short string that indicates how
-  the content of the corresponding transfer note should be
-  interpreted. The sender of each transfer can choose among a
-  multitude of standard *transfer note formats*. Every transfer note
-  format (and therefore, every "reason format") is identified by a
-  short string — the format's name. Format names match the regular
-  expression: `^[0-9A-Za-z.-]{0,8}$`
 
 
 MIME Type
 =========
 
 Over HTTP connections, ``PR-zero`` documents MUST be transferred with
-``application/vnd.swaptacular.pr0`` `MIME type`_.
+the ``application/vnd.swaptacular.pr0`` `MIME type`_.
 
 
 An Example ``PR-zero`` Document
@@ -179,15 +161,38 @@ An Example ``PR-zero`` Document
 
   This is a description of the reason for the payment. It may
   contain multiple lines. Everything until the end of the file
-  is considered as part of the description.
+  will be considered as part of the description.
    
+
+.. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
+  document.
+
+.. [#smp-raw-tokens] "Raw currency tokens" are the 64-bit numbers that
+  the `Swaptacular Messaging Protocol`_ uses to represent currency
+  amounts. Usually, before being shown to the user, these raw numbers
+  will be divided by some (usually big) number. For example, the raw
+  number ``2500`` could be shown to the user as "25 USD".
+
+.. [#note-formats] In Swaptacular, every transfer can have a *transfer
+  note*. The "transfer note" is a textual message that contains
+  information which the sender wants the recipient of the transfer to
+  see. In addition to the transfer note, the sender can specify a
+  *transfer note format*, which is a short string that indicates how
+  the content of the corresponding transfer note should be
+  interpreted. The sender of each transfer can choose among a
+  multitude of standard *transfer note formats*. Every transfer note
+  format is identified by a short string — the format's name.
+  Transfer note format names match the regular expression:
+  ``^[0-9A-Za-z.-]{0,8}$``
+
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _regular expression: https://en.wikipedia.org/wiki/Regular_expression
 .. _machine-readable: https://en.wikipedia.org/wiki/Machine-readable_document
 .. _UTF-8: https://en.wikipedia.org/wiki/UTF-8
 .. _MIME Type: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
-.. _cyclic redundancy check: https://en.wikipedia.org/wiki/Cyclic_redundancy_check
+.. _Cyclic Redundancy Check: https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 .. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
+.. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _QR codes: https://en.wikipedia.org/wiki/QR_code
