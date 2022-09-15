@@ -120,8 +120,8 @@ Reason format
 
 The "reason format" line contains a short string that indicates how
 the remaining document content (the "reason for the payment" field)
-should be interpreted. This MAY be an empty string, which indicates
-"plain text".
+should be interpreted. The reason format MAY be an empty string, which
+indicates "plain text".
 
 **Important note:** All standard *transfer note formats* [#note-formats]_
 can be used as "reason format"s too. That is: the same format names
@@ -132,8 +132,9 @@ Reason for the payment
 ----------------------
 
 The "reason for the payment" field may contain multiple lines, which
-can be used to describe the reason for the payment. The way this field
-is interpreted depends on the specified "reason format" (see above).
+can be used to describe the reason for the payment. The manner in
+which this field will be interpreted depends on the specified "reason
+format" (see above).
 
 This MAY be an empty string.
 
