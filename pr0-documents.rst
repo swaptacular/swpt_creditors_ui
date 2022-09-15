@@ -183,7 +183,7 @@ An Example ``PR-zero`` Document
   multitude of standard *transfer note formats*. Every transfer note
   format is identified by a short string — the format's name.
   Transfer note format names match the regular expression:
-  `^[0-9A-Za-z.-]{0,8}$`
+  ``^[0-9A-Za-z.-]{0,8}$``
 
 
 .. _Swaptacular: https://swaptacular.github.io/overview
