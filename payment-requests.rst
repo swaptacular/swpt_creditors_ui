@@ -136,6 +136,6 @@ categories:
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _machine-readable document: https://en.wikipedia.org/wiki/Machine-readable_document
-.. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
+.. _Swaptacular Messaging Protocol: https://swaptacular.github.io/public/docs/protocol.pdf
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _Internationalized Resource Identifier: https://en.wikipedia.org/wiki/Internationalized_Resource_Identifier
