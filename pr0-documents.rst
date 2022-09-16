@@ -139,13 +139,6 @@ format" (see above).
 This MAY be an empty string.
 
 
-MIME Type
-=========
-
-Over HTTP connections, ``PR-zero`` documents MUST be transferred with
-the ``application/vnd.swaptacular.pr0`` `MIME type`_.
-
-
 An Example ``PR-zero`` Document
 ===============================
 
@@ -157,12 +150,36 @@ An Example ``PR-zero`` Document
   Payee Name
   1000
   2021-07-30T16:00:00Z
-  12d3a45642665544
+  payee-reference-12345
 
   This is a description of the reason for the payment. It may
   contain multiple lines. Everything until the end of the file
   will be considered as part of the description.
    
+
+Size of ``PR-zero`` Documents
+-----------------------------
+
+Because ``PR-zero`` documents are designed to be presented as `QR
+Codes`_, there are severe practical limitations on their size. Also,
+for the convenience of the users, some *Currency Holder UI*
+implementations will try to include all the available information from
+the payment request, in the *transfer note* for the payment. Because
+of this, the combined byte-length of the "payee name", "payee
+reference", "reason format", and "reason for the payment" fields
+SHOULD be at least 50 bytes smaller than the maximum byte-length for
+transfer notes.
+
+**Note:** The maximum byte-length for transfer notes may vary from
+currency to currency. [#note-max-bytes]_
+
+
+MIME Type
+=========
+
+Over HTTP connections, ``PR-zero`` documents MUST be transferred with
+the ``application/vnd.swaptacular.pr0`` `MIME type`_.
+
 
 .. [#swpt-scheme] The ``swpt`` URI scheme is defined in a separate
   document.
@@ -185,6 +202,11 @@ An Example ``PR-zero`` Document
   Transfer note format names match the regular expression:
   ``^[0-9A-Za-z.-]{0,8}$``
 
+.. [#note-max-bytes] The maximum byte-length for transfer notes in a
+  given currency, will be determined by the value of the
+  ``transfer_note_max_bytes`` field in `Swaptacular Messaging
+  Protocol`_'s ``AccountUpdate`` messages.
+
 
 .. _Swaptacular: https://swaptacular.github.io/overview
 .. _regular expression: https://en.wikipedia.org/wiki/Regular_expression
@@ -196,3 +218,4 @@ An Example ``PR-zero`` Document
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _QR codes: https://en.wikipedia.org/wiki/QR_code
+.. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
