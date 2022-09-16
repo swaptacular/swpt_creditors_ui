@@ -214,8 +214,7 @@ the ``application/vnd.swaptacular.pr0`` `MIME type`_.
 .. _UTF-8: https://en.wikipedia.org/wiki/UTF-8
 .. _MIME Type: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types
 .. _Cyclic Redundancy Check: https://en.wikipedia.org/wiki/Cyclic_redundancy_check
-.. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
+.. _Swaptacular Messaging Protocol: https://swaptacular.github.io/public/docs/protocol.pdf
 .. _URI: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _QR codes: https://en.wikipedia.org/wiki/QR_code
-.. _Swaptacular Messaging Protocol: https://swaptacular.org/public/docs/protocol.pdf
