@@ -130,7 +130,7 @@
           </div>
         {/if}
         {#if contentFormat === '.' || contentFormat === '-'}
-          <a href="{content}" target="_blank">{content}</a>
+          <a href="{content}" target="_blank" rel="noreferrer">{content}</a>
         {:else if content}
           <pre>{content}</pre>
         {:else}

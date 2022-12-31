@@ -65,7 +65,7 @@
       <Wrapper>
         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
           <Text>
-            <a href={homepage} target="_blank" style="text-decoration: none; color: #666">www</a>
+            <a href={homepage} target="_blank" rel="noreferrer" style="text-decoration: none; color: #666">www</a>
           </Text>
         </Chip>
         <Tooltip>{homepage}</Tooltip>
@@ -84,7 +84,7 @@
               </span>
             {:else}
               {#if showAccount !== undefined}
-                <a href="." target="_blank" on:click|preventDefault={() => followPeg(pegBound.accountUri)}>
+                <a href="." target="_blank" rel="noreferrer" on:click|preventDefault={() => followPeg(pegBound.accountUri)}>
                   = {calcDisplayAmount(amount, pegBound)}
                 </a>
               {:else}

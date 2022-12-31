@@ -13,6 +13,7 @@
     "useDefineForClassFields": true,
     "importHelpers": true,
     "module": "esnext",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "baseUrl": ".",
     "lib": [      
