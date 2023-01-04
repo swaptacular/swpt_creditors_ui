@@ -1,4 +1,4 @@
-FROM node:14.17.6-buster AS build-image
+FROM node:18.12.1-buster AS build-image
 
 WORKDIR /usr/src/app
 COPY ./ ./
