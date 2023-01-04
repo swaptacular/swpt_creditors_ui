@@ -373,7 +373,7 @@
               Digital coin for "{debtorName}"
             </Title>
             <Content>
-              <a href="{digitalCoin}" target="_blank" on:click|preventDefault={() => downloadLinkElement?.click()}>
+              <a href="{digitalCoin}" target="_blank" rel="noreferrer" on:click|preventDefault={() => downloadLinkElement?.click()}>
                 The image above
               </a>
               (an ordinary QR code, indeed) uniquely identifies the

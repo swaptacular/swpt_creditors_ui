@@ -12,6 +12,6 @@
   }
 </script>
 
-<a href="." target="_blank" on:click|preventDefault={ativate}>
+<a href="." target="_blank" rel="noreferrer" on:click|preventDefault={ativate}>
   <slot></slot>
 </a>

@@ -87,7 +87,7 @@
         >
         <DialogTitle>The new digital coin link:</DialogTitle>
         <DialogContent style="word-break: break-word">
-          <a href="{debtorData.latestDebtorInfo.uri}" target="_blank">{debtorData.latestDebtorInfo.uri}</a>
+          <a href="{debtorData.latestDebtorInfo.uri}" target="_blank" rel="noreferrer">{debtorData.latestDebtorInfo.uri}</a>
         </DialogContent>
         <Actions>
           <Button use={[InitialFocus]}>
@@ -184,7 +184,7 @@
                 {#if changes.debtorHomepage}
                   <li>
                     {#if debtorData.debtorHomepage}
-                      The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank">changed</a>.
+                      The official home page of the currency has been <a href="{debtorData.debtorHomepage.uri}" target="_blank" rel="noreferrer">changed</a>.
                     {:else}
                       The official home page of the currency has been changed.
                     {/if}
@@ -201,7 +201,7 @@
                       has been removed.
                     {/if}
                     {#if debtorData.debtorHomepage}
-                      You may find more information on the <a href="{debtorData.debtorHomepage.uri}" target="_blank">homepage</a>.
+                      You may find more information on the <a href="{debtorData.debtorHomepage.uri}" target="_blank" rel="noreferrer">homepage</a>.
                     {/if}
                   </li>
                 {/if}

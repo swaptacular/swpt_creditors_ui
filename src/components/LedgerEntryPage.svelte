@@ -114,7 +114,7 @@
             </p>
               {#if contentFormat === '.' || contentFormat === '-'}
                 <p class="transfer-note">
-                  <a href="{description.content}" target="_blank" on:click|stopPropagation>{content}</a>
+                  <a href="{description.content}" target="_blank" rel="noreferrer" on:click|stopPropagation>{content}</a>
                 </p>
               {:else if contentFormat === '' && content}
                 <pre class="transfer-note">{content}</pre>

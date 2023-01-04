@@ -225,7 +225,7 @@
               Payment via "{debtorName}"
             </Title>
             <Content>
-              <a href="qr" target="_blank" on:click|preventDefault={() => downloadImageElement?.click()}>
+              <a href="qr" target="_blank" rel="noreferrer" on:click|preventDefault={() => downloadImageElement?.click()}>
                 The QR code above
               </a>
               {#if amount === 0n}
