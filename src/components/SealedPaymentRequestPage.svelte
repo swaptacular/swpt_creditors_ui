@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { AppState, SealedPaymentRequestModel } from '../app-state'
+  import type { AppState, PaymentRequestActionWithId, SealedPaymentRequestModel } from '../app-state'
   import { getExpectedPaymentAmount } from '../operations'
   import { amountToString } from '../format-amounts'
   import { onMount, onDestroy } from 'svelte'
@@ -26,16 +26,25 @@
   let showConfirmDialog = false
   let downloadImageElement: HTMLAnchorElement
   let downloadTextElement: HTMLAnchorElement
-  let actionManager = app.createActionManager(model.action)
+  let actionManager = app.createActionManager(model.action, createUpdatedAction)
   let imageDataUrl: string = ''
   let textDataUrl: string = URL.createObjectURL(new Blob([model.paymentRequest], { type: 'application/octet-stream' }))
   let updatedPaidAmount: bigint | undefined
   let timeoutId: number | undefined
   let pollingDeadline: number = Date.now() + 10 * 60 * 1000  // 10 minutes from now
+  let baseAmount: bigint = model.baseAmount
+
+  function createUpdatedAction(): PaymentRequestActionWithId {
+    return {
+      ...action,
+      baseAmount: baseAmount,
+    }
+  }
 
   function showAccount(): void {
     const m = {
       ...model,
+      baseAmount: baseAmount,
       scrollTop: scrollElement.scrollTop,
       scrollLeft: scrollElement.scrollLeft,
     }
@@ -73,11 +82,20 @@
     pollingDeadline = -Infinity
   }
 
+  function toggleAmount() {
+    if (amount === 0n && baseAmount === 0n) {
+      baseAmount = paidAmount
+    } else {
+      baseAmount = 0n
+    }
+    actionManager.save()
+  }
+
   onMount(scheduleUpdateIfNecessary)
   onDestroy(freeUsedResources)
 
   $: action = model.action
-  $: paidAmount = updatedPaidAmount ?? model.paidAmount
+  $: paidAmount = (updatedPaidAmount ?? model.paidAmount) - baseAmount
   $: accountUri = action.accountUri
   $: sealedAt = action.sealedAt
   $: accountData = model.accountData
@@ -141,6 +159,10 @@
     font-size: 25px;
     font-family: "Cutive Mono", monospace;
   }
+  .received-amount a {
+    text-decoration: none;
+    color: black;
+  }
   .received-icon {
     flex-grow: 0;
     width: 60px;
@@ -188,8 +210,19 @@
       <Row style="height: 72px">
         <div class="received-box">
           <div class="received-amount-container">
-            <div class="received-text">received</div>
-            <div class="received-amount">{paidUnitAmount} {amountSuffix}</div>
+            <div class="received-text">
+                {#if baseAmount === 0n }
+                  {#if amount === 0n}
+                    total{/if} received
+                {:else}
+                  last received
+                {/if}
+            </div>
+            <div class="received-amount">
+              <a href="." on:click|preventDefault={toggleAmount}>
+                {paidUnitAmount} {amountSuffix}
+              </a>
+            </div>
           </div>
           <div bind:this={doneIcon} class="received-icon">
             {#if done}

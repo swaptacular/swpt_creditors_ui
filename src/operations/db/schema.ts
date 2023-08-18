@@ -430,6 +430,7 @@ export type PaymentRequestAction =
     editedPayeeName: string,
     editedDeadline: string,
     editedNote: string,
+    baseAmount?: bigint,
   }
 
 export type PaymentRequestActionWithId =

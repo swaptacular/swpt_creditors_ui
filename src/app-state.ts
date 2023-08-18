@@ -253,6 +253,7 @@ export type SealedPaymentRequestModel = Omit<PaymentRequestModel, 'type'> & {
   type: 'SealedPaymentRequestModel',
   paymentRequest: string,
   paidAmount: bigint,
+  baseAmount: bigint,
 }
 
 export type AccountsModel = BasePageModel & {
@@ -1265,6 +1266,7 @@ export class AppState {
           if (this.interactionId === interactionId) {
             this.pageModel.set({
               type: 'SealedPaymentRequestModel',
+              baseAmount: action.baseAmount ?? 0n,
               reload, goBack, backToAccount, action, accountData, paymentRequest, paidAmount,
             })
           }
