@@ -117,7 +117,7 @@
       {:else}
         <p class="no-actions">
           Press the
-          <Icon class="material-icons" style="vertical-align: middle">local_atm</Icon>
+          <Icon class="material-icons" style="vertical-align: middle">qr_code_scanner</Icon>
           button below to make a payment.
         </p>
       {/if}
@@ -152,7 +152,7 @@
       </div>
       <div class="fab-container">
         <Fab color="primary" on:click={scanPaymentRequest} >
-          <Icon class="material-icons">local_atm</Icon>
+          <Icon class="material-icons">qr_code_scanner</Icon>
         </Fab>
       </div>
     {/if}
