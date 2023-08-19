@@ -1671,6 +1671,21 @@ export class AppState {
     })
   }
 
+  processPaymentRequests(blobs: Array<Blob> | Array<Promise<Blob>>): Promise<void> {
+    return this.attempt(async () => {
+      for (const blob of blobs) {
+        await this.uc.processPaymentRequest(await blob)
+      }
+    }, {
+      alerts: [
+        [IvalidPaymentRequest, new Alert(INVALID_REQUEST_MESSAGE)],
+        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
+        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
+        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
+      ],
+    })
+  }
+
   /** Create an action manager instance. The action manager queues the
    * consequent asynchronous updates of the action. This is useful in
    * forms/dialogs that may modify the action, and then trigger the
