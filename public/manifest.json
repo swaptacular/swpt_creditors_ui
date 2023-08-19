@@ -21,5 +21,26 @@
       "type": "image/png",
       "sizes": "512x512"
     }    
+  ],
+  "file_handlers": [
+    {
+      "action": "/open-pr0",
+      "name": "PR-zero Payment Request Document",
+      "accept": {
+        "application/vnd.swaptacular.pr0": [ ".pr0" ]
+      },
+      "icons": [
+        {
+          "src": "icons/favicon-192x192.png",
+          "type": "image/png",
+          "sizes": "192x192"
+        },
+        {
+          "src": "icons/favicon-512x512.png",
+          "type": "image/png",
+          "sizes": "512x512"
+        }
+      ]
+    }
   ]
 }

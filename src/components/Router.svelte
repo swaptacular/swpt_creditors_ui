@@ -29,6 +29,30 @@
   const originalAppState = app
   let exiting = false
 
+  function handleFiles(launchParams: any): void {
+    if (window.location.href.endsWith('/open-pr0')) {
+      const fileHandles = launchParams.files
+      switch (fileHandles.length) {
+      case 0:
+        // Nothing to do when the queue is empty.
+        break
+      case 1:
+        app.startInteraction()
+        app.initiatePayment(fileHandles[0].getFile())
+        break
+      default:
+        app.processPaymentRequests(fileHandles.map((x: any) => x.getFile()))
+      }
+      window.history.pushState('', '', '/');
+    }
+  }
+
+  if ('launchQueue' in window) {
+    console.log('File Handling API is supported!')
+    const queue: any = window.launchQueue
+    queue.setConsumer(handleFiles)
+  }
+
   function enusreOriginalAppState(appState: AppState): void {
     if (appState !== originalAppState) throw new Error('unoriginal app state')
   }
