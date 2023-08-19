@@ -31,6 +31,7 @@
 
   function handleFiles(launchParams: any): void {
     if (window.location.href.endsWith('/?open-pr0')) {
+      window.history.pushState('', '', './');
       const fileHandles = launchParams.files
       switch (fileHandles.length) {
       case 0:
@@ -43,7 +44,6 @@
       default:
         app.processPaymentRequests(fileHandles.map((x: any) => x.getFile()))
       }
-      window.history.pushState('', '', './');
     }
   }
 
