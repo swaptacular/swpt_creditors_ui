@@ -43,7 +43,7 @@
       default:
         app.processPaymentRequests(fileHandles.map((x: any) => x.getFile()))
       }
-      window.history.pushState('', '', '/');
+      window.history.pushState('', '', './');
     }
   }
 
