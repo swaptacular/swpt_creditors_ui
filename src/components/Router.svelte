@@ -30,7 +30,7 @@
   let exiting = false
 
   function handleFiles(launchParams: any): void {
-    if (window.location.href.endsWith('/open-pr0')) {
+    if (window.location.href.endsWith('/?open-pr0')) {
       const fileHandles = launchParams.files
       switch (fileHandles.length) {
       case 0:

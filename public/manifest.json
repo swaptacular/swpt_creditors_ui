@@ -24,7 +24,7 @@
   ],
   "file_handlers": [
     {
-      "action": "./open-pr0",
+      "action": "./?open-pr0",
       "name": "PR-zero Payment Request Document",
       "accept": {
         "application/vnd.swaptacular.pr0": [ ".pr0" ]
