@@ -17,7 +17,7 @@
   setContext('pinRequired', pinRequired)
   setContext('resetPinMode', resetPinMode)
 
-  let snackbarBottom: string = '0px'
+  let snackbarBottom: string
   let authenticationErrorSnackbar: any
   let networkErrorSnackbar: any
   let httpErrorSnackbar: any
@@ -91,7 +91,7 @@
   }
 </style>
 
-<div class="container" style="--snackbar-bottom: {snackbarBottom}; overflow: hidden">
+<div class="container" style:--snackbar-bottom={snackbarBottom} style:overflow="hidden">
   {#await appStatePromise}
     <Hourglass />
   {:then appState}

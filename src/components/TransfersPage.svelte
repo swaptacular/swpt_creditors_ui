@@ -10,7 +10,7 @@
 
   export let app: AppState
   export let model: TransfersModel
-  export const snackbarBottom: string = "0px"
+  export const snackbarBottom: string = "84px"
 
   let scrollElement: HTMLElement
   let transfers: ExtendedTransferRecord[] = []
