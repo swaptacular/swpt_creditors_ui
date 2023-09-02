@@ -824,6 +824,13 @@ export type AccountConfig = {
   scheduledForDeletion: boolean;
 
   /**
+   * The creditor's configuration data. Different implementations may
+   * use different formats for this field. Will always be present in the
+   * responses from the server.
+   */
+  configData?: string;
+
+  /**
    * The sequential number of the latest update in the object. This
    * will always be a positive number, which starts from `1` and gets
    * incremented after each change in the object.
