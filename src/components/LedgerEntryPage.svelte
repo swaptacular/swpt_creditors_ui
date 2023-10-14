@@ -106,6 +106,8 @@
               <span>{displayAmount}</span>
               {#if rationale === 'interest'}
                 interest payment
+              {:else if rationale === 'agent'}
+                automatic exchange
               {:else if amount < 0 && payeeName}
                 paid to "{payeeName}"
               {:else if amount > 0 && committedTransfer && committedTransfer.noteFormat !== '.' && payeeReference}
