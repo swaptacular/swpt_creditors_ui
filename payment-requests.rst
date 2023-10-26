@@ -5,8 +5,8 @@ Payment Requests and Transfers in Swaptacular
               Swaptacular
 :Author: Evgeni Pandurksi
 :Contact: epandurski@gmail.com
-:Date: 2022-09-14
-:Version: 1.0
+:Date: 2023-10-26
+:Version: 1.1
 :Copyright: This document has been placed in the public domain.
 
 
@@ -46,6 +46,8 @@ Furthermore, payment requests SHOULD contain:
   include in the `transfer note`_ for the payment (see below), so that
   the payee can match the incoming transfer with the corresponding
   payment request. For example, this could be an invoice number.
+
+  The payee reference MUST NOT contain newline characters.
 
 Payment requests MAY contain additional information like:
 
