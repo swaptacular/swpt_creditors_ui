@@ -116,16 +116,8 @@
     } else if ($pageModel.goBack) {
       $pageModel.goBack()
     } else {
-      if (typeof(history.state) !== "number")  {
-        if (history.length <= 2) {
-          // Shows a "Tap again to exit" overlay before exiting. This
-          // should be visible only on some Android devices, which for
-          // some bizarre reason require additional back button tap
-          // before `history.back()` takes effect.
-          exiting = true
-        }
-        sessionStorage.removeItem(LOCALSTORAGE_STATE)
-      }
+      exiting = true  // Shows the "Tap again to exit" overlay.
+      sessionStorage.removeItem(LOCALSTORAGE_STATE)
       history.back()
     }
   }

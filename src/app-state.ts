@@ -330,9 +330,8 @@ export class AppState {
     })
   }
 
-  startInteraction(): number {
+  startInteraction(): void {
     history.pushState(++this.interactionId, '')
-    return this.interactionId
   }
 
   get accountsMap(): AccountsMap {
@@ -1804,7 +1803,7 @@ export class AppState {
     let timeoutId: any
     let interactionId: number
     if (startInteraction) {
-      interactionId = this.startInteraction()
+      interactionId = ++this.interactionId
       if (waitingDelay > 0) {
         timeoutId = setTimeout(addWaitingInteraction, waitingDelay)
       } else {
