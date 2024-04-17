@@ -316,7 +316,6 @@ export class AppState {
   readonly waitingInteractions: Writable<Set<number>>
   readonly alerts: Writable<Alert[]>
   readonly pageModel: Writable<PageModel>
-  readonly hijackedState = 'hijacked'
 
   goBack?: () => void
 
@@ -331,9 +330,9 @@ export class AppState {
     })
   }
 
-  startInteraction(): void {
-    this.hijackBackButton()
-    this.interactionId++
+  startInteraction(): number {
+    history.pushState(++this.interactionId, '')
+    return this.interactionId
   }
 
   get accountsMap(): AccountsMap {
@@ -1764,14 +1763,6 @@ export class AppState {
     }
   }
 
-  /* Make sure the back button triggers a 'popstate' event, instead of
-   * exiting the app right away. */
-  private hijackBackButton() {
-    if (history.state !== this.hijackedState) {
-      history.pushState(this.hijackedState, '')
-    }
-  }
-
   /* Awaits `func()`, catching and logging thrown
    * errors. `options.alerts` determines what alert should be shown on
    * what error. `option.startInteraction` determines whether a
@@ -1813,7 +1804,7 @@ export class AppState {
     let timeoutId: any
     let interactionId: number
     if (startInteraction) {
-      interactionId = ++this.interactionId
+      interactionId = this.startInteraction()
       if (waitingDelay > 0) {
         timeoutId = setTimeout(addWaitingInteraction, waitingDelay)
       } else {

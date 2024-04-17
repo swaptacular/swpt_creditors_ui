@@ -38,6 +38,7 @@
     const scrollTop = scrollElement.scrollTop
     const scrollLeft = scrollElement.scrollLeft
     const m = { ...model, scrollTop, scrollLeft }
+    app.startInteraction()
     app.showAction(actionId, () => {
       app.pageModel.set(m)
     })
