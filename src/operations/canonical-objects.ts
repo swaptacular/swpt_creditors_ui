@@ -336,7 +336,6 @@ export function makeTransfer(response: HttpResponse<Transfer>): TransferV0 {
     options: {
       ...data.options,
       type: 'TransferOptions',
-      minInterestRate: data.options.minInterestRate !== undefined ? Number(data.options.minInterestRate) : undefined,
     },
     result: data.result ? {
       ...data.result,

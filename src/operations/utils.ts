@@ -228,11 +228,11 @@ function getFailureReason(errorCode: string): string {
       return "The byte-length of the payment note is too big."
     case 'INSUFFICIENT_AVAILABLE_AMOUNT':
       return "The requested amount is not available on the sender's account."
-    case 'TERMINATED':
-      return "The payment has been terminated due to expired deadline, unapproved "
-        + "interest rate change, or some other temporary or correctable condition. If "
-        + "the payment is retried with the correct options, chances are that it can "
-        + "be committed successfully."
+    case 'TIMEOUT':
+      return "The payment has been terminated due to expired deadline."
+    case 'NEWER_INTEREST_RATE':
+      return "The payment has been terminated because the current interest rate on the"
+        + " account is more recent than the specified final interest rate timestamp."
     default:
       return errorCode
   }

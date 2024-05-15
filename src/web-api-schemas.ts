@@ -1143,12 +1143,12 @@ export type TransferOptions = {
   /** The type of this object. */
   type?: string;
 
-  /** The minimal approved interest rate. If the interest rate on the
-   * account becomes lower than this value, the transfer will not be
-   * successful. This can be useful when the transferred amount may
-   * need to be decreased if the interest rate on the account has
-   * decreased. */
-  minInterestRate?: number;
+  /** When the transferred amount would need to be changed if the
+   * interest rate on the account had been changed unexpectedly by the
+   * server, this field specifies the onset moment of the account's
+   * current interest rate, from the client's perspective. The default
+   * value is appropriate for normal transfers. */
+  finalInterestRateTimestamp?: string;
 
   /** The amount that should to be locked when the transer is
    * prepared. This must be a non-negative number. */
@@ -1218,11 +1218,12 @@ export type TransferError = {
    * been rejected due to insufficient amount available on the
    * sender's account.
    *
-   * `"TERMINATED"` signifies that the transfer has been terminated
-   * due to expired deadline, unapproved interest rate change, or some
-   * other *temporary or correctable condition*. If the client
-   * verifies the transer options and retries the transfer, chances
-   * are that it will be committed successfully.
+   * `"TIMEOUT"` signifies that the transfer has been terminated due
+   * to expired deadline.
+   *
+   * `"NEWER_INTEREST_RATE"` signifies that the transfer has been
+   * terminated because the current interest rate on the account is
+   * more recent than the specified final interest rate timestamp.
    */
   errorCode: string;
 
