@@ -22,6 +22,36 @@
       "sizes": "512x512"
     }    
   ],
+  "screenshots": [
+    {
+      "src": "screenshots/wide1.png",
+      "sizes": "1280x640",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Viewing Your Wallet"
+    },
+    {
+      "src": "screenshots/wide2.png",
+      "sizes": "1280x640",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Scanning a Payment Request"
+    },
+    {
+      "src": "screenshots/narrow1.png",
+      "sizes": "640x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Viewing Your Wallet"
+    },
+    {
+      "src": "screenshots/narrow2.png",
+      "sizes": "640x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Scanning a Payment Request"
+    }
+  ],
   "file_handlers": [
     {
       "action": "./?open-pr0",
