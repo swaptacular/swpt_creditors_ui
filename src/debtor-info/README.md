@@ -42,7 +42,7 @@ This schema accepts additional properties.
 	 - <i id="#/properties/debtorIdentity">path: #/properties/debtorIdentity</i>
 	 - &#36;ref: [#/definitions/DebtorIdentity](#/definitions/DebtorIdentity)
  - <b id="#/properties/debtorName">debtorName</b> `required`
-	 - _The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization._This field SHOULD NOT change in newer revisions of the document._
+	 - _The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization._
 	 - Type: `string`
 	 - <i id="#/properties/debtorName">path: #/properties/debtorName</i>
 	 - Length: between 1 and 40
@@ -69,6 +69,14 @@ This schema accepts additional properties.
 	 - _Optional currency peg. A currency peg is a currency management strategy in which the issuer sets a specific fixed exchange rate between the tokens of his currency (the pegged currency) and the tokens of some other currency (the peg currency)._
 	 - <i id="#/properties/peg">path: #/properties/peg</i>
 	 - &#36;ref: [#/definitions/Peg](#/definitions/Peg)
+ - <b id="#/properties/localization">localization</b>
+	 - _Specifies localization dictionaries for different language codes._
+	 - Type: `object`
+	 - <i id="/properties/localization">path: #/properties/localization</i>
+	 - The keys in this object SHOULD be ISO 639 language codes, and
+       for each key (language), the value MUST be a localization
+       object (ref: [#/definitions/LocalizaionDict](#/definitions/LocalizaionDict)).
+
 # definitions
 
 **_ShortLink_**
@@ -159,5 +167,30 @@ This schema accepts additional properties.
 		 - &#36;ref: [#/definitions/ShortLink](#/definitions/ShortLink)
 
 
+**_LocalizationDict_**
+
+ - Type: `object`
+ - <i id="/definitions/LocalizationDict">path: #/definitions/LocalizationDict</i>
+ - This schema accepts additional properties.
+ - **_Properties_**
+	 - <b id="#/definitions/LocalizationDict/properties/type">type</b> `required`
+		 - Type: `string`
+		 - <i id="/definitions/LocalizationDict/properties/type">path: #/definitions/LocalizationDict/properties/type</i>
+		 - The value must match this pattern: `^LocalizationDict(-v[1-9][0-9]{0,5})?$`
+	 - <b id="#/definitions/LocalizationDict/properties/debtorName">debtorName</b>
+		 - _The localized name of the debtor._
+		 - Type: `string`
+		 - <i id="/definitions/LocalizationDict/properties/debtorName">path: #/definitions/LocalizationDict/properties/debtorName</i>
+		 - Length: between 1 and 40
+	 - <b id="#/definitions/LocalizationDict/properties/summary">summary</b>
+		 - _A localized short description of the currency._
+		 - Type: `string`
+		 - <i id="/definitions/LocalizationDict/properties/summary">path: #/definitions/LocalizationDict/properties/summary</i>
+		 - Length:  &le; 500
+	 - <b id="#/definitions/LocalizationDict/properties/unit">unit</b>
+		 - _The localized value measurement unit._
+		 - Type: `string`
+		 - <i id="/definitions/LocalizationDict/properties/unit">path: #/definitions/LocalizationDict/properties/unit</i>
+		 - Length: between 1 and 40
 
 _Generated with [json-schema-md-doc](https://brianwendt.github.io/json-schema-md-doc/)_

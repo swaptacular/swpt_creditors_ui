@@ -79,6 +79,31 @@
       },
       "required": [ "type", "exchangeRate", "display", "debtorIdentity", "latestDebtorInfo" ],
       "additionalProperties": true
+    },
+    "LocalizationDict": {
+      "type": "object",
+      "properties": {
+        "type":  { "type": "string", "pattern": "^LocalizationDict(-v[1-9][0-9]{0,5})?$" },
+        "debtorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "The localized name of the debtor."
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "A localized short description of the currency."
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "The localized value measurement unit."
+        }
+      },
+      "required": [ "type" ],
+      "additionalProperties": true
     }
   },  
   "type": "object",
@@ -114,7 +139,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 40,
-      "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization. This field SHOULD NOT change in newer revisions of the document."
+      "description": "The name of the debtor. Should be unambiguous, easy to remember, and unlikely to be duplicated accidentally. Different currencies should have different `debtorName`s, even when they are issued by the same person or organization."
     },
     "debtorHomepage": {
       "$ref": "#/definitions/ShortLink",
@@ -142,6 +167,14 @@
     "peg":  {
       "$ref": "#/definitions/Peg",
       "description": "Optional currency peg. A currency peg is a currency management strategy in which the issuer sets a specific fixed exchange rate between the tokens of his currency (the pegged currency) and the tokens of some other currency (the peg currency)."
+    },
+    "localization": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z][a-z]?$": { "$ref": "#/definitions/LocalizationDict" }
+      },
+      "additionalProperties": true,
+      "description": "Specifies localization dictionaries for different language codes."
     }
   },
   "required": [
