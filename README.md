@@ -5,7 +5,7 @@ API](https://swaptacular.github.io/public/docs/swpt_creditors/redoc.html)
 client for [Swaptacular]. The main deliverable is a [docker image],
 generated from the project's [Dockerfile](../master/Dockerfile). The
 generated image is a simple static web server, running on port 80,
-which serves a [Progressive Web App] at its root path ("/").
+which serves a [Progressive Web App].
 
 To obtain permissions to act on behalf of the user, the Web App
 performs the [OAuth 2.0 Authorization Code Flow] with Proof Key for
@@ -21,6 +21,12 @@ variables. Here are the most important settings with some random
 example values:
 
 ```shell
+# The root path of the Web App. For example, when BASE_URL is
+# "/wabapp", the Web App will be served at "/wabapp/". The default is
+# "/". The value must start with a slash, and unless the value is "/",
+# must not end with a slash.
+BASE_URL=/wabapp
+
 # An URL pointing to the "Redirect to the creditor's wallet"
 # entrypoint on the server. (See the "Payments Web API"
 # specification.)

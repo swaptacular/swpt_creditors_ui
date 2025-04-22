@@ -1,0 +1,60 @@
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name _;
+
+    #access_log  /var/log/nginx/host.access.log  main;
+
+    root   /usr/share/nginx/html;
+    autoindex off;
+    merge_slashes off;
+
+    location / {
+        # A catch-all fallback.
+        return 404;
+    }
+
+    location ~* "//" {
+        # Redirect paths with multiple adjacent slashes to the same
+        # path with de-duplicated slashes.
+        rewrite ^(.*)//(.*)$ $1/$2;
+        rewrite ^ $x_forwarded_proto://$http_host$uri permanent;
+    }
+
+    location ~* "^${BASE_URL}$" {
+        # Ensure that the requests to base URL has a slash at the end.
+        rewrite ^/.+$ $x_forwarded_proto://$http_host$uri/ permanent;
+
+        # When BASE_URL is "/", simply serve the "/index.html" file.
+        try_files /index.html =500;
+    }
+
+    location ~* "^${BASE_URL}/$" {
+        # Serve the base URL.
+        try_files /index.html =500;
+    }
+
+    location ~* "^${BASE_URL}/." {
+        # Serve the content under the base URL, when BASE_URL is not "/".
+        rewrite ^${BASE_URL}/(.+) /$1 break;
+    }
+
+    location ~* "^${BASE_URL}[^/]" {
+        # Serve the content under the base URL, when BASE_URL is "/".
+        rewrite ^(${BASE_URL})(.*) $1/$2;
+        rewrite ^//(.*) /$1 break;
+
+        # BASE_URL is not "/", and the requested path does not have a
+        # delimiting slash after the base URL.
+        return 404;
+    }
+
+    #error_page  404              /404.html;
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}
