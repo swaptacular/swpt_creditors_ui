@@ -218,6 +218,8 @@ function getFailureReason(errorCode: string): string {
   switch (errorCode) {
     case 'CANCELED_BY_THE_SENDER':
       return 'The payment has been canceled by the sender.'
+    case 'SENDER_IS_UNREACHABLE':
+      return "The sender's account does not exist, or can not make outgoing transfers."
     case 'RECIPIENT_IS_UNREACHABLE':
       return "The recipient's account does not exist, or does not accept incoming payments."
     case 'RECIPIENT_SAME_AS_SENDER':

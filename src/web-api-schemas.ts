@@ -1204,8 +1204,8 @@ export type TransferError = {
    * `"CANCELED_BY_THE_SENDER"` signifies that the transfer has been
    * canceled by the sender.
    *
-   * `"SENDER_DOES_NOT_EXIST"` signifies that the sender's account
-   * does not exist.
+   * `"SENDER_IS_UNREACHABLE"` signifies that the sender's account
+   * does not exist, or can not make outgoing transfers.
    *
    * `"RECIPIENT_IS_UNREACHABLE"` signifies that the recipient's
    * account does not exist, or does not accept incoming transfers.
