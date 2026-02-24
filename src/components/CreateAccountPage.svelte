@@ -126,7 +126,7 @@
   $: peggedDebtorName = getPeggedDebtorName(model)
   $: action = model.action
   $: isCreateAccountAction = action.actionType === 'CreateAccount'
-  $: pageTitle = isCreateAccountAction ? 'Confirm account' : 'Create peg account'
+  $: pageTitle = isCreateAccountAction ? 'Confirm account' : 'Create anchor account'
   $: data = model.createAccountData
   $: negligibleUnitAmountStep = formatAsUnitAmount(action.accountCreationState?.tinyNegligibleAmount)
   $: invalid = (
@@ -226,14 +226,13 @@
             <DialogTitle>What a "currency peg" is?</DialogTitle>
             <DialogContent style="word-break: break-word">
               <p class="peg-definition">
-                A currency peg is a currency management strategy in
-                which the issuer sets a specific
+                A currency peg is a promise by the issuer of the
+                currency to maintain a
                 <span style="font-weight: bold">
                   fixed exchange rate
                 </span>
-                between the tokens of his currency (the pegged
-                currency) and the tokens of some other currency (the
-                peg currency).
+                between their currency (the pegged currency) and some
+                other currency (the anchor currency).
               </p>
               <p>
                 The issuer of the "{peggedDebtorName}" currency, has

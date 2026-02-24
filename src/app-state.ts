@@ -40,7 +40,7 @@ export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
 
 export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
 
-export const WRONG_PIN_MESSAGE = 'A wrong PIN have been entered. '
+export const WRONG_PIN_MESSAGE = 'A wrong PIN has been entered. '
   + 'Be aware that you have a limited number of attempts to enter '
   + 'the correct PIN, before it gets blocked.'
 
@@ -63,9 +63,9 @@ export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because
   + 'it would create a circular chain of pegs.'
 
 export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the issuer '
-  + 'of the pegged currency, do not match the available information about '
-  + 'the peg currency. First, make sure that you have acknowledged the latest '
-  + 'changes in the peg currency. Then, you may try to approve the peg '
+  + 'of the pegged currency do not match the available information about '
+  + 'the anchor currency. First, make sure that you have acknowledged the latest '
+  + 'changes in the anchor currency. Then, you may try to approve the peg '
   + 'again, or decide to not approve it.'
 
 export const BUYING_IS_FORBIDDEN_MESSAGE = 'Automatic buying is not allowed '

@@ -65,7 +65,7 @@
       <Wrapper>
         <Chip chip="help" on:click={() => undefined} style="float: right; margin-left: 6px">
           <Text>
-            <a href={homepage} target="_blank" rel="noreferrer" style="text-decoration: none; color: #666">www</a>
+            <a href={homepage} target="_blank" rel="noreferrer" style="text-decoration: none; color: #666">info</a>
           </Text>
         </Chip>
         <Tooltip>{homepage}</Tooltip>
