@@ -69,6 +69,9 @@
 </div>
 
 <style>
+  em {
+    font-style: italic;
+  }
   .floating,
   .logo-container,
   .paper-container {
