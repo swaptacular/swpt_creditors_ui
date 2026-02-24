@@ -21,6 +21,11 @@ variables. Here are the most important settings with some random
 example values:
 
 ```shell
+# Set this to the name of your site, as it is known to your users. It
+# should be short, and start with a captital letter. The default is
+# "Swaptacular".
+SITE_TITLE=Swaptacular
+
 # The root path of the Web App. For example, when BASE_URL is
 # "/wabapp", the Web App will be served at "/wabapp/". The default is
 # "/". The value must start with a slash, and unless the value is "/",

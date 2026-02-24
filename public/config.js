@@ -1,4 +1,5 @@
 window.appConfig = {
+  siteTitle: 'Swaptacular',
   serverApiEntrypoint: 'https://demo.swaptacular.org/creditors/.wallet',
   serverApiTimeout: 8000,
   oauth2: {
