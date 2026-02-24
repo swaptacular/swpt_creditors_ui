@@ -94,7 +94,7 @@
         <LayoutGrid>
           <Cell>
             <Paper elevation={8} style="margin: 8px 0">
-              <Title>Are you new to Swaptacular?</Title>
+              <Title>Are you new to {appConfig.siteTitle}?</Title>
               <Content>
                 Every time this app starts, you will see the "Actions"
                 screen first. It shows things that require your

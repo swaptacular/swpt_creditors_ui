@@ -365,8 +365,8 @@
                   <HelperText style="word-break: break-word" slot="helper" persistent>
                     An amount which you consider as insignificant. It
                     must be equal or bigger than {negligibleUnitAmountStep}
-                    {data.unit}. Swaptacular will use this amount when
-                    deciding whether the account can be safely
+                    {data.unit}. {appConfig.siteTitle} will use this
+                    amount when deciding whether the account can be safely
                     deleted, and whether an incoming transfer should
                     be ignored. If in doubt, leave the default value
                     unchanged.

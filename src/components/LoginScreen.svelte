@@ -22,12 +22,12 @@
 <div class="paper-container">
   <div class="paper-height-limiter">
     <Paper style="margin: 36px 18px; max-width: 600px" elevation={8}>
-      <Title>Welcome to Swaptacular!</Title>
+      <Title>Welcome to {appConfig.siteTitle}!</Title>
       <Content>
-        Swaptacular tries to make issuing and holding digital currencies
-        possible for everyone. Currency holders are also called "creditors".
-        This app connects you to a Swaptacular Creditors Agent, which will
-        create and manage your digital wallet for you.
+        {appConfig.siteTitle} lets anyone issue and hold digital
+        currencies. Issuers are “debtors,” and holders are
+        “creditors.” This app connects you to our creditors’ agent
+        server, which manages your digital wallet.
       </Content>
     </Paper>
   </div>

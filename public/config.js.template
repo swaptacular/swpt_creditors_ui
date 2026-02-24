@@ -1,4 +1,5 @@
 window.appConfig = {
+  siteTitle: '${SITE_TITLE}',
   serverApiEntrypoint: '${SERVER_API_ENTRYPOINT}',
   serverApiTimeout: ${SERVER_API_TIMEOUT},
   oauth2: {
