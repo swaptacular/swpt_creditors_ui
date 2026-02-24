@@ -280,8 +280,8 @@
 
               <p class="important">
                 Show the QR code to the payer, or download and send a
-                file. Discard this payment request once the
-                corresponding payment has been received!
+                file. Once the corresponding payment has been
+                received, you may discard this payment request.
               </p>
             </Content>
           </Paper>

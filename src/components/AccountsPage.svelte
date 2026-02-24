@@ -7,6 +7,7 @@
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Card, { PrimaryAction } from '@smui/card'
   import Textfield from '@smui/textfield'
+  import HelperText from '@smui/textfield/helper-text/index'
   import IconButton from '@smui/icon-button'
   import Page from './Page.svelte'
   import ScanCoinDialog from './ScanCoinDialog.svelte'
@@ -125,7 +126,7 @@
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
     display: flex;
     justify-content: left;
-    align-items: center;
+    align-items: normal;
   }
   .name {
     font-size: 1.25em;
@@ -243,6 +244,14 @@
             on:input={triggerFilterChange}
             on:change={triggerFilterChange}
             >
+              <HelperText slot="helper" persistent>
+                {shownAccounts.length}
+                {#if shownAccounts.length == 1}
+                  account
+                {:else}
+                  accounts
+                {/if}
+              </HelperText>
           </Textfield>
         </div>
         <div style="padding: 4px; flex-grow: 0" >

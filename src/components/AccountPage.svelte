@@ -379,7 +379,7 @@
               (an ordinary QR code, indeed) uniquely identifies the
               account's digital currency. Other people may want to scan
               this image with their mobile devices, so that they can use
-              the currency too.
+              this currency too.
             </Content>
           </Paper>
         </div>
@@ -390,9 +390,9 @@
         <Paper style="margin: 24px 18px; word-break: break-word" elevation={6}>
           <Title>Sort rank for "{debtorName}"</Title>
           <Content>
-            To select this account more easily among other accounts, you
-            may increase its sort rank. By doing so, you will push this
-            account closer to the top of the accounts list.
+            To select this account easily among other accounts, you
+            may increase its sort rank. By doing so, you will push
+            this account closer to the top of the accounts list.
           </Content>
         </Paper>
         <div class="text-container">
