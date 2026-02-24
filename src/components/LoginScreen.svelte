@@ -27,8 +27,8 @@
         {appConfig.siteTitle} makes issuing and holding digital
         currencies possible for everyone. Currency issuers are also
         called “debtors”, and currency holders “creditors”. This app
-        connects you to our creditors’ agent server, which will create
-        and manage your digital wallet for you.
+        connects you to our creditors’ agent server, which sets up and
+        manages your digital wallet.
       </Content>
     </Paper>
   </div>
