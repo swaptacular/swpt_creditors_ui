@@ -28,7 +28,7 @@
         currencies possible for everyone. Currency issuers are also
         called <em>debtors</em>, and currency
         holders <em>creditors</em>. This app connects you to our
-        creditors’ agent server, which sets up and manages your
+        creditors’ agent servers, which set up and manage your
         digital wallet.
       </Content>
     </Paper>
