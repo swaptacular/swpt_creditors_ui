@@ -291,8 +291,8 @@
                     />
                   <span slot="label">
                     Allow automatic buying and selling of this
-                    currency, so that if possible, the available
-                    amount stays within the defined limits.
+                    currency to keep the available amount within the
+                    defined limits, if possible.
                   </span>
                 </FormField>
               </div>
@@ -324,8 +324,8 @@
                       </svelte:fragment>
                       <HelperText slot="helper" persistent>
                         The available amount should not fall below
-                        this value. The limit applies only to
-                        automatic exchanges, and will be enforced on
+                        this value. This limit applies only to
+                        automatic exchanges and will be enforced on a
                         "best effort" basis.
                       </HelperText>
                     </Textfield>
@@ -352,10 +352,10 @@
                       </svelte:fragment>
                       <HelperText slot="helper" persistent>
                         The available amount should not exceed this
-                        value. The limit applies only to automatic
-                        exchanges, and will be enforced on "best
-                        effort" basis. This value must be greater or
-                        equal than the "Minumum amount" value.
+                        value. This limit applies only to automatic
+                        exchanges and will be enforced on a "best
+                        effort" basis. The value must be greater than
+                        or equal to the "Minimum amount" value.
                       </HelperText>
                     </Textfield>
                   </Cell>

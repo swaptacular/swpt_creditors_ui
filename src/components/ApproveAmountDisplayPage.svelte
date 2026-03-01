@@ -138,7 +138,7 @@
                   displayed. If you choose to use the new way to
                   display amounts, the {oldUnitAmount} that you have
                   in your account, in the future will be shown as
-                  {newUnitAmount}. If in doubt, use the new way.
+                  {newUnitAmount}. If you are unsure, use the new way.
                 </Content>
               </Paper>
             </Cell>
@@ -177,12 +177,12 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText style="word-break: break-word" slot="helper" persistent>
-                  An amount which you consider as insignificant. It
+                  An amount that you consider to be negligible or unimportant. It
                   must be equal or bigger than {negligibleUnitAmountStep}
                   {action.unit}. {appConfig.siteTitle} will use this
                   amount when deciding whether the account can be safely
                   deleted, and whether an incoming transfer should
-                  be ignored. If in doubt, leave the default value
+                  be ignored. If you are unsure, leave the default value
                   unchanged.
                 </HelperText>
               </Textfield>

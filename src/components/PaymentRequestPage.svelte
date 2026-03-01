@@ -227,7 +227,7 @@
                   Payment via "{debtorName}"
                 </Title>
                 <Content style="clear: both">
-                  To receive a payment, you should fill a payment
+                  To receive a payment, you should fill out a payment
                   request, and then show the generated QR code to the
                   payer.
                 </Content>
@@ -277,8 +277,8 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText slot="helper" persistent>
-                  The name of the recipient of the payment. This will
-                  be your name, most of the time.
+                  The name of the payment recipient. This will usually
+                  be your name.
                 </HelperText>
               </Textfield>
             </Cell>
@@ -318,10 +318,10 @@
                   {noteBytes} / {noteBytesLimit} bytes
                 </div>
                 <HelperText slot="helper" persistent>
-                  This field may contain any information that you want
-                  the payer to see, before making the
-                  payment. Generally, it should describe the reason
-                  for the payment (optional).
+                  This field can contain any information you want the
+                  payer to see before making the payment. Typically,
+                  it should describe the reason for the payment
+                  (optional).
                 </HelperText>
               </Textfield>
             </Cell>

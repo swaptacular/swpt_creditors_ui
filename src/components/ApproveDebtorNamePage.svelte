@@ -169,10 +169,10 @@
                 <FormField>
                   <Checkbox bind:checked={unsetKnownDebtor} on:click={() => unsetKnownDebtor || setDebtorName(newName)} />
                   <span slot="label">
-                    This change is confusing. I am not certain about
-                    the real identity of the issuer of this currency
-                    anymore, and I do not want to receive payments in
-                    it from now on.
+                    This change is confusing. I am no longer sure
+                    about the true identity of the issuer of this
+                    currency, and I no longer wish to receive payments
+                    in it.
                   </span>
                 </FormField>
               </Cell>

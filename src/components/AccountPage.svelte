@@ -376,9 +376,9 @@
               <a href="{digitalCoin}" target="_blank" rel="noreferrer" on:click|preventDefault={() => downloadLinkElement?.click()}>
                 The image above
               </a>
-              (an ordinary QR code, indeed) uniquely identifies the
-              account's digital currency. Other people may want to scan
-              this image with their mobile devices, so that they can use
+              (a standard QR code) uniquely identifies the account's
+              digital currency. Other people may want to scan this QR
+              code with their mobile devices, so that they can use
               this currency too.
             </Content>
           </Paper>

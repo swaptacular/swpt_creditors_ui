@@ -96,10 +96,10 @@
             <Paper elevation={8} style="margin: 8px 0">
               <Title>Are you new to {appConfig.siteTitle}?</Title>
               <Content>
-                Every time this app starts, you will see the "Actions"
-                screen first. It shows things that require your
-                immediate attention &ndash; like actions that have
-                been started, but have not been finalized.
+                Each time you open this app, you will see the
+                "Actions" screen first. This screen shows things that
+                require your attention, such as actions that have been
+                started but not yet completed.
               </Content>
             </Paper>
           </Cell>
