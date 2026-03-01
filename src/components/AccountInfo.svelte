@@ -51,7 +51,7 @@
     text-align: right;
   }
   .amount a {
-    color: rgb(0, 0, 238);
+    color: rgb(0, 0, 0);
     text-decoration: none;
   }
   .single-amount {
