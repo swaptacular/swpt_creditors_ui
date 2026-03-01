@@ -232,12 +232,12 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText style="word-break: break-word" slot="helper" persistent>
-                  An amount which you consider as insignificant. It
+                  An amount that you consider to be negligible or unimportant. It
                   must be equal or bigger than {negligibleUnitAmountStep}
                   {unit}. {appConfig.siteTitle} will use this amount
                   when deciding whether the account can be safely
                   deleted, and whether an incoming transfer should
-                  be ignored. If in doubt, leave the default value
+                  be ignored. If you are unsure, leave the default value
                   unchanged.
                 </HelperText>
               </Textfield>
@@ -258,10 +258,10 @@
               <FormField>
                 <Checkbox bind:checked={scheduledForDeletion} />
                 <span slot="label">
-                  Scheduled for deletion: the account can not receive
-                  payments, and unless the currency is used as a peg,
-                  the account will be deleted some time after the
-                  remaining amount becomes negligible.
+                  Scheduled for deletion: The account can not receive
+                  payments, and unless the currency is used as an
+                  anchor for a peg, the account will be deleted some
+                  time after the remaining amount becomes negligible.
                 </span>
               </FormField>
             </Cell>
@@ -270,7 +270,7 @@
               <FormField>
                 <Checkbox bind:checked={allowUnsafeDeletion} disabled={disableForceDeletion} />
                 <span slot="label" class:grayed={disableForceDeletion}>
-                  Forced account deletion: the account will be deleted
+                  Forced account deletion: The account will be deleted
                   irrespective of the remaining amount. Use this with
                   extreme caution!
                 </span>

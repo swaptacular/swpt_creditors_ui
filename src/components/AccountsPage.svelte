@@ -207,10 +207,9 @@
         </Title>
         <Content>
           <p class="text">
-            To acquire any digital currency, first you need to create an
-            account with it. To create an account with the digital
-            currency of your choice, you should scan the QR code that
-            identifies the currency.
+            To acquire any digital currency, you first need to create
+            an account with it. To do so, scan the QR code that
+            identifies the currency you want to use.
           </p>
           <p class="text">
             In {appConfig.siteTitle}, the QR code that
