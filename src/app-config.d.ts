@@ -1,6 +1,7 @@
 // ../public/config.js makes this globally available.
 declare var appConfig: {
   siteTitle: string,
+  baseDebtorInfoLocator: string,
   serverApiEntrypoint: string,
   serverApiTimeout: number,
   oauth2: {

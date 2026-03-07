@@ -26,6 +26,14 @@ example values:
 # "Swaptacular".
 SITE_TITLE=Swaptacular
 
+# If your creditors agent node performs automatic exchanges, and you
+# use an existing Swaptacular currency as base currency for the
+# exchanges, then set this to be the base currency's "debtor info
+# locator". The default is an empty string. (Note: In order to be
+# traded, currencies must be pegged to other currencies, thus forming
+# a "peg-tree". At the root of the peg-tree sits the "base currency".)
+BASE_DEBTOR_INFO_LOCATOR=https://demo.swaptacular.org/debtors/5877400199/public
+
 # The root path of the Web App. For example, when BASE_URL is
 # "/wabapp", the Web App will be served at "/wabapp/". The default is
 # "/". The value must start with a slash, and unless the value is "/",
