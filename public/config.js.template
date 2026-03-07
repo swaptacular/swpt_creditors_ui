@@ -1,5 +1,6 @@
 window.appConfig = {
   siteTitle: '${SITE_TITLE}',
+  baseDebtorInfoLocator: '${BASE_DEBTOR_INFO_LOCATOR}',
   serverApiEntrypoint: '${SERVER_API_ENTRYPOINT}',
   serverApiTimeout: ${SERVER_API_TIMEOUT},
   oauth2: {

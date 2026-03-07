@@ -1122,15 +1122,7 @@ export class AppState {
         }
         return 'UsesNonstandardPeg' as const
       } else if (standardPeg) {
-        // Check whether the standard peg has been ignored.
-        const actions = await this.uc.getActionRecords()
-        const existingApprovePegAction = actions.some(a => (
-          a.actionType === 'ApprovePeg' &&
-          a.accountUri === action.accountUri
-        ))
-        if (!existingApprovePegAction) {
-          return 'IgnoresDeclaredPeg' as const
-        }
+        return 'IgnoresDeclaredPeg' as const
       }
       return 'UsesNoPeg' as const
     }

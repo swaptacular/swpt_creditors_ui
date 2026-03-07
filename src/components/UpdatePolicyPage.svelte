@@ -161,6 +161,7 @@
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: pegStatus = model.pegStatus
+  $: isTheBaseCurrency = debtorData.latestDebtorInfo.uri === appConfig.baseDebtorInfoLocator
   $: minPrincipal = amountToBigint(minPrincipalUnitAmount, amountDivisor, MIN_INT64)
   $: maxPrincipal = amountToBigint(maxPrincipalUnitAmount, amountDivisor, MAX_INT64)
   $: erroneousMaxPrincipleUnitAmount = invalidMaxPrincipalUnitAmount || maxPrincipal < minPrincipal
@@ -184,6 +185,13 @@
   .shaking-container {
     position: relative;
     overflow: hidden;
+  }
+  .warning {
+    margin: 10px 0;
+  }
+  strong {
+    font-size: 1.1em;
+    font-weight: bold;
   }
 
   @keyframes shake {
@@ -303,6 +311,39 @@
             {#if policy !== ''}
               <div in:slide|local={{ duration }} out:slide|local={{ duration }}>
                 <LayoutGrid>
+                  {#if !isTheBaseCurrency }
+                    {#if pegStatus === 'UsesNoPeg' }
+                      <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                        <p class="warning">
+                          <strong>Important note:</strong> Automatic
+                          exchanges are not available for this
+                          currency because the issuer has not declared
+                          a currency peg.
+                        </p>
+                      </Cell>
+                    {/if}
+                    {#if pegStatus === 'UsesNonstandardPeg' }
+                      <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                        <p class="warning">
+                          <strong>Important note:</strong> Automatic
+                          exchanges might not be available for this
+                          currency because you have approved a
+                          currency peg that differs from the peg
+                          declared by the issuer.
+                        </p>
+                      </Cell>
+                    {/if}
+                    {#if pegStatus === 'IgnoresDeclaredPeg' }
+                      <Cell spanDevices={{ desktop: 12, tablet: 8, phone: 4 }}>
+                        <p class="warning">
+                          <strong>Important note:</strong> Automatic
+                          exchanges are not available for this
+                          currency because you have not approved the
+                          currency peg declared by its issuer.
+                        </p>
+                      </Cell>
+                    {/if}
+                  {/if}
                   <Cell spanDevices={{ desktop: 6, tablet: 4, phone: 4 }}>
                     <Textfield
                       required
