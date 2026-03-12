@@ -1,0 +1,76 @@
+{
+  "short_name": "${SITE_TITLE} Wallet",
+  "name": "My ${SITE_TITLE} Wallet",
+  "description": "Allows you to connect to ${SITE_TITLE}'s creditors agent and make and request payments in Swaptacular digital currencies.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icons/favicon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icons/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/wide1.png",
+      "sizes": "1280x640",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Viewing Your Wallet"
+    },
+    {
+      "src": "screenshots/wide2.png",
+      "sizes": "1280x640",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Scanning a Payment Request"
+    },
+    {
+      "src": "screenshots/narrow1.png",
+      "sizes": "640x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Viewing Your Wallet"
+    },
+    {
+      "src": "screenshots/narrow2.png",
+      "sizes": "640x1280",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Scanning a Payment Request"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./?open-pr0",
+      "name": "PR-zero Payment Request Document",
+      "accept": {
+        "application/vnd.swaptacular.pr0": [ ".pr0" ]
+      },
+      "icons": [
+        {
+          "src": "icons/favicon-192x192.png",
+          "type": "image/png",
+          "sizes": "192x192"
+        },
+        {
+          "src": "icons/favicon-512x512.png",
+          "type": "image/png",
+          "sizes": "512x512"
+        }
+      ]
+    }
+  ]
+}
