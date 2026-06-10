@@ -26,6 +26,11 @@ example values:
 # "Swaptacular".
 SITE_TITLE=Swaptacular
 
+# If you want to recommend a website where your users can find
+# currency issuers, set this to the URL of the website. The default is
+# an empty string.
+FIND_ISSUERS_URL=https://www.google.com/maps
+
 # If your creditors agent node performs automatic exchanges, and you
 # use an existing Swaptacular currency as base currency for the
 # exchanges, then set this to be the base currency's "debtor info

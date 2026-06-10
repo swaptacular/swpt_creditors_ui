@@ -18,6 +18,11 @@
     flashlightOn = false
   }
 
+  function findIssuers() {
+    close()
+    window.open(appConfig.findIssuersUrl, '_blank');
+  }
+
   function toggleFlashlight() {
     flashlightOn = !flashlightOn
   }
@@ -70,6 +75,11 @@
           {/if}
         </div>
         <div>
+          {#if appConfig.findIssuersUrl}
+            <Button on:click={findIssuers}>
+              <Label>Find issuers</Label>
+            </Button>
+          {/if}
           <Button default use={[InitialFocus]}>
             <Label>Close</Label>
           </Button>
