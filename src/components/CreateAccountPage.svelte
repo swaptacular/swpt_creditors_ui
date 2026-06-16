@@ -246,7 +246,7 @@
             </DialogContent>
             <Actions>
               <Button use={[InitialFocus]} on:click={gotIt}>
-                <ButtonLabel>I have got it</ButtonLabel>
+                <ButtonLabel>Got it</ButtonLabel>
               </Button>
             </Actions>
           </Dialog>
