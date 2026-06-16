@@ -180,6 +180,9 @@
   li {
     margin-top: 0.2em;
   }
+  .button-help {
+    margin-top: 1em;
+  }
   .download-link {
     display: none;
   }
@@ -279,15 +282,28 @@
           >
           <DialogTitle>You have successfully created an account with "{debtorName}".</DialogTitle>
           <DialogContent style="word-break: break-word">
-            Use the
-            <Fab color="primary" style="vertical-align: middle">
-              <Icon class="material-icons">receipt</Icon>
-            </Fab>
-            button below to request a payment.
+            <p>
+              Please look at the row of buttons at the bottom of the
+              screen.
+            </p>
+            <p class="button-help">
+              Use
+              <Fab color="primary" style="vertical-align: middle">
+                <Icon class="material-icons">receipt</Icon>
+              </Fab>
+              to request a payment.
+            </p>
+            <p class="button-help">
+              Use
+              <Fab style="vertical-align: middle">
+                <ExchangeSvgIcon />
+              </Fab>
+              to configure automatic currency exchanges.
+            </p>
           </DialogContent>
           <Actions>
             <Button use={[InitialFocus]} on:click={gotIt}>
-              <ButtonLabel>I have got it</ButtonLabel>
+              <ButtonLabel>Got it</ButtonLabel>
             </Button>
           </Actions>
         </Dialog>
