@@ -64,6 +64,7 @@ export type AccountDataForDisplay = {
   display: AccountDisplayRecord & { debtorName: string },
   amount: bigint,
   pegBounds: PegBound[],
+  exchangeDisposition?: 'buy'|'sell',
 }
 
 type RecursiveSearchNodeData = {
@@ -233,16 +234,29 @@ export class AccountsMap {
     assert(displays.every(x => x === undefined || x.type === 'AccountDisplay'))
     const ledgers = accounts.map(x => this.objects.get(x.ledger.uri)) as (AccountLedgerRecord | undefined)[]
     assert(ledgers.every(x => x === undefined || x.type === 'AccountLedger'))
+    const exchanges = accounts.map(x => this.objects.get(x.exchange.uri)) as (AccountExchangeRecord | undefined)[]
+    assert(exchanges.every(x => x === undefined || x.type === 'AccountExchange'))
     const data: (AccountDataForDisplay | undefined)[] = accounts.map((account, index) => {
       const display = displays[index]
       const ledger = ledgers[index]
+      const exchange = exchanges[index]
       const pegBounds = this.followPegChain(account.uri)
-      if (display && display.debtorName !== undefined && ledger && pegBounds.length > 0) {
-        return {
+      if (display && display.debtorName !== undefined && ledger && exchange && pegBounds.length > 0) {
+        const amount = ledger.principal
+        const value: AccountDataForDisplay = {
           display: display as AccountDataForDisplay['display'],
           pegBounds,
-          amount: ledger.principal,
+          amount,
         }
+        if (exchange.policy) {
+          if (amount < exchange.minPrincipal) {
+            value.exchangeDisposition = 'buy'
+          }
+          if (amount > exchange.maxPrincipal) {
+            value.exchangeDisposition = 'sell'
+          }
+        }
+        return value
       } else {
         return undefined
       }
