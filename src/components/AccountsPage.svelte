@@ -143,6 +143,18 @@
     text-align: right;
     font-family: "Cutive Mono", monospace;
   }
+  .amount .material-icons {
+    display: float;
+    float: left;
+    font-weight: bold;
+    margin-right: 0.4em;
+  }
+  .positive-color {
+    color: green;
+  }
+  .negative-color {
+    color: red;
+  }
   .fab-container {
     margin: 16px 16px;
   }
@@ -188,7 +200,14 @@
               <Card>
                 <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
                   <p class="name" class:confirmed={account.display.knownDebtor}>{account.display.debtorName}</p>
-                  <p class="amount">{calcDisplayAmount(account)}</p>
+                  <p class="amount">
+                    {#if account.exchangeDisposition === 'sell'}
+                      <span class="material-icons negative-color">exposure_neg_1</span>
+                    {:else if account.exchangeDisposition === 'buy'}
+                      <span class="material-icons positive-color">exposure_plus_1</span>
+                    {/if}
+                    {calcDisplayAmount(account)}
+                  </p>
                 </PrimaryAction>
               </Card>
             </Cell>
