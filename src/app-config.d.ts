@@ -3,6 +3,7 @@ declare var appConfig: {
   siteTitle: string,
   findIssuersUrl: string,
   baseDebtorInfoLocator: string,
+  baseDebtorId: string,
   serverApiEntrypoint: string,
   serverApiTimeout: number,
   oauth2: {

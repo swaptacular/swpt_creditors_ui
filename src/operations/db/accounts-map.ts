@@ -64,7 +64,7 @@ export type AccountDataForDisplay = {
   display: AccountDisplayRecord & { debtorName: string },
   amount: bigint,
   pegBounds: PegBound[],
-  exchangeDisposition?: 'buy'|'sell',
+  exchangeDisposition?: 'buy'|'sell'|'delete'|'peg',
 }
 
 type RecursiveSearchNodeData = {
@@ -227,6 +227,8 @@ export class AccountsMap {
   }
 
   getAccountsDataForDisplay(): AccountDataForDisplay[] {
+    const pegAccountUris = this.getPegAccountUris()
+    const baseAccountUri = this.getAccountUri(`swpt:${appConfig.baseDebtorId}`)
     const accountUris = [...this.accounts.values()]
     const accounts = accountUris.map(uri => this.objects.get(uri)).filter(a => a !== undefined) as AccountRecord[]
     assert(accounts.every(x => x.type === 'Account'))
@@ -236,19 +238,35 @@ export class AccountsMap {
     assert(ledgers.every(x => x === undefined || x.type === 'AccountLedger'))
     const exchanges = accounts.map(x => this.objects.get(x.exchange.uri)) as (AccountExchangeRecord | undefined)[]
     assert(exchanges.every(x => x === undefined || x.type === 'AccountExchange'))
+    const configs = accounts.map(x => this.objects.get(x.config.uri)) as (AccountConfigRecord | undefined)[]
+    assert(configs.every(x => x === undefined || x.type === 'AccountConfig'))
     const data: (AccountDataForDisplay | undefined)[] = accounts.map((account, index) => {
       const display = displays[index]
       const ledger = ledgers[index]
       const exchange = exchanges[index]
+      const config = configs[index]
       const pegBounds = this.followPegChain(account.uri)
-      if (display && display.debtorName !== undefined && ledger && exchange && pegBounds.length > 0) {
+      if (
+        display && display.debtorName !== undefined &&
+        ledger &&
+        exchange &&
+        config &&
+        pegBounds.length > 0
+      ) {
         const amount = ledger.principal
         const value: AccountDataForDisplay = {
           display: display as AccountDataForDisplay['display'],
           pegBounds,
           amount,
         }
-        if (exchange.policy) {
+        if (config.scheduledForDeletion) {
+          if (pegAccountUris.has(account.uri)) {
+            value.exchangeDisposition = 'peg'
+          } else {
+            value.exchangeDisposition = 'delete'
+          }
+        }
+        else if (exchange.policy && pegBounds[pegBounds.length - 1].accountUri === baseAccountUri) {
           if (amount < exchange.minPrincipal) {
             value.exchangeDisposition = 'buy'
           }

@@ -2,6 +2,7 @@ window.appConfig = {
   siteTitle: 'Swaptacular',
   findIssuersUrl: '',
   baseDebtorInfoLocator: '',
+  baseDebtorId: '',
   serverApiEntrypoint: 'https://demo.swaptacular.org/creditors/.wallet',
   serverApiTimeout: 8000,
   oauth2: {
