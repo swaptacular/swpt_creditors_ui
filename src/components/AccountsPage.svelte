@@ -149,6 +149,9 @@
     font-weight: bold;
     margin-right: 0.4em;
   }
+  .neutral-color {
+    color: #ccc;
+  }
   .positive-color {
     color: green;
   }
@@ -201,7 +204,11 @@
                 <PrimaryAction padded on:click={() => showAccount(account.display.account.uri)}>
                   <p class="name" class:confirmed={account.display.knownDebtor}>{account.display.debtorName}</p>
                   <p class="amount">
-                    {#if account.exchangeDisposition === 'sell'}
+                    {#if account.exchangeDisposition === 'delete'}
+                      <span class="material-icons neutral-color">auto_delete</span>
+                    {:else if account.exchangeDisposition === 'peg'}
+                      <span class="material-icons neutral-color">anchor</span>
+                    {:else if account.exchangeDisposition === 'sell'}
                       <span class="material-icons negative-color">exposure_neg_1</span>
                     {:else if account.exchangeDisposition === 'buy'}
                       <span class="material-icons positive-color">exposure_plus_1</span>

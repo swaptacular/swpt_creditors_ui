@@ -31,13 +31,13 @@ SITE_TITLE=Swaptacular
 # an empty string.
 FIND_ISSUERS_URL=https://www.google.com/maps
 
-# If your creditors agent node performs automatic exchanges, and you
-# use an existing Swaptacular currency as base currency for the
-# exchanges, then set this to be the base currency's "debtor info
-# locator". The default is an empty string. (Note: In order to be
-# traded, currencies must be pegged to other currencies, thus forming
-# a "peg-tree". At the root of the peg-tree sits the "base currency".)
+# If your creditors agent node performs automatic exchanges, then set
+# these to the base currency's "debtor info locator" and "debtor ID".
+# The defaults are an empty strings. (Note: In order to be traded,
+# currencies must be pegged to other currencies, thus forming a
+# "peg-tree". At the root of the peg-tree sits the "base currency".)
 BASE_DEBTOR_INFO_LOCATOR=https://demo.swaptacular.org/debtors/5877400199/public
+BASE_DEBTOR_ID=5877400199
 
 # The root path of the Web App. For example, when BASE_URL is
 # "/wabapp", the Web App will be served at "/wabapp/". The default is
