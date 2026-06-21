@@ -4,6 +4,7 @@ declare var appConfig: {
   findIssuersUrl: string,
   baseDebtorInfoLocator: string,
   baseDebtorId: string,
+  smallTradeAmount: number,
   serverApiEntrypoint: string,
   serverApiTimeout: number,
   oauth2: {
