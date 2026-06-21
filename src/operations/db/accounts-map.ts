@@ -229,6 +229,7 @@ export class AccountsMap {
   getAccountsDataForDisplay(): AccountDataForDisplay[] {
     const pegAccountUris = this.getPegAccountUris()
     const baseAccountUri = this.getAccountUri(`swpt:${appConfig.baseDebtorId}`)
+    const smallTradeAmount = BigInt(appConfig.smallTradeAmount)
     const accountUris = [...this.accounts.values()]
     const accounts = accountUris.map(uri => this.objects.get(uri)).filter(a => a !== undefined) as AccountRecord[]
     assert(accounts.every(x => x.type === 'Account'))
@@ -267,10 +268,10 @@ export class AccountsMap {
           }
         }
         else if (exchange.policy && pegBounds[pegBounds.length - 1].accountUri === baseAccountUri) {
-          if (amount < exchange.minPrincipal) {
+          if (amount + smallTradeAmount < exchange.minPrincipal) {
             value.exchangeDisposition = 'buy'
           }
-          if (amount > exchange.maxPrincipal) {
+          if (amount - smallTradeAmount > exchange.maxPrincipal) {
             value.exchangeDisposition = 'sell'
           }
         }

@@ -39,6 +39,11 @@ FIND_ISSUERS_URL=https://www.google.com/maps
 BASE_DEBTOR_INFO_LOCATOR=https://demo.swaptacular.org/debtors/5877400199/public
 BASE_DEBTOR_ID=5877400199
 
+# If your creditors agent node performs automatic exchanges, then set
+# this to an amount that is at least 20% larger the MIN_TRADE_AMOUNT
+# configured for the swpt_trade's solver. The default is 1200.
+SMALL_TRADE_AMOUNT=1200
+
 # The root path of the Web App. For example, when BASE_URL is
 # "/wabapp", the Web App will be served at "/wabapp/". The default is
 # "/". The value must start with a slash, and unless the value is "/",

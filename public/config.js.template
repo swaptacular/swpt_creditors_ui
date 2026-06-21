@@ -3,6 +3,7 @@ window.appConfig = {
   findIssuersUrl: '${FIND_ISSUERS_URL}',
   baseDebtorInfoLocator: '${BASE_DEBTOR_INFO_LOCATOR}',
   baseDebtorId: '${BASE_DEBTOR_ID}',
+  smallTradeAmount: ${SMALL_TRADE_AMOUNT},
   serverApiEntrypoint: '${SERVER_API_ENTRYPOINT}',
   serverApiTimeout: ${SERVER_API_TIMEOUT},
   oauth2: {

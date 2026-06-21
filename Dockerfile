@@ -19,6 +19,7 @@ ENV SITE_TITLE=Swaptacular
 ENV FIND_ISSUERS_URL=
 ENV BASE_DEBTOR_INFO_LOCATOR=
 ENV BASE_DEBTOR_ID=
+ENV SMALL_TRADE_AMOUNT=1200
 ENV BASE_URL=/
 
 COPY --from=build-image /usr/src/app/dist /usr/share/nginx/html
