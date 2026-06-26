@@ -22,6 +22,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { UpdateScheduler } from '../update-scheduler'
 import { InvalidDocument } from '../debtor-info'
 import { MIN_INT64, MAX_INT64 } from '../format-amounts'
+import { getTransferStatusDetails, NETWORK_PROBLEM, PROBLEM_ON_THE_SERVER } from '../messages'
 import {
   server as defaultServer, Oauth2TokenSource, ServerSession, ServerSessionError, AuthenticationError,
   HttpResponse, HttpError
@@ -44,7 +45,7 @@ import {
 import { makePinInfo, makeAccount, makeTransfer, makeLogObject } from './canonical-objects'
 import {
   calcParallelTimeout, InvalidCoinUri, DocumentFetchError, fetchDebtorInfoDocument, obtainBaseDebtorData,
-  getDataFromDebtorInfo, fetchNewLedgerEntries, getTransferStatusDetails
+  getDataFromDebtorInfo, fetchNewLedgerEntries
 } from './utils'
 import {
   IvalidPaymentRequest, IvalidPaymentData, parsePaymentRequest, generatePayment0TransferNote
@@ -1469,12 +1470,12 @@ export async function obtainUserContext(
       case e instanceof AuthenticationError:
       case e instanceof HttpError:
         console.error(e)
-        alert('There seems to be a problem on the server. Please try again later.')
+        alert(PROBLEM_ON_THE_SERVER)
         await server.logout()
         break
       case e instanceof ServerSessionError:
         console.error(e)
-        alert('A network problem has occured. Please check your Internet connection.')
+        alert(NETWORK_PROBLEM)
         await server.logout()
         break
     }

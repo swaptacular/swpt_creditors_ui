@@ -1,3 +1,4 @@
+import * as msg from './messages'
 import type { Writable } from 'svelte/store'
 import type { Observable } from 'dexie'
 import type { TaskCallback } from './update-scheduler'
@@ -33,59 +34,6 @@ type AttemptOptions = {
 }
 
 export { IS_A_NEWBIE_KEY, HAS_NOT_CREATED_PEG_ACCOUNT }
-
-export const INVALID_REQUEST_MESSAGE = 'Invalid payment request. '
-  + 'Make sure that you are scanning the correct QR code, '
-  + 'for the correct payment request.'
-
-export const CAN_NOT_PERFORM_ACTOIN_MESSAGE = 'The requested action can not be performed.'
-
-export const WRONG_PIN_MESSAGE = 'A wrong PIN has been entered. '
-  + 'Be aware that you have a limited number of attempts to enter '
-  + 'the correct PIN, before it gets blocked.'
-
-export const NETWORK_ERROR_MESSAGE = 'A network problem has occured. '
-  + 'Please check your Internet connection.'
-
-export const ACTION_DOES_NOT_EXIST_MESSAGE = 'The requested action record does not exist.'
-
-export const INVALID_SCANNED_COIN_MESSAGE = 'Invalid digital coin. '
-  + 'Make sure that you are scanning the correct QR code, '
-  + 'for the correct digital coin.'
-
-export const INVALID_COIN_MESSAGE = 'Invalid digital coin.'
-
-export const COIN_FETCH_ERROR_MESSAGE = 'Can not read the necessary '
-  + 'currency information from the digital coin. This is either a '
-  + 'temporary problem, or the digital coin is not correctly set up.'
-
-export const CIRCULAR_PEG_MESSAGE = 'Approving this peg is not possible, because '
-  + 'it would create a circular chain of pegs.'
-
-export const PEG_DISPLAY_MISMATCH_MESSAGE = 'The information specified by the issuer '
-  + 'of the pegged currency do not match the available information about '
-  + 'the anchor currency. First, make sure that you have acknowledged the latest '
-  + 'changes in the anchor currency. Then, you may try to approve the peg '
-  + 'again, or decide to not approve it.'
-
-export const BUYING_IS_FORBIDDEN_MESSAGE = 'Automatic buying is not allowed '
-  + 'for this account. This may be just a temporary condition, if the '
-  + 'account has been created only recently, or you have not acknowledged '
-  + 'the latest changes in the account.'
-
-export const ACCOUNT_DOES_NOT_EXIST_MESSAGE = 'You do not have an account '
-  + 'in the requested currency.'
-
-export const ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE = 'You do have an account '
-  + 'in the requested currency, but making payments from this account is not '
-  + 'allowed. This may be just a temporary condition, if the account has '
-  + 'been created only recently.'
-
-export const PAYMENT_DOES_NOT_EXIST_MESSAGE = 'The requested payment record does not exist.'
-
-export const SERVER_SYNC_ERROR_MESSAGE = 'A server error has occured.'
-
-export const UNEXPECTED_ERROR_MESSAGE = 'Oops, something went wrong.'
 
 export type {
   ActionRecordWithId,
@@ -365,7 +313,7 @@ export class AppState {
     }, {
       alerts: [
         [AuthenticationError, () => { }],
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
       ],
     })
   }
@@ -395,7 +343,7 @@ export class AppState {
       this.successfulPinReset.set(true)
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: retry })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: retry })],
       ],
     })
   }
@@ -453,7 +401,7 @@ export class AppState {
               break
           }
         } else {
-          this.addAlert(new Alert(ACTION_DOES_NOT_EXIST_MESSAGE, { continue: () => this.showActions() }))
+          this.addAlert(new Alert(msg.ACTION_DOES_NOT_EXIST, { continue: () => this.showActions() }))
         }
       }
     })
@@ -477,7 +425,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [InvalidCoinUri, new Alert(INVALID_SCANNED_COIN_MESSAGE)],
+        [InvalidCoinUri, new Alert(msg.INVALID_SCANNED_COIN)],
       ],
     })
   }
@@ -642,8 +590,8 @@ export class AppState {
       // user presses the "reload" button, while reviewing a "create
       // account action".
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -692,12 +640,12 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [WrongPin, new Alert(msg.WRONG_PIN, { continue: checkAndGoBack })],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -731,8 +679,8 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -760,12 +708,12 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [WrongPin, new Alert(msg.WRONG_PIN, { continue: checkAndGoBack })],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -800,7 +748,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -826,12 +774,12 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [WrongPin, new Alert(msg.WRONG_PIN)],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN)],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -886,7 +834,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -912,13 +860,13 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [WrongPin, new Alert(msg.WRONG_PIN)],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN)],
+        [ServerSyncError, new Alert(msg.SERVER_SYNC_ERROR)],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -946,15 +894,15 @@ export class AppState {
       }
     }, {
       alerts: [
-        [CircularPegError, new Alert(CIRCULAR_PEG_MESSAGE)],
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [ServerSyncError, new Alert(SERVER_SYNC_ERROR_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
-        [PegDisplayMismatch, new Alert(PEG_DISPLAY_MISMATCH_MESSAGE, { continue: checkAndGoBack })],
+        [CircularPegError, new Alert(msg.CIRCULAR_PEG)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [WrongPin, new Alert(msg.WRONG_PIN)],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN)],
+        [ServerSyncError, new Alert(msg.SERVER_SYNC_ERROR)],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
+        [PegDisplayMismatch, new Alert(msg.PEG_DISPLAY_MISMATCH, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -980,10 +928,10 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [DocumentFetchError, new Alert(COIN_FETCH_ERROR_MESSAGE)],
-        [InvalidDocument, new Alert(COIN_FETCH_ERROR_MESSAGE)],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [DocumentFetchError, new Alert(msg.COIN_FETCH_ERROR)],
+        [InvalidDocument, new Alert(msg.COIN_FETCH_ERROR)],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -1049,7 +997,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -1079,12 +1027,12 @@ export class AppState {
       checkAndGoBack()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [WrongPin, new Alert(msg.WRONG_PIN)],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN)],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -1152,7 +1100,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -1181,13 +1129,13 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
-        [WrongPin, new Alert(WRONG_PIN_MESSAGE)],
-        [UnprocessableEntity, new Alert(WRONG_PIN_MESSAGE)],
-        [BuyingIsForbidden, new Alert(BUYING_IS_FORBIDDEN_MESSAGE, { continue: checkAndShowActions })],
-        [ConflictingUpdate, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [ResourceNotFound, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
+        [WrongPin, new Alert(msg.WRONG_PIN)],
+        [UnprocessableEntity, new Alert(msg.WRONG_PIN)],
+        [BuyingIsForbidden, new Alert(msg.BUYING_IS_FORBIDDEN, { continue: checkAndShowActions })],
+        [ConflictingUpdate, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
+        [ResourceNotFound, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -1275,7 +1223,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndGoBack })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndGoBack })],
       ],
     })
   }
@@ -1296,7 +1244,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -1365,7 +1313,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
       ],
     })
   }
@@ -1381,9 +1329,9 @@ export class AppState {
       }
     }, {
       alerts: [
-        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
-        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
-        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
+        [IvalidPaymentData, new Alert(msg.INVALID_PAYMENT_REQUEST)],
+        [AccountDoesNotExist, new Alert(msg.ACCOUNT_DOES_NOT_EXIST)],
+        [AccountCanNotMakePayments, new Alert(msg.ACCOUNT_CAN_NOT_MAKE_PAYMENTS)],
       ],
     })
   }
@@ -1419,7 +1367,7 @@ export class AppState {
       checkAndShowAcounts()
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
       ],
     })
   }
@@ -1454,7 +1402,7 @@ export class AppState {
               fetchedTransfers = extendedLedgerEntries
             }, {
               alerts: [
-                [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+                [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
               ],
             })
             return fetchedTransfers
@@ -1535,7 +1483,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
       ],
     })
   }
@@ -1567,7 +1515,7 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE)],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM)],
       ],
     })
   }
@@ -1582,10 +1530,10 @@ export class AppState {
       }
     }, {
       alerts: [
-        [IvalidPaymentRequest, new Alert(INVALID_REQUEST_MESSAGE)],
-        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
-        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
-        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
+        [IvalidPaymentRequest, new Alert(msg.INVALID_PAYMENT_REQUEST)],
+        [IvalidPaymentData, new Alert(msg.INVALID_PAYMENT_REQUEST)],
+        [AccountDoesNotExist, new Alert(msg.ACCOUNT_DOES_NOT_EXIST)],
+        [AccountCanNotMakePayments, new Alert(msg.ACCOUNT_CAN_NOT_MAKE_PAYMENTS)],
       ],
     })
   }
@@ -1608,11 +1556,11 @@ export class AppState {
       }
     }, {
       alerts: [
-        [ServerSessionError, new Alert(NETWORK_ERROR_MESSAGE, { continue: checkAndReloadAction })],
-        [ForbiddenOperation, new Alert(WRONG_PIN_MESSAGE, { continue: checkAndReloadAction })],
-        [WrongTransferData, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
-        [TransferCreationTimeout, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndReloadAction })],
-        [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: checkAndShowActions })],
+        [ServerSessionError, new Alert(msg.NETWORK_PROBLEM, { continue: checkAndReloadAction })],
+        [ForbiddenOperation, new Alert(msg.WRONG_PIN, { continue: checkAndReloadAction })],
+        [WrongTransferData, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndReloadAction })],
+        [TransferCreationTimeout, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndReloadAction })],
+        [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: checkAndShowActions })],
       ],
     })
   }
@@ -1655,7 +1603,7 @@ export class AppState {
             transfer: transfer as Store<ExtendedTransferRecord>,
           })
         } else {
-          this.addAlert(new Alert(PAYMENT_DOES_NOT_EXIST_MESSAGE, { continue: goBack }))
+          this.addAlert(new Alert(msg.PAYMENT_DOES_NOT_EXIST, { continue: goBack }))
         }
       }
     })
@@ -1668,10 +1616,10 @@ export class AppState {
       }
     }, {
       alerts: [
-        [IvalidPaymentRequest, new Alert(INVALID_REQUEST_MESSAGE)],
-        [IvalidPaymentData, new Alert(INVALID_REQUEST_MESSAGE)],
-        [AccountDoesNotExist, new Alert(ACCOUNT_DOES_NOT_EXIST_MESSAGE)],
-        [AccountCanNotMakePayments, new Alert(ACCOUNT_CAN_NOT_MAKE_PAYMENTS_MESSAGE)],
+        [IvalidPaymentRequest, new Alert(msg.INVALID_PAYMENT_REQUEST)],
+        [IvalidPaymentData, new Alert(msg.INVALID_PAYMENT_REQUEST)],
+        [AccountDoesNotExist, new Alert(msg.ACCOUNT_DOES_NOT_EXIST)],
+        [AccountCanNotMakePayments, new Alert(msg.ACCOUNT_CAN_NOT_MAKE_PAYMENTS)],
       ],
     })
   }
@@ -1740,7 +1688,7 @@ export class AppState {
         checkAndGoBack()
       }, {
         alerts: [
-          [RecordDoesNotExist, new Alert(CAN_NOT_PERFORM_ACTOIN_MESSAGE, { continue: reloadAction })],
+          [RecordDoesNotExist, new Alert(msg.CAN_NOT_PERFORM_ACTOIN, { continue: reloadAction })],
         ],
       })
     }
@@ -1811,7 +1759,7 @@ export class AppState {
       const alert = alertFromError(e)
       if (alert === undefined) {
         console.error(e)
-        this.addAlert(new Alert(UNEXPECTED_ERROR_MESSAGE))
+        this.addAlert(new Alert(msg.UNEXPECTED_ERROR))
         throw e
       } else if (typeof alert === 'function') {
         alert()

@@ -1,4 +1,4 @@
-import type { DocumentRecord, TransferRecord, DebtorDataSource } from './db'
+import type { DocumentRecord, DebtorDataSource } from './db'
 import type { DebtorData, BaseDebtorData } from '../debtor-info'
 import type { ServerSession, HttpResponse, PaginatedList, Transfer } from './server'
 import type { AccountV0, TransferV0, LedgerEntryV0, DebtorInfoV0 } from './canonical-objects'
@@ -214,32 +214,6 @@ export async function getDataFromDebtorInfo(debtorInfo: DebtorInfoV0, debtorIden
   return debtorData
 }
 
-function getFailureReason(errorCode: string): string {
-  switch (errorCode) {
-    case 'CANCELED_BY_THE_SENDER':
-      return 'The payment has been canceled by the sender.'
-    case 'SENDER_IS_UNREACHABLE':
-      return "The sender's account does not exist, or can not make outgoing transfers."
-    case 'RECIPIENT_IS_UNREACHABLE':
-      return "The recipient's account does not exist, or does not accept incoming payments."
-    case 'RECIPIENT_SAME_AS_SENDER':
-      return "The recipient's account is the same as the sender's account."
-    case 'NO_RECIPIENT_CONFIRMATION':
-      return "A confirmation from the recipient is required, but has not been obtained."
-    case 'TRANSFER_NOTE_IS_TOO_LONG':
-      return "The byte-length of the payment note is too big."
-    case 'INSUFFICIENT_AVAILABLE_AMOUNT':
-      return "The requested amount is not available on the sender's account."
-    case 'TIMEOUT':
-      return "The payment has been terminated due to expired deadline."
-    case 'NEWER_INTEREST_RATE':
-      return "The payment has been terminated because the current interest rate on the"
-        + " account is more recent than the specified final interest rate timestamp."
-    default:
-      return errorCode
-  }
-}
-
 /* Obtain and return debtor's data. The caller must be prepared this
  * function to throw `InvalidDocument` or `DocumentFetchError` */
 export async function obtainBaseDebtorData(
@@ -270,29 +244,4 @@ export async function obtainBaseDebtorData(
       hasDebtorInfo,
     }
   }
-}
-
-export function getTransferStatusDetails(t: TransferRecord): string {
-  let tooltip = `The payment was initiated at ${new Date(t.initiatedAt).toLocaleString()}`
-  if (t.result) {
-    const finalizedAt = new Date(t.result.finalizedAt).toLocaleString()
-    if (t.result.error) {
-      const reason = getFailureReason(t.result.error.errorCode)
-      tooltip += `, and failed at ${finalizedAt}.`
-      tooltip += `The reason for the failure is: ${reason}`
-    } else {
-      tooltip += `, and succeeded at ${finalizedAt}.`
-      const paymentRefernece = t.paymentInfo.payeeReference
-      if (paymentRefernece) {
-        const maxLength = 64
-        const shortRef = paymentRefernece.length <= maxLength
-          ? paymentRefernece
-          : `${paymentRefernece.slice(0, maxLength)}...`
-        tooltip += ` The payment reference is: "${shortRef}".`
-      }
-    }
-  } else {
-    tooltip += '.'
-  }
-  return tooltip
 }
