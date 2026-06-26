@@ -64,7 +64,6 @@
     color: #c4c4c4;
   }
   .transfer {
-    font-family: "Cutive Mono", monospace;
     font-size: 1.1em;
     line-height: 1.25;
     word-break: break-word;
@@ -72,7 +71,9 @@
     text-indent: -1.5em;
   }
   .transfer span {
+    font-family: "Cutive Mono", monospace;
     font-size: 1.2em;
+    margin-right: 0.25em;
   }
   .fab-container {
     margin: 16px 16px;
