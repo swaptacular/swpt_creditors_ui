@@ -1,7 +1,7 @@
 {
   "short_name": "My Wallet",
   "name": "Swaptacular Wallet",
-  "description": "Allows you to connect to a creditors agent and make and request payments in Swaptacular digital currencies.",
+  "description": "Allows you to connect to a specialized server and make and request payments in Swaptacular digital currencies.",
   "lang": "en",
   "dir": "ltr",
   "start_url": "./",

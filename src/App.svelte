@@ -31,7 +31,7 @@
 
   function logError(e: unknown): string {
     console.error(e)
-    return 'Oops, an unexpected error has occurred which prevents the applcication from running.'
+    return 'Oops, an unexpected error has occurred which prevents the application from running.'
   }
 
   async function handleClosedAuthenticationErrorSnackbar(event: any) {
@@ -110,7 +110,7 @@
   {/await}
 
   <Snackbar bind:this={authenticationErrorSnackbar} on:MDCSnackbar:closed={handleClosedAuthenticationErrorSnackbar}>
-    <Label>An authentication error has occured.</Label>
+    <Label>You need to log in again to perform actions in your user account.</Label>
     <Actions>
       <Button>Login</Button>
       <IconButton class="material-icons" title="Dismiss">close</IconButton>
@@ -118,14 +118,14 @@
   </Snackbar>
 
   <Snackbar bind:this={networkErrorSnackbar}>
-    <Label>A network error has occured.</Label>
+    <Label>A network error has occurred.</Label>
     <Actions>
       <IconButton class="material-icons" title="Dismiss">close</IconButton>
     </Actions>
   </Snackbar>
 
   <Snackbar bind:this={httpErrorSnackbar}>
-    <Label>A server error has occured.</Label>
+    <Label>A server error has occurred.</Label>
     <Actions>
       <IconButton class="material-icons" title="Dismiss">close</IconButton>
     </Actions>

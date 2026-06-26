@@ -2,7 +2,7 @@
   import type {
     AppState, CreateTransferActionStatus, CreateTransferModel, CreateTransferActionWithId, AccountFullData
   } from '../app-state'
-  import { INVALID_REQUEST_MESSAGE } from '../app-state'
+  import { INVALID_PAYMENT_REQUEST } from '../messages'
   import { getCreateTransferActionStatus } from '../operations'
   import { generatePr0Blob } from '../payment-requests'
   import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
@@ -89,7 +89,7 @@
     case 'Initiated':
       return 'The payment has been initiated successfully.'
     case 'Failed':
-      return INVALID_REQUEST_MESSAGE
+      return INVALID_PAYMENT_REQUEST
     case 'Timed out':
       return 'An attempt has been made to transfer the amount, '
         + 'but it is unknown whether the amount has been successfully transferred or not. '

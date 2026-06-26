@@ -158,6 +158,7 @@
     background-color: rgb(229,229,229);
     color: black;
     user-select: none;
+    text-align: center;
   }
 </style>
 

@@ -102,7 +102,7 @@ export class AccountsMap {
       }
     }
     this.channel.onmessageerror = (evt: unknown) => {
-      console.error('A broadcast channel message error has occured.', evt)
+      console.error('A broadcast channel message error has occurred.', evt)
     }
   }
 
