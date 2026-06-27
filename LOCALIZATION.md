@@ -26,9 +26,5 @@
    functions, in which case you will need change the strings that
    those function return.
 
-   To change the way dates and times are shown, find the places where
-   the `toLocaleString()` method is called and pass your locale as a
-   parameter (`toLocaleString('bg-BG')` for example).
-
    Note that for right-to-left languages some changes to pages' HTML
    and CSS may be needed for all pages to show correctly.

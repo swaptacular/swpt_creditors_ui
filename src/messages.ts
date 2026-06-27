@@ -74,9 +74,7 @@ export const CAN_NOT_PERFORM_ACTOIN = "The requested action can not be performed
 export const ACTION_DOES_NOT_EXIST = "The requested action record does not exist."
 
 // Generates a message to be shown in a tooltip. Change this function
-// to return a translated string. Also, make sure to pass your locale
-// as a parameter in the calls to `toLocaleString()` that this
-// function makes (`.toLocaleString('bg-BG')` for example).
+// to return a translated string.
 export function getTransferStatusDetails(t: any): string {
   const initiatedAt = new Date(t.initiatedAt).toLocaleString()
   if (t.result) {
