@@ -34,6 +34,29 @@
     showAccount?.()    
   }
   
+  function translateStatus(s: string): string {
+    switch (s) {
+    case 'Successful':
+      return 'Successful'
+    case 'Delayed':
+      return 'Delayed'
+    case 'Draft':
+      return 'Draft'
+    case 'Not sent':
+      return 'Not sent'
+    case 'Not confirmed':
+      return 'Not confirmed'
+    case 'Initiated':
+      return 'Initiated'
+    case 'Failed':
+      return 'Failed'
+    case 'Timed out':
+      return 'Timed out'
+    default:
+      return s
+    }
+  }
+
   $: payeeName = paymentInfo.payeeName
   $: payeeReference = paymentInfo.payeeReference
   $: description = paymentInfo.description
@@ -116,7 +139,7 @@
             <div style="padding-right: 0.3em">Status:</div>
             <Wrapper>
               <div class="status-name">
-                <span style="text-decoration: underline">{status.toLowerCase()}</span>
+                <span style="text-decoration: underline">{translateStatus(status).toLowerCase()}</span>
                 <span class="status-smalltext">
                   {#if status !== 'Initiated' && status !== 'Successful'}
                     tap for details
