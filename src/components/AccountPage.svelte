@@ -444,7 +444,7 @@
                 <CardContent>
                   <div class="load-button">
                     <span>
-                      Load older tranfers
+                      Load older transfers
                     </span>
                     <Icon class="material-icons">
                       arrow_forward
