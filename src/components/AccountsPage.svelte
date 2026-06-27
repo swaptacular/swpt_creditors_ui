@@ -238,9 +238,8 @@
             identifies the currency you want to use.
           </p>
           <p class="text">
-            In {appConfig.siteTitle}, the QR code that
-            identifies a given currency is called "the digital coin" for
-            the currency.
+            The QR code that identifies a given currency is called
+            "the digital coin" for the currency.
           </p>
           <p class="text important">
             Press the
