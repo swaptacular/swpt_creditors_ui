@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, ConfigAccountModel, ConfigAccountActionWithId } from '../app-state'
-  import { amountToString, limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
+  import { amountToString, amountToLocaleString, limitAmountDivisor, calcSmallestDisplayableNumber } from '../format-amounts'
   import Fab, { Label } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -55,6 +55,17 @@
       return ''
     }
     return amountToString(amount, amountDivisor, decimalPlaces)
+  }
+
+  function formatAsLocaleUnitAmount(
+    amount: bigint | number | undefined,
+    amountDivisor: number,
+    decimalPlaces: bigint,
+  ): string {
+    if (amount === undefined) {
+      return ''
+    }
+    return amountToLocaleString(amount, amountDivisor, decimalPlaces)
   }
 
   function showActions(): void {
@@ -116,6 +127,7 @@
   $: unit = display.unit ?? '\u00A4'
   $: tinyNegligibleAmount = calcSmallestDisplayableNumber(amountDivisor, decimalPlaces)
   $: negligibleUnitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
+  $: minNegligibleAmount = formatAsLocaleUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: disableForceDeletion = !allowUnsafeDeletion && !scheduledForDeletion
   $: invalid = (
     invalidDebtorName ||
@@ -217,7 +229,7 @@
                 required
                 variant="outlined"
                 type="number"
-                input$min={negligibleUnitAmountStep}
+                input$min={negligibleUnitAmountStep || '0'}
                 input$step={negligibleUnitAmountStep}
                 style="width: 100%"
                 withTrailingIcon={invalidNegligibleUnitAmount}
@@ -232,12 +244,13 @@
                   {/if}
                 </svelte:fragment>
                 <HelperText style="word-break: break-word" slot="helper" persistent>
-                  An amount that you consider to be negligible or unimportant. It
-                  must be equal or bigger than {negligibleUnitAmountStep}
-                  {unit}. {appConfig.siteTitle} will use this amount
-                  when deciding whether the account can be safely
-                  deleted, and whether an incoming transfer should
-                  be ignored. If you are unsure, leave the default value
+                  An amount that you consider to be negligible or
+                  unimportant. It must be equal or bigger than
+                  {minNegligibleAmount} {unit}.
+                  {appConfig.siteTitle} will use this amount when
+                  deciding whether the account can be safely deleted,
+                  and whether an incoming transfer should be ignored.
+                  If you are unsure, leave the default value
                   unchanged.
                 </HelperText>
               </Textfield>

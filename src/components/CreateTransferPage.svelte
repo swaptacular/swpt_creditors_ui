@@ -5,7 +5,7 @@
   import { INVALID_PAYMENT_REQUEST } from '../messages'
   import { getCreateTransferActionStatus } from '../operations'
   import { generatePr0Blob } from '../payment-requests'
-  import { amountToString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
+  import { amountToString, amountToLocaleString, limitAmountDivisor, MAX_INT64 } from '../format-amounts'
   import { onDestroy } from 'svelte'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
   import Button, { Label as ButtonLabel } from '@smui/button'
@@ -47,6 +47,13 @@
     const amountDivisor = display?.amountDivisor ?? 1
     const decimalPlaces = display?.decimalPlaces ?? 0n
     return amount ? amountToString(amount, amountDivisor, decimalPlaces) : ''
+  }
+
+  function getLocaleUnitAmount(accountData: AccountFullData | undefined, amount: bigint): string {
+    const display = accountData?.display
+    const amountDivisor = display?.amountDivisor ?? 1
+    const decimalPlaces = display?.decimalPlaces ?? 0n
+    return amount ? amountToLocaleString(amount, amountDivisor, decimalPlaces) : ''
   }
 
   function resetAmount(): void {
@@ -186,6 +193,7 @@
   $: action = model.action
   $: accountData = model.accountData
   $: requestedUnitAmount = getUnitAmount(accountData, action.requestedAmount)
+  $: localeRequestedUnitAmount = getLocaleUnitAmount(accountData, action.requestedAmount)
   $: unchangedAmount = Number(unitAmount) === Number(requestedUnitAmount)
   $: paymentInfo = action.paymentInfo
   $: display = accountData?.display
@@ -243,7 +251,7 @@
           <DialogContent id="confirm-change-amount-dialog-content">
             The amount that you are about to send ({unitAmount}
             {unit}), is not the same as the amount stated in the
-            payment request ({requestedUnitAmount} {unit}). Are you
+            payment request ({localeRequestedUnitAmount} {unit}). Are you
             sure you want to make this payment?
           </DialogContent>
           <Actions>

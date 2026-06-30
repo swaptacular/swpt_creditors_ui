@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, ApproveDebtorNameModel, ApproveDebtorNameActionWithId } from '../app-state'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import { tick } from 'svelte'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -91,7 +91,7 @@
   $: newName = action.debtorName
   $: changedName = newName !== oldName
   $: useName = debtorName === newName ? 'new' : (debtorName === oldName ? 'old' : '')
-  $: availableAmount = amountToString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
+  $: availableAmount = amountToLocaleString(model.availableAmount, model.display.amountDivisor, model.display.decimalPlaces)
   $: amountUnit = model.display.unit
   $: showConfusedCheckbox = knownDebtor && changedName
 </script>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, AccountsModel, AccountDataForDisplay } from '../app-state'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import { tick, onMount } from "svelte"
   import Fab, { Icon } from '@smui/fab';
   import Paper, { Title, Content } from '@smui/paper'
@@ -88,7 +88,7 @@
     assert(pegBound !== undefined)
     const amount = Number(accountData.amount) * pegBound.exchangeRate
     const { amountDivisor, decimalPlaces } = pegBound.display
-    const unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+    const unitAmount = amountToLocaleString(amount, amountDivisor, decimalPlaces)
     const unit = pegBound.display.unit
     return `${unitAmount} ${unit}`
   }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, PaymentRequestActionWithId, SealedPaymentRequestModel } from '../app-state'
   import { getExpectedPaymentAmount } from '../operations'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import { onMount, onDestroy } from 'svelte'
   import Fab, { Label as FabLabel } from '@smui/fab'
   import { Row } from '@smui/top-app-bar'
@@ -103,11 +103,11 @@
   $: debtorName = display.debtorName
   $: amountDivisor = display.amountDivisor
   $: decimalPlaces = display.decimalPlaces
-  $: paidUnitAmount = amountToString(paidAmount, amountDivisor, decimalPlaces)
+  $: paidUnitAmount = amountToLocaleString(paidAmount, amountDivisor, decimalPlaces)
   $: amount = action.editedAmount ?? 0n
   $: done = amount > 0n && amount <= paidAmount
   $: deadline = new Date(action.editedDeadline)
-  $: unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+  $: unitAmount = amountToLocaleString(amount, amountDivisor, decimalPlaces)
   $: unit = display.unit ?? '\u00a4'
   $: amountSuffix = unit.slice(0, 10)
   $: payeeName = action.editedPayeeName

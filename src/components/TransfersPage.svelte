@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, TransfersModel, ExtendedTransferRecord } from '../app-state'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import Fab, { Icon } from '@smui/fab';
   import { Icon as CommonIcon } from '@smui/common'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -99,7 +99,7 @@
                   </h5>
                   <p class="transfer">
                     <span>
-                      {amountToString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
+                      {amountToLocaleString(transfer.amount, transfer.display?.amountDivisor ?? 1, transfer.display?.decimalPlaces ?? 0n)}
                       {transfer.display?.unit ?? '\u00a4'}
                     </span>
                     to {transfer.paymentInfo.payeeName || 'unknown payee'}
