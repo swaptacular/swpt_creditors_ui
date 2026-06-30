@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PegBound, AppState } from '../app-state'
   import { getContext } from 'svelte'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
   import Paper, { Title, Content } from '@smui/paper'
@@ -24,7 +24,7 @@
   function calcDisplayAmount(amt: bigint, pegBound: PegBound): string {
     const x = Number(amt) * pegBound.exchangeRate
     const { amountDivisor, decimalPlaces } = pegBound.display
-    const unitAmount = amountToString(x, amountDivisor, decimalPlaces)
+    const unitAmount = amountToLocaleString(x, amountDivisor, decimalPlaces)
     const unit = pegBound.display.unit
     return `${unitAmount} ${unit}`
   }

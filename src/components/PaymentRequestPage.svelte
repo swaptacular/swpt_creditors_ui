@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { AppState, PaymentRequestModel, PaymentRequestActionWithId } from '../app-state'
   import {
-    amountToString, limitAmountDivisor, calcSmallestDisplayableNumber, MAX_INT64
+    amountToString, amountToLocaleString, limitAmountDivisor, calcSmallestDisplayableNumber, MAX_INT64
   } from '../format-amounts'
   import { generatePayment0TransferNote } from '../payment-requests'
   import { Alert } from '../app-state'
@@ -58,6 +58,17 @@
       return ''
     }
     return amountToString(amount, amountDivisor, decimalPlaces)
+  }
+
+  function formatAsLocaleUnitAmount(
+    amount: bigint | number | undefined,
+    amountDivisor: number,
+    decimalPlaces: bigint,
+  ): string {
+    if (amount === undefined) {
+      return ''
+    }
+    return amountToLocaleString(amount, amountDivisor, decimalPlaces)
   }
 
   function calcInitialUnitAmount(model: PaymentRequestModel): string {
@@ -169,7 +180,7 @@
   $: unitAmountStep = formatAsUnitAmount(tinyNegligibleAmount, amountDivisor, decimalPlaces)
   $: requestedAmount = amountToBigint(unitAmount, amountDivisor)
   $: negligibleAmount = accountData.config.negligibleAmount
-  $: negligibleUnitAmount = formatAsUnitAmount(negligibleAmount, amountDivisor, decimalPlaces)
+  $: negligibleUnitAmount = formatAsLocaleUnitAmount(negligibleAmount, amountDivisor, decimalPlaces)
   $: invalid = invalidUnitAmount || invalidPayeeName || invalidDeadline || erroneousNote
 </script>
 

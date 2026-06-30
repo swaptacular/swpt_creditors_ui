@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { AppState, ApprovePegModel, ApprovePegActionWithId } from '../app-state'
-  import { amountToString, calcPegExampleAmount, MAX_INT64 } from '../format-amounts'
+  import { amountToLocaleString, calcPegExampleAmount, MAX_INT64 } from '../format-amounts'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import Fab, { Label } from '@smui/fab'
   import Paper, { Title, Content } from '@smui/paper'
@@ -60,7 +60,7 @@
     const bounds = app.accountsMap.followPegChain(accountUri)
     const bound = bounds[bounds.length - 1]
     if (bound && bound.accountUri !== accountUri) {
-      const finalUnitAmount = amountToString(
+      const finalUnitAmount = amountToLocaleString(
         Math.min(amount * bound.exchangeRate, MAX_AMOUNT),
         bound.display.amountDivisor,
         bound.display.decimalPlaces,
@@ -97,7 +97,7 @@
   $: peggedDisplay = model.peggedAccountDisplay
   $: peggedDebtorName = peggedDisplay.debtorName
   $: peggedKnownDebtor = peggedDisplay.knownDebtor
-  $: peggedAmountString = amountToString(
+  $: peggedAmountString = amountToLocaleString(
     exampleAmount,
     peggedDisplay.amountDivisor,
     peggedDisplay.decimalPlaces,
@@ -106,7 +106,7 @@
   $: pegDisplay = action.peg.display
   $: pegDebtorName = model.pegDebtorName
   $: pegAmount = exampleAmount * action.peg.exchangeRate
-  $: pegAmountString = amountToString(
+  $: pegAmountString = amountToLocaleString(
     Math.min(pegAmount, MAX_AMOUNT),
     pegDisplay.amountDivisor,
     pegDisplay.decimalPlaces,

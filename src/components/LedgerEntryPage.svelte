@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { LedgerEntryModel, ExtendedLedgerEntry, AppState } from '../app-state'
   import { getContext } from 'svelte'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import { parseTransferNote } from '../payment-requests'
   import Fab, { Icon } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
@@ -31,7 +31,7 @@
   function calcDisplayAmount(amt: bigint): string {
     const amount = Number(amt) * pegBound.exchangeRate
     const { amountDivisor, decimalPlaces } = pegBound.display
-    const unitAmount = amountToString(amount, amountDivisor, decimalPlaces)
+    const unitAmount = amountToLocaleString(amount, amountDivisor, decimalPlaces)
     const unit = pegBound.display.unit
     return `${unitAmount} ${unit}`
   }

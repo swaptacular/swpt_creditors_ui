@@ -2,7 +2,7 @@
   import type { AppState, AccountModel } from '../app-state'
   import { fade } from 'svelte/transition'
   import { IS_A_NEWBIE_KEY } from '../app-state'
-  import { amountToString } from '../format-amounts'
+  import { amountToLocaleString } from '../format-amounts'
   import { Alert } from '../app-state'
   import Paper, { Title, Content } from '@smui/paper'
   import { Row } from '@smui/top-app-bar'
@@ -157,8 +157,8 @@
   $: unit = display.unit ?? '\u00A4'
   $: unitAbbr = unit.slice(0, 10)
   $: exchange = data.exchange
-  $: minPrincipalUnitAmount = amountToString(exchange.minPrincipal, amountDivisor, decimalPlaces)
-  $: maxPrincipalUnitAmount = amountToString(exchange.maxPrincipal, amountDivisor, decimalPlaces)
+  $: minPrincipalUnitAmount = amountToLocaleString(exchange.minPrincipal, amountDivisor, decimalPlaces)
+  $: maxPrincipalUnitAmount = amountToLocaleString(exchange.maxPrincipal, amountDivisor, decimalPlaces)
   $: info = data.info
   $: interestRate = info.interestRate
   $: configError = info.configError

@@ -12,7 +12,7 @@
   import Checkbox from '@smui/checkbox'
   import Button, { Label as ButtonLabel } from '@smui/button'
   import { Title as DialogTitle, Content as DialogContent, Actions, InitialFocus } from '@smui/dialog'
-  import { amountToString } from '../format-amounts'
+  import { amountToString, amountToLocaleString } from '../format-amounts'
   import Page from './Page.svelte'
   import Dialog from './Dialog.svelte'
   import EnterPinDialog from './EnterPinDialog.svelte'
@@ -53,6 +53,17 @@
       return ''
     }
     return amountToString(
+      amount,
+      model.createAccountData?.amountDivisor ?? 1,
+      model.createAccountData?.decimalPlaces ?? 0n,
+    )
+  }
+
+  function formatAsLocaleUnitAmount(amount: bigint | number | undefined): string {
+    if (amount === undefined) {
+      return ''
+    }
+    return amountToLocaleString(
       amount,
       model.createAccountData?.amountDivisor ?? 1,
       model.createAccountData?.decimalPlaces ?? 0n,
@@ -129,6 +140,7 @@
   $: pageTitle = isCreateAccountAction ? 'Confirm account' : 'Create anchor account'
   $: data = model.createAccountData
   $: negligibleUnitAmountStep = formatAsUnitAmount(action.accountCreationState?.tinyNegligibleAmount)
+  $: minNegligibleAmount = formatAsLocaleUnitAmount(action.accountCreationState?.tinyNegligibleAmount || 0)
   $: invalid = (
     invalidDebtorName ||
     !uniqueDebtorName ||
@@ -278,7 +290,7 @@
                     <ul>
                       <li>
                         <em class="amount">
-                          {formatAsUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
+                          {formatAsLocaleUnitAmount(data.account.ledger.principal)}&nbsp;{data.unit}
                         </em>
                         are available in your account.
                       </li>
@@ -348,7 +360,7 @@
                   required
                   variant="outlined"
                   type="number"
-                  input$min={negligibleUnitAmountStep}
+                  input$min={negligibleUnitAmountStep || '0'}
                   input$step={negligibleUnitAmountStep}
                   style="width: 100%"
                   withTrailingIcon={invalidNegligibleUnitAmount}
@@ -363,13 +375,14 @@
                     {/if}
                   </svelte:fragment>
                   <HelperText style="word-break: break-word" slot="helper" persistent>
-                    An amount that you consider to be negligible or unimportant. It
-                    must be equal or bigger than {negligibleUnitAmountStep}
-                    {data.unit}. {appConfig.siteTitle} will use this
-                    amount when deciding whether the account can be safely
+                    An amount that you consider to be negligible or
+                    unimportant. It must be equal or bigger than
+                    {minNegligibleAmount} {data.unit}.
+                    {appConfig.siteTitle} will use this amount when
+                    deciding whether the account can be safely
                     deleted, and whether an incoming transfer should
-                    be ignored. If you are unsure, leave the default value
-                    unchanged.
+                    be ignored. If you are unsure, leave the default
+                    value unchanged.
                   </HelperText>
                 </Textfield>
               </Cell>

@@ -34,6 +34,7 @@ export function amountToString(
   value: number | bigint,
   amountDivisor: number,
   decimalPlaces: number | bigint,
+  decimalSeparator: string = '.',
 ): string {
   amountDivisor = limitAmountDivisor(amountDivisor)
   if (typeof decimalPlaces === 'bigint') {
@@ -49,7 +50,15 @@ export function amountToString(
     const precision = Math.min(numDigits + n, 100)
     s = precision >= 1 ? v.toPrecision(precision) : '0'
   }
-  return scientificToRegular(s)
+  return scientificToRegular(s, decimalSeparator)
+}
+
+export function amountToLocaleString(
+  value: number | bigint,
+  amountDivisor: number,
+  decimalPlaces: number | bigint,
+): string {
+  return amountToString(value, amountDivisor, decimalPlaces, localeDecimalSeparator)
 }
 
 export function calcPegExampleAmount(peggedDisplay: Display, pegDisplay: Display, exchangeRate: number): number {
@@ -63,7 +72,7 @@ export function calcPegExampleAmount(peggedDisplay: Display, pegDisplay: Display
     return Math.min(exampleAmount, MAX_AMOUNT)
   }
 
-function scientificToRegular(scientific: string): string {
+function scientificToRegular(scientific: string, decimalSeparator: string): string {
   let [mantissa, exponent = '0'] = scientific.toLowerCase().split('e')
   let e = Number(exponent)
   let sign = ''
@@ -85,11 +94,18 @@ function scientificToRegular(scientific: string): string {
     case e >= 0:
       return sign + mantissa + '0'.repeat(e)
     case e > -mantissa.length:
-      return sign + mantissa.slice(0, e) + '.' + mantissa.slice(e)
+      return sign + mantissa.slice(0, e) + decimalSeparator + mantissa.slice(e)
     default:
-      return sign + '0.' + '0'.repeat(-mantissa.length - e) + mantissa
+      return sign + '0' + decimalSeparator + '0'.repeat(-mantissa.length - e) + mantissa
   }
 }
+
+function getLocaleDecimalSeparator(): string {
+  const n: number = 1.1
+  return n.toLocaleString().substring(1, 2)
+}
+
+export const localeDecimalSeparator = getLocaleDecimalSeparator();
 
 function removeLeadingZeroes(s: string): string {
   return s.match(/^0*([\s\S]*)$/)?.[1] as string
