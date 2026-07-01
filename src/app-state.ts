@@ -501,12 +501,15 @@ export class AppState {
         decimalPlaces: useDisplay ? account.display.decimalPlaces : debtorData.decimalPlaces,
       }
     }
+    const tryToTranslateDebtorName = (name: string): string => {
+      return msg.DEBTOR_NAME_TRANSLATIONS?.[name] || name
+    }
     const initializeAccountCreationState = async (data: CreateAccountData): Promise<void> => {
       const { account, debtorData, debtorDataSource, hasDebtorInfo } = data
       const useDisplay = account.display.debtorName !== undefined
       const tinyNegligibleAmount = calcSmallestDisplayableNumber(data.amountDivisor, data.decimalPlaces)
       const editedNegligibleAmount = Math.max(useDisplay ? account.config.negligibleAmount : 0, tinyNegligibleAmount)
-      const editedDebtorName = account.display.debtorName ?? debtorData.debtorName
+      const editedDebtorName = tryToTranslateDebtorName(account.display.debtorName ?? debtorData.debtorName)
       const accountCreationState = {
         accountUri: data.account.uri,
         accountInitializationInProgress: false,
