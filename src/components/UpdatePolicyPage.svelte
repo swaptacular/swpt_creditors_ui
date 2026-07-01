@@ -301,6 +301,9 @@
                     Allow automatic buying and selling of this
                     currency to keep the available amount within the
                     defined limits, if possible.
+                    {#if appConfig.exchangeFee}
+                      Transaction fee: {appConfig.exchangeFee}%.
+                    {/if}
                   </span>
                 </FormField>
               </div>
