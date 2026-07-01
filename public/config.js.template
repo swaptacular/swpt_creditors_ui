@@ -1,7 +1,7 @@
 window.appConfig = {
   siteTitle: '${SITE_TITLE}',
   findIssuersUrl: '${FIND_ISSUERS_URL}',
-  exchangeFee: '${EXCHANGE_FEE}',
+  exchangeFee: ${EXCHANGE_FEE},
   baseDebtorInfoLocator: '${BASE_DEBTOR_INFO_LOCATOR}',
   baseDebtorId: '${BASE_DEBTOR_ID}',
   smallTradeAmount: ${SMALL_TRADE_AMOUNT},

@@ -302,7 +302,7 @@
                     currency to keep the available amount within the
                     defined limits, if possible.
                     {#if appConfig.exchangeFee}
-                      Transaction fee: {appConfig.exchangeFee}%.
+                      Transaction fee: {appConfig.exchangeFee.toLocaleString(undefined, {maximumSignificantDigits: 3})}%.
                     {/if}
                   </span>
                 </FormField>

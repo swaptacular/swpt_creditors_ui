@@ -2,7 +2,7 @@
 declare var appConfig: {
   siteTitle: string,
   findIssuersUrl: string,
-  exchangeFee: string,
+  exchangeFee: number,
   baseDebtorInfoLocator: string,
   baseDebtorId: string,
   smallTradeAmount: number,
