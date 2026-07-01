@@ -73,6 +73,49 @@ export const PAYMENT_DOES_NOT_EXIST = "The requested payment record does not exi
 export const CAN_NOT_PERFORM_ACTOIN = "The requested action can not be performed."
 export const ACTION_DOES_NOT_EXIST = "The requested action record does not exist."
 
+// A dictionary in which to look for translations for currency names.
+// It might be a good idea to translate the well-known names for the
+// well-known currencies, like "United States Dollar" and "Euro". This
+// dictionary-like object allows you to do this. You can add as many
+// entries as you like, within reason. The format is: "original name":
+// "translated name".
+export const DEBTOR_NAME_TRANSLATIONS: { [key: string]: string } = {
+  "United States Dollar": "United States Dollar",
+  "Euro": "Euro",
+}
+
+// LEAVE THIS AS IS! It is the official summary for USD.
+const usdSummary = (
+  "The United States dollar (symbol: $; currency code: USD; also abbreviated"
+    + " US$ to distinguish it from other dollar-denominated currencies; referred"
+    + " to as the dollar, U.S. dollar, American dollar, or colloquially buck) is"
+    + " the official currency of the United States and several other countries."
+)
+
+// LEAVE THIS AS IS! It is the official summary for EUR.
+const eurSummary = (
+  "The euro (symbol: €; currency code: EUR) is the official currency of many"
+    + " of the member states of the European Union. This group of states is"
+    + " officially known as the euro area, more commonly named the eurozone."
+    + " The currency is also used officially by the institutions of the European Union."
+)
+
+// A dictionary in which to look for translations for currency
+// summaries. It might be a good idea to translate the well-known
+// descriptions for the well-known currencies, like USD and EUR. This
+// dictionary-like object allows you to do this. You can add as many
+// entries as you like, within reason.
+export const SUMMARY_TRANSLATIONS: { [key: string]: string } = {
+  [usdSummary]: (
+    // The translated summary for USD:
+    usdSummary
+  ),
+  [eurSummary]: (
+    // The translated summary for EUR:
+    eurSummary
+  ),
+}
+
 // Generates a message to be shown in a tooltip. Change this function
 // to return a translated string. Also, make sure to pass your locale
 // as a parameter in the calls to `toLocaleString()` that this

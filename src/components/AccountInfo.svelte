@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PegBound, AppState } from '../app-state'
   import { getContext } from 'svelte'
+  import { SUMMARY_TRANSLATIONS } from '../messages'
   import { amountToLocaleString } from '../format-amounts'
   import Chip, { Text } from '@smui/chips'
   import Tooltip, { Wrapper } from '@smui/tooltip'
@@ -27,6 +28,10 @@
     const unitAmount = amountToLocaleString(x, amountDivisor, decimalPlaces)
     const unit = pegBound.display.unit
     return `${unitAmount} ${unit}`
+  }
+
+  function tryToTranslateSummary(summary: string): string {
+    return SUMMARY_TRANSLATIONS?.[summary] || summary
   }
 </script>
 
@@ -100,7 +105,7 @@
     </div>
     <blockquote class="summary-box">
       {#if summary}
-        {summary}
+        {tryToTranslateSummary(summary)}
       {:else}
         <span style="color: #ccc">The issuer of the currency has not provided any currency description.</span>
       {/if}
