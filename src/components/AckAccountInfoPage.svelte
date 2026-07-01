@@ -40,7 +40,7 @@
   $: changes = action.changes
   $: debtorData = action.debtorData
   $: interestRateChangeDate = new Date(action.interestRateChangedAt).toLocaleDateString()
-  $: interestRate = action.interestRate.toFixed(3)
+  $: interestRate = action.interestRate.toLocaleString(undefined, {maximumFractionDigits: 3})
   $: configError = action.configError
 </script>
 

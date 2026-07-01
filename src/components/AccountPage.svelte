@@ -334,7 +334,7 @@
                 {#if interestRate === 0}
                   0%.
                 {:else}
-                  {interestRate.toFixed(3)}%.
+                  {interestRate.toLocaleString(undefined, {maximumFractionDigits: 3})}%.
                 {/if}
               </li>
               {#if scheduledForDeletion}
