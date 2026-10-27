@@ -217,12 +217,25 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
   }
   data.peg = data.peg  // Ensure the `peg` property exists on the object.
   try {
-    data.latestDebtorInfo = { uri: new URL(data.latestDebtorInfo.uri).href }
+    data.latestDebtorInfo = { uri: parseHttpUrl(data.latestDebtorInfo.uri) }
   } catch {
     throw new InvalidDocument('invalid latestDebtorInfo.uri')
   }
   data.summary = data.summary
-  data.debtorHomepage = data.debtorHomepage
+  // NOTE: `debtorHomepage` comes from the (untrusted) debtor info
+  // document, and its URI is rendered as an `<a href>` in the UI.
+  // Svelte does not sanitize `href`, so a dangerous scheme (for
+  // example "javascript:") would be a cross-site scripting vector.
+  // Because the homepage is optional and non-essential, we simply drop
+  // it when its URI is not a valid HTTP(S) URL, instead of rejecting
+  // the whole document.
+  if (data.debtorHomepage) {
+    try {
+      data.debtorHomepage = { uri: parseHttpUrl(data.debtorHomepage.uri) }
+    } catch {
+      data.debtorHomepage = undefined
+    }
+  }
   data.willNotChangeUntil = parseOptionalDate(data.willNotChangeUntil)?.toISOString()
   data.decimalPlaces = BigInt(Math.ceil(data.decimalPlaces))
   data.revision = BigInt(Math.ceil(data.revision))
@@ -231,13 +244,25 @@ export function parseDebtorInfoDocument(document: Document): DebtorData {
     data.peg.display.type = 'PegDisplay'
     data.peg.display.decimalPlaces = BigInt(Math.ceil(data.peg.display.decimalPlaces))
     try {
-      data.peg.latestDebtorInfo = { uri: new URL(data.peg.latestDebtorInfo.uri).href }
+      data.peg.latestDebtorInfo = { uri: parseHttpUrl(data.peg.latestDebtorInfo.uri) }
     } catch {
       throw new InvalidDocument('invalid peg.latestDebtorInfo.uri')
     }
   }
   delete data.type
   return data
+}
+
+/* Parses `uri` and returns its normalized form, but only if it is an
+ * HTTP(S) URL. Throws otherwise. This prevents dangerous URL schemes
+ * (like "javascript:" or "data:") from reaching the UI, where a URI
+ * from an untrusted debtor info document may be used as a link. */
+function parseHttpUrl(uri: string): string {
+  const url = new URL(uri)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new InvalidDocument('non-HTTP URL')
+  }
+  return url.href
 }
 
 export function tryToParseDebtorInfoDocument(document: Document): DebtorData | undefined {

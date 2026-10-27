@@ -81,6 +81,46 @@ test("Parse CoinInfo document", async () => {
     .toThrow(InvalidDocument)
 })
 
+test("Reject dangerous URL schemes in CoinInfo document", async () => {
+  const base = {
+    type: 'CoinInfo',
+    revision: 0,
+    latestDebtorInfo: { uri: 'https://example.com/' },
+    summary: "bla-bla",
+    debtorIdentity: { type: 'DebtorIdentity', uri: 'swpt:123' },
+    debtorName: 'USA',
+    amountDivisor: 100,
+    decimalPlaces: 2,
+    unit: 'USD',
+  }
+  const asDocument = (obj: object) => ({
+    contentType: MIME_TYPE_COIN_INFO,
+    content: (new TextEncoder()).encode(JSON.stringify(obj)),
+  })
+
+  // A "javascript:" homepage must be dropped (it would otherwise reach
+  // an <a href> in the UI), while the rest of the document is kept.
+  const withEvilHomepage = parseDebtorInfoDocument(asDocument({
+    ...base,
+    debtorHomepage: { uri: 'javascript:alert(document.domain)' },
+  }))
+  expect(withEvilHomepage.debtorHomepage).toBeUndefined()
+  expect(withEvilHomepage.debtorName).toEqual('USA')
+
+  // A normal http(s) homepage must be kept.
+  const withGoodHomepage = parseDebtorInfoDocument(asDocument({
+    ...base,
+    debtorHomepage: { uri: 'https://example.com/USA' },
+  }))
+  expect(withGoodHomepage.debtorHomepage?.uri).toEqual('https://example.com/USA')
+
+  // A "javascript:" latestDebtorInfo URI must reject the whole document.
+  expect(() => parseDebtorInfoDocument(asDocument({
+    ...base,
+    latestDebtorInfo: { uri: 'javascript:alert(1)' },
+  }))).toThrow(InvalidDocument)
+})
+
 test("Generate and parse CoinInfo document", async () => {
   const debtorData = {
     revision: 0n,
