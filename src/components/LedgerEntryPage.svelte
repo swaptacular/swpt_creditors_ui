@@ -2,7 +2,7 @@
   import type { LedgerEntryModel, ExtendedLedgerEntry, AppState } from '../app-state'
   import { getContext } from 'svelte'
   import { amountToLocaleString } from '../format-amounts'
-  import { parseTransferNote } from '../payment-requests'
+  import { parseTransferNote, toSafeHttpUrl } from '../payment-requests'
   import Fab, { Icon } from '@smui/fab'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Page from './Page.svelte'
@@ -50,6 +50,7 @@
   $: payeeReference = paymentInfo.payeeReference
   $: contentFormat = description.contentFormat
   $: content = description.content
+  $: descriptionHref = toSafeHttpUrl(description.content)
   $: amount = transfer.acquiredAmount
   $: displayAmount = calcDisplayAmount(amount)
 </script>
@@ -116,7 +117,7 @@
             </p>
               {#if contentFormat === '.' || contentFormat === '-'}
                 <p class="transfer-note">
-                  <a href="{description.content}" target="_blank" rel="noreferrer" on:click|stopPropagation>{content}</a>
+                  <a href="{descriptionHref}" target="_blank" rel="noreferrer" on:click|stopPropagation>{content}</a>
                 </p>
               {:else if contentFormat === '' && content}
                 <pre class="transfer-note">{content}</pre>
