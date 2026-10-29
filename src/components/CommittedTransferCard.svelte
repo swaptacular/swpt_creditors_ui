@@ -2,7 +2,7 @@
   import type { ExtendedLedgerEntry, PegBound, AppState } from '../app-state'
   import { getContext } from 'svelte'
   import { amountToLocaleString } from '../format-amounts'
-  import { parseTransferNote } from '../payment-requests'
+  import { parseTransferNote, toSafeHttpUrl } from '../payment-requests'
   import Card, { PrimaryAction, Content } from '@smui/card'
 
   export let transfer: ExtendedLedgerEntry
@@ -50,6 +50,7 @@
   $: description = paymentInfo.description
   $: payeeReference = paymentInfo.payeeReference
   $: briefContent = calcBrief(description.content)
+  $: descriptionHref = toSafeHttpUrl(description.content)
   $: amount = transfer.acquiredAmount
   $: displayAmount = calcDisplayAmount(amount)
 </script>
@@ -101,7 +102,7 @@
       </p>
       <p class="transfer-note">
         {#if description.contentFormat === '.' || description.contentFormat === '-'}
-          <a href="{description.content}" target="_blank" rel="noreferrer" on:click|stopPropagation>{briefContent}</a>
+          <a href="{descriptionHref}" target="_blank" rel="noreferrer" on:click|stopPropagation>{briefContent}</a>
         {:else if description.contentFormat === ''}
           {briefContent}
         {/if}

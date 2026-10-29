@@ -94,6 +94,21 @@ function parsePayment0TransferNote(note: string): PaymentInfo {
   }
 }
 
+/* Returns the normalized form of `uri` when it is an HTTP(S) URL, and
+ * `undefined` otherwise. This is used before rendering an
+ * (untrusted) URI from a payment request as a link, to avoid
+ * dangerous URL schemes (like "javascript:") becoming a cross-site
+ * scripting vector. */
+export function toSafeHttpUrl(uri: string): string | undefined {
+  let url
+  try {
+    url = new URL(uri)
+  } catch {
+    return undefined
+  }
+  return (url.protocol === 'http:' || url.protocol === 'https:') ? url.href : undefined
+}
+
 export const MIME_TYPE_PR0 = 'application/vnd.swaptacular.pr0'
 
 /*

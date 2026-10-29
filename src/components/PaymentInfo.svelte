@@ -3,6 +3,7 @@
   import type { PaymentInfo } from '../payment-requests'
   import { getContext } from 'svelte'  
   import { amountToString, calcSmallestDisplayableNumber } from '../format-amounts'
+  import { toSafeHttpUrl } from '../payment-requests'
   import Paper, { Title, Content } from '@smui/paper'
   import LayoutGrid, { Cell } from '@smui/layout-grid'
   import Textfield from '@smui/textfield'
@@ -62,6 +63,7 @@
   $: description = paymentInfo.description
   $: contentFormat = description.contentFormat
   $: content = description.content
+  $: descriptionHref = toSafeHttpUrl(content)
   $: currencyName = display?.debtorName !== undefined ? `"${display.debtorName}"` : "unknown currency"
   $: amountDivisor = display?.amountDivisor ?? 1
   $: decimalPlaces = display?.decimalPlaces ?? 0n
@@ -153,7 +155,7 @@
           </div>
         {/if}
         {#if contentFormat === '.' || contentFormat === '-'}
-          <a href="{content}" target="_blank" rel="noreferrer">{content}</a>
+          <a href="{descriptionHref}" target="_blank" rel="noreferrer">{content}</a>
         {:else if content}
           <pre>{content}</pre>
         {:else}

@@ -6,7 +6,24 @@ import {
   generatePayment0TransferNote,
   IvalidPaymentData,
   MIME_TYPE_PR0,
+  toSafeHttpUrl,
 } from '../src/payment-requests'
+
+
+test("toSafeHttpUrl accepts only HTTP(S) URLs", () => {
+  // Normal URLs are accepted (and normalized).
+  expect(toSafeHttpUrl('https://example.com/path')).toEqual('https://example.com/path')
+  expect(toSafeHttpUrl('http://example.com')).toEqual('http://example.com/')
+
+  // Dangerous or non-HTTP schemes are rejected, so they are never used
+  // as an <a href> for an untrusted payment-request description.
+  expect(toSafeHttpUrl('javascript:alert(document.domain)')).toBeUndefined()
+  expect(toSafeHttpUrl('JavaScript:alert(1)')).toBeUndefined()
+  expect(toSafeHttpUrl('data:text/html,<script>alert(1)</script>')).toBeUndefined()
+  expect(toSafeHttpUrl('vbscript:msgbox(1)')).toBeUndefined()
+  expect(toSafeHttpUrl('not a url')).toBeUndefined()
+  expect(toSafeHttpUrl('')).toBeUndefined()
+})
 
 test("Parse payement request", async () => {
   const blob = new Blob([
